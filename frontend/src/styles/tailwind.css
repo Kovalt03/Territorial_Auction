@@ -1,0 +1,40 @@
+@import 'tailwindcss' source(none);
+@source '../**/*.{js,ts,jsx,tsx}';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0a0e1a;
+  color: #e0e8ff;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1f35;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #354064;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00f5ff40;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
