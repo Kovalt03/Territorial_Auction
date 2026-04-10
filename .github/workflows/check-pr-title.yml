@@ -25,18 +25,20 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          # [PREFIX] #이슈번호 - 설명
-          PATTERN='^\[(FEAT|FIX|HOTFIX|REFACTOR|TEST|CHORE|DOCS|STYLE|PERF)\] #[0-9]+ - .+'
+          # [PREFIX] 설명
+          PATTERN='^\[(FEAT|FIX|HOTFIX|REFACTOR|TEST|CHORE|DOCS|STYLE|PERF)\] .+'
           if ! echo "$PR_TITLE" | grep -qP "$PATTERN"; then
             echo "❌ PR 제목 형식 오류: $PR_TITLE"
             echo ""
-            echo "올바른 형식: [PREFIX] #이슈번호 - 작업 내용 요약"
+            echo "올바른 형식: [PREFIX] 작업 내용 요약"
             echo "PREFIX: FEAT | FIX | HOTFIX | REFACTOR | TEST | CHORE | DOCS | STYLE | PERF"
             echo ""
             echo "예시:"
-            echo "  [FEAT] #12 - 영토 맵 페이지 구현"
-            echo "  [FEAT] #34 - 경매 입찰 API 구현"
-            echo "  [CHORE] #2 - GitHub Actions 워크플로우 추가"
+            echo "  [FEAT] 영토 맵 페이지 구현"
+            echo "  [FEAT] 경매 입찰 API 구현"
+            echo "  [CHORE] GitHub Actions 워크플로우 추가"
+            echo ""
+            echo "이슈 연결은 PR 본문에 'Closes #번호' 로 달아주세요."
             exit 1
           fi
           echo "✅ PR 제목 형식이 올바릅니다."
