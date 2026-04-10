@@ -1,0 +1,46 @@
+name: Check Commit Message
+
+on:
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit messages
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+          INVALID=0
+
+          # [PREFIX][SCOPE] 형식 검증
+          # PREFIX: FEAT|FIX|HOTFIX|REFACTOR|TEST|CHORE|DOCS|STYLE|PERF
+          # SCOPE:  FE (프론트엔드) | BE (백엔드) | ALL (공통)
+          PATTERN='^\[(FEAT|FIX|HOTFIX|REFACTOR|TEST|CHORE|DOCS|STYLE|PERF)\]\[(FE|BE|ALL)\] .+'
+
+          while IFS= read -r msg; do
+            if ! echo "$msg" | grep -qP "$PATTERN"; then
+              echo "❌ 올바르지 않은 커밋 메시지: $msg"
+              INVALID=1
+            fi
+          done < <(git log --pretty=format:"%s" "$BASE".."$HEAD")
+
+          if [ $INVALID -ne 0 ]; then
+            echo ""
+            echo "올바른 형식: [PREFIX][SCOPE] 제목"
+            echo "PREFIX: FEAT | FIX | HOTFIX | REFACTOR | TEST | CHORE | DOCS | STYLE | PERF"
+            echo "SCOPE:  FE (프론트엔드) | BE (백엔드) | ALL (공통)"
+            echo ""
+            echo "예시:"
+            echo "  [FEAT][FE] 영토 맵 페이지 구현"
+            echo "  [FEAT][BE] 경매 입찰 API 구현"
+            echo "  [CHORE][ALL] GitHub Actions 워크플로우 추가"
+            exit 1
+          fi
+
+          echo "✅ 모든 커밋 메시지 형식이 올바릅니다."
