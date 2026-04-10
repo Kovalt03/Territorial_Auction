@@ -1,0 +1,42 @@
+name: Check PR Title
+
+on:
+  pull_request:
+    branches: [dev, main]
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate base branch (main ← dev only)
+        if: github.event.pull_request.base.ref == 'main'
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [ "$HEAD_BRANCH" != "dev" ]; then
+            echo "❌ main 브랜치에는 dev 브랜치에서만 PR을 올릴 수 있습니다."
+            echo "현재 요청 브랜치: $HEAD_BRANCH"
+            exit 1
+          fi
+          echo "✅ 브랜치 규칙 통과: dev → main"
+
+      - name: Validate PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # [PREFIX] #이슈번호 - 설명
+          PATTERN='^\[(FEAT|FIX|HOTFIX|REFACTOR|TEST|CHORE|DOCS|STYLE|PERF)\] #[0-9]+ - .+'
+          if ! echo "$PR_TITLE" | grep -qP "$PATTERN"; then
+            echo "❌ PR 제목 형식 오류: $PR_TITLE"
+            echo ""
+            echo "올바른 형식: [PREFIX] #이슈번호 - 작업 내용 요약"
+            echo "PREFIX: FEAT | FIX | HOTFIX | REFACTOR | TEST | CHORE | DOCS | STYLE | PERF"
+            echo ""
+            echo "예시:"
+            echo "  [FEAT] #12 - 영토 맵 페이지 구현"
+            echo "  [FEAT] #34 - 경매 입찰 API 구현"
+            echo "  [CHORE] #2 - GitHub Actions 워크플로우 추가"
+            exit 1
+          fi
+          echo "✅ PR 제목 형식이 올바릅니다."
