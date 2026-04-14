@@ -28,13 +28,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private User saveOrUpdate(OAuth2UserInfo userInfo, String provider) {
-        String email = userInfo.getEmail();
+        // loginId = "provider:providerId" (e.g. "google:1234567890")
+        String loginId = provider + ":" + userInfo.getId();
 
-        return userRepository.findByEmail(email)
+        return userRepository.findByLoginId(loginId)
                 .orElseGet(() -> userRepository.save(
                         User.builder()
-                                .email(email)
-                                .password("")
+                                .loginId(loginId)
+                                .passwordHash("")
                                 .nickname(generateNickname(userInfo.getName()))
                                 .build()
                 ));

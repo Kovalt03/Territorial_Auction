@@ -1,43 +1,43 @@
 package com.territorial.auction.domain.user.entity;
 
-import com.territorial.auction.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class User extends BaseEntity {
+@EntityListeners(AuditingEntityListener.class)
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
-    private String email;
+    @Column(nullable = false, unique = true, length = 50)
+    private String loginId;
 
-    @Column(nullable = false)
-    private String password;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String passwordHash;
 
     @Column(nullable = false, unique = true, length = 30)
     private String nickname;
 
-    @Column(nullable = false)
-    private Long gold = 0L;
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserRole role = UserRole.USER;
+    private boolean valid = true;
 
     @Builder
-    public User(String email, String password, String nickname) {
-        this.email = email;
-        this.password = password;
+    public User(String loginId, String passwordHash, String nickname) {
+        this.loginId = loginId;
+        this.passwordHash = passwordHash;
         this.nickname = nickname;
-    }
-
-    public enum UserRole {
-        USER, ADMIN
     }
 }

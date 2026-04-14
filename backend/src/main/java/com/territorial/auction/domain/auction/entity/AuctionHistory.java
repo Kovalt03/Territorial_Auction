@@ -8,42 +8,40 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "auctions")
+@Table(name = "auction_histories")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Auction {
+public class AuctionHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "auction_id", nullable = false)
+    private Auction auction;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "territory_id", nullable = false)
     private Territory territory;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "current_bidder_id")
-    private User currentBidder;
+    @JoinColumn(name = "winner_id", nullable = false)
+    private User winner;
 
     @Column(nullable = false)
-    private Integer currentPrice;
+    private Integer finalPrice;
 
     @Column(nullable = false)
-    private LocalDateTime startAt;
-
-    @Column(nullable = false)
-    private LocalDateTime endAt;
-
-    @Column(nullable = false)
-    private LocalDateTime maxExtendUntil;
+    private LocalDateTime wonAt;
 
     @Builder
-    public Auction(Territory territory, Integer currentPrice,
-                   LocalDateTime startAt, LocalDateTime endAt, LocalDateTime maxExtendUntil) {
+    public AuctionHistory(Auction auction, Territory territory, User winner,
+                          Integer finalPrice, LocalDateTime wonAt) {
+        this.auction = auction;
         this.territory = territory;
-        this.currentPrice = currentPrice;
-        this.startAt = startAt;
-        this.endAt = endAt;
-        this.maxExtendUntil = maxExtendUntil;
+        this.winner = winner;
+        this.finalPrice = finalPrice;
+        this.wonAt = wonAt;
     }
 }

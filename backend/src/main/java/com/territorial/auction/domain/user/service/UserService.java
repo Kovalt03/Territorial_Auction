@@ -20,8 +20,8 @@ public class UserService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
+    public User findByLoginId(String loginId) {
+        return userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 }

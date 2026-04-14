@@ -1,0 +1,35 @@
+package com.territorial.auction.domain.building.entity;
+
+import com.territorial.auction.domain.user.entity.User;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "global_vaults")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class GlobalVault {
+
+    @Id
+    private Long userId;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @Column(nullable = false)
+    private Integer storedGp = 0;
+
+    @Column(nullable = false)
+    private Integer capacity = 500;
+
+    private LocalDateTime lastTransferAt;
+
+    @Builder
+    public GlobalVault(User user) {
+        this.user = user;
+    }
+}

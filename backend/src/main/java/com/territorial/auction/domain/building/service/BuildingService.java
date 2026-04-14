@@ -1,6 +1,6 @@
 package com.territorial.auction.domain.building.service;
 
-import com.territorial.auction.domain.building.repository.BuildingRepository;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,5 +10,5 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class BuildingService {
 
-    private final BuildingRepository buildingRepository;
+    private final BuildingInstanceRepository buildingInstanceRepository;
 }
