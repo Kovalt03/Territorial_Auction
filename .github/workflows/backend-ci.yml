@@ -13,6 +13,21 @@ jobs:
       run:
         working-directory: backend
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: territorial_auction_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -30,3 +45,5 @@ jobs:
         run: ./gradlew build
         env:
           SPRING_PROFILES_ACTIVE: test
+          DB_USERNAME: test
+          DB_PASSWORD: test
