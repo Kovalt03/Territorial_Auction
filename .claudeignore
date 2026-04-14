@@ -1,0 +1,47 @@
+# ===========================
+# Frontend - Dependencies & Build
+# ===========================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/*.tsbuildinfo
+
+# ===========================
+# Backend - Build & Gradle
+# ===========================
+backend/build/
+backend/out/
+backend/.gradle/
+backend/gradle/wrapper/gradle-wrapper.jar
+backend/*.jar
+backend/*.war
+backend/*.class
+
+# ===========================
+# Logs
+# ===========================
+**/*.log
+**/logs/
+
+# ===========================
+# IDE & OS
+# ===========================
+**/.idea/
+**/.vscode/
+**/*.iml
+.DS_Store
+Thumbs.db
+
+# ===========================
+# Secrets & Env
+# ===========================
+**/.env
+**/.env.*
+**/application-local.yml
+**/application-secret.yml
+
+# ===========================
+# Git
+# ===========================
+.git/
