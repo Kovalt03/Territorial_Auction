@@ -2,6 +2,7 @@ package com.territorial.auction.domain.auth.service;
 
 import com.territorial.auction.domain.auth.dto.*;
 import com.territorial.auction.domain.user.entity.User;
+import com.territorial.auction.domain.user.entity.UserStatus;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
@@ -49,6 +50,12 @@ public class AuthService {
                 userRepository
                         .findByLoginId(request.loginId())
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 유저 상태 검증
+        if (user.getStatus() == UserStatus.WITHDRAWN)
+            throw new CustomException(ErrorCode.WITHDRAWN_USER);
+        if (user.getStatus() == UserStatus.SUSPENDED)
+            throw new CustomException(ErrorCode.SUSPENDED_USER);
 
         // 비밀번호 검증
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash()))

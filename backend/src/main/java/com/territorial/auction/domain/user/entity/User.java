@@ -30,8 +30,9 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
-    private boolean valid = true;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Builder
     public User(String loginId, String passwordHash, String nickname) {
