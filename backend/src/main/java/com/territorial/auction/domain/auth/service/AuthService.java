@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -22,6 +21,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
 
+    @Transactional
     public SignupResponse signup(SignupRequest request) {
         // TODO: 중복 검사(완) → User 저장(완) → Wallet + NotificationSetting 생성 [2/4]
         // 중복 검사
@@ -42,6 +42,7 @@ public class AuthService {
         return SignupResponse.from(user);
     }
 
+    @Transactional
     public TokenResponse login(LoginRequest request) {
         // loginId 조회
         User user =
@@ -65,8 +66,21 @@ public class AuthService {
     }
 
     public TokenResponse refresh(RefreshRequest request) {
-        // TODO: refreshToken 파싱 → Redis 검증 → 새 토큰 발급
-        return null;
+        // refreshToken 파싱
+        Long userId = jwtTokenProvider.getUserId(request.refreshToken());
+
+        // Redis 검증
+        if (!refreshTokenService.isValid(userId, request.refreshToken()))
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+
+        // 새 토큰 발급
+        String accessToken = jwtTokenProvider.createAccessToken(userId);
+        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+
+        // Redis 갱신
+        refreshTokenService.save(userId, refreshToken);
+
+        return new TokenResponse(accessToken, refreshToken);
     }
 
     public void logout(Long userId) {
