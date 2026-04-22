@@ -1,7 +1,12 @@
 package com.territorial.auction.domain.auth.service;
 
 import com.territorial.auction.domain.auth.dto.*;
+import com.territorial.auction.domain.user.entity.User;
+import com.territorial.auction.domain.user.repository.UserRepository;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,9 +15,27 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AuthService {
 
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
     public SignupResponse signup(SignupRequest request) {
-        // TODO: 중복 검사 → User 저장 → Wallet + NotificationSetting 생성
-        return null;
+        // TODO: 중복 검사(완) → User 저장(완) → Wallet + NotificationSetting 생성 [2/4]
+        // 중복 검사
+        if (userRepository.existsByLoginId(request.loginId()))
+            throw new CustomException(ErrorCode.DUPLICATE_LOGIN_ID);
+        if (userRepository.existsByNickname(request.nickname()))
+            throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
+
+        // User 저장
+        User user =
+                User.builder()
+                        .loginId(request.loginId())
+                        .passwordHash(passwordEncoder.encode(request.password()))
+                        .nickname(request.nickname())
+                        .build();
+        userRepository.save(user);
+
+        return SignupResponse.from(user);
     }
 
     public TokenResponse login(LoginRequest request) {
