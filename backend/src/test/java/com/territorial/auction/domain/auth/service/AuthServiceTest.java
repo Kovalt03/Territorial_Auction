@@ -1,0 +1,193 @@
+package com.territorial.auction.domain.auth.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+
+import com.territorial.auction.domain.auth.dto.LoginRequest;
+import com.territorial.auction.domain.auth.dto.SignupRequest;
+import com.territorial.auction.domain.auth.dto.SignupResponse;
+import com.territorial.auction.domain.auth.dto.TokenResponse;
+import com.territorial.auction.domain.user.entity.User;
+import com.territorial.auction.domain.user.entity.UserStatus;
+import com.territorial.auction.domain.user.repository.UserRepository;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
+import com.territorial.auction.global.security.jwt.JwtTokenProvider;
+import com.territorial.auction.global.security.jwt.RefreshTokenService;
+import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
+
+@ExtendWith(MockitoExtension.class)
+class AuthServiceTest {
+
+    @InjectMocks private AuthService authService;
+
+    @Mock private UserRepository userRepository;
+    @Mock private PasswordEncoder passwordEncoder;
+    @Mock private JwtTokenProvider jwtTokenProvider;
+    @Mock private RefreshTokenService refreshTokenService;
+
+    @Nested
+    @DisplayName("signup()")
+    class Signup {
+
+        @Test
+        @DisplayName("정상 가입 시 SignupResponse 반환")
+        void signup_success() {
+            SignupRequest request = new SignupRequest("testuser", "password1!", "닉네임");
+            given(userRepository.existsByLoginId("testuser")).willReturn(false);
+            given(userRepository.existsByNickname("닉네임")).willReturn(false);
+            given(passwordEncoder.encode("password1!")).willReturn("encoded");
+            given(userRepository.save(any(User.class)))
+                    .willAnswer(
+                            inv -> {
+                                User user = inv.getArgument(0);
+                                ReflectionTestUtils.setField(user, "id", 1L);
+                                return user;
+                            });
+
+            SignupResponse response = authService.signup(request);
+
+            assertThat(response.loginId()).isEqualTo("testuser");
+            assertThat(response.nickname()).isEqualTo("닉네임");
+        }
+
+        @Test
+        @DisplayName("loginId 중복 시 DUPLICATE_LOGIN_ID 예외")
+        void signup_duplicateLoginId() {
+            SignupRequest request = new SignupRequest("testuser", "password1!", "닉네임");
+            given(userRepository.existsByLoginId("testuser")).willReturn(true);
+
+            assertThatThrownBy(() -> authService.signup(request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.DUPLICATE_LOGIN_ID);
+        }
+
+        @Test
+        @DisplayName("nickname 중복 시 DUPLICATE_NICKNAME 예외")
+        void signup_duplicateNickname() {
+            SignupRequest request = new SignupRequest("testuser", "password1!", "닉네임");
+            given(userRepository.existsByLoginId("testuser")).willReturn(false);
+            given(userRepository.existsByNickname("닉네임")).willReturn(true);
+
+            assertThatThrownBy(() -> authService.signup(request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.DUPLICATE_NICKNAME);
+        }
+    }
+
+    @Nested
+    @DisplayName("login()")
+    class Login {
+
+        private User activeUser() {
+            User user =
+                    User.builder()
+                            .loginId("testuser")
+                            .passwordHash("encoded")
+                            .nickname("닉네임")
+                            .build();
+            ReflectionTestUtils.setField(user, "id", 1L);
+            return user;
+        }
+
+        private User userWithStatus(UserStatus status) {
+            User user = activeUser();
+            ReflectionTestUtils.setField(user, "status", status);
+            return user;
+        }
+
+        @Test
+        @DisplayName("정상 로그인 시 TokenResponse 반환")
+        void login_success() {
+            LoginRequest request = new LoginRequest("testuser", "password1!");
+            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(activeUser()));
+            given(passwordEncoder.matches("password1!", "encoded")).willReturn(true);
+            given(jwtTokenProvider.createAccessToken(1L)).willReturn("access-token");
+            given(jwtTokenProvider.createRefreshToken(1L)).willReturn("refresh-token");
+
+            TokenResponse response = authService.login(request);
+
+            assertThat(response.accessToken()).isEqualTo("access-token");
+            assertThat(response.refreshToken()).isEqualTo("refresh-token");
+            then(refreshTokenService).should().save(1L, "refresh-token");
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 loginId 시 USER_NOT_FOUND 예외")
+        void login_userNotFound() {
+            LoginRequest request = new LoginRequest("unknown", "password1!");
+            given(userRepository.findByLoginId("unknown")).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("탈퇴 유저 로그인 시 WITHDRAWN_USER 예외")
+        void login_withdrawnUser() {
+            LoginRequest request = new LoginRequest("testuser", "password1!");
+            given(userRepository.findByLoginId("testuser"))
+                    .willReturn(Optional.of(userWithStatus(UserStatus.WITHDRAWN)));
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.WITHDRAWN_USER);
+        }
+
+        @Test
+        @DisplayName("정지 유저 로그인 시 SUSPENDED_USER 예외")
+        void login_suspendedUser() {
+            LoginRequest request = new LoginRequest("testuser", "password1!");
+            given(userRepository.findByLoginId("testuser"))
+                    .willReturn(Optional.of(userWithStatus(UserStatus.SUSPENDED)));
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SUSPENDED_USER);
+        }
+
+        @Test
+        @DisplayName("비밀번호 불일치 시 INVALID_PASSWORD 예외")
+        void login_invalidPassword() {
+            LoginRequest request = new LoginRequest("testuser", "wrongPassword1!");
+            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(activeUser()));
+            given(passwordEncoder.matches("wrongPassword1!", "encoded")).willReturn(false);
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INVALID_PASSWORD);
+        }
+    }
+
+    @Nested
+    @DisplayName("logout()")
+    class Logout {
+
+        @Test
+        @DisplayName("logout 시 refreshToken 삭제")
+        void logout_deletesRefreshToken() {
+            authService.logout(1L);
+
+            then(refreshTokenService).should().delete(1L);
+        }
+    }
+}
