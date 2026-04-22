@@ -2,9 +2,8 @@ package com.territorial.auction.domain.building.entity;
 
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "global_vaults")
@@ -12,8 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GlobalVault {
 
-    @Id
-    private Long userId;
+    @Id private Long userId;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId

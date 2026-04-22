@@ -4,9 +4,8 @@ import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "siege_events")
@@ -14,7 +13,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SiegeEvent {
 
-    public enum SiegeStatus { PENDING, RESOLVED }
+    public enum SiegeStatus {
+        PENDING,
+        RESOLVED
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,9 +52,14 @@ public class SiegeEvent {
     private LocalDateTime resolveAt;
 
     @Builder
-    public SiegeEvent(User attacker, User defender, Territory targetTerritory,
-                      BuildingInstance targetBuilding, Integer attackZone,
-                      LocalDateTime siegeStartAt, LocalDateTime resolveAt) {
+    public SiegeEvent(
+            User attacker,
+            User defender,
+            Territory targetTerritory,
+            BuildingInstance targetBuilding,
+            Integer attackZone,
+            LocalDateTime siegeStartAt,
+            LocalDateTime resolveAt) {
         this.attacker = attacker;
         this.defender = defender;
         this.targetTerritory = targetTerritory;

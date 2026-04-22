@@ -16,7 +16,8 @@ public class AuctionService {
     private final AuctionRepository auctionRepository;
 
     public Auction findById(Long auctionId) {
-        return auctionRepository.findById(auctionId)
+        return auctionRepository
+                .findById(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
     }
 }

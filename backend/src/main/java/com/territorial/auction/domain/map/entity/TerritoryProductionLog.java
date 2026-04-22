@@ -2,11 +2,10 @@ package com.territorial.auction.domain.map.entity;
 
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "territory_production_logs")
@@ -39,8 +38,8 @@ public class TerritoryProductionLog {
     private LocalDateTime createdAt;
 
     @Builder
-    public TerritoryProductionLog(Territory territory, User owner,
-                                   Integer amount, ProductionReason reason) {
+    public TerritoryProductionLog(
+            Territory territory, User owner, Integer amount, ProductionReason reason) {
         this.territory = territory;
         this.owner = owner;
         this.amount = amount;
@@ -48,6 +47,8 @@ public class TerritoryProductionLog {
     }
 
     public enum ProductionReason {
-        BASE, ADJACENT_BONUS, BONUS_TILE
+        BASE,
+        ADJACENT_BONUS,
+        BONUS_TILE
     }
 }

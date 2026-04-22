@@ -3,9 +3,8 @@ package com.territorial.auction.domain.item.entity;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "item_purchases")
@@ -36,8 +35,12 @@ public class ItemPurchase {
     private LocalDateTime purchasedAt;
 
     @Builder
-    public ItemPurchase(User user, Item item, Integer quantity,
-                        Territory targetTerritory, LocalDateTime purchasedAt) {
+    public ItemPurchase(
+            User user,
+            Item item,
+            Integer quantity,
+            Territory targetTerritory,
+            LocalDateTime purchasedAt) {
         this.user = user;
         this.item = item;
         this.quantity = quantity != null ? quantity : 1;

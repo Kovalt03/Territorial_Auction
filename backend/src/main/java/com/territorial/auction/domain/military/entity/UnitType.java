@@ -29,8 +29,12 @@ public class UnitType {
     private Integer foodCostPerHour;
 
     @Builder
-    public UnitType(String name, Integer attackPower, Integer defensePower,
-                    Integer costGp, Integer foodCostPerHour) {
+    public UnitType(
+            String name,
+            Integer attackPower,
+            Integer defensePower,
+            Integer costGp,
+            Integer foodCostPerHour) {
         this.name = name;
         this.attackPower = attackPower;
         this.defensePower = defensePower;

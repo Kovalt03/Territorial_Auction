@@ -2,9 +2,8 @@ package com.territorial.auction.domain.map.entity;
 
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "territories")
@@ -57,6 +56,8 @@ public class Territory {
     }
 
     public enum TerritoryStatus {
-        BIDDING, OCCUPIED, IDLE
+        BIDDING,
+        OCCUPIED,
+        IDLE
     }
 }

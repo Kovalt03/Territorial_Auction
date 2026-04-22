@@ -2,9 +2,8 @@ package com.territorial.auction.domain.season.entity;
 
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "user_season_passes")
@@ -34,8 +33,8 @@ public class UserSeasonPass {
     private Boolean isActive = true;
 
     @Builder
-    public UserSeasonPass(User user, SeasonPass seasonPass,
-                          LocalDateTime startedAt, LocalDateTime expiresAt) {
+    public UserSeasonPass(
+            User user, SeasonPass seasonPass, LocalDateTime startedAt, LocalDateTime expiresAt) {
         this.user = user;
         this.seasonPass = seasonPass;
         this.startedAt = startedAt;

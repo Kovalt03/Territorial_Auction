@@ -2,9 +2,8 @@ package com.territorial.auction.domain.map.entity;
 
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "land_tax_logs")
@@ -12,7 +11,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class LandTaxLog {
 
-    public enum TaxStatus { PAID, FAILED, EXEMPT }
+    public enum TaxStatus {
+        PAID,
+        FAILED,
+        EXEMPT
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,8 +39,12 @@ public class LandTaxLog {
     private LocalDateTime chargedAt;
 
     @Builder
-    public LandTaxLog(User user, Integer territoryCount, Integer gpCharged,
-                      TaxStatus status, LocalDateTime chargedAt) {
+    public LandTaxLog(
+            User user,
+            Integer territoryCount,
+            Integer gpCharged,
+            TaxStatus status,
+            LocalDateTime chargedAt) {
         this.user = user;
         this.territoryCount = territoryCount;
         this.gpCharged = gpCharged;

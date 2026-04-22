@@ -9,7 +9,12 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Item {
 
-    public enum ItemType { INVINCIBILITY, ATTACK_NORMAL, ATTACK_PRECISION, GP_PURCHASE }
+    public enum ItemType {
+        INVINCIBILITY,
+        ATTACK_NORMAL,
+        ATTACK_PRECISION,
+        GP_PURCHASE
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +34,8 @@ public class Item {
     private Integer dailyLimit; // NULL이면 무제한
 
     @Builder
-    public Item(String name, ItemType itemType, Integer costAp, Integer costGp, Integer dailyLimit) {
+    public Item(
+            String name, ItemType itemType, Integer costAp, Integer costGp, Integer dailyLimit) {
         this.name = name;
         this.itemType = itemType;
         this.costAp = costAp;

@@ -45,8 +45,14 @@ public class BuildingInstance {
     private boolean isDestroyed = false;
 
     @Builder
-    public BuildingInstance(Territory territory, HomeIsland island, BuildingType buildingType,
-                             Integer posX, Integer posY, Integer hp, Integer zone) {
+    public BuildingInstance(
+            Territory territory,
+            HomeIsland island,
+            BuildingType buildingType,
+            Integer posX,
+            Integer posY,
+            Integer hp,
+            Integer zone) {
         this.territory = territory;
         this.island = island;
         this.buildingType = buildingType;

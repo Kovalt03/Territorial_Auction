@@ -3,9 +3,8 @@ package com.territorial.auction.domain.auction.entity;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "auctions")
@@ -38,8 +37,12 @@ public class Auction {
     private LocalDateTime maxExtendUntil;
 
     @Builder
-    public Auction(Territory territory, Integer currentPrice,
-                   LocalDateTime startAt, LocalDateTime endAt, LocalDateTime maxExtendUntil) {
+    public Auction(
+            Territory territory,
+            Integer currentPrice,
+            LocalDateTime startAt,
+            LocalDateTime endAt,
+            LocalDateTime maxExtendUntil) {
         this.territory = territory;
         this.currentPrice = currentPrice;
         this.startAt = startAt;

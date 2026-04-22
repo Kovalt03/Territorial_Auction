@@ -1,11 +1,10 @@
 package com.territorial.auction.domain.user.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.*;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "wallets")
@@ -14,8 +13,7 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 public class Wallet {
 
-    @Id
-    private Long userId;
+    @Id private Long userId;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId

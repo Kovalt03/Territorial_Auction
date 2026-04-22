@@ -2,11 +2,10 @@ package com.territorial.auction.domain.season.entity;
 
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "season_rewards")
@@ -47,8 +46,14 @@ public class SeasonReward {
     private LocalDateTime createdAt;
 
     @Builder
-    public SeasonReward(User user, Season season, String league, Integer gpReward,
-                        Integer attackTokenNormal, Integer attackTokenPrecision, String titleReward) {
+    public SeasonReward(
+            User user,
+            Season season,
+            String league,
+            Integer gpReward,
+            Integer attackTokenNormal,
+            Integer attackTokenPrecision,
+            String titleReward) {
         this.user = user;
         this.season = season;
         this.league = league;

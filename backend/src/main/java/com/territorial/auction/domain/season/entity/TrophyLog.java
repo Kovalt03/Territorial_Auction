@@ -3,11 +3,10 @@ package com.territorial.auction.domain.season.entity;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "trophy_logs")
@@ -46,8 +45,13 @@ public class TrophyLog {
     private LocalDateTime createdAt;
 
     @Builder
-    public TrophyLog(User user, Season season, SiegeEvent siege,
-                     Integer delta, String reason, Integer scoreAfter) {
+    public TrophyLog(
+            User user,
+            Season season,
+            SiegeEvent siege,
+            Integer delta,
+            String reason,
+            Integer scoreAfter) {
         this.user = user;
         this.season = season;
         this.siege = siege;

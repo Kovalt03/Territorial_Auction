@@ -26,6 +26,7 @@ public class ChatRoom {
     }
 
     public enum ChatRoomType {
-        WORLD, CONTINENT
+        WORLD,
+        CONTINENT
     }
 }

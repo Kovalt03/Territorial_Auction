@@ -1,9 +1,8 @@
 package com.territorial.auction.domain.map.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.math.BigDecimal;
+import lombok.*;
 
 @Entity
 @Table(name = "bonus_tiles")

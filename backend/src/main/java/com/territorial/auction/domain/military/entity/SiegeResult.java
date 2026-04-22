@@ -9,7 +9,11 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SiegeResult {
 
-    public enum ResultType { LOOT, DEBUFF, AUCTION }
+    public enum ResultType {
+        LOOT,
+        DEBUFF,
+        AUCTION
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,8 +38,13 @@ public class SiegeResult {
     private ResultType resultType;
 
     @Builder
-    public SiegeResult(SiegeEvent siege, Boolean isAttackerWin, Integer attackerUnitsLost,
-                       Integer defenderUnitsLost, Integer lootedGp, ResultType resultType) {
+    public SiegeResult(
+            SiegeEvent siege,
+            Boolean isAttackerWin,
+            Integer attackerUnitsLost,
+            Integer defenderUnitsLost,
+            Integer lootedGp,
+            ResultType resultType) {
         this.siege = siege;
         this.isAttackerWin = isAttackerWin;
         this.attackerUnitsLost = attackerUnitsLost;

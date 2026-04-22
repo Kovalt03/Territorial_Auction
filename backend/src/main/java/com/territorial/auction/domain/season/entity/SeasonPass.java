@@ -32,8 +32,13 @@ public class SeasonPass {
     private Integer taxExemptBonus = 2;
 
     @Builder
-    public SeasonPass(String name, Integer costAp, Integer durationDays,
-                      Integer islandBonusPct, Integer extraBuilders, Integer taxExemptBonus) {
+    public SeasonPass(
+            String name,
+            Integer costAp,
+            Integer durationDays,
+            Integer islandBonusPct,
+            Integer extraBuilders,
+            Integer taxExemptBonus) {
         this.name = name;
         this.costAp = costAp;
         this.durationDays = durationDays != null ? durationDays : 30;

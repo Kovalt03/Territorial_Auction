@@ -3,9 +3,8 @@ package com.territorial.auction.domain.auction.entity;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "auction_histories")
@@ -36,8 +35,12 @@ public class AuctionHistory {
     private LocalDateTime wonAt;
 
     @Builder
-    public AuctionHistory(Auction auction, Territory territory, User winner,
-                          Integer finalPrice, LocalDateTime wonAt) {
+    public AuctionHistory(
+            Auction auction,
+            Territory territory,
+            User winner,
+            Integer finalPrice,
+            LocalDateTime wonAt) {
         this.auction = auction;
         this.territory = territory;
         this.winner = winner;

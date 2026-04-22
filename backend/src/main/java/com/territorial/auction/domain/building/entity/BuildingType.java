@@ -31,8 +31,13 @@ public class BuildingType {
     private Integer zoneRestriction; // 1 = Zone1에만 배치 가능
 
     @Builder
-    public BuildingType(String name, Integer width, Integer height,
-                        Integer maxHp, Integer baseCostGp, Integer zoneRestriction) {
+    public BuildingType(
+            String name,
+            Integer width,
+            Integer height,
+            Integer maxHp,
+            Integer baseCostGp,
+            Integer zoneRestriction) {
         this.name = name;
         this.width = width;
         this.height = height;

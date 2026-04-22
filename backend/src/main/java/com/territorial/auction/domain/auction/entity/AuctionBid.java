@@ -2,16 +2,17 @@ package com.territorial.auction.domain.auction.entity;
 
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
-
 @Entity
-@Table(name = "auction_bids", indexes = {
-        @Index(name = "idx_auction_bids_auction_bid_at", columnList = "auction_id, bid_at ASC")
-})
+@Table(
+        name = "auction_bids",
+        indexes = {
+            @Index(name = "idx_auction_bids_auction_bid_at", columnList = "auction_id, bid_at ASC")
+        })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)

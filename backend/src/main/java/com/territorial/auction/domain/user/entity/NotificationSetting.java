@@ -9,8 +9,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NotificationSetting {
 
-    @Id
-    private Long userId;
+    @Id private Long userId;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId

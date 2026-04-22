@@ -1,7 +1,6 @@
 package com.territorial.auction.global.security.oauth2.provider;
 
 import com.territorial.auction.global.security.oauth2.OAuth2UserInfo;
-
 import java.util.Map;
 
 public class GoogleOAuth2UserInfo extends OAuth2UserInfo {

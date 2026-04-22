@@ -2,11 +2,10 @@ package com.territorial.auction.domain.season.entity;
 
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.*;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_trophies")
@@ -15,10 +14,15 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 public class UserTrophy {
 
-    public enum League { BRONZE, SILVER, GOLD, DIAMOND, CHAMPION }
+    public enum League {
+        BRONZE,
+        SILVER,
+        GOLD,
+        DIAMOND,
+        CHAMPION
+    }
 
-    @Id
-    private Long userId;
+    @Id private Long userId;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId

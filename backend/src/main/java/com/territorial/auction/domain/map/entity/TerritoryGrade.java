@@ -1,9 +1,8 @@
 package com.territorial.auction.domain.map.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.math.BigDecimal;
+import lombok.*;
 
 @Entity
 @Table(name = "territory_grades")
@@ -34,9 +33,13 @@ public class TerritoryGrade {
     private Integer gridSize;
 
     @Builder
-    public TerritoryGrade(String grade, BigDecimal productionMultiplier,
-                          BigDecimal auctionPriceMultiplier, Integer preBuiltCount,
-                          BigDecimal spawnRate, Integer gridSize) {
+    public TerritoryGrade(
+            String grade,
+            BigDecimal productionMultiplier,
+            BigDecimal auctionPriceMultiplier,
+            Integer preBuiltCount,
+            BigDecimal spawnRate,
+            Integer gridSize) {
         this.grade = grade;
         this.productionMultiplier = productionMultiplier;
         this.auctionPriceMultiplier = auctionPriceMultiplier;

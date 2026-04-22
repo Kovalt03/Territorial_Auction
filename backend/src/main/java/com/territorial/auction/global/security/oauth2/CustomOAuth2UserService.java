@@ -20,7 +20,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        OAuth2UserInfo userInfo = OAuth2UserInfoFactory.of(registrationId, oAuth2User.getAttributes());
+        OAuth2UserInfo userInfo =
+                OAuth2UserInfoFactory.of(registrationId, oAuth2User.getAttributes());
 
         User user = saveOrUpdate(userInfo, registrationId);
 
@@ -31,14 +32,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // loginId = "provider:providerId" (e.g. "google:1234567890")
         String loginId = provider + ":" + userInfo.getId();
 
-        return userRepository.findByLoginId(loginId)
-                .orElseGet(() -> userRepository.save(
-                        User.builder()
-                                .loginId(loginId)
-                                .passwordHash("")
-                                .nickname(generateNickname(userInfo.getName()))
-                                .build()
-                ));
+        return userRepository
+                .findByLoginId(loginId)
+                .orElseGet(
+                        () ->
+                                userRepository.save(
+                                        User.builder()
+                                                .loginId(loginId)
+                                                .passwordHash("")
+                                                .nickname(generateNickname(userInfo.getName()))
+                                                .build()));
     }
 
     private String generateNickname(String name) {

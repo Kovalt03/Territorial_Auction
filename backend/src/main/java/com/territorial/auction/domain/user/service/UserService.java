@@ -16,12 +16,14 @@ public class UserService {
     private final UserRepository userRepository;
 
     public User findById(Long userId) {
-        return userRepository.findById(userId)
+        return userRepository
+                .findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
     public User findByLoginId(String loginId) {
-        return userRepository.findByLoginId(loginId)
+        return userRepository
+                .findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 }
