@@ -1,5 +1,6 @@
 package com.territorial.auction.global.security.jwt;
 
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -12,20 +13,24 @@ public class RefreshTokenService {
     private final JwtProperties jwtProperties;
 
     public void save(Long userId, String refreshToken) {
-        // TODO: Redis에 session:jwt_refresh:{userId} 키로 저장 (TTL: refreshTokenExpiry)
+        redisTemplate
+                .opsForValue()
+                .set(
+                        "session:jwt_refresh:" + userId,
+                        refreshToken,
+                        Duration.ofMillis(jwtProperties.refreshTokenExpiry()));
     }
 
     public String get(Long userId) {
-        // TODO: Redis에서 조회
-        return null;
+        return redisTemplate.opsForValue().get("session:jwt_refresh:" + userId);
     }
 
     public void delete(Long userId) {
-        // TODO: Redis에서 삭제
+        redisTemplate.delete("session:jwt_refresh:" + userId);
     }
 
     public boolean isValid(Long userId, String refreshToken) {
-        // TODO: 저장된 토큰과 비교
-        return false;
+        String stored = get(userId);
+        return refreshToken.equals(stored);
     }
 }
