@@ -17,21 +17,24 @@ public class AuthController {
 
     // POST /api/auth/signup
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<SignupResponse>> signup(@RequestBody @Valid SignupRequest request) {
+    public ResponseEntity<ApiResponse<SignupResponse>> signup(
+            @RequestBody @Valid SignupRequest request) {
         // TODO
         return null;
     }
 
     // POST /api/auth/login
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<TokenResponse>> login(@RequestBody @Valid LoginRequest request) {
+    public ResponseEntity<ApiResponse<TokenResponse>> login(
+            @RequestBody @Valid LoginRequest request) {
         // TODO
         return null;
     }
 
     // POST /api/auth/refresh
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<TokenResponse>> refresh(@RequestBody @Valid RefreshRequest request) {
+    public ResponseEntity<ApiResponse<TokenResponse>> refresh(
+            @RequestBody @Valid RefreshRequest request) {
         // TODO
         return null;
     }
