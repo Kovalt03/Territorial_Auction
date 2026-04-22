@@ -84,6 +84,7 @@ public class AuthService {
     }
 
     public void logout(Long userId) {
-        // TODO: Redis에서 refreshToken 삭제
+        // Redis에서 refreshToken 삭제
+        refreshTokenService.delete(userId);
     }
 }
