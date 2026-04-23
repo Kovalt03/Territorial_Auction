@@ -40,11 +40,12 @@ public class SecurityConfig {
                 .sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
+                        // spotless:off
                         auth ->
-                                auth.requestMatchers("/api/auth/**", "/oauth2/**", "/login/**")
-                                        .permitAll()
-                                        .anyRequest()
-                                        .authenticated())
+                                auth.requestMatchers("/api/v1/auth/logout").authenticated()
+                                    .requestMatchers("/api/v1/auth/**", "/oauth2/**", "/login/**").permitAll()
+                                    .anyRequest().authenticated())
+                        // spotless:on
                 .oauth2Login(
                         oauth2 ->
                                 oauth2.userInfoEndpoint(

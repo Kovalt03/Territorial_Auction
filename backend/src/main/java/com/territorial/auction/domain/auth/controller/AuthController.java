@@ -13,6 +13,8 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,7 +59,12 @@ public class AuthController {
     // POST /api/v1/auth/logout (Authorization: Bearer {accessToken} 필요)
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
-        // TODO: SecurityContext에서 userId 추출 후 authService.logout(userId)
+        // SecurityContext에서 userId 추출
+        UserDetails userDetails =
+                (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Long userId = Long.parseLong(userDetails.getUsername());
+
+        authService.logout(userId);
         clearRefreshTokenCookie(response);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
