@@ -95,4 +95,19 @@ public class AuthService {
         // Redis에서 refreshToken 삭제
         refreshTokenService.delete(userId);
     }
+
+    public void checkNickname(String nickname) {
+        if (userRepository.existsByNickname(nickname))
+            throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
+    }
+
+    public void checkEmail(String email) {
+        if (userRepository.existsByEmail(email))
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
+    }
+
+    public void checkUsername(String username) {
+        if (userRepository.existsByUsername(username))
+            throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
+    }
 }

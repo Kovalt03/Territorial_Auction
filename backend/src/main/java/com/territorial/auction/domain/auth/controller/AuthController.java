@@ -6,14 +6,20 @@ import com.territorial.auction.global.common.ApiResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Validated
 public class AuthController {
 
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
@@ -53,6 +59,34 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
         // TODO: SecurityContext에서 userId 추출 후 authService.logout(userId)
         clearRefreshTokenCookie(response);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    // GET /api/v1/auth/check-nickname?nickname={nickname}
+    @GetMapping("/check-nickname")
+    public ResponseEntity<ApiResponse<Void>> checkNickname(
+            @RequestParam @NotBlank @Size(min = 2, max = 30) String nickname) {
+        authService.checkNickname(nickname);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    // GET GET /api/v1/auth/check-email?email={email}
+    @GetMapping("/check-email")
+    public ResponseEntity<ApiResponse<Void>> checkEmail(
+            @RequestParam @NotBlank @Email String email) {
+        authService.checkEmail(email);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    // GET /api/v1/auth/check-username?username={username}
+    @GetMapping("/check-username")
+    public ResponseEntity<ApiResponse<Void>> checkUsername(
+            @RequestParam
+                    @NotBlank
+                    @Size(min = 4, max = 50)
+                    @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "영문, 숫자만 사용 가능합니다.")
+                    String username) {
+        authService.checkUsername(username);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
