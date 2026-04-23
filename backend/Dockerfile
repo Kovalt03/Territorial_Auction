@@ -1,5 +1,5 @@
 # Build stage
-FROM eclipse-temurin:17-jdk-alpine AS builder
+FROM amazoncorretto:17-alpine AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY src src
 RUN chmod +x gradlew && ./gradlew bootJar -x test --no-daemon
 
 # Run stage
-FROM eclipse-temurin:17-jre-alpine
+FROM amazoncorretto:17-alpine
 
 WORKDIR /app
 
