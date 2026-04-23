@@ -3,13 +3,13 @@ package com.territorial.auction.domain.auth.controller;
 import com.territorial.auction.domain.auth.dto.*;
 import com.territorial.auction.domain.auth.service.AuthService;
 import com.territorial.auction.global.common.ApiResponse;
+import com.territorial.auction.global.validation.ValidNickname;
+import com.territorial.auction.global.validation.ValidUsername;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -65,7 +65,7 @@ public class AuthController {
     // GET /api/v1/auth/check-nickname?nickname={nickname}
     @GetMapping("/check-nickname")
     public ResponseEntity<ApiResponse<Void>> checkNickname(
-            @RequestParam @NotBlank @Size(min = 2, max = 30) String nickname) {
+            @RequestParam @ValidNickname String nickname) {
         authService.checkNickname(nickname);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
@@ -81,11 +81,7 @@ public class AuthController {
     // GET /api/v1/auth/check-username?username={username}
     @GetMapping("/check-username")
     public ResponseEntity<ApiResponse<Void>> checkUsername(
-            @RequestParam
-                    @NotBlank
-                    @Size(min = 4, max = 50)
-                    @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "영문, 숫자만 사용 가능합니다.")
-                    String username) {
+            @RequestParam @ValidUsername String username) {
         authService.checkUsername(username);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
