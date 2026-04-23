@@ -24,17 +24,19 @@ public class AuthService {
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
-        // TODO: 중복 검사(완) → User 저장(완) → Wallet + NotificationSetting 생성 [2/4]
         // 중복 검사
-        if (userRepository.existsByLoginId(request.loginId()))
-            throw new CustomException(ErrorCode.DUPLICATE_LOGIN_ID);
+        if (userRepository.existsByUsername(request.username()))
+            throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
+        if (userRepository.existsByEmail(request.email()))
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         if (userRepository.existsByNickname(request.nickname()))
             throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
 
         // User 저장
         User user =
                 User.builder()
-                        .loginId(request.loginId())
+                        .username(request.username())
+                        .email(request.email())
                         .passwordHash(passwordEncoder.encode(request.password()))
                         .nickname(request.nickname())
                         .build();
@@ -45,10 +47,10 @@ public class AuthService {
 
     @Transactional
     public TokenResponse login(LoginRequest request) {
-        // loginId 조회
+        // email로 조회
         User user =
                 userRepository
-                        .findByLoginId(request.loginId())
+                        .findByEmail(request.email())
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // 유저 상태 검증
@@ -61,14 +63,13 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash()))
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
 
-        // Access/Refresh 토큰 발급 -> jwtTokenProvider에게 위임
+        // Access/Refresh 토큰 발급
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
         // Redis 저장
         refreshTokenService.save(user.getId(), refreshToken);
 
-        // 응답
         return new TokenResponse(accessToken, refreshToken);
     }
 

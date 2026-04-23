@@ -45,8 +45,10 @@ class AuthServiceTest {
         @Test
         @DisplayName("정상 가입 시 SignupResponse 반환")
         void signup_success() {
-            SignupRequest request = new SignupRequest("testuser", "password1!", "닉네임");
-            given(userRepository.existsByLoginId("testuser")).willReturn(false);
+            SignupRequest request =
+                    new SignupRequest("testuser", "user@example.com", "password1!", "닉네임");
+            given(userRepository.existsByUsername("testuser")).willReturn(false);
+            given(userRepository.existsByEmail("user@example.com")).willReturn(false);
             given(userRepository.existsByNickname("닉네임")).willReturn(false);
             given(passwordEncoder.encode("password1!")).willReturn("encoded");
             given(userRepository.save(any(User.class)))
@@ -59,27 +61,44 @@ class AuthServiceTest {
 
             SignupResponse response = authService.signup(request);
 
-            assertThat(response.loginId()).isEqualTo("testuser");
+            assertThat(response.username()).isEqualTo("testuser");
             assertThat(response.nickname()).isEqualTo("닉네임");
         }
 
         @Test
-        @DisplayName("loginId 중복 시 DUPLICATE_LOGIN_ID 예외")
-        void signup_duplicateLoginId() {
-            SignupRequest request = new SignupRequest("testuser", "password1!", "닉네임");
-            given(userRepository.existsByLoginId("testuser")).willReturn(true);
+        @DisplayName("username 중복 시 DUPLICATE_USERNAME 예외")
+        void signup_duplicateUsername() {
+            SignupRequest request =
+                    new SignupRequest("testuser", "user@example.com", "password1!", "닉네임");
+            given(userRepository.existsByUsername("testuser")).willReturn(true);
 
             assertThatThrownBy(() -> authService.signup(request))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
-                    .isEqualTo(ErrorCode.DUPLICATE_LOGIN_ID);
+                    .isEqualTo(ErrorCode.DUPLICATE_USERNAME);
+        }
+
+        @Test
+        @DisplayName("email 중복 시 DUPLICATE_EMAIL 예외")
+        void signup_duplicateEmail() {
+            SignupRequest request =
+                    new SignupRequest("testuser", "user@example.com", "password1!", "닉네임");
+            given(userRepository.existsByUsername("testuser")).willReturn(false);
+            given(userRepository.existsByEmail("user@example.com")).willReturn(true);
+
+            assertThatThrownBy(() -> authService.signup(request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.DUPLICATE_EMAIL);
         }
 
         @Test
         @DisplayName("nickname 중복 시 DUPLICATE_NICKNAME 예외")
         void signup_duplicateNickname() {
-            SignupRequest request = new SignupRequest("testuser", "password1!", "닉네임");
-            given(userRepository.existsByLoginId("testuser")).willReturn(false);
+            SignupRequest request =
+                    new SignupRequest("testuser", "user@example.com", "password1!", "닉네임");
+            given(userRepository.existsByUsername("testuser")).willReturn(false);
+            given(userRepository.existsByEmail("user@example.com")).willReturn(false);
             given(userRepository.existsByNickname("닉네임")).willReturn(true);
 
             assertThatThrownBy(() -> authService.signup(request))
@@ -96,7 +115,8 @@ class AuthServiceTest {
         private User activeUser() {
             User user =
                     User.builder()
-                            .loginId("testuser")
+                            .username("testuser")
+                            .email("user@example.com")
                             .passwordHash("encoded")
                             .nickname("닉네임")
                             .build();
@@ -113,8 +133,9 @@ class AuthServiceTest {
         @Test
         @DisplayName("정상 로그인 시 TokenResponse 반환")
         void login_success() {
-            LoginRequest request = new LoginRequest("testuser", "password1!");
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(activeUser()));
+            LoginRequest request = new LoginRequest("user@example.com", "password1!");
+            given(userRepository.findByEmail("user@example.com"))
+                    .willReturn(Optional.of(activeUser()));
             given(passwordEncoder.matches("password1!", "encoded")).willReturn(true);
             given(jwtTokenProvider.createAccessToken(1L)).willReturn("access-token");
             given(jwtTokenProvider.createRefreshToken(1L)).willReturn("refresh-token");
@@ -127,10 +148,10 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("존재하지 않는 loginId 시 USER_NOT_FOUND 예외")
+        @DisplayName("존재하지 않는 email 시 USER_NOT_FOUND 예외")
         void login_userNotFound() {
-            LoginRequest request = new LoginRequest("unknown", "password1!");
-            given(userRepository.findByLoginId("unknown")).willReturn(Optional.empty());
+            LoginRequest request = new LoginRequest("unknown@example.com", "password1!");
+            given(userRepository.findByEmail("unknown@example.com")).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> authService.login(request))
                     .isInstanceOf(CustomException.class)
@@ -141,8 +162,8 @@ class AuthServiceTest {
         @Test
         @DisplayName("탈퇴 유저 로그인 시 WITHDRAWN_USER 예외")
         void login_withdrawnUser() {
-            LoginRequest request = new LoginRequest("testuser", "password1!");
-            given(userRepository.findByLoginId("testuser"))
+            LoginRequest request = new LoginRequest("user@example.com", "password1!");
+            given(userRepository.findByEmail("user@example.com"))
                     .willReturn(Optional.of(userWithStatus(UserStatus.WITHDRAWN)));
 
             assertThatThrownBy(() -> authService.login(request))
@@ -154,8 +175,8 @@ class AuthServiceTest {
         @Test
         @DisplayName("정지 유저 로그인 시 SUSPENDED_USER 예외")
         void login_suspendedUser() {
-            LoginRequest request = new LoginRequest("testuser", "password1!");
-            given(userRepository.findByLoginId("testuser"))
+            LoginRequest request = new LoginRequest("user@example.com", "password1!");
+            given(userRepository.findByEmail("user@example.com"))
                     .willReturn(Optional.of(userWithStatus(UserStatus.SUSPENDED)));
 
             assertThatThrownBy(() -> authService.login(request))
@@ -167,8 +188,9 @@ class AuthServiceTest {
         @Test
         @DisplayName("비밀번호 불일치 시 INVALID_PASSWORD 예외")
         void login_invalidPassword() {
-            LoginRequest request = new LoginRequest("testuser", "wrongPassword1!");
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(activeUser()));
+            LoginRequest request = new LoginRequest("user@example.com", "wrongPassword1!");
+            given(userRepository.findByEmail("user@example.com"))
+                    .willReturn(Optional.of(activeUser()));
             given(passwordEncoder.matches("wrongPassword1!", "encoded")).willReturn(false);
 
             assertThatThrownBy(() -> authService.login(request))

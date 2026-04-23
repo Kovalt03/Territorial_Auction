@@ -29,16 +29,18 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private User saveOrUpdate(OAuth2UserInfo userInfo, String provider) {
-        // loginId = "provider:providerId" (e.g. "google:1234567890")
-        String loginId = provider + ":" + userInfo.getId();
+        // username = "provider:providerId" (e.g. "google:1234567890")
+        String username = provider + ":" + userInfo.getId();
+        String email = userInfo.getEmail() != null ? userInfo.getEmail() : username + "@oauth";
 
         return userRepository
-                .findByLoginId(loginId)
+                .findByEmail(email)
                 .orElseGet(
                         () ->
                                 userRepository.save(
                                         User.builder()
-                                                .loginId(loginId)
+                                                .username(username)
+                                                .email(email)
                                                 .passwordHash("")
                                                 .nickname(generateNickname(userInfo.getName()))
                                                 .build()));

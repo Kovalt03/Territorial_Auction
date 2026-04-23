@@ -4,12 +4,13 @@
 
 -- users
 CREATE TABLE IF NOT EXISTS users (
-    id            BIGSERIAL    PRIMARY KEY,
-    login_id      VARCHAR(50)  NOT NULL UNIQUE,
-    password_hash TEXT         NOT NULL,
-    nickname      VARCHAR(30)  NOT NULL UNIQUE,
-    created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    valid         BOOLEAN      NOT NULL DEFAULT true
+    id            BIGSERIAL     PRIMARY KEY,
+    username      VARCHAR(50)   NOT NULL UNIQUE,
+    email         VARCHAR(100)  NOT NULL UNIQUE,
+    password_hash TEXT          NOT NULL,
+    nickname      VARCHAR(30)   NOT NULL UNIQUE,
+    created_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    status        VARCHAR(10)   NOT NULL DEFAULT 'ACTIVE'
 );
 
 -- wallets
