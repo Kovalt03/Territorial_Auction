@@ -3,46 +3,74 @@ package com.territorial.auction.domain.auth.controller;
 import com.territorial.auction.domain.auth.dto.*;
 import com.territorial.auction.domain.auth.service.AuthService;
 import com.territorial.auction.global.common.ApiResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
+    private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
+    private static final int REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 14; // 14일
+
     private final AuthService authService;
 
-    // POST /api/auth/signup
+    // POST /api/v1/auth/signup
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<SignupResponse>> signup(
             @RequestBody @Valid SignupRequest request) {
-        // TODO
-        return null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(authService.signup(request)));
     }
 
-    // POST /api/auth/login
+    // POST /api/v1/auth/login
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenResponse>> login(
-            @RequestBody @Valid LoginRequest request) {
-        // TODO
-        return null;
+            @RequestBody @Valid LoginRequest request, HttpServletResponse response) {
+        TokenPair tokenPair = authService.login(request);
+        setRefreshTokenCookie(response, tokenPair.refreshToken());
+        return ResponseEntity.ok(ApiResponse.ok(new TokenResponse(tokenPair.accessToken())));
     }
 
-    // POST /api/auth/refresh
+    // POST /api/v1/auth/refresh
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<TokenResponse>> refresh(
-            @RequestBody @Valid RefreshRequest request) {
-        // TODO
-        return null;
+            @CookieValue(name = REFRESH_TOKEN_COOKIE) String refreshToken,
+            HttpServletResponse response) {
+        TokenPair tokenPair = authService.refresh(refreshToken);
+        setRefreshTokenCookie(response, tokenPair.refreshToken());
+        return ResponseEntity.ok(ApiResponse.ok(new TokenResponse(tokenPair.accessToken())));
     }
 
-    // POST /api/auth/logout  (Authorization: Bearer {accessToken} 필요)
+    // POST /api/v1/auth/logout (Authorization: Bearer {accessToken} 필요)
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout() {
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
         // TODO: SecurityContext에서 userId 추출 후 authService.logout(userId)
-        return null;
+        clearRefreshTokenCookie(response);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, refreshToken);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/api/v1/auth");
+        cookie.setMaxAge(REFRESH_TOKEN_MAX_AGE);
+        response.addCookie(cookie);
+    }
+
+    private void clearRefreshTokenCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/api/v1/auth");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
     }
 }
