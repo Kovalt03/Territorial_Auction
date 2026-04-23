@@ -9,7 +9,7 @@ import static org.mockito.BDDMockito.then;
 import com.territorial.auction.domain.auth.dto.LoginRequest;
 import com.territorial.auction.domain.auth.dto.SignupRequest;
 import com.territorial.auction.domain.auth.dto.SignupResponse;
-import com.territorial.auction.domain.auth.dto.TokenResponse;
+import com.territorial.auction.domain.auth.dto.TokenPair;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.UserStatus;
 import com.territorial.auction.domain.user.repository.UserRepository;
@@ -131,7 +131,7 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("정상 로그인 시 TokenResponse 반환")
+        @DisplayName("정상 로그인 시 TokenPair 반환")
         void login_success() {
             LoginRequest request = new LoginRequest("user@example.com", "password1!");
             given(userRepository.findByEmail("user@example.com"))
@@ -140,10 +140,10 @@ class AuthServiceTest {
             given(jwtTokenProvider.createAccessToken(1L)).willReturn("access-token");
             given(jwtTokenProvider.createRefreshToken(1L)).willReturn("refresh-token");
 
-            TokenResponse response = authService.login(request);
+            TokenPair tokenPair = authService.login(request);
 
-            assertThat(response.accessToken()).isEqualTo("access-token");
-            assertThat(response.refreshToken()).isEqualTo("refresh-token");
+            assertThat(tokenPair.accessToken()).isEqualTo("access-token");
+            assertThat(tokenPair.refreshToken()).isEqualTo("refresh-token");
             then(refreshTokenService).should().save(1L, "refresh-token");
         }
 

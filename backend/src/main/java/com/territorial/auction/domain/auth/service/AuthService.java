@@ -46,7 +46,7 @@ public class AuthService {
     }
 
     @Transactional
-    public TokenResponse login(LoginRequest request) {
+    public TokenPair login(LoginRequest request) {
         // email로 조회
         User user =
                 userRepository
@@ -70,25 +70,25 @@ public class AuthService {
         // Redis 저장
         refreshTokenService.save(user.getId(), refreshToken);
 
-        return new TokenResponse(accessToken, refreshToken);
+        return new TokenPair(accessToken, refreshToken);
     }
 
-    public TokenResponse refresh(RefreshRequest request) {
+    public TokenPair refresh(String refreshToken) {
         // refreshToken 파싱
-        Long userId = jwtTokenProvider.getUserId(request.refreshToken());
+        Long userId = jwtTokenProvider.getUserId(refreshToken);
 
         // Redis 검증
-        if (!refreshTokenService.isValid(userId, request.refreshToken()))
+        if (!refreshTokenService.isValid(userId, refreshToken))
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
 
         // 새 토큰 발급
         String accessToken = jwtTokenProvider.createAccessToken(userId);
-        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(userId);
 
         // Redis 갱신
-        refreshTokenService.save(userId, refreshToken);
+        refreshTokenService.save(userId, newRefreshToken);
 
-        return new TokenResponse(accessToken, refreshToken);
+        return new TokenPair(accessToken, newRefreshToken);
     }
 
     public void logout(Long userId) {
