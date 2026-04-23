@@ -21,9 +21,9 @@ public class UserService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
-    public User findByLoginId(String loginId) {
+    public User findByEmail(String email) {
         return userRepository
-                .findByLoginId(loginId)
+                .findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 }

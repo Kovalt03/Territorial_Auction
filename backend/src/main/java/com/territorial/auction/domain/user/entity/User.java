@@ -18,7 +18,10 @@ public class User {
     private Long id;
 
     @Column(nullable = false, unique = true, length = 50)
-    private String loginId;
+    private String username;
+
+    @Column(nullable = false, unique = true, length = 100)
+    private String email;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String passwordHash;
@@ -30,12 +33,14 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
-    private boolean valid = true;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Builder
-    public User(String loginId, String passwordHash, String nickname) {
-        this.loginId = loginId;
+    public User(String username, String email, String passwordHash, String nickname) {
+        this.username = username;
+        this.email = email;
         this.passwordHash = passwordHash;
         this.nickname = nickname;
     }
