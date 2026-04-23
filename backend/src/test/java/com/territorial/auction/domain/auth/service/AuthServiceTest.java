@@ -212,4 +212,76 @@ class AuthServiceTest {
             then(refreshTokenService).should().delete(1L);
         }
     }
+
+    @Nested
+    @DisplayName("checkNickname()")
+    class CheckNickname {
+
+        @Test
+        @DisplayName("사용 가능한 닉네임이면 예외 없음")
+        void checkNickname_available() {
+            given(userRepository.existsByNickname("닉네임")).willReturn(false);
+
+            authService.checkNickname("닉네임");
+        }
+
+        @Test
+        @DisplayName("중복 닉네임이면 DUPLICATE_NICKNAME 예외")
+        void checkNickname_duplicate() {
+            given(userRepository.existsByNickname("닉네임")).willReturn(true);
+
+            assertThatThrownBy(() -> authService.checkNickname("닉네임"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.DUPLICATE_NICKNAME);
+        }
+    }
+
+    @Nested
+    @DisplayName("checkEmail()")
+    class CheckEmail {
+
+        @Test
+        @DisplayName("사용 가능한 이메일이면 예외 없음")
+        void checkEmail_available() {
+            given(userRepository.existsByEmail("user@example.com")).willReturn(false);
+
+            authService.checkEmail("user@example.com");
+        }
+
+        @Test
+        @DisplayName("중복 이메일이면 DUPLICATE_EMAIL 예외")
+        void checkEmail_duplicate() {
+            given(userRepository.existsByEmail("user@example.com")).willReturn(true);
+
+            assertThatThrownBy(() -> authService.checkEmail("user@example.com"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.DUPLICATE_EMAIL);
+        }
+    }
+
+    @Nested
+    @DisplayName("checkUsername()")
+    class CheckUsername {
+
+        @Test
+        @DisplayName("사용 가능한 유저네임이면 예외 없음")
+        void checkUsername_available() {
+            given(userRepository.existsByUsername("testuser")).willReturn(false);
+
+            authService.checkUsername("testuser");
+        }
+
+        @Test
+        @DisplayName("중복 유저네임이면 DUPLICATE_USERNAME 예외")
+        void checkUsername_duplicate() {
+            given(userRepository.existsByUsername("testuser")).willReturn(true);
+
+            assertThatThrownBy(() -> authService.checkUsername("testuser"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.DUPLICATE_USERNAME);
+        }
+    }
 }
