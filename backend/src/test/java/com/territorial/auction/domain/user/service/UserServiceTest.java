@@ -10,15 +10,19 @@ import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.entity.UserSeasonPass;
+import com.territorial.auction.domain.season.entity.UserTrophy;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
+import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.user.dto.MyProfileResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingUpdateRequest;
 import com.territorial.auction.domain.user.dto.UserProfileResponse;
 import com.territorial.auction.domain.user.entity.NotificationSetting;
 import com.territorial.auction.domain.user.entity.User;
+import com.territorial.auction.domain.user.entity.UserProfile;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.NotificationSettingRepository;
+import com.territorial.auction.domain.user.repository.UserProfileRepository;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
@@ -45,6 +49,8 @@ class UserServiceTest {
     @Mock private UserSeasonPassRepository userSeasonPassRepository;
     @Mock private TerritoryRepository territoryRepository;
     @Mock private NotificationSettingRepository notificationSettingRepository;
+    @Mock private UserProfileRepository userProfileRepository;
+    @Mock private UserTrophyRepository userTrophyRepository;
 
     // ─── 공통 픽스처 ─────────────────────────────────────────────────────────
 
@@ -73,6 +79,18 @@ class UserServiceTest {
         HomeIsland island = HomeIsland.builder().user(user).build();
         ReflectionTestUtils.setField(island, "id", 1L);
         return island;
+    }
+
+    private UserProfile sampleUserProfile(User user) {
+        UserProfile profile = UserProfile.builder().user(user).build();
+        ReflectionTestUtils.setField(profile, "profileImageUrl", "https://cdn.example.com/1.png");
+        return profile;
+    }
+
+    private UserTrophy sampleUserTrophy(User user) {
+        UserTrophy trophy = UserTrophy.builder().user(user).season(null).build();
+        ReflectionTestUtils.setField(trophy, "score", 3850);
+        return trophy;
     }
 
     private NotificationSetting sampleNotificationSetting(User user) {
@@ -179,8 +197,76 @@ class UserServiceTest {
 
             assertThat(response.userId()).isEqualTo(1L);
             assertThat(response.nickname()).isEqualTo("픽셀전사");
+            assertThat(response.profileImageUrl()).isNull();
             assertThat(response.territoryCount()).isEqualTo(5);
             assertThat(response.joinedAt()).isEqualTo(LocalDateTime.of(2026, 1, 10, 0, 0));
+        }
+
+        @Test
+        @DisplayName("profileImageUrl이 user_profiles에서 반환")
+        void getUserProfile_profileImageReturned() {
+            User user = sampleUser();
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(userProfileRepository.findById(1L))
+                    .willReturn(Optional.of(sampleUserProfile(user)));
+            given(territoryRepository.countByOwnerId(1L)).willReturn(0L);
+
+            UserProfileResponse response = userService.getUserProfile(1L);
+
+            assertThat(response.profileImageUrl()).isEqualTo("https://cdn.example.com/1.png");
+        }
+
+        @Test
+        @DisplayName("user_profiles 없으면 profileImageUrl = null")
+        void getUserProfile_noProfileImage_returnsNull() {
+            User user = sampleUser();
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(territoryRepository.countByOwnerId(1L)).willReturn(0L);
+
+            UserProfileResponse response = userService.getUserProfile(1L);
+
+            assertThat(response.profileImageUrl()).isNull();
+        }
+
+        @Test
+        @DisplayName("trophyPoints가 user_trophies.score에서 반환")
+        void getUserProfile_trophyPointsReturned() {
+            User user = sampleUser();
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(userTrophyRepository.findById(1L))
+                    .willReturn(Optional.of(sampleUserTrophy(user)));
+            given(territoryRepository.countByOwnerId(1L)).willReturn(0L);
+
+            UserProfileResponse response = userService.getUserProfile(1L);
+
+            assertThat(response.trophyPoints()).isEqualTo(3850);
+        }
+
+        @Test
+        @DisplayName("트로피 기록 없으면 trophyPoints = 0")
+        void getUserProfile_noTrophy_returns0() {
+            User user = sampleUser();
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(territoryRepository.countByOwnerId(1L)).willReturn(0L);
+
+            UserProfileResponse response = userService.getUserProfile(1L);
+
+            assertThat(response.trophyPoints()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("level이 home_islands.level에서 반환")
+        void getUserProfile_levelReturned() {
+            User user = sampleUser();
+            HomeIsland island = HomeIsland.builder().user(user).build();
+            ReflectionTestUtils.setField(island, "level", 5);
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(territoryRepository.countByOwnerId(1L)).willReturn(0L);
+
+            UserProfileResponse response = userService.getUserProfile(1L);
+
+            assertThat(response.level()).isEqualTo(5);
         }
 
         @Test
