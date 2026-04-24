@@ -9,6 +9,7 @@ import static org.mockito.BDDMockito.then;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.season.entity.SeasonPass;
 import com.territorial.auction.domain.season.entity.UserSeasonPass;
 import com.territorial.auction.domain.season.entity.UserTrophy;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
@@ -93,6 +94,15 @@ class UserServiceTest {
         return trophy;
     }
 
+    private SeasonPass sampleSeasonPass() {
+        return SeasonPass.builder()
+                .name("기본 시즌 패스")
+                .costAp(100)
+                .islandBonusPct(10)
+                .extraBuilders(1)
+                .build();
+    }
+
     private NotificationSetting sampleNotificationSetting(User user) {
         NotificationSetting setting = NotificationSetting.builder().user(user).build();
         ReflectionTestUtils.setField(setting, "updatedAt", LocalDateTime.of(2026, 4, 9, 10, 0));
@@ -136,7 +146,7 @@ class UserServiceTest {
             UserSeasonPass activePass =
                     UserSeasonPass.builder()
                             .user(user)
-                            .seasonPass(null) // SeasonPass 엔티티는 이 테스트에서 불필요
+                            .seasonPass(sampleSeasonPass())
                             .startedAt(LocalDateTime.now().minusDays(1))
                             .expiresAt(LocalDateTime.now().plusDays(30))
                             .build();
