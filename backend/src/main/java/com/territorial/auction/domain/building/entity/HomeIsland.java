@@ -23,6 +23,9 @@ public class HomeIsland {
     private User user;
 
     @Column(nullable = false)
+    private Integer level = 1;
+
+    @Column(nullable = false)
     private Integer gridSize = 10;
 
     @CreatedDate
@@ -30,8 +33,9 @@ public class HomeIsland {
     private LocalDateTime createdAt;
 
     @Builder
-    public HomeIsland(User user, Integer gridSize) {
+    public HomeIsland(User user, Integer level, Integer gridSize) {
         this.user = user;
+        this.level = level != null ? level : 1;
         this.gridSize = gridSize != null ? gridSize : 10;
     }
 }
