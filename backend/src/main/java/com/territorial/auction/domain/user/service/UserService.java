@@ -1,14 +1,18 @@
 package com.territorial.auction.domain.user.service;
 
+import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.season.entity.UserTrophy;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
+import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.user.dto.MyProfileResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingUpdateRequest;
 import com.territorial.auction.domain.user.dto.UserProfileResponse;
 import com.territorial.auction.domain.user.entity.User;
-import com.territorial.auction.domain.user.repository.NotificationSettingRepository;
+import com.territorial.auction.domain.user.entity.UserProfile;
+import com.territorial.auction.domain.user.repository.UserProfileRepository;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
@@ -27,7 +31,8 @@ public class UserService {
     private final HomeIslandRepository homeIslandRepository;
     private final UserSeasonPassRepository userSeasonPassRepository;
     private final TerritoryRepository territoryRepository;
-    private final NotificationSettingRepository notificationSettingRepository;
+    private final UserProfileRepository userProfileRepository;
+    private final UserTrophyRepository userTrophyRepository;
 
     public User findById(Long userId) {
         return userRepository
@@ -46,7 +51,33 @@ public class UserService {
     }
 
     public UserProfileResponse getUserProfile(Long userId) {
-        throw new UnsupportedOperationException("not implemented");
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        String profileImageUrl =
+                userProfileRepository
+                        .findById(userId)
+                        .map(UserProfile::getProfileImageUrl)
+                        .orElse(null);
+
+        int level = homeIslandRepository.findByUserId(userId).map(HomeIsland::getLevel).orElse(1);
+
+        int trophyPoints =
+                userTrophyRepository.findById(userId).map(UserTrophy::getScore).orElse(0);
+
+        int territoryCount = (int) territoryRepository.countByOwnerId(userId);
+
+        return new UserProfileResponse(
+                user.getId(),
+                user.getNickname(),
+                profileImageUrl,
+                level,
+                trophyPoints,
+                territoryCount,
+                null,
+                user.getCreatedAt());
     }
 
     public NotificationSettingResponse getNotificationSetting(Long userId) {
