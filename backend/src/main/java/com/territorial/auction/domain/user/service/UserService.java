@@ -10,8 +10,10 @@ import com.territorial.auction.domain.user.dto.MyProfileResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingUpdateRequest;
 import com.territorial.auction.domain.user.dto.UserProfileResponse;
+import com.territorial.auction.domain.user.entity.NotificationSetting;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.UserProfile;
+import com.territorial.auction.domain.user.repository.NotificationSettingRepository;
 import com.territorial.auction.domain.user.repository.UserProfileRepository;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
@@ -33,6 +35,7 @@ public class UserService {
     private final TerritoryRepository territoryRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserTrophyRepository userTrophyRepository;
+    private final NotificationSettingRepository notificationSettingRepository;
 
     public User findById(Long userId) {
         return userRepository
@@ -81,12 +84,33 @@ public class UserService {
     }
 
     public NotificationSettingResponse getNotificationSetting(Long userId) {
-        throw new UnsupportedOperationException("not implemented");
+        NotificationSetting setting =
+                notificationSettingRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
+        return new NotificationSettingResponse(
+                setting.isOutbidEnabled(),
+                setting.isAuctionStartEnabled(),
+                setting.isMarketingEnabled(),
+                setting.getUpdatedAt());
     }
 
     @Transactional
     public NotificationSettingResponse updateNotificationSetting(
             Long userId, NotificationSettingUpdateRequest request) {
-        throw new UnsupportedOperationException("not implemented");
+        NotificationSetting setting =
+                notificationSettingRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
+        setting.update(
+                request.getIsOutbidEnabled(),
+                request.getIsAuctionStartEnabled(),
+                request.getIsMarketingEnabled());
+        notificationSettingRepository.save(setting);
+        return new NotificationSettingResponse(
+                setting.isOutbidEnabled(),
+                setting.isAuctionStartEnabled(),
+                setting.isMarketingEnabled(),
+                setting.getUpdatedAt());
     }
 }

@@ -43,5 +43,6 @@ public class NotificationSetting {
         if (isOutbidEnabled != null) this.isOutbidEnabled = isOutbidEnabled;
         if (isAuctionStartEnabled != null) this.isAuctionStartEnabled = isAuctionStartEnabled;
         if (isMarketingEnabled != null) this.isMarketingEnabled = isMarketingEnabled;
+        this.updatedAt = LocalDateTime.now();
     }
 }
