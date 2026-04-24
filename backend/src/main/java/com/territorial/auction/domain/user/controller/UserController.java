@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.user.controller;
 
+import com.territorial.auction.domain.user.dto.MyProfileResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingUpdateRequest;
 import com.territorial.auction.domain.user.dto.UserProfileResponse;
@@ -21,6 +22,13 @@ public class UserController {
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getUser(@PathVariable Long userId) {
         return ResponseEntity.ok(ApiResponse.ok(userService.getUserProfile(userId)));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<MyProfileResponse>> getMe(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        return ResponseEntity.ok(ApiResponse.ok(userService.getMyProfile(userId)));
     }
 
     @GetMapping("/me/settings")

@@ -12,7 +12,7 @@ public record MyProfileResponse(
 
     public record WalletInfo(int availableGP, int availableAP, int lockedAP) {}
 
-    public record IslandInfo(Long islandId, int productionRate, int builderCount) {}
+    public record IslandInfo(Long islandId, int level, int productionRate, int builderCount) {}
 
     public record SeasonPassInfo(boolean isActive, LocalDateTime expiresAt) {}
 }
