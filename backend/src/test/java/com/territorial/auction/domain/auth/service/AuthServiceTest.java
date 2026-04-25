@@ -10,9 +10,17 @@ import com.territorial.auction.domain.auth.dto.LoginRequest;
 import com.territorial.auction.domain.auth.dto.SignupRequest;
 import com.territorial.auction.domain.auth.dto.SignupResponse;
 import com.territorial.auction.domain.auth.dto.TokenPair;
+import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.user.entity.NotificationSetting;
 import com.territorial.auction.domain.user.entity.User;
+import com.territorial.auction.domain.user.entity.UserProfile;
 import com.territorial.auction.domain.user.entity.UserStatus;
+import com.territorial.auction.domain.user.entity.Wallet;
+import com.territorial.auction.domain.user.repository.NotificationSettingRepository;
+import com.territorial.auction.domain.user.repository.UserProfileRepository;
 import com.territorial.auction.domain.user.repository.UserRepository;
+import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import com.territorial.auction.global.security.jwt.JwtTokenProvider;
@@ -34,6 +42,10 @@ class AuthServiceTest {
     @InjectMocks private AuthService authService;
 
     @Mock private UserRepository userRepository;
+    @Mock private WalletRepository walletRepository;
+    @Mock private NotificationSettingRepository notificationSettingRepository;
+    @Mock private HomeIslandRepository homeIslandRepository;
+    @Mock private UserProfileRepository userProfileRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private RefreshTokenService refreshTokenService;
@@ -63,6 +75,31 @@ class AuthServiceTest {
 
             assertThat(response.username()).isEqualTo("testuser");
             assertThat(response.nickname()).isEqualTo("닉네임");
+        }
+
+        @Test
+        @DisplayName("가입 성공 시 Wallet/NotificationSetting/HomeIsland/UserProfile 자동 생성")
+        void signup_createsRelatedRecords() {
+            SignupRequest request =
+                    new SignupRequest("testuser", "user@example.com", "password1!", "닉네임");
+            given(userRepository.existsByUsername("testuser")).willReturn(false);
+            given(userRepository.existsByEmail("user@example.com")).willReturn(false);
+            given(userRepository.existsByNickname("닉네임")).willReturn(false);
+            given(passwordEncoder.encode("password1!")).willReturn("encoded");
+            given(userRepository.save(any(User.class)))
+                    .willAnswer(
+                            inv -> {
+                                User user = inv.getArgument(0);
+                                ReflectionTestUtils.setField(user, "id", 1L);
+                                return user;
+                            });
+
+            authService.signup(request);
+
+            then(walletRepository).should().save(any(Wallet.class));
+            then(notificationSettingRepository).should().save(any(NotificationSetting.class));
+            then(homeIslandRepository).should().save(any(HomeIsland.class));
+            then(userProfileRepository).should().save(any(UserProfile.class));
         }
 
         @Test
