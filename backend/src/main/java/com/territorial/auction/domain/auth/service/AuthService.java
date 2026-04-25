@@ -1,9 +1,13 @@
 package com.territorial.auction.domain.auth.service;
 
 import com.territorial.auction.domain.auth.dto.*;
-import com.territorial.auction.domain.user.entity.User;
-import com.territorial.auction.domain.user.entity.UserStatus;
+import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.user.entity.*;
+import com.territorial.auction.domain.user.repository.NotificationSettingRepository;
+import com.territorial.auction.domain.user.repository.UserProfileRepository;
 import com.territorial.auction.domain.user.repository.UserRepository;
+import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import com.territorial.auction.global.security.jwt.JwtTokenProvider;
@@ -21,6 +25,10 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
+    private final WalletRepository walletRepository;
+    private final NotificationSettingRepository notificationSettingRepository;
+    private final HomeIslandRepository homeIslandRepository;
+    private final UserProfileRepository userProfileRepository;
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
@@ -41,6 +49,22 @@ public class AuthService {
                         .nickname(request.nickname())
                         .build();
         userRepository.save(user);
+
+        // Wallet 생성
+        Wallet wallet = Wallet.builder().user(user).build();
+        walletRepository.save(wallet);
+
+        // Notification 생성
+        NotificationSetting notificationSetting = NotificationSetting.builder().user(user).build();
+        notificationSettingRepository.save(notificationSetting);
+
+        // HomeIsland 생성
+        HomeIsland homeIsland = HomeIsland.builder().user(user).build();
+        homeIslandRepository.save(homeIsland);
+
+        // UserProfile 생성
+        UserProfile userProfile = UserProfile.builder().user(user).build();
+        userProfileRepository.save(userProfile);
 
         return SignupResponse.from(user);
     }
