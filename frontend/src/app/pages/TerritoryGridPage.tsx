@@ -13,14 +13,16 @@ interface Cell {
   zone?: 1 | 2 | 3;
 }
 
+interface InventoryItem {
+  type: BuildingType;
+  level: number;
+  hp: number;
+  maxHp: number;
+}
+
 const buildingColors: Record<BuildingType, string> = {
-  castle: '#ffd700',
-  workshop: '#00ff88',
-  barracks: '#8b50ff',
-  storage: '#00f5ff',
-  wall: '#e0e8ff',
-  tower: '#ff8c00',
-  empty: '#1a1f35',
+  castle: '#ffd700', workshop: '#00ff88', barracks: '#8b50ff',
+  storage: '#00f5ff', wall: '#e0e8ff', tower: '#ff8c00', empty: '#1a1f35',
 };
 
 const buildingLabels: Record<BuildingType, string> = {
@@ -28,8 +30,12 @@ const buildingLabels: Record<BuildingType, string> = {
   wall: '방벽', tower: '방어탑', empty: '',
 };
 
+const buildingNames: Record<BuildingType, string> = {
+  castle: '성 (Castle)', workshop: '생산소 (Workshop)', barracks: '병영 (Barracks)',
+  storage: '저장소 (Storage)', wall: '방벽 (Wall)', tower: '방어탑 (Tower)', empty: '빈 공간',
+};
+
 const generateGrid = (): Cell[][] => {
-  const grid: Cell[][] = [];
   const pattern: BuildingType[][] = [
     ['empty','empty','empty','empty','empty','empty','empty','empty','empty','empty'],
     ['empty','empty','empty','empty','empty','empty','empty','empty','empty','empty'],
@@ -42,16 +48,14 @@ const generateGrid = (): Cell[][] => {
     ['empty','empty','empty','empty','empty','empty','empty','empty','empty','empty'],
     ['empty','empty','empty','empty','empty','empty','empty','empty','empty','empty'],
   ];
-  for (let y = 0; y < 10; y++) {
-    grid[y] = [];
-    for (let x = 0; x < 10; x++) {
+  return Array.from({ length: 10 }, (_, y) =>
+    Array.from({ length: 10 }, (_, x) => {
       const t = pattern[y][x];
       const hp = t === 'castle' ? [420, 600] : t === 'barracks' ? [80, 100] : t === 'workshop' ? [180, 200] : t === 'wall' ? [320, 400] : t === 'tower' ? [150, 200] : [0, 0];
       const zone: 1 | 2 | 3 = (x >= 3 && x <= 6 && y >= 3 && y <= 6) ? 1 : (x >= 2 && x <= 7 && y >= 2 && y <= 7) ? 2 : 3;
-      grid[y][x] = { type: t, level: t !== 'empty' ? (t === 'castle' ? 3 : t === 'workshop' ? 2 : 1) : undefined, hp: hp[0], maxHp: hp[1], zone };
-    }
-  }
-  return grid;
+      return { type: t, level: t !== 'empty' ? (t === 'castle' ? 3 : t === 'workshop' ? 2 : 1) : undefined, hp: hp[0], maxHp: hp[1], zone };
+    })
+  );
 };
 
 const GRID_DATA = generateGrid();
@@ -59,30 +63,135 @@ const GRID_DATA = generateGrid();
 export function TerritoryGridPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { territories, ap, gp } = useApp();
+  const { territories, ap, gp, useGP } = useApp();
   const territory = territories.find(t => t.id === id) || territories[0];
+
+  const [grid, setGrid] = useState(GRID_DATA);
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
+
+  // Build modal
   const [showBuild, setShowBuild] = useState(false);
-  const [grid] = useState(GRID_DATA);
+  const [selectedBuilding, setSelectedBuilding] = useState<BuildingType | null>(null);
+  const [buildError, setBuildError] = useState('');
 
-  const selectedCellData = selectedCell ? grid[selectedCell.y][selectedCell.x] : null;
+  // Building action panel (for occupied cells)
+  const [showBuildingAction, setShowBuildingAction] = useState(false);
 
+  // Move mode
+  const [moveMode, setMoveMode] = useState(false);
+  const [moveSourceCell, setMoveSourceCell] = useState<{ x: number; y: number } | null>(null);
+
+  // Inventory
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [showInventory, setShowInventory] = useState(false);
+  const [deployFromInventoryIdx, setDeployFromInventoryIdx] = useState<number | null>(null);
+
+  const selectedCellData = selectedCell ? grid[selectedCell.y]?.[selectedCell.x] : null;
   const zoneColor = { 1: '#ff000020', 2: '#ffd70010', 3: '#00f5ff08' };
   const zoneBorder = { 1: '#ff0000', 2: '#ffd700', 3: '#00f5ff' };
 
-  const buildings = [
-    { type: 'castle' as BuildingType, count: 1, level: 3, maxHp: 600, hp: 420, color: '#ffd700' },
-    { type: 'workshop' as BuildingType, count: 2, level: 2, maxHp: 200, hp: 180, color: '#00ff88' },
-    { type: 'barracks' as BuildingType, count: 1, level: 1, maxHp: 100, hp: 80, color: '#8b50ff' },
-    { type: 'wall' as BuildingType, count: 4, level: 1, maxHp: 400, hp: 320, color: '#e0e8ff' },
-    { type: 'tower' as BuildingType, count: 2, level: 2, maxHp: 200, hp: 150, color: '#ff8c00' },
-  ];
+  const buildingCosts: Partial<Record<BuildingType, number>> = {
+    workshop: 500, barracks: 800, storage: 300, wall: 100, tower: 400,
+  };
+
+  const activeBuildingStats = (['castle', 'workshop', 'barracks', 'storage', 'wall', 'tower'] as BuildingType[])
+    .map(type => {
+      const cells = grid.flat().filter(c => c.type === type);
+      if (cells.length === 0) return null;
+      const hp = cells.reduce((s, c) => s + (c.hp ?? 0), 0);
+      const maxHp = cells.reduce((s, c) => s + (c.maxHp ?? 0), 0);
+      const level = Math.max(...cells.map(c => c.level ?? 1));
+      return { type, color: buildingColors[type], count: cells.length, hp, maxHp, level };
+    })
+    .filter(Boolean) as { type: BuildingType; color: string; count: number; hp: number; maxHp: number; level: number }[];
+
+  const cancelModes = () => {
+    setMoveMode(false);
+    setMoveSourceCell(null);
+    setDeployFromInventoryIdx(null);
+  };
+
+  const handleCellClick = (x: number, y: number, cell: Cell) => {
+    if (moveMode && moveSourceCell) {
+      if (cell.type === 'empty') {
+        const movingType = grid[moveSourceCell.y][moveSourceCell.x].type;
+        const destZone = grid[y][x].zone;
+        if (movingType === 'castle' && destZone !== 1) return;
+        setGrid(prev => {
+          const next = prev.map(row => row.map(c => ({ ...c })));
+          next[y][x] = { ...next[moveSourceCell.y][moveSourceCell.x], zone: destZone };
+          next[moveSourceCell.y][moveSourceCell.x] = { type: 'empty', zone: next[moveSourceCell.y][moveSourceCell.x].zone };
+          return next;
+        });
+        cancelModes();
+      }
+      return;
+    }
+    if (deployFromInventoryIdx !== null) {
+      if (cell.type === 'empty') {
+        const item = inventory[deployFromInventoryIdx];
+        const zone = grid[y][x].zone;
+        if (item.type === 'castle' && zone !== 1) return;
+        setGrid(prev => {
+          const next = prev.map(row => row.map(c => ({ ...c })));
+          next[y][x] = { type: item.type, level: item.level, hp: item.hp, maxHp: item.maxHp, zone };
+          return next;
+        });
+        setInventory(prev => prev.filter((_, i) => i !== deployFromInventoryIdx));
+        setDeployFromInventoryIdx(null);
+      }
+      return;
+    }
+    setSelectedCell({ x, y });
+    if (cell.type === 'empty') {
+      setShowBuild(true);
+    } else {
+      setShowBuildingAction(true);
+    }
+  };
+
+  const handleBuild = () => {
+    setBuildError('');
+    if (!selectedBuilding) { setBuildError('건물을 선택해주세요.'); return; }
+    if (!selectedCell) { setBuildError('그리드에서 빈 셀을 선택해주세요.'); return; }
+    const cost = buildingCosts[selectedBuilding] ?? 0;
+    if (!useGP(cost)) { setBuildError(`GP가 부족합니다. (필요: ${cost} GP)`); return; }
+    const maxHpMap: Partial<Record<BuildingType, number>> = { workshop: 200, barracks: 100, storage: 150, wall: 400, tower: 200 };
+    const maxHp = maxHpMap[selectedBuilding] ?? 100;
+    setGrid(prev => {
+      const next = prev.map(row => row.map(c => ({ ...c })));
+      next[selectedCell.y][selectedCell.x] = { type: selectedBuilding, level: 1, hp: maxHp, maxHp, zone: selectedCellData?.zone };
+      return next;
+    });
+    setSelectedBuilding(null);
+    setShowBuild(false);
+  };
+
+  const handleStartMove = () => {
+    if (!selectedCell) return;
+    setMoveSourceCell(selectedCell);
+    setMoveMode(true);
+    setShowBuildingAction(false);
+  };
+
+  const handleStoreBuilding = () => {
+    if (!selectedCell) return;
+    const cell = grid[selectedCell.y][selectedCell.x];
+    if (cell.type === 'castle') return;
+    setInventory(prev => [...prev, { type: cell.type, level: cell.level ?? 1, hp: cell.hp ?? 0, maxHp: cell.maxHp ?? 0 }]);
+    setGrid(prev => {
+      const next = prev.map(row => row.map(c => ({ ...c })));
+      next[selectedCell.y][selectedCell.x] = { type: 'empty', zone: next[selectedCell.y][selectedCell.x].zone };
+      return next;
+    });
+    setShowBuildingAction(false);
+  };
 
   return (
     <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
       <GNB />
 
-      <div className="bg-[#1a1f35] border-b border-[#354064] px-5 py-3 flex items-center gap-4">
+      <div className="bg-[#1a1f35] border-b border-[#354064] px-5 py-3 flex items-center gap-4 flex-shrink-0">
         <div className="flex items-center gap-3 flex-1">
           <span className="text-[#e0e8ff] font-bold" style={{ fontSize: 18 }}>
             영토 ({territory?.x}, {territory?.y}) · {territory?.name}
@@ -101,22 +210,57 @@ export function TerritoryGridPage() {
         <button onClick={() => navigate('/app/map')} className="text-[#7788a5] hover:text-[#e0e8ff] text-xl">✕</button>
       </div>
 
+      {/* Mode indicator banners */}
+      {moveMode && (
+        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#1a1200', borderBottom: '1px solid #ffd70060' }}>
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: 14 }}>🔄</span>
+            <span className="text-[#ffd700] font-semibold" style={{ fontSize: 13 }}>
+              이동 모드 — 이동할 빈 셀을 클릭하세요
+              {moveSourceCell && <span className="text-[#7788a5] ml-2" style={{ fontSize: 11 }}>출발: ({moveSourceCell.x}, {moveSourceCell.y})</span>}
+            </span>
+          </div>
+          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border transition-colors" style={{ fontSize: 12, color: '#ffd700', borderColor: '#ffd70060' }}>취소</button>
+        </div>
+      )}
+      {deployFromInventoryIdx !== null && inventory[deployFromInventoryIdx] && (
+        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#001a10', borderBottom: '1px solid #00ff8860' }}>
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: 14 }}>📦</span>
+            <span className="text-[#00ff88] font-semibold" style={{ fontSize: 13 }}>
+              배치 모드 — 배치할 빈 셀을 클릭하세요
+              <span className="text-[#7788a5] ml-2" style={{ fontSize: 11 }}>({buildingNames[inventory[deployFromInventoryIdx].type]})</span>
+            </span>
+          </div>
+          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border transition-colors" style={{ fontSize: 12, color: '#00ff88', borderColor: '#00ff8860' }}>취소</button>
+        </div>
+      )}
+
       <div className="flex flex-1 overflow-hidden">
+        {/* Grid */}
         <div className="flex-1 p-5 overflow-auto">
           <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(10, 1fr)', maxWidth: 680, margin: '0 auto' }}>
             {grid.map((row, y) =>
               row.map((cell, x) => {
                 const isSelected = selectedCell?.x === x && selectedCell?.y === y;
-                const bg = cell.type !== 'empty' ? buildingColors[cell.type] + '60' : '#0d1220';
+                const isMoveSource = moveSourceCell?.x === x && moveSourceCell?.y === y;
+                const isActionTarget = (moveMode || deployFromInventoryIdx !== null) && cell.type === 'empty';
+                const bg = isMoveSource ? buildingColors[cell.type] + '80' : cell.type !== 'empty' ? buildingColors[cell.type] + '60' : '#0d1220';
                 return (
                   <div
                     key={`${x}-${y}`}
-                    onClick={() => { setSelectedCell({ x, y }); if (cell.type === 'empty') setShowBuild(true); }}
+                    onClick={() => handleCellClick(x, y, cell)}
                     className="relative aspect-square rounded cursor-pointer flex items-center justify-center transition-all hover:opacity-90"
                     style={{
                       background: bg,
-                      border: isSelected ? '2px solid #00f5ff' : `1px solid ${cell.type !== 'empty' ? buildingColors[cell.type] + '80' : '#1a2a3a'}`,
-                      boxShadow: isSelected ? '0 0 8px #00f5ff' : undefined,
+                      border: isMoveSource
+                        ? '2px solid #ffd700'
+                        : isSelected
+                          ? '2px solid #00f5ff'
+                          : isActionTarget
+                            ? '1px dashed #00ff8880'
+                            : `1px solid ${cell.type !== 'empty' ? buildingColors[cell.type] + '80' : '#1a2a3a'}`,
+                      boxShadow: isMoveSource ? '0 0 8px #ffd700' : isSelected ? '0 0 8px #00f5ff' : undefined,
                     }}
                   >
                     {cell.type !== 'empty' ? (
@@ -127,17 +271,16 @@ export function TerritoryGridPage() {
                         {cell.level && (
                           <div className="w-full mt-0.5">
                             <div className="h-1 bg-[#1a1f35] rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full"
-                                style={{ width: `${Math.round((cell.hp! / cell.maxHp!) * 100)}%`, background: buildingColors[cell.type] }}
-                              />
+                              <div className="h-full rounded-full" style={{ width: `${Math.round((cell.hp! / cell.maxHp!) * 100)}%`, background: buildingColors[cell.type] }} />
                             </div>
                             <span style={{ fontSize: 7, color: buildingColors[cell.type] }}>Lv.{cell.level}</span>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <span className="text-[#354064]" style={{ fontSize: 16 }}>+</span>
+                      <span style={{ fontSize: isActionTarget ? 14 : 16, color: isActionTarget ? '#00ff8860' : '#354064' }}>
+                        {isActionTarget ? '⊕' : '+'}
+                      </span>
                     )}
                   </div>
                 );
@@ -155,6 +298,7 @@ export function TerritoryGridPage() {
           </div>
         </div>
 
+        {/* Sidebar */}
         <div className="w-[240px] bg-[#0d1220] border-l border-[#1e2a3d] flex flex-col">
           <div className="p-4 space-y-3 border-b border-[#1e2a3d]">
             <p className="text-[#7788a5] font-semibold" style={{ fontSize: 12 }}>자원 현황</p>
@@ -170,39 +314,43 @@ export function TerritoryGridPage() {
             ))}
           </div>
 
-          <div className="p-4 space-y-2 border-b border-[#1e2a3d]">
+          <div className="p-4 space-y-2 border-b border-[#1e2a3d] flex-1 overflow-y-auto">
             <p className="text-[#7788a5] font-semibold" style={{ fontSize: 12 }}>건물 현황</p>
-            {buildings.map(b => (
+            {activeBuildingStats.length === 0 ? (
+              <p className="text-[#354064]" style={{ fontSize: 11 }}>배치된 건물 없음</p>
+            ) : activeBuildingStats.map(b => (
               <div key={b.type}>
                 <div className="flex justify-between mb-0.5">
-                  <span style={{ fontSize: 11, color: b.color }}>{buildingLabels[b.type]} {b.count > 1 ? `×${b.count}` : ''}</span>
+                  <span style={{ fontSize: 11, color: b.color }}>{buildingLabels[b.type]}{b.count > 1 ? ` ×${b.count}` : ''}</span>
                   <span className="text-[#7788a5]" style={{ fontSize: 10 }}>Lv.{b.level}</span>
                 </div>
                 <div className="bg-[#1a1f35] h-1.5 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${Math.round((b.hp / b.maxHp) * 100)}%`, background: b.color }} />
+                  <div className="h-full rounded-full" style={{ width: `${b.maxHp > 0 ? Math.round((b.hp / b.maxHp) * 100) : 0}%`, background: b.color }} />
                 </div>
                 <span className="text-[#7788a5]" style={{ fontSize: 9 }}>{b.hp}/{b.maxHp}</span>
               </div>
             ))}
           </div>
 
-          <div className="p-4 border-b border-[#1e2a3d]">
-            <p className="text-[#7788a5] font-semibold mb-2" style={{ fontSize: 12 }}>유닛 현황</p>
-            {[
-              { label: '보병', val: '24/30', color: '#e0e8ff' },
-              { label: '궁수', val: '12/20', color: '#00ff88' },
-              { label: '기사', val: '5/10', color: '#ffd700' },
-            ].map(u => (
-              <div key={u.label} className="flex justify-between py-1">
-                <span className="text-[#7788a5]" style={{ fontSize: 12 }}>{u.label}</span>
-                <span style={{ fontSize: 12, color: u.color }}>{u.val}</span>
-              </div>
-            ))}
-          </div>
-
           <div className="p-3 space-y-2">
-            <button onClick={() => setShowBuild(true)} className="w-full h-9 border border-[#00f5ff] rounded-lg text-[#00f5ff] hover:bg-[#00f5ff20] transition-colors" style={{ fontSize: 12 }}>
+            <button
+              onClick={() => { setSelectedCell(null); setShowBuild(true); }}
+              className="w-full h-9 border border-[#00f5ff] rounded-lg text-[#00f5ff] hover:bg-[#00f5ff20] transition-colors"
+              style={{ fontSize: 12 }}
+            >
               건물 추가
+            </button>
+            <button
+              onClick={() => setShowInventory(true)}
+              className="relative w-full h-9 border rounded-lg transition-colors hover:bg-[#8b50ff20]"
+              style={{ fontSize: 12, borderColor: '#8b50ff', color: '#8b50ff' }}
+            >
+              📦 보관함
+              {inventory.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#8b50ff] text-white flex items-center justify-center" style={{ fontSize: 10 }}>
+                  {inventory.length}
+                </span>
+              )}
             </button>
             <button className="w-full h-9 border border-[#8b50ff] rounded-lg text-[#8b50ff] hover:bg-[#8b50ff20] transition-colors" style={{ fontSize: 12 }}>
               유닛 배치
@@ -214,18 +362,22 @@ export function TerritoryGridPage() {
         </div>
       </div>
 
+      {/* ───── Build modal ───── */}
       {showBuild && (
         <div className="fixed inset-0 flex justify-end z-50">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowBuild(false)} />
+          <div className="absolute inset-0 bg-black/60" onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} />
           <div className="relative bg-[#1a1f35] border-[1.5px] border-[#00f5ff] w-[540px] flex flex-col overflow-hidden">
             <div className="bg-[#2a3050] px-5 py-4 border-b-2 border-[#00f5ff] flex items-center justify-between">
               <div>
                 <h3 className="text-[#e0e8ff] font-bold" style={{ fontSize: 20 }}>🏗  건물 건설</h3>
                 <p className="text-[#7788a5]" style={{ fontSize: 12 }}>
-                  위치: ({selectedCell?.x ?? 5}, {selectedCell?.y ?? 4}) · Zone {selectedCellData?.zone ?? 2}
+                  {selectedCell
+                    ? `위치: (${selectedCell.x}, ${selectedCell.y}) · Zone ${selectedCellData?.zone ?? '-'} · `
+                    : '빈 셀을 클릭하여 위치를 선택하세요 · '}
+                  보유 GP: {gp.toLocaleString()}
                 </p>
               </div>
-              <button onClick={() => setShowBuild(false)} className="text-[#7788a5] hover:text-[#e0e8ff] text-2xl">✕</button>
+              <button onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} className="text-[#7788a5] hover:text-[#e0e8ff] text-2xl">✕</button>
             </div>
 
             <div className="bg-[#2a3050] border border-[#ffd700] rounded-xl mx-4 mt-4 px-4 py-2.5">
@@ -240,40 +392,197 @@ export function TerritoryGridPage() {
                 { type: 'storage' as BuildingType, name: '저장소 (Storage)', desc: '자원 1,000 GP 보관', size: '1×2', zone: '어디든', cost: '300 GP', zoneRestricted: false },
                 { type: 'wall' as BuildingType, name: '방벽 (Wall)', desc: 'Zone 방어력 +50', size: '1×1', zone: '어디든', cost: '100 GP', zoneRestricted: false },
                 { type: 'tower' as BuildingType, name: '방어탑 (Tower)', desc: '자동 방어 +자동 공격', size: '1×1', zone: '어디든', cost: '400 GP', zoneRestricted: false },
-              ].map(b => (
-                <div
-                  key={b.type}
-                  className="rounded-xl p-4 flex items-center gap-3 border transition-colors"
-                  style={{ background: '#2a3050', borderColor: buildingColors[b.type], opacity: b.zoneRestricted ? 0.5 : 1 }}
-                >
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: buildingColors[b.type] + '30' }}>
-                    <span style={{ fontSize: 22, color: buildingColors[b.type] }}>{buildingLabels[b.type]}</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 14 }}>{b.name}</p>
-                    <p className="text-[#7788a5]" style={{ fontSize: 11 }}>{b.desc}</p>
-                    <p className="text-[#7788a5]" style={{ fontSize: 10 }}>크기: {b.size}  ·  Zone: {b.zone}</p>
-                  </div>
-                  {b.zoneRestricted ? (
-                    <div className="bg-[#ff333330] border border-[#ff3333] rounded px-2 py-1">
-                      <span className="text-[#ff3333]" style={{ fontSize: 10 }}>Zone 제한</span>
+              ].map(b => {
+                const isSel = selectedBuilding === b.type;
+                return (
+                  <div
+                    key={b.type}
+                    onClick={() => !b.zoneRestricted && setSelectedBuilding(b.type)}
+                    className="rounded-xl p-4 flex items-center gap-3 border transition-all"
+                    style={{
+                      background: isSel ? buildingColors[b.type] + '20' : '#2a3050',
+                      borderColor: isSel ? buildingColors[b.type] : buildingColors[b.type] + '60',
+                      opacity: b.zoneRestricted ? 0.4 : 1,
+                      cursor: b.zoneRestricted ? 'not-allowed' : 'pointer',
+                      boxShadow: isSel ? `0 0 8px ${buildingColors[b.type]}40` : undefined,
+                    }}
+                  >
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: buildingColors[b.type] + '30' }}>
+                      <span style={{ fontSize: 22, color: buildingColors[b.type] }}>{buildingLabels[b.type]}</span>
                     </div>
-                  ) : b.cost && (
-                    <div className="bg-[#2a3050] border rounded px-2 py-1" style={{ borderColor: buildingColors[b.type] }}>
-                      <span style={{ fontSize: 12, color: buildingColors[b.type] }}>{b.cost}</span>
+                    <div className="flex-1">
+                      <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 14 }}>{b.name}</p>
+                      <p className="text-[#7788a5]" style={{ fontSize: 11 }}>{b.desc}</p>
+                      <p className="text-[#7788a5]" style={{ fontSize: 10 }}>크기: {b.size}  ·  Zone: {b.zone}</p>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {b.zoneRestricted ? (
+                      <div className="bg-[#ff333330] border border-[#ff3333] rounded px-2 py-1">
+                        <span className="text-[#ff3333]" style={{ fontSize: 10 }}>Zone 제한</span>
+                      </div>
+                    ) : b.cost && (
+                      <div className="border rounded px-2 py-1" style={{ background: isSel ? buildingColors[b.type] + '30' : '#1a1f35', borderColor: buildingColors[b.type] }}>
+                        <span style={{ fontSize: 12, color: buildingColors[b.type] }}>{b.cost}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
+            {buildError && (
+              <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-[#ff004420] border border-[#ff0044]">
+                <span className="text-[#ff4466]" style={{ fontSize: 12 }}>⚠ {buildError}</span>
+              </div>
+            )}
+
             <div className="border-t border-[#354064] p-4 flex gap-3">
-              <button onClick={() => setShowBuild(false)} className="flex-1 h-14 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5]" style={{ fontSize: 14 }}>
-                미리보기
+              <button
+                onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }}
+                className="flex-1 h-14 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5]"
+                style={{ fontSize: 14 }}
+              >
+                취소
               </button>
-              <button onClick={() => setShowBuild(false)} className="flex-1 h-14 bg-[#00f5ff] rounded-xl text-[#0a0e1a] font-bold hover:brightness-110" style={{ fontSize: 14 }}>
+              <button
+                onClick={handleBuild}
+                disabled={!selectedBuilding}
+                className="flex-1 h-14 rounded-xl font-bold transition-all"
+                style={{
+                  fontSize: 14,
+                  background: selectedBuilding ? '#00f5ff' : '#2a3050',
+                  color: selectedBuilding ? '#0a0e1a' : '#7788a5',
+                  border: selectedBuilding ? 'none' : '1px solid #354064',
+                  cursor: selectedBuilding ? 'pointer' : 'not-allowed',
+                }}
+              >
                 건설하기
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ───── Building action panel ───── */}
+      {showBuildingAction && selectedCell && selectedCellData && selectedCellData.type !== 'empty' && (
+        <div className="fixed inset-0 flex items-end justify-center z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowBuildingAction(false)} />
+          <div className="relative w-full max-w-lg rounded-t-2xl overflow-hidden" style={{ background: '#1a1f35', border: '1px solid #354064', borderBottom: 'none' }}>
+            <div className="px-5 py-4 flex items-center justify-between" style={{ background: buildingColors[selectedCellData.type] + '20', borderBottom: `2px solid ${buildingColors[selectedCellData.type]}` }}>
+              <div>
+                <h3 className="font-bold" style={{ fontSize: 18, color: buildingColors[selectedCellData.type] }}>
+                  {buildingNames[selectedCellData.type]}
+                </h3>
+                <p className="text-[#7788a5]" style={{ fontSize: 12 }}>
+                  위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData.zone} · Lv.{selectedCellData.level}
+                </p>
+              </div>
+              <button onClick={() => setShowBuildingAction(false)} className="text-[#7788a5] hover:text-[#e0e8ff] text-2xl">✕</button>
+            </div>
+
+            <div className="px-5 py-3 border-b border-[#354064]">
+              <div className="flex justify-between mb-1">
+                <span className="text-[#7788a5]" style={{ fontSize: 11 }}>HP</span>
+                <span style={{ fontSize: 11, color: buildingColors[selectedCellData.type] }}>{selectedCellData.hp} / {selectedCellData.maxHp}</span>
+              </div>
+              <div className="h-2 bg-[#0d1220] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${selectedCellData.maxHp ? Math.round((selectedCellData.hp! / selectedCellData.maxHp!) * 100) : 0}%`,
+                    background: buildingColors[selectedCellData.type],
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="p-4 flex gap-3">
+              <button
+                onClick={handleStartMove}
+                className="flex-1 h-12 rounded-xl font-semibold border transition-all hover:bg-[#ffd70015]"
+                style={{ fontSize: 13, color: '#ffd700', borderColor: '#ffd70060' }}
+              >
+                🔄 이동하기
+              </button>
+              <button
+                onClick={handleStoreBuilding}
+                disabled={selectedCellData.type === 'castle'}
+                className="flex-1 h-12 rounded-xl font-semibold border transition-all"
+                style={{
+                  fontSize: 13,
+                  color: selectedCellData.type === 'castle' ? '#354064' : '#8b50ff',
+                  borderColor: selectedCellData.type === 'castle' ? '#354064' : '#8b50ff60',
+                  cursor: selectedCellData.type === 'castle' ? 'not-allowed' : 'pointer',
+                  background: 'transparent',
+                }}
+                title={selectedCellData.type === 'castle' ? '성은 보관함에 담을 수 없습니다' : ''}
+              >
+                📦 보관함에 담기
+              </button>
+              <button
+                onClick={() => setShowBuildingAction(false)}
+                className="flex-1 h-12 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5]"
+                style={{ fontSize: 13 }}
+              >
+                닫기
+              </button>
+            </div>
+            {selectedCellData.type === 'castle' && (
+              <p className="text-center text-[#7788a5] pb-3" style={{ fontSize: 11 }}>성(Castle)은 영토의 핵심 건물로 보관함에 담을 수 없습니다</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ───── Inventory modal ───── */}
+      {showInventory && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowInventory(false)} />
+          <div className="relative rounded-2xl overflow-hidden flex flex-col" style={{ width: 480, maxHeight: '70vh', background: '#1a1f35', border: '1.5px solid #8b50ff' }}>
+            <div className="px-5 py-4 flex items-center justify-between" style={{ background: '#1a0a35', borderBottom: '2px solid #8b50ff' }}>
+              <div>
+                <h3 className="text-[#8b50ff] font-bold" style={{ fontSize: 20 }}>📦 보관함</h3>
+                <p className="text-[#7788a5]" style={{ fontSize: 12 }}>건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>
+              </div>
+              <button onClick={() => setShowInventory(false)} className="text-[#7788a5] hover:text-[#e0e8ff] text-2xl">✕</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {inventory.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <span style={{ fontSize: 40 }}>📭</span>
+                  <p className="text-[#7788a5]" style={{ fontSize: 14 }}>보관함이 비어 있습니다</p>
+                  <p className="text-[#354064]" style={{ fontSize: 12 }}>건물 셀을 클릭한 뒤 "보관함에 담기"를 선택하세요</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {inventory.map((item, idx) => {
+                    const color = buildingColors[item.type];
+                    const hpPct = item.maxHp > 0 ? item.hp / item.maxHp : 0;
+                    return (
+                      <div key={idx} className="rounded-xl p-3 flex items-center gap-3" style={{ background: '#2a3050', border: `1px solid ${color}50` }}>
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color + '25', border: `1px solid ${color}60` }}>
+                          <span style={{ fontSize: 22, color }}>{buildingLabels[item.type]}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold" style={{ fontSize: 14, color }}>{buildingNames[item.type]}</p>
+                          <p className="text-[#7788a5]" style={{ fontSize: 11 }}>Lv.{item.level}</p>
+                          <div className="mt-1 h-1.5 bg-[#1a1f35] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${hpPct * 100}%`, background: color }} />
+                          </div>
+                          <span className="text-[#7788a5]" style={{ fontSize: 9 }}>HP {item.hp}/{item.maxHp}</span>
+                        </div>
+                        <button
+                          onClick={() => { setDeployFromInventoryIdx(idx); setShowInventory(false); }}
+                          className="h-9 px-4 rounded-lg font-semibold transition-all hover:brightness-110"
+                          style={{ fontSize: 12, background: color + '30', color, border: `1px solid ${color}` }}
+                        >
+                          배치하기
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
