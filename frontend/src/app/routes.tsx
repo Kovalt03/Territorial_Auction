@@ -13,6 +13,7 @@ import { ItemShopPage } from './pages/ItemShopPage';
 import { SeasonPassPage } from './pages/SeasonPassPage';
 import { VaultPage } from './pages/VaultPage';
 import { PersonalIslandPage } from './pages/PersonalIslandPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
@@ -30,5 +31,6 @@ export const router = createBrowserRouter([
   { path: '/app/season-pass', Component: SeasonPassPage },
   { path: '/app/vault', Component: VaultPage },
   { path: '/app/my-island', Component: PersonalIslandPage },
+  { path: '/app/settings', Component: SettingsPage },
   { path: '*', element: <Navigate to="/login" replace /> },
 ]);

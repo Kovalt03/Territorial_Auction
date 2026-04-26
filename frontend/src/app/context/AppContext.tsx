@@ -42,6 +42,7 @@ interface AppContextType extends AppState {
   logout: () => void;
   addAP: (amount: number) => void;
   useAP: (amount: number) => boolean;
+  useGP: (amount: number) => boolean;
   toggleWishlist: (id: string) => void;
   placeBid: (id: string, amount: number) => void;
   sendMessage: (text: string) => void;
@@ -131,6 +132,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  const useGP = (amount: number): boolean => {
+    if (state.gp < amount) return false;
+    setState(prev => ({ ...prev, gp: prev.gp - amount }));
+    return true;
+  };
+
   const toggleWishlist = (id: string) => {
     setState(prev => ({
       ...prev,
@@ -184,7 +191,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ ...state, login, logout, addAP, useAP, toggleWishlist, placeBid, sendMessage, activatePass }}>
+    <AppContext.Provider value={{ ...state, login, logout, addAP, useAP, useGP, toggleWishlist, placeBid, sendMessage, activatePass }}>
       {children}
     </AppContext.Provider>
   );

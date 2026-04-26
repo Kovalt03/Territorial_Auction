@@ -113,7 +113,12 @@ export function GNB() {
       </div>
 
       {/* Settings */}
-      <button className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[#2a3050] transition-colors text-[#7788a5]">
+      <button
+        onClick={() => navigate('/app/settings')}
+        className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[#2a3050] transition-colors"
+        style={{ color: location.pathname === '/app/settings' ? '#00f5ff' : '#7788a5' }}
+        title="설정"
+      >
         ⚙
       </button>
     </header>
