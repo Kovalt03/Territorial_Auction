@@ -55,6 +55,10 @@ public class Territory {
         this.grade = grade;
     }
 
+    public void updateColor(String colorCode) {
+        this.currentColor = colorCode;
+    }
+
     public enum TerritoryStatus {
         BIDDING,
         OCCUPIED,
