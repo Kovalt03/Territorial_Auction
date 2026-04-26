@@ -1,19 +1,43 @@
 package com.territorial.auction.domain.map.controller;
 
+import com.territorial.auction.domain.map.dto.ColorChangeRequest;
+import com.territorial.auction.domain.map.dto.GridMapResponse;
+import com.territorial.auction.domain.map.dto.TerritoryDetailResponse;
+import com.territorial.auction.domain.map.service.MapService;
 import com.territorial.auction.global.common.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/map")
+@RequestMapping("/api/v1/map")
 @RequiredArgsConstructor
 public class MapController {
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<Void>> getMap() {
+    private final MapService mapService;
+
+    @GetMapping("/grid")
+    public ResponseEntity<ApiResponse<GridMapResponse>> getGridMap(
+            @RequestParam(value = "continent", required = false) Long continentId) {
+        return ResponseEntity.ok(ApiResponse.ok(mapService.getGridMap(continentId)));
+    }
+
+    @GetMapping("/territories/{territoryId}")
+    public ResponseEntity<ApiResponse<TerritoryDetailResponse>> getTerritoryDetail(
+            @PathVariable Long territoryId) {
+        return ResponseEntity.ok(ApiResponse.ok(mapService.getTerritoryDetail(territoryId)));
+    }
+
+    @PatchMapping("/territories/{territoryId}/color")
+    public ResponseEntity<ApiResponse<Void>> changeColor(
+            @PathVariable Long territoryId,
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid ColorChangeRequest request) {
+        Long userId = Long.parseLong(userDetails.getUsername());
+        mapService.changeColor(territoryId, userId, request.colorCode());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }
