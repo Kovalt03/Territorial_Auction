@@ -2,7 +2,10 @@ package com.territorial.auction.domain.map.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.territorial.auction.domain.auction.entity.Auction;
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
@@ -11,10 +14,12 @@ import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.map.dto.GridMapResponse;
 import com.territorial.auction.domain.map.dto.TerritoryDetailResponse;
+import com.territorial.auction.domain.map.entity.ColorHistory;
 import com.territorial.auction.domain.map.entity.Continent;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.entity.Territory.TerritoryStatus;
 import com.territorial.auction.domain.map.entity.TerritoryGrade;
+import com.territorial.auction.domain.map.repository.ColorHistoryRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.global.exception.CustomException;
@@ -40,6 +45,7 @@ class MapServiceTest {
     @Mock private TerritoryRepository territoryRepository;
     @Mock private AuctionRepository auctionRepository;
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
+    @Mock private ColorHistoryRepository colorHistoryRepository;
 
     // ────────────────────────────────────────────────────────────────
     // Fixtures
@@ -90,6 +96,7 @@ class MapServiceTest {
         ReflectionTestUtils.setField(t, "owner", owner);
         ReflectionTestUtils.setField(t, "currentColor", "#FF4444");
         ReflectionTestUtils.setField(t, "status", TerritoryStatus.OCCUPIED);
+        ReflectionTestUtils.setField(t, "occupiedUntil", LocalDateTime.now().plusHours(24));
         return t;
     }
 
@@ -183,7 +190,7 @@ class MapServiceTest {
         @Test
         @DisplayName("점유자 없는 영토 — ownerId, ownerNickname null")
         void getGridMap_noOwner_ownerFieldsNull() {
-            Territory t = territory(1L, 0, 0); // owner 없음
+            Territory t = territory(1L, 0, 0);
             given(territoryRepository.findAllWithContinentAndGrade()).willReturn(List.of(t));
             given(auctionRepository.existsByTerritoryId(1L)).willReturn(false);
 
@@ -301,6 +308,126 @@ class MapServiceTest {
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.TERRITORY_NOT_FOUND);
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // changeColor()
+    // ────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("changeColor()")
+    class ChangeColor {
+
+        @Test
+        @DisplayName("정상 변경 — 색상 업데이트 및 이력 저장")
+        void changeColor_success() {
+            Territory t = occupiedTerritory(1L, 0, 0);
+            given(territoryRepository.findByIdWithDetails(1L)).willReturn(Optional.of(t));
+            given(colorHistoryRepository.countByTerritoryIdAndUserId(1L, 10L)).willReturn(0L);
+
+            mapService.changeColor(1L, 10L, "#00FF00");
+
+            assertThat(t.getCurrentColor()).isEqualTo("#00FF00");
+            verify(colorHistoryRepository).save(any(ColorHistory.class));
+        }
+
+        @Test
+        @DisplayName("변경 횟수 2회 — 정상 처리")
+        void changeColor_secondChange_success() {
+            Territory t = occupiedTerritory(1L, 0, 0);
+            given(territoryRepository.findByIdWithDetails(1L)).willReturn(Optional.of(t));
+            given(colorHistoryRepository.countByTerritoryIdAndUserId(1L, 10L)).willReturn(2L);
+
+            mapService.changeColor(1L, 10L, "#0000FF");
+
+            assertThat(t.getCurrentColor()).isEqualTo("#0000FF");
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 영토 — TERRITORY_NOT_FOUND 예외")
+        void changeColor_territoryNotFound() {
+            given(territoryRepository.findByIdWithDetails(999L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> mapService.changeColor(999L, 10L, "#00FF00"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.TERRITORY_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("점유자 없는 영토 — NOT_TERRITORY_OWNER 예외")
+        void changeColor_noOwner_throwsNotOwner() {
+            Territory t = territory(1L, 0, 0); // owner null
+            given(territoryRepository.findByIdWithDetails(1L)).willReturn(Optional.of(t));
+
+            assertThatThrownBy(() -> mapService.changeColor(1L, 10L, "#00FF00"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.NOT_TERRITORY_OWNER);
+        }
+
+        @Test
+        @DisplayName("다른 유저가 요청 — NOT_TERRITORY_OWNER 예외")
+        void changeColor_notOwner_throwsForbidden() {
+            Territory t = occupiedTerritory(1L, 0, 0); // owner id = 10L
+            given(territoryRepository.findByIdWithDetails(1L)).willReturn(Optional.of(t));
+
+            assertThatThrownBy(() -> mapService.changeColor(1L, 99L, "#00FF00"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.NOT_TERRITORY_OWNER);
+        }
+
+        @Test
+        @DisplayName("IDLE 상태 영토 — TERRITORY_NOT_OCCUPIED 예외")
+        void changeColor_idleTerritory_throwsNotOccupied() {
+            Territory t = territory(1L, 0, 0);
+            User owner =
+                    User.builder()
+                            .username("owner")
+                            .email("owner@example.com")
+                            .passwordHash("hash")
+                            .nickname("영토주인")
+                            .build();
+            ReflectionTestUtils.setField(owner, "id", 10L);
+            ReflectionTestUtils.setField(t, "owner", owner);
+            // status = IDLE (기본값)
+
+            given(territoryRepository.findByIdWithDetails(1L)).willReturn(Optional.of(t));
+
+            assertThatThrownBy(() -> mapService.changeColor(1L, 10L, "#00FF00"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.TERRITORY_NOT_OCCUPIED);
+        }
+
+        @Test
+        @DisplayName("점유 기간 만료 — TERRITORY_NOT_OCCUPIED 예외")
+        void changeColor_expiredOccupation_throwsNotOccupied() {
+            Territory t = occupiedTerritory(1L, 0, 0);
+            ReflectionTestUtils.setField(t, "occupiedUntil", LocalDateTime.now().minusHours(1));
+            given(territoryRepository.findByIdWithDetails(1L)).willReturn(Optional.of(t));
+
+            assertThatThrownBy(() -> mapService.changeColor(1L, 10L, "#00FF00"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.TERRITORY_NOT_OCCUPIED);
+        }
+
+        @Test
+        @DisplayName("변경 횟수 3회 초과 — COLOR_CHANGE_LIMIT_EXCEEDED 예외")
+        void changeColor_limitExceeded_throwsException() {
+            Territory t = occupiedTerritory(1L, 0, 0);
+            given(territoryRepository.findByIdWithDetails(1L)).willReturn(Optional.of(t));
+            given(colorHistoryRepository.countByTerritoryIdAndUserId(1L, 10L)).willReturn(3L);
+
+            assertThatThrownBy(() -> mapService.changeColor(1L, 10L, "#00FF00"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.COLOR_CHANGE_LIMIT_EXCEEDED);
+
+            verify(colorHistoryRepository, never()).save(any());
         }
     }
 }
