@@ -27,6 +27,7 @@ public enum ErrorCode {
 
     // Map
     TILE_NOT_FOUND(HttpStatus.NOT_FOUND, "타일을 찾을 수 없습니다."),
+    TERRITORY_NOT_FOUND(HttpStatus.NOT_FOUND, "영토를 찾을 수 없습니다."),
 
     // Auction
     AUCTION_NOT_FOUND(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."),
