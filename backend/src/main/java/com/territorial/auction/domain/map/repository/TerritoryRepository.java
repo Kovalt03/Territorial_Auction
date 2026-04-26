@@ -19,4 +19,8 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
     @Query(
             "SELECT t FROM Territory t JOIN FETCH t.continent JOIN FETCH t.grade LEFT JOIN FETCH t.owner WHERE t.id = :id")
     Optional<Territory> findByIdWithDetails(@Param("id") Long id);
+
+    long countByContinentId(Long continentId);
+
+    long countByContinentIdAndStatus(Long continentId, Territory.TerritoryStatus status);
 }
