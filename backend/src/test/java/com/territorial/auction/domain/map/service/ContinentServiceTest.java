@@ -53,8 +53,10 @@ class ContinentServiceTest {
             given(continentRepository.findAll()).willReturn(List.of(c1, c2));
             given(territoryRepository.countByContinentId(1L)).willReturn(10L);
             given(territoryRepository.countByContinentId(2L)).willReturn(8L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED)).willReturn(3L);
-            given(territoryRepository.countByContinentIdAndStatus(2L, TerritoryStatus.OCCUPIED)).willReturn(5L);
+            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
+                    .willReturn(3L);
+            given(territoryRepository.countByContinentIdAndStatus(2L, TerritoryStatus.OCCUPIED))
+                    .willReturn(5L);
 
             ContinentListResponse response = continentService.getContinents();
 
@@ -68,7 +70,8 @@ class ContinentServiceTest {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
             given(territoryRepository.countByContinentId(1L)).willReturn(0L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED)).willReturn(0L);
+            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
+                    .willReturn(0L);
 
             ContinentInfo info = continentService.getContinents().continent().get(0);
 
@@ -82,7 +85,8 @@ class ContinentServiceTest {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
             given(territoryRepository.countByContinentId(1L)).willReturn(15L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED)).willReturn(0L);
+            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
+                    .willReturn(0L);
 
             ContinentInfo info = continentService.getContinents().continent().get(0);
 
@@ -95,7 +99,8 @@ class ContinentServiceTest {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
             given(territoryRepository.countByContinentId(1L)).willReturn(10L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED)).willReturn(4L);
+            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
+                    .willReturn(4L);
 
             ContinentInfo info = continentService.getContinents().continent().get(0);
 
@@ -108,7 +113,8 @@ class ContinentServiceTest {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
             given(territoryRepository.countByContinentId(1L)).willReturn(0L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED)).willReturn(0L);
+            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
+                    .willReturn(0L);
 
             ContinentInfo info = continentService.getContinents().continent().get(0);
 
@@ -136,8 +142,10 @@ class ContinentServiceTest {
             given(continentRepository.findAll()).willReturn(List.of(c1, c2));
             given(territoryRepository.countByContinentId(1L)).willReturn(20L);
             given(territoryRepository.countByContinentId(2L)).willReturn(5L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED)).willReturn(10L);
-            given(territoryRepository.countByContinentIdAndStatus(2L, TerritoryStatus.OCCUPIED)).willReturn(2L);
+            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
+                    .willReturn(10L);
+            given(territoryRepository.countByContinentIdAndStatus(2L, TerritoryStatus.OCCUPIED))
+                    .willReturn(2L);
 
             List<ContinentInfo> infos = continentService.getContinents().continent();
 
