@@ -1,6 +1,6 @@
 package com.territorial.auction.domain.map.controller;
 
-import com.territorial.auction.domain.map.dto.ColorChangeRequest;
+import com.territorial.auction.domain.map.dto.ChangeColorRequest;
 import com.territorial.auction.domain.map.dto.GridMapResponse;
 import com.territorial.auction.domain.map.dto.TerritoryDetailResponse;
 import com.territorial.auction.domain.map.service.MapService;
@@ -34,7 +34,7 @@ public class MapController {
     public ResponseEntity<ApiResponse<Void>> changeColor(
             @PathVariable Long territoryId,
             @AuthenticationPrincipal Long userId,
-            @RequestBody @Valid ColorChangeRequest request) {
+            @RequestBody @Valid ChangeColorRequest request) {
         mapService.changeColor(territoryId, userId, request.colorCode());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
