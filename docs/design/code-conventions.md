@@ -42,9 +42,12 @@ com.territorial.auction
 | Service | `{Domain}Service` | `AuctionService` |
 | Repository | `{Domain}Repository` | `AuctionRepository` |
 | Entity | 도메인 명사 | `Auction`, `Territory` |
-| Request DTO | `{Action}{Domain}Request` | `PlaceBidRequest` |
-| Response DTO | `{Action}{Domain}Response` | `PlaceBidResponse` |
+| Request DTO | `{Action}{Domain}Request` — Action이 반드시 앞에 위치 | `PlaceBidRequest`, `UpdateNotificationSettingRequest` |
+| Response DTO | `{Action}{Domain}Response` — 조회용 `Get` 접두사는 생략 허용 | `PlaceBidResponse`, `GridMapResponse` |
 | 이벤트 | `{Domain}{Action}Event` | `AuctionEndedEvent` |
+
+> **Response `from()` 규칙**: 단일 Entity → Response 변환은 `from(Entity)` 정적 팩토리 필수.  
+> 여러 Entity를 조합하는 집계 Response(e.g. `MyProfileResponse`, `GridMapResponse`)는 Service에서 직접 생성 허용.
 
 ### 변수명
 
