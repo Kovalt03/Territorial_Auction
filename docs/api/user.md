@@ -156,20 +156,26 @@
   "status": 200,
   "message": "OK",
   "data": {
-    "availableAP": 5000,
-    "lockedAP": 1000,
     "availableGP": 12000,
-    "availableFood": 100
+    "availableAP": 5000,
+    "lockedAP": 1000
   }
 }
 ```
 
-| field | 설명 | 출처 |
+> `availableFood` 필드는 미군사 도메인 구현 후 추가 예정
+
+| field | 타입 | 설명 | 출처 |
+|---|---|---|---|
+| `availableGP` | int | 사용 가능 Grid Point | `wallets.available_gp` |
+| `availableAP` | int | 사용 가능 Auction Point | `wallets.available_ap` |
+| `lockedAP` | int | 진행 중인 경매 입찰로 묶인 AP | `wallets.locked_ap` |
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
 |---|---|---|
-| `availableAP` | 사용 가능 Auction Point | `wallets.available_ap` |
-| `lockedAP` | 현재 진행 중인 경매 입찰로 묶인 AP | `wallets.locked_ap` |
-| `availableGP` | 사용 가능 Grid Point | `wallets.available_gp` |
-| `availableFood` | 유닛 유지 식량 | `wallets.available_food` |
+| 404 | USER_NOT_FOUND | 존재하지 않는 유저 |
 
 ---
 
@@ -179,35 +185,54 @@
 
 **Authorization**: Bearer `{{accessToken}}` (필수)
 
+### Query Parameters
+
+| 파라미터 | 기본값 | 설명 |
+|---|---|---|
+| `page` | 0 | 페이지 번호 (0-based) |
+| `size` | 10 | 페이지 크기 |
+| `sort` | `id,DESC` | 정렬 기준 |
+
 ### Response (200 OK)
 
 ```json
 {
   "status": 200,
   "message": "OK",
-  "data": [
-    {
-      "territoryId": 10,
-      "name": "테스트영토",
-      "gridX": 2,
-      "gridY": 3,
-      "grade": "RARE",
-      "productionRate": 12,
-      "invincibleUntil": null,
-      "buildingCount": 3,
-      "deployedUnitCount": 20
-    }
-  ]
+  "data": {
+    "totalCount": 3,
+    "territories": [
+      {
+        "territoryId": 10,
+        "grade": "A",
+        "position": { "x": 2, "y": 3 },
+        "continentName": "아시아",
+        "occupiedAt": null,
+        "militaryCount": 0,
+        "isInvincible": false
+      }
+    ]
+  }
 }
 ```
 
-| field | 설명 | 출처 |
-|---|---|---|
-| `grade` | 영토 등급 (COMMON / RARE / EPIC / LEGENDARY) | `territory_grades.name` |
-| `productionRate` | 분당 GP 생산량 | `building_instances` 집계 |
-| `invincibleUntil` | 무적 상태 만료 시각 (null = 무적 아님) | `territories.invincible_until` |
-| `buildingCount` | 배치된 건물 수 | `building_instances` 집계 |
-| `deployedUnitCount` | 배치된 유닛 수 | `unit_instances` 집계 |
+> `occupiedAt`, `militaryCount`, `isInvincible`은 군사 도메인 구현 후 연동 예정 (현재 각각 null / 0 / false 반환)
 
-### 남은작업
-- 서비스 구현
+| field | 타입 | 설명 | 출처 |
+|---|---|---|---|
+| `totalCount` | int | 보유 영토 전체 개수 | `territories` 집계 |
+| `territories[]` | array | 페이지 단위 영토 목록 | - |
+| `territories[].territoryId` | Long | 영토 ID | `territories.id` |
+| `territories[].grade` | String | 영토 등급 (S/A/B/C/D) | `territory_grades.grade` |
+| `territories[].position.x` | int | 그리드 X 좌표 | `territories.coord_x` |
+| `territories[].position.y` | int | 그리드 Y 좌표 | `territories.coord_y` |
+| `territories[].continentName` | String | 소속 대륙 이름 | `continents.name` |
+| `territories[].occupiedAt` | String (ISO 8601) | 점령 시각 (미구현, null) | - |
+| `territories[].militaryCount` | int | 배치된 유닛 수 (미구현, 0) | - |
+| `territories[].isInvincible` | boolean | 무적 상태 여부 (미구현, false) | - |
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 401 | UNAUTHORIZED | 인증 토큰 없음 또는 만료 |
