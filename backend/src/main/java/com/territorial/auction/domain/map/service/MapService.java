@@ -115,27 +115,9 @@ public class MapService {
                         .findByIdWithDetails(territoryId)
                         .orElseThrow(() -> new CustomException(ErrorCode.TERRITORY_NOT_FOUND));
 
-        // 점유자 확인
-        if (territory.getOwner() == null || !territory.getOwner().getId().equals(userId)) {
-            throw new CustomException(ErrorCode.NOT_TERRITORY_OWNER);
-        }
-
-        // 점유 상태 및 기간 확인
-        if (territory.getStatus() != TerritoryStatus.OCCUPIED
-                || territory.getOccupiedUntil() == null
-                || territory.getOccupiedUntil().isBefore(LocalDateTime.now())) {
-            throw new CustomException(ErrorCode.TERRITORY_NOT_OCCUPIED);
-        }
-
-        // 변경 횟수 확인 (점유 기간 내 최대 3회)
-        // TODO: Redis 카운터로 교체 필요
-        //       키: color:change:{territoryId}:{userId}, TTL = occupiedUntil까지 남은 시간
-        //       Redis 우선 조회 → 미존재 시 DB 집계 후 Redis에 세팅
-        //       동일 유저가 재점유 시 이전 이력이 합산되는 문제 → occupiedSince 컬럼 추가 후 개선
-        long changeCount = colorHistoryRepository.countByTerritoryIdAndUserId(territoryId, userId);
-        if (changeCount >= COLOR_CHANGE_LIMIT) {
-            throw new CustomException(ErrorCode.COLOR_CHANGE_LIMIT_EXCEEDED);
-        }
+        validateOwner(territory, userId);
+        validateOccupied(territory);
+        validateColorChangeCount(territoryId, userId);
 
         territory.updateColor(colorCode);
 
@@ -145,5 +127,30 @@ public class MapService {
                         .user(territory.getOwner())
                         .colorCode(colorCode)
                         .build());
+    }
+
+    private void validateOwner(Territory territory, Long userId) {
+        if (territory.getOwner() == null || !territory.getOwner().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.NOT_TERRITORY_OWNER);
+        }
+    }
+
+    private void validateOccupied(Territory territory) {
+        if (territory.getStatus() != TerritoryStatus.OCCUPIED
+                || territory.getOccupiedUntil() == null
+                || territory.getOccupiedUntil().isBefore(LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.TERRITORY_NOT_OCCUPIED);
+        }
+    }
+
+    private void validateColorChangeCount(Long territoryId, Long userId) {
+        // TODO: Redis 카운터로 교체 필요
+        //       키: color:change:{territoryId}:{userId}, TTL = occupiedUntil까지 남은 시간
+        //       Redis 우선 조회 → 미존재 시 DB 집계 후 Redis에 세팅
+        //       동일 유저가 재점유 시 이전 이력이 합산되는 문제 → occupiedSince 컬럼 추가 후 개선
+        long changeCount = colorHistoryRepository.countByTerritoryIdAndUserId(territoryId, userId);
+        if (changeCount >= COLOR_CHANGE_LIMIT) {
+            throw new CustomException(ErrorCode.COLOR_CHANGE_LIMIT_EXCEEDED);
+        }
     }
 }
