@@ -2,7 +2,7 @@ package com.territorial.auction.domain.user.controller;
 
 import com.territorial.auction.domain.user.dto.MyProfileResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingResponse;
-import com.territorial.auction.domain.user.dto.NotificationSettingUpdateRequest;
+import com.territorial.auction.domain.user.dto.UpdateNotificationSettingRequest;
 import com.territorial.auction.domain.user.dto.UserProfileResponse;
 import com.territorial.auction.domain.user.service.UserService;
 import com.territorial.auction.global.common.ApiResponse;
@@ -38,7 +38,7 @@ public class UserController {
     @PatchMapping("/me/settings")
     public ResponseEntity<ApiResponse<NotificationSettingResponse>> updateNotificationSetting(
             @AuthenticationPrincipal Long userId,
-            @RequestBody NotificationSettingUpdateRequest request) {
+            @RequestBody UpdateNotificationSettingRequest request) {
         return ResponseEntity.ok(
                 ApiResponse.ok(userService.updateNotificationSetting(userId, request)));
     }

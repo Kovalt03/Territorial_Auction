@@ -9,7 +9,7 @@ import com.territorial.auction.domain.season.repository.UserSeasonPassRepository
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.user.dto.MyProfileResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingResponse;
-import com.territorial.auction.domain.user.dto.NotificationSettingUpdateRequest;
+import com.territorial.auction.domain.user.dto.UpdateNotificationSettingRequest;
 import com.territorial.auction.domain.user.dto.UserProfileResponse;
 import com.territorial.auction.domain.user.entity.NotificationSetting;
 import com.territorial.auction.domain.user.entity.User;
@@ -140,15 +140,15 @@ public class UserService {
 
     @Transactional
     public NotificationSettingResponse updateNotificationSetting(
-            Long userId, NotificationSettingUpdateRequest request) {
+            Long userId, UpdateNotificationSettingRequest request) {
         NotificationSetting setting =
                 notificationSettingRepository
                         .findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
         setting.update(
-                request.getIsOutbidEnabled(),
-                request.getIsAuctionStartEnabled(),
-                request.getIsMarketingEnabled());
+                request.isOutbidEnabled(),
+                request.isAuctionStartEnabled(),
+                request.isMarketingEnabled());
         notificationSettingRepository.save(setting);
         return new NotificationSettingResponse(
                 setting.isOutbidEnabled(),
