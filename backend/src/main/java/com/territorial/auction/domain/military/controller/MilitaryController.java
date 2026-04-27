@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/military")
+@RequestMapping("/api/v1/military")
 @RequiredArgsConstructor
 public class MilitaryController {
 

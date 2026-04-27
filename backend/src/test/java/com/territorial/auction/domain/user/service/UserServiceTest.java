@@ -16,7 +16,7 @@ import com.territorial.auction.domain.season.repository.UserSeasonPassRepository
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.user.dto.MyProfileResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingResponse;
-import com.territorial.auction.domain.user.dto.NotificationSettingUpdateRequest;
+import com.territorial.auction.domain.user.dto.UpdateNotificationSettingRequest;
 import com.territorial.auction.domain.user.dto.UserProfileResponse;
 import com.territorial.auction.domain.user.entity.NotificationSetting;
 import com.territorial.auction.domain.user.entity.User;
@@ -338,10 +338,8 @@ class UserServiceTest {
             given(notificationSettingRepository.save(any(NotificationSetting.class)))
                     .willAnswer(inv -> inv.getArgument(0));
 
-            NotificationSettingUpdateRequest request = new NotificationSettingUpdateRequest();
-            request.setIsOutbidEnabled(false);
-            request.setIsAuctionStartEnabled(false);
-            request.setIsMarketingEnabled(true);
+            UpdateNotificationSettingRequest request =
+                    new UpdateNotificationSettingRequest(false, false, true);
 
             NotificationSettingResponse response =
                     userService.updateNotificationSetting(1L, request);
@@ -361,8 +359,8 @@ class UserServiceTest {
             given(notificationSettingRepository.save(any(NotificationSetting.class)))
                     .willAnswer(inv -> inv.getArgument(0));
 
-            NotificationSettingUpdateRequest request = new NotificationSettingUpdateRequest();
-            request.setIsOutbidEnabled(false); // 이것만 변경
+            UpdateNotificationSettingRequest request =
+                    new UpdateNotificationSettingRequest(false, null, null);
             // isAuctionStartEnabled, isMarketingEnabled 는 null → 변경 없음
 
             NotificationSettingResponse response =
@@ -378,7 +376,8 @@ class UserServiceTest {
         void updateNotificationSetting_notFound() {
             given(notificationSettingRepository.findById(99L)).willReturn(Optional.empty());
 
-            NotificationSettingUpdateRequest request = new NotificationSettingUpdateRequest();
+            UpdateNotificationSettingRequest request =
+                    new UpdateNotificationSettingRequest(null, null, null);
 
             assertThatThrownBy(() -> userService.updateNotificationSetting(99L, request))
                     .isInstanceOf(CustomException.class)
@@ -395,8 +394,8 @@ class UserServiceTest {
             given(notificationSettingRepository.save(any(NotificationSetting.class)))
                     .willAnswer(inv -> inv.getArgument(0));
 
-            NotificationSettingUpdateRequest request = new NotificationSettingUpdateRequest();
-            request.setIsMarketingEnabled(true);
+            UpdateNotificationSettingRequest request =
+                    new UpdateNotificationSettingRequest(null, null, true);
 
             userService.updateNotificationSetting(1L, request);
 

@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/social")
+@RequestMapping("/api/v1/social")
 @RequiredArgsConstructor
 public class SocialController {
 
