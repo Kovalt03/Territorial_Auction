@@ -131,11 +131,7 @@ public class UserService {
                 notificationSettingRepository
                         .findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
-        return new NotificationSettingResponse(
-                setting.isOutbidEnabled(),
-                setting.isAuctionStartEnabled(),
-                setting.isMarketingEnabled(),
-                setting.getUpdatedAt());
+        return NotificationSettingResponse.from(setting);
     }
 
     @Transactional
@@ -150,10 +146,6 @@ public class UserService {
                 request.isAuctionStartEnabled(),
                 request.isMarketingEnabled());
         notificationSettingRepository.save(setting);
-        return new NotificationSettingResponse(
-                setting.isOutbidEnabled(),
-                setting.isAuctionStartEnabled(),
-                setting.isMarketingEnabled(),
-                setting.getUpdatedAt());
+        return NotificationSettingResponse.from(setting);
     }
 }
