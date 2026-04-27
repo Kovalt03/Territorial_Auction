@@ -1,6 +1,21 @@
 # User API
 
-> 구현 상태: ✅ 완료
+> 구현 상태: 🔄 일부 완료
+
+## 목차
+
+| Method | Endpoint | 기능 | 구현 |
+|---|---|---|---|
+| GET | `/api/v1/users/{userId}` | 유저 프로필 조회 | ✅ |
+| GET | `/api/v1/users/me` | 내 프로필 조회 | ✅ (일부 TODO) |
+| DELETE | `/api/v1/users/me` | 회원 탈퇴 | ✅ (일부 TODO) |
+| GET | `/api/v1/users/me/settings` | 알림 설정 조회 | ✅ |
+| PATCH | `/api/v1/users/me/settings` | 알림 수신 설정 변경 | ✅ |
+| GET | `/api/v1/users/me/wallet` | GP/AP 잔액 조회 | ✅ (일부 TODO) |
+| GET | `/api/v1/users/me/territories` | 나의 영토 목록 조회 | ✅ (일부 TODO) |
+| PATCH | `/api/v1/users/me/nickname` | 닉네임 변경 | ✅ (일부 TODO) |
+| PATCH | `/api/v1/users/me/password` | 비밀번호 변경 | ✅ |
+| POST | `/api/v1/users/me/ap/charge` | AP 충전 | ❌ 미구현 |
 
 ---
 
@@ -236,3 +251,133 @@
 | HTTP | 에러 코드 | 설명 |
 |---|---|---|
 | 401 | UNAUTHORIZED | 인증 토큰 없음 또는 만료 |
+
+---
+
+## 회원 탈퇴
+
+**DELETE** `/api/v1/users/me`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+### Request Body
+
+```json
+{ "password": "mypassword" }
+```
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "회원 탈퇴가 완료되었습니다.",
+  "data": null
+}
+```
+
+> TODO: 탈퇴 후 JWT 토큰 무효화 미구현 (Redis 블랙리스트 등록 필요)
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 401 | INVALID_PASSWORD | 비밀번호 불일치 |
+| 404 | USER_NOT_FOUND | 존재하지 않는 유저 |
+
+---
+
+## 닉네임 변경
+
+**PATCH** `/api/v1/users/me/nickname`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+### Request Body
+
+```json
+{ "nickname": "새닉네임" }
+```
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "userId": 1,
+    "nickname": "새닉네임",
+    "updatedAt": "2026-04-27T13:00:00"
+  }
+}
+```
+
+> TODO: `updatedAt`은 현재 `LocalDateTime.now()` 반환. User 엔티티에 `updatedAt` 감사 필드 추가 후 교체 권장
+
+| field | 타입 | 설명 |
+|---|---|---|
+| `userId` | Long | 유저 ID |
+| `nickname` | String | 변경된 닉네임 |
+| `updatedAt` | String (ISO 8601) | 변경 시각 |
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 409 | DUPLICATE_NICKNAME | 이미 사용 중인 닉네임 |
+| 404 | USER_NOT_FOUND | 존재하지 않는 유저 |
+
+---
+
+## 비밀번호 변경
+
+**PATCH** `/api/v1/users/me/password`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+### Request Body
+
+```json
+{
+  "currentPassword": "oldpassword",
+  "newPassword": "newpassword"
+}
+```
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "비밀번호가 성공적으로 변경되었습니다.",
+  "data": null
+}
+```
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 401 | INVALID_PASSWORD | 현재 비밀번호 불일치 |
+| 404 | USER_NOT_FOUND | 존재하지 않는 유저 |
+
+---
+
+## AP 충전
+
+**POST** `/api/v1/users/me/ap/charge`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+> ❌ **미구현** — 결제 도메인 연동 후 구현 예정
+
+### Request Body (예정)
+
+```json
+{
+  "amount": 1000,
+  "paymentKey": "payment_key_from_pg",
+  "orderId": "order_abc123"
+}
+```
