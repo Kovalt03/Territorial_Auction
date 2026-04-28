@@ -36,6 +36,8 @@ public enum ErrorCode {
     AUCTION_NOT_FOUND(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."),
     AUCTION_ALREADY_ENDED(HttpStatus.BAD_REQUEST, "이미 종료된 경매입니다."),
     BID_AMOUNT_TOO_LOW(HttpStatus.BAD_REQUEST, "입찰 금액이 현재 최고가보다 낮습니다."),
+    ALREADY_HIGHEST_BIDDER(HttpStatus.BAD_REQUEST, "이미 최고 입찰자입니다."),
+    INSUFFICIENT_AP(HttpStatus.BAD_REQUEST, "AP 잔액이 부족합니다."),
 
     // Social
     FRIEND_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 관계를 찾을 수 없습니다."),

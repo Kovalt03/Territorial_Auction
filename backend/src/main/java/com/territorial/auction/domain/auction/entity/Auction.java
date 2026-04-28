@@ -49,4 +49,17 @@ public class Auction {
         this.endAt = endAt;
         this.maxExtendUntil = maxExtendUntil;
     }
+
+    public boolean isEnded() {
+        return LocalDateTime.now().isAfter(this.endAt);
+    }
+
+    public void updateBid(User bidder, int newPrice) {
+        this.currentBidder = bidder;
+        this.currentPrice = newPrice;
+    }
+
+    public void extendEndAt(LocalDateTime newEndAt) {
+        this.endAt = newEndAt.isAfter(this.maxExtendUntil) ? this.maxExtendUntil : newEndAt;
+    }
 }
