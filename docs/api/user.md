@@ -1,6 +1,21 @@
 # User API
 
-> 구현 상태: ✅ 완료
+> 구현 상태: 🔄 일부 완료
+
+## 목차
+
+| Method | Endpoint | 기능 | 구현 |
+|---|---|---|---|
+| GET | `/api/v1/users/{userId}` | 유저 프로필 조회 | ✅ |
+| GET | `/api/v1/users/me` | 내 프로필 조회 | ✅ (일부 TODO) |
+| DELETE | `/api/v1/users/me` | 회원 탈퇴 | ✅ (일부 TODO) |
+| GET | `/api/v1/users/me/settings` | 알림 설정 조회 | ✅ |
+| PATCH | `/api/v1/users/me/settings` | 알림 수신 설정 변경 | ✅ |
+| GET | `/api/v1/users/me/wallet` | GP/AP 잔액 조회 | ✅ (일부 TODO) |
+| GET | `/api/v1/users/me/territories` | 나의 영토 목록 조회 | ✅ (일부 TODO) |
+| PATCH | `/api/v1/users/me/nickname` | 닉네임 변경 | ✅ (일부 TODO) |
+| PATCH | `/api/v1/users/me/password` | 비밀번호 변경 | ✅ |
+| POST | `/api/v1/users/me/ap/charge` | AP 충전 | ❌ 미구현 |
 
 ---
 
@@ -156,20 +171,26 @@
   "status": 200,
   "message": "OK",
   "data": {
-    "availableAP": 5000,
-    "lockedAP": 1000,
     "availableGP": 12000,
-    "availableFood": 100
+    "availableAP": 5000,
+    "lockedAP": 1000
   }
 }
 ```
 
-| field | 설명 | 출처 |
+> `availableFood` 필드는 미군사 도메인 구현 후 추가 예정
+
+| field | 타입 | 설명 | 출처 |
+|---|---|---|---|
+| `availableGP` | int | 사용 가능 Grid Point | `wallets.available_gp` |
+| `availableAP` | int | 사용 가능 Auction Point | `wallets.available_ap` |
+| `lockedAP` | int | 진행 중인 경매 입찰로 묶인 AP | `wallets.locked_ap` |
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
 |---|---|---|
-| `availableAP` | 사용 가능 Auction Point | `wallets.available_ap` |
-| `lockedAP` | 현재 진행 중인 경매 입찰로 묶인 AP | `wallets.locked_ap` |
-| `availableGP` | 사용 가능 Grid Point | `wallets.available_gp` |
-| `availableFood` | 유닛 유지 식량 | `wallets.available_food` |
+| 404 | USER_NOT_FOUND | 존재하지 않는 유저 |
 
 ---
 
@@ -179,35 +200,184 @@
 
 **Authorization**: Bearer `{{accessToken}}` (필수)
 
+### Query Parameters
+
+| 파라미터 | 기본값 | 설명 |
+|---|---|---|
+| `page` | 0 | 페이지 번호 (0-based) |
+| `size` | 10 | 페이지 크기 |
+| `sort` | `id,DESC` | 정렬 기준 |
+
 ### Response (200 OK)
 
 ```json
 {
   "status": 200,
   "message": "OK",
-  "data": [
-    {
-      "territoryId": 10,
-      "name": "테스트영토",
-      "gridX": 2,
-      "gridY": 3,
-      "grade": "RARE",
-      "productionRate": 12,
-      "invincibleUntil": null,
-      "buildingCount": 3,
-      "deployedUnitCount": 20
-    }
-  ]
+  "data": {
+    "totalCount": 3,
+    "territories": [
+      {
+        "territoryId": 10,
+        "grade": "A",
+        "position": { "x": 2, "y": 3 },
+        "continentName": "아시아",
+        "occupiedAt": null,
+        "militaryCount": 0,
+        "isInvincible": false
+      }
+    ]
+  }
 }
 ```
 
-| field | 설명 | 출처 |
-|---|---|---|
-| `grade` | 영토 등급 (COMMON / RARE / EPIC / LEGENDARY) | `territory_grades.name` |
-| `productionRate` | 분당 GP 생산량 | `building_instances` 집계 |
-| `invincibleUntil` | 무적 상태 만료 시각 (null = 무적 아님) | `territories.invincible_until` |
-| `buildingCount` | 배치된 건물 수 | `building_instances` 집계 |
-| `deployedUnitCount` | 배치된 유닛 수 | `unit_instances` 집계 |
+> `occupiedAt`, `militaryCount`, `isInvincible`은 군사 도메인 구현 후 연동 예정 (현재 각각 null / 0 / false 반환)
 
-### 남은작업
-- 서비스 구현
+| field | 타입 | 설명 | 출처 |
+|---|---|---|---|
+| `totalCount` | int | 보유 영토 전체 개수 | `territories` 집계 |
+| `territories[]` | array | 페이지 단위 영토 목록 | - |
+| `territories[].territoryId` | Long | 영토 ID | `territories.id` |
+| `territories[].grade` | String | 영토 등급 (S/A/B/C/D) | `territory_grades.grade` |
+| `territories[].position.x` | int | 그리드 X 좌표 | `territories.coord_x` |
+| `territories[].position.y` | int | 그리드 Y 좌표 | `territories.coord_y` |
+| `territories[].continentName` | String | 소속 대륙 이름 | `continents.name` |
+| `territories[].occupiedAt` | String (ISO 8601) | 점령 시각 (미구현, null) | - |
+| `territories[].militaryCount` | int | 배치된 유닛 수 (미구현, 0) | - |
+| `territories[].isInvincible` | boolean | 무적 상태 여부 (미구현, false) | - |
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 401 | UNAUTHORIZED | 인증 토큰 없음 또는 만료 |
+
+---
+
+## 회원 탈퇴
+
+**DELETE** `/api/v1/users/me`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+### Request Body
+
+```json
+{ "password": "mypassword" }
+```
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "회원 탈퇴가 완료되었습니다.",
+  "data": null
+}
+```
+
+> TODO: 탈퇴 후 JWT 토큰 무효화 미구현 (Redis 블랙리스트 등록 필요)
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 401 | INVALID_PASSWORD | 비밀번호 불일치 |
+| 404 | USER_NOT_FOUND | 존재하지 않는 유저 |
+
+---
+
+## 닉네임 변경
+
+**PATCH** `/api/v1/users/me/nickname`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+### Request Body
+
+```json
+{ "nickname": "새닉네임" }
+```
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "userId": 1,
+    "nickname": "새닉네임",
+    "updatedAt": "2026-04-27T13:00:00"
+  }
+}
+```
+
+> TODO: `updatedAt`은 현재 `LocalDateTime.now()` 반환. User 엔티티에 `updatedAt` 감사 필드 추가 후 교체 권장
+
+| field | 타입 | 설명 |
+|---|---|---|
+| `userId` | Long | 유저 ID |
+| `nickname` | String | 변경된 닉네임 |
+| `updatedAt` | String (ISO 8601) | 변경 시각 |
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 409 | DUPLICATE_NICKNAME | 이미 사용 중인 닉네임 |
+| 404 | USER_NOT_FOUND | 존재하지 않는 유저 |
+
+---
+
+## 비밀번호 변경
+
+**PATCH** `/api/v1/users/me/password`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+### Request Body
+
+```json
+{
+  "currentPassword": "oldpassword",
+  "newPassword": "newpassword"
+}
+```
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "비밀번호가 성공적으로 변경되었습니다.",
+  "data": null
+}
+```
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 401 | INVALID_PASSWORD | 현재 비밀번호 불일치 |
+| 404 | USER_NOT_FOUND | 존재하지 않는 유저 |
+
+---
+
+## AP 충전
+
+**POST** `/api/v1/users/me/ap/charge`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+> ❌ **미구현** — 결제 도메인 연동 후 구현 예정
+
+### Request Body (예정)
+
+```json
+{
+  "amount": 1000,
+  "paymentKey": "payment_key_from_pg",
+  "orderId": "order_abc123"
+}
+```

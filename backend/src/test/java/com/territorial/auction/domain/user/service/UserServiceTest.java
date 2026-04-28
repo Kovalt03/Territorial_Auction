@@ -5,22 +5,31 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.map.entity.Continent;
+import com.territorial.auction.domain.map.entity.Territory;
+import com.territorial.auction.domain.map.entity.TerritoryGrade;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.entity.SeasonPass;
 import com.territorial.auction.domain.season.entity.UserSeasonPass;
 import com.territorial.auction.domain.season.entity.UserTrophy;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
+import com.territorial.auction.domain.user.dto.ChangeNicknameResponse;
 import com.territorial.auction.domain.user.dto.MyProfileResponse;
+import com.territorial.auction.domain.user.dto.MyTerritoryResponse;
+import com.territorial.auction.domain.user.dto.MyWalletResponse;
 import com.territorial.auction.domain.user.dto.NotificationSettingResponse;
 import com.territorial.auction.domain.user.dto.UpdateNotificationSettingRequest;
 import com.territorial.auction.domain.user.dto.UserProfileResponse;
 import com.territorial.auction.domain.user.entity.NotificationSetting;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.UserProfile;
+import com.territorial.auction.domain.user.entity.UserStatus;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.NotificationSettingRepository;
 import com.territorial.auction.domain.user.repository.UserProfileRepository;
@@ -29,6 +38,8 @@ import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -37,6 +48,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +67,7 @@ class UserServiceTest {
     @Mock private NotificationSettingRepository notificationSettingRepository;
     @Mock private UserProfileRepository userProfileRepository;
     @Mock private UserTrophyRepository userTrophyRepository;
+    @Mock private PasswordEncoder passwordEncoder;
 
     // ─── 공통 픽스처 ─────────────────────────────────────────────────────────
 
@@ -400,6 +416,221 @@ class UserServiceTest {
             userService.updateNotificationSetting(1L, request);
 
             then(notificationSettingRepository).should().save(setting);
+        }
+    }
+
+    // ─── deleteMe() ───────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("deleteMe()")
+    class DeleteMe {
+
+        @Test
+        @DisplayName("존재하지 않는 userId 시 USER_NOT_FOUND 예외")
+        void deleteMe_userNotFound() {
+            given(userRepository.findById(99L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.deleteMe(99L, "any"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("비밀번호 불일치 시 INVALID_PASSWORD 예외 — passwordEncoder.matches() 사용 전제")
+        void deleteMe_wrongPassword_throwsInvalidPassword() {
+            User user = sampleUser(); // passwordHash = "encoded"
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("wrongPw", "encoded")).willReturn(false);
+
+            assertThatThrownBy(() -> userService.deleteMe(1L, "wrongPw"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INVALID_PASSWORD);
+        }
+
+        @Test
+        @DisplayName("정상 탈퇴 시 소프트 삭제 — status=WITHDRAWN, userRepository.delete() 미호출")
+        void deleteMe_success_softDelete() {
+            User user = sampleUser(); // passwordHash = "encoded"
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("rawPw", "encoded")).willReturn(true);
+
+            userService.deleteMe(1L, "rawPw");
+
+            // 소프트 삭제 검증: 하드 삭제 금지, status=WITHDRAWN 이어야 함
+            then(userRepository).should(never()).delete(user);
+            assertThat(user.getStatus()).isEqualTo(UserStatus.WITHDRAWN);
+        }
+    }
+
+    // ─── getMyWallet() ────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("getMyWallet()")
+    class GetMyWallet {
+
+        @Test
+        @DisplayName("정상 조회 시 MyWalletResponse 반환")
+        void getMyWallet_success() {
+            User user = sampleUser();
+            Wallet wallet = sampleWallet(user); // availableGp=1500, availableAp=300, lockedAp=0
+
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            MyWalletResponse response = userService.getMyWallet(1L);
+
+            assertThat(response.availableGP()).isEqualTo(1500);
+            assertThat(response.availableAP()).isEqualTo(300);
+            assertThat(response.lockedAP()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("지갑 없으면 USER_NOT_FOUND 예외")
+        void getMyWallet_notFound() {
+            given(walletRepository.findById(99L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.getMyWallet(99L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
+        }
+    }
+
+    // ─── getMyTerritories() ───────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("getMyTerritories()")
+    class GetMyTerritories {
+
+        private Territory sampleTerritory() {
+            TerritoryGrade grade = mock(TerritoryGrade.class);
+            given(grade.getGrade()).willReturn("A");
+
+            Continent continent = mock(Continent.class);
+            given(continent.getName()).willReturn("아시아");
+
+            Territory territory = mock(Territory.class);
+            given(territory.getId()).willReturn(10L);
+            given(territory.getCoordX()).willReturn(3);
+            given(territory.getCoordY()).willReturn(7);
+            given(territory.getGrade()).willReturn(grade);
+            given(territory.getContinent()).willReturn(continent);
+            return territory;
+        }
+
+        @Test
+        @DisplayName("영토가 있으면 totalCount와 territoryInfos 반환")
+        void getMyTerritories_success() {
+            Territory territory = sampleTerritory();
+            Page<Territory> page = new PageImpl<>(List.of(territory));
+            PageRequest pageable = PageRequest.of(0, 10);
+
+            given(territoryRepository.findAllByUserId(1L, pageable)).willReturn(page);
+
+            MyTerritoryResponse response = userService.getMyTerritories(1L, pageable);
+
+            assertThat(response.totalCount()).isEqualTo(1);
+            assertThat(response.territories()).hasSize(1);
+
+            MyTerritoryResponse.TerritoryInfo info = response.territories().get(0);
+            assertThat(info.territoryId()).isEqualTo(10L);
+            assertThat(info.grade()).isEqualTo("A");
+            assertThat(info.position().x()).isEqualTo(3);
+            assertThat(info.position().y()).isEqualTo(7);
+            assertThat(info.continentName()).isEqualTo("아시아");
+        }
+
+        @Test
+        @DisplayName("영토가 없으면 totalCount=0, 빈 목록 반환")
+        void getMyTerritories_empty() {
+            Page<Territory> emptyPage = new PageImpl<>(Collections.emptyList());
+            PageRequest pageable = PageRequest.of(0, 10);
+
+            given(territoryRepository.findAllByUserId(1L, pageable)).willReturn(emptyPage);
+
+            MyTerritoryResponse response = userService.getMyTerritories(1L, pageable);
+
+            assertThat(response.totalCount()).isEqualTo(0);
+            assertThat(response.territories()).isEmpty();
+        }
+    }
+
+    // ─── changeUserNickname() ─────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("changeUserNickname()")
+    class ChangeUserNickname {
+
+        @Test
+        @DisplayName("정상 변경 시 ChangeNicknameResponse 반환")
+        void changeUserNickname_success() {
+            User user = sampleUser(); // nickname = "픽셀전사"
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(userRepository.existsByNickname("새닉네임")).willReturn(false);
+            given(userRepository.save(user)).willReturn(user);
+
+            ChangeNicknameResponse response = userService.changeUserNickname(1L, "새닉네임");
+
+            assertThat(response.userId()).isEqualTo(1L);
+            assertThat(response.nickname()).isEqualTo("새닉네임");
+            assertThat(response.updatedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("중복 닉네임이면 DUPLICATE_NICKNAME 예외")
+        void changeUserNickname_duplicate() {
+            User user = sampleUser();
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(userRepository.existsByNickname("중복닉네임")).willReturn(true);
+
+            assertThatThrownBy(() -> userService.changeUserNickname(1L, "중복닉네임"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.DUPLICATE_NICKNAME);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 userId 시 USER_NOT_FOUND 예외")
+        void changeUserNickname_userNotFound() {
+            given(userRepository.findById(99L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.changeUserNickname(99L, "닉네임"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
+        }
+    }
+
+    // ─── changeUserPassword() ─────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("changeUserPassword()")
+    class ChangeUserPassword {
+
+        @Test
+        @DisplayName("정상 변경 시 passwordEncoder.encode 호출 후 save")
+        void changeUserPassword_success() {
+            User user = sampleUser(); // passwordHash = "encoded"
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(passwordEncoder.matches("curPw", "encoded")).willReturn(true);
+            given(passwordEncoder.encode("newPw")).willReturn("newEncoded");
+
+            userService.changeUserPassword(1L, "curPw", "newPw");
+
+            assertThat(user.getPasswordHash()).isEqualTo("newEncoded");
+            then(userRepository).should().save(user);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 userId 시 USER_NOT_FOUND 예외")
+        void changeUserPassword_userNotFound() {
+            given(userRepository.findById(99L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.changeUserPassword(99L, "curPw", "newPw"))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
         }
     }
 }

@@ -3,6 +3,8 @@ package com.territorial.auction.domain.map.repository;
 import com.territorial.auction.domain.map.entity.Territory;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,4 +25,10 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
     long countByContinentId(Long continentId);
 
     long countByContinentIdAndStatus(Long continentId, Territory.TerritoryStatus status);
+
+    @Query(
+            value =
+                    "SELECT t FROM Territory t JOIN FETCH t.continent JOIN FETCH t.grade where t.owner.id = :userId",
+            countQuery = "SELECT COUNT(t) FROM Territory t WHERE t.owner.id = :userId")
+    Page<Territory> findAllByUserId(@Param("userId") Long userId, Pageable pageable);
 }
