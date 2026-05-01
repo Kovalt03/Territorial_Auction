@@ -4,14 +4,14 @@
 
 ## 목차
 
-| Method | Endpoint | 기능 | 구현 |
-|---|---|---|---|
-| GET | `/api/v1/auctions` | 경매 목록 조회 | ✅ |
-| GET | `/api/v1/auctions/{auctionId}` | 경매 상세 조회 | ✅ |
-| POST | `/api/v1/auctions/{auctionId}/bids` | 입찰하기 | ✅ |
-| GET | `/api/v1/auctions/{auctionId}/bids` | 가격 변동 그래프 데이터 | ✅ |
-| GET | `/api/v1/auctions/my-bids` | 내 입찰 내역 | ✅ |
-| GET | `/api/v1/auctions/territories/{territoryId}` | 영토 경매 이력 | ✅ |
+| Method | Endpoint | 기능 | 구현 | 남은 작업 |
+|---|---|---|---|---|
+| GET | `/api/v1/auctions` | 경매 목록 조회 | ✅ | - |
+| GET | `/api/v1/auctions/{auctionId}` | 경매 상세 조회 | ✅ | Redis 캐시 |
+| POST | `/api/v1/auctions/{auctionId}/bids` | 입찰하기 | ✅ | Redis 분산락, WebSocket 브로드캐스트 |
+| GET | `/api/v1/auctions/{auctionId}/bids` | 가격 변동 그래프 데이터 | ✅ | - |
+| GET | `/api/v1/auctions/my-bids` | 내 입찰 내역 | ✅ | - |
+| GET | `/api/v1/auctions/territories/{territoryId}` | 영토 경매 이력 | ✅ | - |
 
 ---
 
@@ -202,6 +202,7 @@
 - ~~서비스 구현~~ ✅
 - ~~AP 락/환불 처리~~ ✅ (`lockAp` / `refundLockedAp`)
 - ⬜ Redis 분산락 (`auction:lock:{auctionId}`)
+- ⬜ 입찰 성공 시 `/sub/auction/{auctionId}` WebSocket 브로드캐스트 (→ `websocket.md` TODO 2번)
 
 ---
 
