@@ -3,8 +3,11 @@ package com.territorial.auction.domain.auction.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
@@ -88,28 +91,28 @@ class AuctionServiceTest {
             LocalDateTime endAt,
             LocalDateTime maxExtendUntil) {
         Auction auction = mock(Auction.class);
-        given(auction.getId()).willReturn(id);
-        given(auction.getCurrentPrice()).willReturn(currentPrice);
-        given(auction.getCurrentBidder()).willReturn(currentBidder);
-        given(auction.getEndAt()).willReturn(endAt);
-        given(auction.getMaxExtendUntil()).willReturn(maxExtendUntil);
-        given(auction.isEnded()).willReturn(LocalDateTime.now().isAfter(endAt));
+        // 공유 픽스처 — 각 테스트에서 필요한 스텁만 호출되므로 모두 lenient
+        lenient().when(auction.getId()).thenReturn(id);
+        lenient().when(auction.getCurrentPrice()).thenReturn(currentPrice);
+        lenient().when(auction.getCurrentBidder()).thenReturn(currentBidder);
+        lenient().when(auction.getEndAt()).thenReturn(endAt);
+        lenient().when(auction.getMaxExtendUntil()).thenReturn(maxExtendUntil);
+        lenient().when(auction.getStartAt()).thenReturn(LocalDateTime.now().minusHours(1));
 
         TerritoryGrade grade = mock(TerritoryGrade.class);
-        given(grade.getGrade()).willReturn("A");
+        lenient().when(grade.getGrade()).thenReturn("A");
 
         Continent continent = mock(Continent.class);
-        given(continent.getName()).willReturn("북부 대륙");
+        lenient().when(continent.getName()).thenReturn("북부 대륙");
 
         Territory territory = mock(Territory.class);
-        given(territory.getId()).willReturn(5L);
-        given(territory.getCoordX()).willReturn(2);
-        given(territory.getCoordY()).willReturn(3);
-        given(territory.getGrade()).willReturn(grade);
-        given(territory.getContinent()).willReturn(continent);
+        lenient().when(territory.getId()).thenReturn(5L);
+        lenient().when(territory.getCoordX()).thenReturn(2);
+        lenient().when(territory.getCoordY()).thenReturn(3);
+        lenient().when(territory.getGrade()).thenReturn(grade);
+        lenient().when(territory.getContinent()).thenReturn(continent);
 
-        given(auction.getTerritory()).willReturn(territory);
-        given(auction.getStartAt()).willReturn(LocalDateTime.now().minusHours(1));
+        lenient().when(auction.getTerritory()).thenReturn(territory);
         return auction;
     }
 
@@ -132,7 +135,9 @@ class AuctionServiceTest {
             PageRequest pageable = PageRequest.of(0, 20);
             Page<Auction> page = new PageImpl<>(List.of(auction), pageable, 1);
 
-            given(auctionRepository.findAllWithFilter(null, null, any(), pageable))
+            given(
+                            auctionRepository.findAllWithFilter(
+                                    isNull(), isNull(), any(LocalDateTime.class), eq(pageable)))
                     .willReturn(page);
 
             AuctionListResponse response = auctionService.getAuctions(null, null, pageable);
@@ -594,7 +599,7 @@ class AuctionServiceTest {
             given(bid.getAuction()).willReturn(auction);
             given(bid.getBidder()).willReturn(bidder);
             given(bid.getPrice()).willReturn(price);
-            given(bid.getBidAt()).willReturn(LocalDateTime.now().minusMinutes(10));
+            lenient().when(bid.getBidAt()).thenReturn(LocalDateTime.now().minusMinutes(10));
             return bid;
         }
 
@@ -675,15 +680,14 @@ class AuctionServiceTest {
             given(userBid.getPrice()).willReturn(1100);
             given(userBid.getBidAt()).willReturn(LocalDateTime.of(2026, 4, 27, 13, 0));
 
-            given(auctionRepository.findById(1L))
-                    .willReturn(
-                            Optional.of(
-                                    mockAuction(
-                                            1L,
-                                            1100,
-                                            bidder,
-                                            LocalDateTime.now().plusHours(1),
-                                            LocalDateTime.now().plusHours(2))));
+            Auction auction =
+                    mockAuction(
+                            1L,
+                            1100,
+                            bidder,
+                            LocalDateTime.now().plusHours(1),
+                            LocalDateTime.now().plusHours(2));
+            given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
             given(auctionBidRepository.findAllByAuctionIdOrderByBidAtAsc(1L))
                     .willReturn(List.of(systemBid, userBid));
 
@@ -704,15 +708,14 @@ class AuctionServiceTest {
         @Test
         @DisplayName("입찰 내역 없으면 빈 bids 리스트 반환")
         void getAuctionBidHistory_empty() {
-            given(auctionRepository.findById(1L))
-                    .willReturn(
-                            Optional.of(
-                                    mockAuction(
-                                            1L,
-                                            1000,
-                                            null,
-                                            LocalDateTime.now().plusHours(1),
-                                            LocalDateTime.now().plusHours(2))));
+            Auction auction =
+                    mockAuction(
+                            1L,
+                            1000,
+                            null,
+                            LocalDateTime.now().plusHours(1),
+                            LocalDateTime.now().plusHours(2));
+            given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
             given(auctionBidRepository.findAllByAuctionIdOrderByBidAtAsc(1L))
                     .willReturn(Collections.emptyList());
 
@@ -746,9 +749,6 @@ class AuctionServiceTest {
 
             Auction auction = mock(Auction.class);
             given(auction.getId()).willReturn(auctionId);
-
-            Territory territory = mock(Territory.class);
-            given(territory.getId()).willReturn(5L);
 
             AuctionHistory history = mock(AuctionHistory.class);
             given(history.getAuction()).willReturn(auction);
