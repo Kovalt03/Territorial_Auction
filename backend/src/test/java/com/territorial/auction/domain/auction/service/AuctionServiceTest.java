@@ -21,6 +21,7 @@ import com.territorial.auction.domain.auction.dto.TerritoryAuctionHistoryRespons
 import com.territorial.auction.domain.auction.entity.Auction;
 import com.territorial.auction.domain.auction.entity.AuctionBid;
 import com.territorial.auction.domain.auction.entity.AuctionHistory;
+import com.territorial.auction.domain.auction.entity.AuctionStatus;
 import com.territorial.auction.domain.auction.repository.AuctionBidRepository;
 import com.territorial.auction.domain.auction.repository.AuctionHistoryRepository;
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
@@ -156,7 +157,7 @@ class AuctionServiceTest {
             assertThat(item.grade()).isEqualTo("A");
             assertThat(item.currentPrice()).isEqualTo(2000);
             assertThat(item.currentBidderNickname()).isNull();
-            assertThat(item.status()).isEqualTo("BIDDING");
+            assertThat(item.status()).isEqualTo(AuctionStatus.BIDDING);
         }
 
         @Test
@@ -184,7 +185,7 @@ class AuctionServiceTest {
             given(auctionRepository.findAllWithFilter(any(), any(), any(), any()))
                     .willReturn(new PageImpl<>(Collections.emptyList(), pageable, 0));
 
-            auctionService.getAuctions(null, "BIDDING", pageable);
+            auctionService.getAuctions(null, AuctionStatus.BIDDING, pageable);
 
             then(auctionRepository)
                     .should()
@@ -238,9 +239,10 @@ class AuctionServiceTest {
             given(auctionRepository.findAllWithFilter(any(), any(), any(), any()))
                     .willReturn(new PageImpl<>(List.of(auction), pageable, 1));
 
-            AuctionListResponse response = auctionService.getAuctions(null, "IDLE", pageable);
+            AuctionListResponse response =
+                    auctionService.getAuctions(null, AuctionStatus.IDLE, pageable);
 
-            assertThat(response.auctions().get(0).status()).isEqualTo("IDLE");
+            assertThat(response.auctions().get(0).status()).isEqualTo(AuctionStatus.IDLE);
         }
     }
 
@@ -626,7 +628,7 @@ class AuctionServiceTest {
             assertThat(item.territoryId()).isEqualTo(5L);
             assertThat(item.myBidAmount()).isEqualTo(2100);
             assertThat(item.isHighestBidder()).isFalse();
-            assertThat(item.status()).isEqualTo("BIDDING");
+            assertThat(item.status()).isEqualTo(AuctionStatus.BIDDING);
         }
 
         @Test

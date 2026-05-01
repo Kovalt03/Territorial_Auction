@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.auction.service;
 
+import com.territorial.auction.domain.auction.AuctionPolicy;
 import com.territorial.auction.domain.auction.dto.AuctionBidHistoryResponse;
 import com.territorial.auction.domain.auction.dto.AuctionDetailResponse;
 import com.territorial.auction.domain.auction.dto.AuctionListResponse;
@@ -10,6 +11,7 @@ import com.territorial.auction.domain.auction.dto.TerritoryAuctionHistoryRespons
 import com.territorial.auction.domain.auction.entity.Auction;
 import com.territorial.auction.domain.auction.entity.AuctionBid;
 import com.territorial.auction.domain.auction.entity.AuctionHistory;
+import com.territorial.auction.domain.auction.entity.AuctionStatus;
 import com.territorial.auction.domain.auction.repository.AuctionBidRepository;
 import com.territorial.auction.domain.auction.repository.AuctionHistoryRepository;
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
@@ -34,9 +36,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AuctionService {
 
-    private static final int ANTI_SNIPE_WINDOW_SECONDS = 60;
-    private static final int ANTI_SNIPE_EXTEND_SECONDS = 30;
-
     private final AuctionRepository auctionRepository;
     private final AuctionBidRepository auctionBidRepository;
     private final AuctionHistoryRepository auctionHistoryRepository;
@@ -50,10 +49,12 @@ public class AuctionService {
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
     }
 
-    public AuctionListResponse getAuctions(Long continentId, String status, Pageable pageable) {
+    public AuctionListResponse getAuctions(
+            Long continentId, AuctionStatus status, Pageable pageable) {
         LocalDateTime now = LocalDateTime.now();
+        String statusName = status != null ? status.name() : null;
         Page<Auction> page =
-                auctionRepository.findAllWithFilter(continentId, status, now, pageable);
+                auctionRepository.findAllWithFilter(continentId, statusName, now, pageable);
         List<AuctionListResponse.AuctionItemDto> items =
                 page.getContent().stream()
                         .map(
@@ -70,7 +71,7 @@ public class AuctionService {
                                                         ? a.getCurrentBidder().getNickname()
                                                         : null,
                                                 a.getEndAt(),
-                                                now.isAfter(a.getEndAt()) ? "IDLE" : "BIDDING"))
+                                                AuctionStatus.from(a.getEndAt(), now)))
                         .toList();
 
         return new AuctionListResponse(
@@ -178,7 +179,7 @@ public class AuctionService {
                                             a.getCurrentPrice(),
                                             isHighest,
                                             a.getEndAt(),
-                                            now.isAfter(a.getEndAt()) ? "IDLE" : "BIDDING");
+                                            AuctionStatus.from(a.getEndAt(), now));
                                 })
                         .toList();
         return new MyBidListResponse(
@@ -226,9 +227,8 @@ public class AuctionService {
     }
 
     private void validateBidAmount(int currentPrice, int bidAmount) {
-        // 최소 입찰 조건: 현재가 +5% AND 현재가 +10 중 더 큰 값 이상
-        int minByPercent = (int) Math.ceil(currentPrice * 1.05);
-        int minByFlat = currentPrice + 10;
+        int minByPercent = (int) Math.ceil(currentPrice * AuctionPolicy.BID_MIN_PERCENT_RATE);
+        int minByFlat = currentPrice + AuctionPolicy.BID_MIN_FLAT_INCREMENT;
         if (bidAmount < Math.max(minByPercent, minByFlat)) {
             throw new CustomException(ErrorCode.BID_AMOUNT_TOO_LOW);
         }
@@ -254,9 +254,10 @@ public class AuctionService {
 
     private void applyAntiSniping(Auction auction, LocalDateTime now) {
         LocalDateTime endAt = auction.getEndAt();
-        // 종료 60초 이내 입찰 시 30초 연장 (엔티티 내에서 maxExtendUntil 상한 처리)
-        if (!endAt.isAfter(now.plusSeconds(ANTI_SNIPE_WINDOW_SECONDS))) {
-            auction.extendEndAt(endAt.plusSeconds(ANTI_SNIPE_EXTEND_SECONDS));
+        // 종료 AuctionPolicy.ANTI_SNIPE_WINDOW_SECONDS 이내 입찰 시 연장
+        // (엔티티 내에서 maxExtendUntil 상한 처리)
+        if (!endAt.isAfter(now.plusSeconds(AuctionPolicy.ANTI_SNIPE_WINDOW_SECONDS))) {
+            auction.extendEndAt(endAt.plusSeconds(AuctionPolicy.ANTI_SNIPE_EXTEND_SECONDS));
         }
     }
 }

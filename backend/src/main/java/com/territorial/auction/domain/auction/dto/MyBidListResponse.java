@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.auction.dto;
 
+import com.territorial.auction.domain.auction.entity.AuctionStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,5 +15,5 @@ public record MyBidListResponse(long totalCount, int page, int size, List<MyBidI
             Integer currentPrice,
             Boolean isHighestBidder,
             LocalDateTime endAt,
-            String status) {}
+            AuctionStatus status) {}
 }

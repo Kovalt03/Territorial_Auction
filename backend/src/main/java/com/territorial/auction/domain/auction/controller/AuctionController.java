@@ -7,6 +7,7 @@ import com.territorial.auction.domain.auction.dto.MyBidListResponse;
 import com.territorial.auction.domain.auction.dto.PlaceBidRequest;
 import com.territorial.auction.domain.auction.dto.PlaceBidResponse;
 import com.territorial.auction.domain.auction.dto.TerritoryAuctionHistoryResponse;
+import com.territorial.auction.domain.auction.entity.AuctionStatus;
 import com.territorial.auction.domain.auction.service.AuctionService;
 import com.territorial.auction.global.common.ApiResponse;
 import jakarta.validation.Valid;
@@ -27,7 +28,7 @@ public class AuctionController {
     @GetMapping
     public ResponseEntity<ApiResponse<AuctionListResponse>> getAuctions(
             @RequestParam(required = false) Long continentId,
-            @RequestParam(required = false) String status,
+            @RequestParam(required = false) AuctionStatus status,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(
                 ApiResponse.ok(auctionService.getAuctions(continentId, status, pageable)));

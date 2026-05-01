@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.auction.dto;
 
+import com.territorial.auction.domain.auction.entity.AuctionStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,5 +17,5 @@ public record AuctionListResponse(
             Integer currentPrice,
             String currentBidderNickname,
             LocalDateTime endAt,
-            String status) {}
+            AuctionStatus status) {}
 }
