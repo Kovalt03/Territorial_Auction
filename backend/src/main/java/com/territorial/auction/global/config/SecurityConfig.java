@@ -6,9 +6,11 @@ import com.territorial.auction.global.security.jwt.JwtTokenProvider;
 import com.territorial.auction.global.security.oauth2.CustomOAuth2UserService;
 import com.territorial.auction.global.security.oauth2.OAuth2FailureHandler;
 import com.territorial.auction.global.security.oauth2.OAuth2SuccessHandler;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -39,11 +41,24 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(
+                        exceptions ->
+                                exceptions.authenticationEntryPoint(
+                                        (request, response, ex) -> {
+                                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                            response.setContentType(
+                                                    "application/json;charset=UTF-8");
+                                            response.getWriter()
+                                                    .write(
+                                                            "{\"status\":\"UNAUTHORIZED\","
+                                                                    + "\"message\":\"인증이 필요합니다.\"}");
+                                        }))
                 .authorizeHttpRequests(
                         // spotless:off
                         auth ->
                                 auth.requestMatchers("/api/v1/auth/logout").authenticated()
                                     .requestMatchers("/api/v1/auth/**", "/oauth2/**", "/login/**").permitAll()
+                                    .requestMatchers(HttpMethod.GET, "/api/v1/auctions", "/api/v1/auctions/**").permitAll()
                                     .anyRequest().authenticated())
                         // spotless:on
                 .oauth2Login(
