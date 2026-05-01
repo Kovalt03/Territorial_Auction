@@ -1,23 +1,23 @@
 # Auction API
 
-> 구현 상태: ⬜ 시작 전
+> 구현 상태: 🔄 진행 중 (핵심 API 완료 / Redis 분산락·캐시 미구현)
 
 ## 목차
 
 | Method | Endpoint | 기능 | 구현 |
 |---|---|---|---|
-| GET | `/api/v1/auctions` | 경매 목록 조회 | ⬜ |
-| GET | `/api/v1/auctions/{auctionId}` | 경매 상세 조회 | ⬜ |
-| POST | `/api/v1/auctions/{auctionId}/bids` | 입찰하기 | ⬜ |
-| GET | `/api/v1/auctions/{auctionId}/bids` | 가격 변동 그래프 데이터 | ⬜ |
-| GET | `/api/v1/auctions/my-bids` | 내 입찰 내역 | ⬜ |
-| GET | `/api/v1/auctions/territories/{territoryId}` | 영토 경매 이력 | ⬜ |
+| GET | `/api/v1/auctions` | 경매 목록 조회 | ✅ |
+| GET | `/api/v1/auctions/{auctionId}` | 경매 상세 조회 | ✅ |
+| POST | `/api/v1/auctions/{auctionId}/bids` | 입찰하기 | ✅ |
+| GET | `/api/v1/auctions/{auctionId}/bids` | 가격 변동 그래프 데이터 | ✅ |
+| GET | `/api/v1/auctions/my-bids` | 내 입찰 내역 | ✅ |
+| GET | `/api/v1/auctions/territories/{territoryId}` | 영토 경매 이력 | ✅ |
 
 ---
 
 ## 경매 목록 조회
 
-**GET** `/api/v1/auctions?page={0}&size={20}&continentId={1}&status={BIDDING}`
+**GET** `/api/v1/auctions?page={0}&size={20}&continentId={1}&status={BIDDING}&sort=endAt,asc`
 
 - 인증 불필요
 
@@ -27,8 +27,9 @@
 |---|---|---|---|---|
 | `page` | Integer | N | 0 | 페이지 번호 (0-based) |
 | `size` | Integer | N | 20 | 페이지 크기 |
+| `sort` | String | N | - | 정렬 기준 (예: `endAt,asc` / `endAt,desc`) |
 | `continentId` | Long | N | - | 대륙 필터 (`continents.id`) |
-| `status` | String | N | - | 경매 상태 필터: `BIDDING` / `IDLE` |
+| `status` | AuctionStatus | N | - | 경매 상태 필터: `BIDDING` / `IDLE` |
 
 ### Response (200 OK)
 
@@ -72,10 +73,10 @@
 | `auctions[].currentPrice` | int | 현재 최고 입찰가 | `auctions.current_price` |
 | `auctions[].currentBidderNickname` | String (nullable) | 현재 최고 입찰자 닉네임 | `users.nickname` (없으면 null) |
 | `auctions[].endAt` | String (ISO 8601) | 경매 종료 시각 | `auctions.end_at` |
-| `auctions[].status` | String | 경매 상태 | `auctions.end_at > now()` → `BIDDING`, 이하 → `IDLE` |
+| `auctions[].status` | AuctionStatus | 경매 상태 | `auctions.end_at > now()` → `BIDDING`, 이하 → `IDLE` |
 
 ### 남은 작업
-- 서비스 구현
+- ~~서비스 구현~~ ✅
 
 ---
 
@@ -135,8 +136,8 @@
 | 404 | AUCTION_NOT_FOUND | 존재하지 않는 경매 |
 
 ### 남은 작업
-- 서비스 구현
-- Redis 캐시 (`auction:bid:{auctionId}`)
+- ~~서비스 구현~~ ✅
+- ⬜ Redis 캐시 (`auction:bid:{auctionId}`)
 
 ---
 
@@ -198,9 +199,9 @@
 | 400 | AUCTION_ALREADY_ENDED | 이미 종료된 경매 |
 
 ### 남은 작업
-- 서비스 구현
-- Redis 분산락 (`auction:lock:{auctionId}`)
-- AP 락/환불 원자적 처리
+- ~~서비스 구현~~ ✅
+- ~~AP 락/환불 처리~~ ✅ (`lockAp` / `refundLockedAp`)
+- ⬜ Redis 분산락 (`auction:lock:{auctionId}`)
 
 ---
 
@@ -250,7 +251,7 @@
 | 404 | AUCTION_NOT_FOUND | 존재하지 않는 경매 |
 
 ### 남은 작업
-- 서비스 구현
+- ~~서비스 구현~~ ✅
 
 ---
 
@@ -309,10 +310,10 @@
 | `bids[].currentPrice` | int | 현재 최고 입찰가 | `auctions.current_price` |
 | `bids[].isHighestBidder` | boolean | 내가 현재 최고 입찰자 여부 | `auctions.current_bidder_id = userId` 파생 |
 | `bids[].endAt` | String (ISO 8601) | 경매 종료 시각 | `auctions.end_at` |
-| `bids[].status` | String | 경매 상태 | `auctions.end_at > now()` → `BIDDING`, 이하 → `IDLE` |
+| `bids[].status` | AuctionStatus | 경매 상태 | `auctions.end_at > now()` → `BIDDING`, 이하 → `IDLE` |
 
 ### 남은 작업
-- 서비스 구현
+- ~~서비스 구현~~ ✅
 
 ---
 
@@ -369,7 +370,7 @@
 | 404 | TERRITORY_NOT_FOUND | 존재하지 않는 영토 |
 
 ### 남은 작업
-- 서비스 구현
-- `AuctionHistoryRepository` 쿼리 추가
+- ~~서비스 구현~~ ✅
+- ~~`AuctionHistoryRepository` 쿼리 추가~~ ✅
 
 ---
