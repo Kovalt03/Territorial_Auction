@@ -2,6 +2,7 @@ package com.territorial.auction.domain.auction.repository;
 
 import com.territorial.auction.domain.auction.entity.Auction;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,4 +39,12 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             @Param("status") String status,
             @Param("now") LocalDateTime now,
             Pageable pageable);
+
+    @Query(
+            "SELECT a FROM Auction a"
+                    + " JOIN FETCH a.territory t"
+                    + " JOIN FETCH t.grade"
+                    + " LEFT JOIN FETCH a.currentBidder"
+                    + " WHERE a.endAt <= :now AND a.settled = false")
+    List<Auction> findAllExpiredUnsettled(@Param("now") LocalDateTime now);
 }
