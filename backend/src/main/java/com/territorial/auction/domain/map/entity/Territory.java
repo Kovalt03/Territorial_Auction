@@ -34,6 +34,8 @@ public class Territory {
 
     private LocalDateTime occupiedUntil;
 
+    private LocalDateTime nextAuctionAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private TerritoryStatus status = TerritoryStatus.IDLE;
@@ -57,6 +59,24 @@ public class Territory {
 
     public void updateColor(String colorCode) {
         this.currentColor = colorCode;
+    }
+
+    public void startBidding() {
+        this.status = TerritoryStatus.BIDDING;
+        this.nextAuctionAt = null;
+    }
+
+    public void occupy(User winner, LocalDateTime until) {
+        this.owner = winner;
+        this.status = TerritoryStatus.OCCUPIED;
+        this.occupiedUntil = until;
+        this.nextAuctionAt = null;
+    }
+
+    public void release(LocalDateTime nextAuctionAt) {
+        this.status = TerritoryStatus.IDLE;
+        this.occupiedUntil = null;
+        this.nextAuctionAt = nextAuctionAt;
     }
 
     public enum TerritoryStatus {

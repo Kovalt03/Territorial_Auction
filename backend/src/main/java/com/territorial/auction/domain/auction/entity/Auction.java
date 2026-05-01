@@ -36,6 +36,9 @@ public class Auction {
     @Column(nullable = false)
     private LocalDateTime maxExtendUntil;
 
+    @Column(nullable = false)
+    private boolean settled = false;
+
     @Builder
     public Auction(
             Territory territory,
@@ -48,5 +51,22 @@ public class Auction {
         this.startAt = startAt;
         this.endAt = endAt;
         this.maxExtendUntil = maxExtendUntil;
+    }
+
+    public boolean isEnded() {
+        return LocalDateTime.now().isAfter(this.endAt);
+    }
+
+    public void updateBid(User bidder, int newPrice) {
+        this.currentBidder = bidder;
+        this.currentPrice = newPrice;
+    }
+
+    public void extendEndAt(LocalDateTime newEndAt) {
+        this.endAt = newEndAt.isAfter(this.maxExtendUntil) ? this.maxExtendUntil : newEndAt;
+    }
+
+    public void settle() {
+        this.settled = true;
     }
 }

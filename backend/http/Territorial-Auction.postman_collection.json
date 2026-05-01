@@ -400,6 +400,171 @@
       ]
     },
     {
+      "name": "Auction",
+      "item": [
+        {
+          "name": "경매 목록 조회 (필터 없음)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auctions?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auctions"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "경매 목록 조회 (대륙 필터)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auctions?continentId=1&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auctions"],
+              "query": [
+                { "key": "continentId", "value": "1" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "경매 목록 조회 (상태 필터 - 진행 중)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auctions?status=BIDDING&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auctions"],
+              "query": [
+                { "key": "status", "value": "BIDDING" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "경매 목록 조회 (상태 필터 - 종료)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auctions?status=IDLE&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auctions"],
+              "query": [
+                { "key": "status", "value": "IDLE" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "경매 목록 조회 (복합 필터 + 정렬)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auctions?continentId=1&status=BIDDING&page=0&size=20&sort=endAt,asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auctions"],
+              "query": [
+                { "key": "continentId", "value": "1" },
+                { "key": "status", "value": "BIDDING" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" },
+                { "key": "sort", "value": "endAt,asc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "경매 상세 조회",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auctions/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auctions", "1"]
+            }
+          }
+        },
+        {
+          "name": "경매 입찰 내역 조회",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auctions/1/bids",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auctions", "1", "bids"]
+            }
+          }
+        },
+        {
+          "name": "입찰하기",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bidAmount\": 1100\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auctions/1/bids",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auctions", "1", "bids"]
+            }
+          }
+        },
+        {
+          "name": "내 입찰 내역 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auctions/my-bids?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auctions", "my-bids"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "영토 경매 이력 조회",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auctions/territories/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auctions", "territories", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Map",
       "item": [
         {

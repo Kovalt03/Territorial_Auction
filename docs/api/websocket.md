@@ -1,6 +1,6 @@
 # WebSocket API
 
-> 구현 상태: 🔲 미구현
+> 구현 상태: 🔲 미구현 (TODO 항목은 하단 TODO 섹션 참고)
 
 실시간 이벤트 전달을 위해 STOMP over WebSocket을 사용합니다.
 
@@ -44,28 +44,28 @@ Authorization: Bearer {accessToken}
 
 ### 클라이언트 → 서버 (발행)
 
-| Destination | 설명 | 인증 |
-|---|---|---|
-| `/pub/chat/{roomId}` | 채팅 메시지 전송 | 필수 |
-| `/pub/auction/{auctionId}/bid` | 실시간 입찰 (REST 대체 가능) | 필수 |
+| Destination | 설명 | 인증 | 구현 | 관련 TODO |
+|---|---|---|---|---|
+| `/pub/chat/{roomId}` | 채팅 메시지 전송 | 필수 | ⬜ | - |
+| `/pub/auction/{auctionId}/bid` | 실시간 입찰 (REST 대체 가능) | 필수 | ⬜ | TODO 5번 |
 
 ### 서버 → 클라이언트 (구독)
 
 #### 공개 채널 (인증 불필요)
 
-| Destination | 설명 | 발행 시점 |
-|---|---|---|
-| `/sub/map/update` | 맵 전체 영토 상태 변경 | 경매 낙찰, 공성전 종료 시 |
-| `/sub/auction/{auctionId}` | 특정 경매 실시간 입찰 현황 | 새 입찰 발생 시 |
-| `/sub/chat/{roomId}` | 대륙 채팅방 메시지 수신 | 메시지 전송 시 |
+| Destination | 설명 | 발행 시점 | 구현 | 관련 TODO |
+|---|---|---|---|---|
+| `/sub/map/update` | 맵 전체 영토 상태 변경 | 경매 낙찰, 공성전 종료 시 | ⬜ | TODO 4번 |
+| `/sub/auction/{auctionId}` | 특정 경매 실시간 입찰 현황 | 새 입찰 발생 시 | ⬜ | TODO 2번 |
+| `/sub/chat/{roomId}` | 대륙 채팅방 메시지 수신 | 메시지 전송 시 | ⬜ | - |
 
 #### 개인 채널 (인증 필수)
 
-| Destination | 설명 | 발행 시점 |
-|---|---|---|
-| `/sub/user/{userId}/notification` | 개인 알림 수신 | 각종 이벤트 발생 시 |
-| `/sub/user/{userId}/siege-alert` | 공성전 공격 선언 알림 | 내 영토 공격 선언 시 |
-| `/sub/user/{userId}/auction-result` | 경매 낙찰/실패 알림 | 경매 종료 시 |
+| Destination | 설명 | 발행 시점 | 구현 | 관련 TODO |
+|---|---|---|---|---|
+| `/sub/user/{userId}/notification` | 개인 알림 수신 | 각종 이벤트 발생 시 | ⬜ | TODO 3번 |
+| `/sub/user/{userId}/siege-alert` | 공성전 공격 선언 알림 | 내 영토 공격 선언 시 | ⬜ | - |
+| `/sub/user/{userId}/auction-result` | 경매 낙찰/실패 알림 | 경매 종료 시 | ⬜ | TODO 3번 |
 
 ---
 
@@ -196,8 +196,68 @@ Authorization: Bearer {accessToken}
 
 Redis 채널 네이밍: `ws:chat:{roomId}`, `ws:user:{userId}`, `ws:auction:{auctionId}`, `ws:map`
 
-### 남은작업
-- STOMP 핸들러 구현
-- Redis Pub/Sub 메시지 브로커 연동
-- JWT 인증 인터셉터 구현
-- 경매/공성전 이벤트 발행 로직 연동
+---
+
+## TODO
+
+> 모노리스 환경에서 구현 가능. Spring WebSocket + STOMP 의존성 추가만으로 동작.
+> Redis Pub/Sub 연동은 멀티 인스턴스 스케일아웃 시점에 추가.
+
+### 1. 기반 설정
+
+- ⬜ `spring-boot-starter-websocket` 의존성 추가 (`build.gradle`)
+- ⬜ `WebSocketConfig` 구현
+  - STOMP 엔드포인트 등록: `/ws` (SockJS fallback 포함)
+  - 메시지 브로커 설정: `/sub` (구독), `/pub` (발행)
+- ⬜ `StompChannelInterceptor` 구현 — CONNECT 프레임에서 JWT 검증 후 `Principal` 주입
+  - 토큰 없는 연결은 허용하되 `Principal = null` 처리 (공개 채널 구독 가능)
+  - 인증 필요 채널(`/sub/user/**`) 구독 시도 시 에러 프레임 응답
+
+### 2. 입찰 발생 시 실시간 브로드캐스트
+
+발생 위치: `AuctionService.placeBid()` — 입찰 성공 직후
+
+- ⬜ `SimpMessagingTemplate.convertAndSend("/sub/auction/{auctionId}", payload)` 호출
+- ⬜ 페이로드 구조 (위 **경매 입찰 이벤트** 메시지 형식 참고)
+  ```json
+  {
+    "auctionId": 1,
+    "currentPrice": 2500,
+    "bidderId": 9,
+    "bidderNickname": "입찰왕",
+    "bidAt": "2026-04-27T12:01:00Z"
+  }
+  ```
+- ⬜ Anti-sniping으로 `endAt` 이 연장된 경우 페이로드에 `endAt` 포함
+
+### 3. 경매 종료 시 개인 알림 (낙찰/실패)
+
+발생 위치: `AuctionLifecycleService.settleAuction()` — 정산 완료 직후
+
+- ⬜ 낙찰자에게 `AUCTION_WIN` 알림 전송
+  ```
+  SimpMessagingTemplate.convertAndSend("/sub/user/{winnerId}/notification", ...)
+  ```
+- ⬜ 낙찰 실패한 입찰자 목록 조회 후 각각 `AUCTION_LOSE` 알림 전송
+  - `AuctionBidRepository`에서 해당 경매의 낙찰자 외 입찰자 목록 조회 필요
+- ⬜ 알림 페이로드 구조 (위 **개인 알림** 메시지 형식 참고)
+
+### 4. 영토 상태 변경 시 맵 업데이트 브로드캐스트
+
+발생 위치: `AuctionLifecycleService.settleAuction()` — 낙찰/무낙찰 처리 직후
+
+- ⬜ `SimpMessagingTemplate.convertAndSend("/sub/map/update", payload)` 호출
+- ⬜ 낙찰 시 `eventType: TERRITORY_OCCUPIED` 페이로드
+- ⬜ 무낙찰 시 `eventType: TERRITORY_RELEASED` 페이로드
+
+### 5. (선택) WebSocket 경로로 입찰 처리
+
+- ⬜ `@MessageMapping("/auction/{auctionId}/bid")` 핸들러 구현
+  - REST `POST /api/v1/auctions/{auctionId}/bids` 와 동일한 `AuctionService.placeBid()` 호출
+  - REST와 WebSocket 두 경로 모두 지원하거나, 추후 REST 제거
+
+### 6. 스케일아웃 시점 추가 작업 (당장 불필요)
+
+- ⬜ Redis Pub/Sub 메시지 브로커 연동 (`RedisMessageBrokerConfigurer`)
+  - 멀티 인스턴스 환경에서 서버 A에서 발행 → Redis → 서버 B에서 클라이언트로 전달
+  - Redis 채널: `ws:auction:{auctionId}`, `ws:user:{userId}`, `ws:map`

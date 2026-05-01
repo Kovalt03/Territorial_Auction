@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.map.repository;
 
 import com.territorial.auction.domain.map.entity.Territory;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -31,4 +32,22 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
                     "SELECT t FROM Territory t JOIN FETCH t.continent JOIN FETCH t.grade where t.owner.id = :userId",
             countQuery = "SELECT COUNT(t) FROM Territory t WHERE t.owner.id = :userId")
     Page<Territory> findAllByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    @Query(
+            "SELECT t FROM Territory t"
+                    + " JOIN FETCH t.grade"
+                    + " JOIN FETCH t.continent"
+                    + " WHERE t.status = :status AND t.occupiedUntil <= :now")
+    List<Territory> findAllExpiredOccupied(
+            @Param("status") Territory.TerritoryStatus status, @Param("now") LocalDateTime now);
+
+    @Query(
+            "SELECT t FROM Territory t"
+                    + " JOIN FETCH t.grade"
+                    + " JOIN FETCH t.continent"
+                    + " WHERE t.status = :status"
+                    + " AND t.nextAuctionAt IS NOT NULL"
+                    + " AND t.nextAuctionAt <= :now")
+    List<Territory> findAllReadyForAuction(
+            @Param("status") Territory.TerritoryStatus status, @Param("now") LocalDateTime now);
 }

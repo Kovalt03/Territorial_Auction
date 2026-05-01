@@ -37,4 +37,18 @@ public class Wallet {
     public Wallet(User user) {
         this.user = user;
     }
+
+    public void lockAp(int amount) {
+        this.availableAp -= amount;
+        this.lockedAp += amount;
+    }
+
+    public void refundLockedAp(int amount) {
+        this.lockedAp -= amount;
+        this.availableAp += amount;
+    }
+
+    public void consumeLockedAp(int amount) {
+        this.lockedAp -= amount;
+    }
 }
