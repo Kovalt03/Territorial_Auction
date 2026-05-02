@@ -63,7 +63,7 @@
 |---|---|---|---|
 | `availableAP` | Integer | 충전 후 사용 가능 AP 잔액 | `wallets.available_ap` |
 | `chargedAmount` | Integer | 이번에 충전된 AP 수량 | 요청 `amount` |
-| `chargedAt` | String (ISO 8601) | 충전 완료 시각 | `wallets.updated_at` |
+| `chargedAt` | DateTime | 충전 완료 시각 | `wallets.updated_at` |
 
 ### 에러
 
@@ -113,7 +113,7 @@
 | `seasonPassExemptBonus` | Integer | 시즌패스로 추가 면제되는 영토 수 | `season_passes.tax_exempt_bonus` |
 | `effectiveExemptCount` | Integer | 실제 면제 영토 수 | `exemptCount + seasonPassExemptBonus` |
 | `finalDailyGP` | Integer | 최종 일일 세금 (GP) | 누진 정책 재계산값 |
-| `nextChargeAt` | String (ISO 8601) | 다음 세금 납부 시각 | 매일 자정 KST |
+| `nextChargeAt` | DateTime | 다음 세금 납부 시각 | 매일 자정 KST |
 
 ### 토지세 누진 구조
 
@@ -182,7 +182,7 @@
 |---|---|---|---|
 | `totalCount` | Integer | 전체 납세 이력 수 | `land_tax_logs` COUNT |
 | `logs[].logId` | Long | 납세 이력 ID | `land_tax_logs.id` |
-| `logs[].chargedAt` | String (ISO 8601) | 세금 부과 시각 | `land_tax_logs.charged_at` |
+| `logs[].chargedAt` | DateTime | 세금 부과 시각 | `land_tax_logs.charged_at` |
 | `logs[].territoryCount` | Integer | 부과 시점 보유 영토 수 | `land_tax_logs.territory_count` |
 | `logs[].gpCharged` | Integer | 차감된 GP (면제 시 0) | `land_tax_logs.gp_charged` |
 | `logs[].status` | String | `PAID` / `FAILED` / `EXEMPT` | `land_tax_logs.status` |
@@ -253,7 +253,7 @@
 | `territoryStorageAfter` | Long | 이전 후 영토 창고 잔여 GP | `territory_storages.stored_gp` |
 | `vaultStoredAfter` | Long | 이전 후 글로벌 금고 잔액 | `global_vaults.stored_gp` |
 | `vaultCapacity` | Long | 글로벌 금고 최대 용량 | `global_vaults.capacity` |
-| `nextTransferAvailableAt` | String (ISO 8601) | 다음 이전 가능 시각 (10분 후) | `global_vaults.last_transfer_at + 10분` |
+| `nextTransferAvailableAt` | DateTime | 다음 이전 가능 시각 (10분 후) | `global_vaults.last_transfer_at + 10분` |
 
 ### 에러
 
@@ -458,7 +458,7 @@ AP를 소모하여 아이템을 구매합니다. 구매 즉시 인벤토리에 �
 | `itemId` | Long | 사용한 아이템 ID | `items.id` |
 | `itemType` | String | 아이템 종류 | `items.item_type` |
 | `result.territoryId` | Long (nullable) | 적용된 영토 ID | `siege_events.target_territory_id` |
-| `result.invincibleUntil` | String (nullable, ISO 8601) | 무적 만료 시각 | Redis TTL 기준 |
+| `result.invincibleUntil` | DateTime (nullable) | 무적 만료 시각 | Redis TTL 기준 |
 | `remainingCount` | Integer | 사용 후 보유 수량 | `user_items.quantity` |
 
 ### 에러
@@ -522,7 +522,7 @@ AP를 소모하여 아이템을 구매합니다. 구매 즉시 인벤토리에 �
 | `items[].itemType` | String | 아이템 종류 | `items.item_type` |
 | `items[].description` | String | 아이템 설명 | `items.description` |
 | `items[].quantity` | Integer | 보유 수량 | `item_purchases.quantity` |
-| `items[].acquiredAt` | String (ISO 8601) | 아이템 획득 시각 | `item_purchases.purchased_at` |
+| `items[].acquiredAt` | DateTime | 아이템 획득 시각 | `item_purchases.purchased_at` |
 
 ### 에러
 
@@ -570,8 +570,8 @@ AP를 소모하여 아이템을 구매합니다. 구매 즉시 인벤토리에 �
 | `hasSeasonPass` | Boolean | 시즌 패스 보유 여부 | `user_season_passes.is_active` |
 | `seasonPass.passId` | Long (nullable) | 시즌 패스 ID | `user_season_passes.season_pass_id` |
 | `seasonPass.name` | String (nullable) | 시즌 패스 이름 | `season_passes.name` |
-| `seasonPass.startedAt` | String (nullable, ISO 8601) | 패스 시작 시각 | `user_season_passes.started_at` |
-| `seasonPass.expiresAt` | String (nullable, ISO 8601) | 패스 만료 시각 | `user_season_passes.expires_at` |
+| `seasonPass.startedAt` | DateTime (nullable) | 패스 시작 시각 | `user_season_passes.started_at` |
+| `seasonPass.expiresAt` | DateTime (nullable) | 패스 만료 시각 | `user_season_passes.expires_at` |
 | `seasonPass.daysRemaining` | Integer (nullable) | 남은 일수 | `expires_at - now()` 계산값 |
 | `seasonPass.benefits.islandBonusPct` | Integer (nullable) | 섬 GP 생산 보너스 (%) | `season_passes.island_bonus_pct` |
 | `seasonPass.benefits.extraBuilders` | Integer (nullable) | 추가 건설 슬롯 수 | `season_passes.extra_builders` |
@@ -639,7 +639,7 @@ AP를 소모하여 아이템을 구매합니다. 구매 즉시 인벤토리에 �
 | `rewards[].level` | Integer | 보상 해금 레벨 | `season_rewards.level` |
 | `rewards[].rewardName` | String | 보상 이름 | `season_rewards` |
 | `rewards[].claimed` | Boolean | 보상 수령 여부 | `season_pass_progress` |
-| `seasonEndsAt` | String (ISO 8601) | 시즌 종료 시각 | `seasons.ended_at` |
+| `seasonEndsAt` | DateTime | 시즌 종료 시각 | `seasons.ended_at` |
 
 ### 에러
 
@@ -693,8 +693,8 @@ AP를 소모하여 아이템을 구매합니다. 구매 즉시 인벤토리에 �
 |---|---|---|---|
 | `passId` | Long | 구매한 시즌 패스 ID | `season_passes.id` |
 | `name` | String | 시즌 패스 이름 | `season_passes.name` |
-| `startedAt` | String (ISO 8601) | 패스 시작 시각 | `user_season_passes.started_at` |
-| `expiresAt` | String (ISO 8601) | 패스 만료 시각 (`startedAt + 30일`) | `user_season_passes.expires_at` |
+| `startedAt` | DateTime | 패스 시작 시각 | `user_season_passes.started_at` |
+| `expiresAt` | DateTime | 패스 만료 시각 (`startedAt + 30일`) | `user_season_passes.expires_at` |
 | `costAP` | Integer | 차감된 AP | `season_passes.cost_ap` |
 | `remainingAP` | Integer | 구매 후 잔여 AP | `wallets.available_ap` |
 | `benefits.islandBonusPct` | Integer | 섬 GP 생산 보너스 (%) | `season_passes.island_bonus_pct` |
