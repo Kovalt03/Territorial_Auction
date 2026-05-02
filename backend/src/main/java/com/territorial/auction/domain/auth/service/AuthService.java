@@ -76,7 +76,7 @@ public class AuthService {
         User user =
                 userRepository
                         .findByEmail(request.email())
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                        .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
         // 유저 상태 검증
         if (user.getStatus() == UserStatus.WITHDRAWN)
@@ -86,7 +86,7 @@ public class AuthService {
 
         // 비밀번호 검증
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash()))
-            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+            throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
 
         // Access/Refresh 토큰 발급
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());

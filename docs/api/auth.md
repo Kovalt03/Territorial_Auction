@@ -91,8 +91,11 @@ pm.environment.set('accessToken', token);
 ### 에러
 
 | HTTP | 에러 코드 | 설명 |
-|---|---|---|
+|-----|---------------------|----------------|
 | 401 | INVALID_CREDENTIALS | 이메일 또는 비밀번호 불일치 |
+| 403 | WITHDRAWN_USER | 탈퇴한 계정 |
+| 403 | SUSPENDED_USER | 정지된 계정 |
+| 404 | USER_NOT_FOUND | 존재하지 않는 이메일(계정) |
 
 ---
 
