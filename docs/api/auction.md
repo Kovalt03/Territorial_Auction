@@ -6,12 +6,12 @@
 
 | Method | Endpoint | 기능 | 구현 | 남은 작업 |
 |---|---|---|---|---|
-| GET | `/api/v1/auctions` | 경매 목록 조회 | ✅ | - |
-| GET | `/api/v1/auctions/{auctionId}` | 경매 상세 조회 | ✅ | Redis 캐시 |
-| POST | `/api/v1/auctions/{auctionId}/bids` | 입찰하기 | ✅ | Redis 분산락, WebSocket 브로드캐스트 |
-| GET | `/api/v1/auctions/{auctionId}/bids` | 가격 변동 그래프 데이터 | ✅ | - |
-| GET | `/api/v1/auctions/my-bids` | 내 입찰 내역 | ✅ | - |
-| GET | `/api/v1/auctions/territories/{territoryId}` | 영토 경매 이력 | ✅ | - |
+| GET | `/api/v1/auctions` | [경매 목록 조회](#경매-목록-조회) | ✅ | - |
+| GET | `/api/v1/auctions/{auctionId}` | [경매 상세 조회](#경매-상세-조회) | ✅ | Redis 캐시 |
+| POST | `/api/v1/auctions/{auctionId}/bids` | [입찰하기](#입찰하기) | ✅ | Redis 분산락, WebSocket 브로드캐스트 |
+| GET | `/api/v1/auctions/{auctionId}/bids` | [가격 변동 그래프 데이터](#가격-변동-그래프-데이터) | ✅ | - |
+| GET | `/api/v1/auctions/my-bids` | [내 입찰 내역](#내-입찰-내역-조회) | ✅ | - |
+| GET | `/api/v1/auctions/territories/{territoryId}` | [영토 경매 이력](#영토-경매-이력-조회) | ✅ | - |
 
 ---
 
