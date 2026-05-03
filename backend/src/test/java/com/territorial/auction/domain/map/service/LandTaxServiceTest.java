@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,13 +46,13 @@ class LandTaxServiceTest {
     // ─── 공통 픽스처 ─────────────────────────────────────────────────────────
 
     private UserSeasonPass activeSeasonPass(int taxExemptBonus) {
-        SeasonPass seasonPass = mock(SeasonPass.class);
-        given(seasonPass.getTaxExemptBonus()).willReturn(taxExemptBonus);
+        SeasonPass seasonPass = SeasonPass.builder().taxExemptBonus(taxExemptBonus).build();
 
-        UserSeasonPass pass = mock(UserSeasonPass.class);
-        given(pass.getSeasonPass()).willReturn(seasonPass);
-        given(pass.getExpiresAt()).willReturn(LocalDateTime.now().plusDays(30));
-        return pass;
+        return UserSeasonPass.builder()
+                .seasonPass(seasonPass)
+                .startedAt(LocalDateTime.now().minusDays(1))
+                .expiresAt(LocalDateTime.now().plusDays(30))
+                .build();
     }
 
     private LandTaxLog taxLog(Long id, int count, int gp, TaxStatus status) {
@@ -232,10 +233,11 @@ class LandTaxServiceTest {
         @Test
         @DisplayName("이력 없음 - totalCount=0, 빈 로그 리스트")
         void noLogs_returnsEmpty() {
+            Pageable pageable = PageRequest.of(0, 20);
             given(landTaxLogRepository.findByUserIdOrderByChargedAtDesc(eq(1L), any()))
                     .willReturn(new PageImpl<>(Collections.emptyList()));
 
-            TaxLogResponse response = landTaxService.getLandTaxLogs(1L, 0, 20, null);
+            TaxLogResponse response = landTaxService.getLandTaxLogs(1L, null, pageable);
 
             assertThat(response.totalCount()).isEqualTo(0);
             assertThat(response.logs()).isEmpty();
@@ -244,12 +246,13 @@ class LandTaxServiceTest {
         @Test
         @DisplayName("status=null이면 전체 이력을 chargedAt 내림차순으로 조회")
         void nullStatus_queriesAll() {
+            Pageable pageable = PageRequest.of(0, 20);
             LandTaxLog log1 = taxLog(1L, 5, 50, TaxStatus.PAID);
             LandTaxLog log2 = taxLog(2L, 3, 0, TaxStatus.EXEMPT);
             given(landTaxLogRepository.findByUserIdOrderByChargedAtDesc(eq(1L), any()))
                     .willReturn(new PageImpl<>(List.of(log1, log2)));
 
-            TaxLogResponse response = landTaxService.getLandTaxLogs(1L, 0, 20, null);
+            TaxLogResponse response = landTaxService.getLandTaxLogs(1L, null, pageable);
 
             assertThat(response.totalCount()).isEqualTo(2);
             assertThat(response.logs()).hasSize(2);
@@ -261,13 +264,14 @@ class LandTaxServiceTest {
         @Test
         @DisplayName("status=PAID이면 상태 필터 쿼리 호출")
         void paidStatusFilter_queriesWithStatusFilter() {
+            Pageable pageable = PageRequest.of(0, 20);
             LandTaxLog paidLog = taxLog(1L, 5, 50, TaxStatus.PAID);
             given(
                             landTaxLogRepository.findByUserIdAndStatusOrderByChargedAtDesc(
                                     eq(1L), eq(TaxStatus.PAID), any()))
                     .willReturn(new PageImpl<>(List.of(paidLog)));
 
-            TaxLogResponse response = landTaxService.getLandTaxLogs(1L, 0, 20, TaxStatus.PAID);
+            TaxLogResponse response = landTaxService.getLandTaxLogs(1L, TaxStatus.PAID, pageable);
 
             assertThat(response.totalCount()).isEqualTo(1);
             assertThat(response.logs()).hasSize(1);
@@ -279,6 +283,7 @@ class LandTaxServiceTest {
         @Test
         @DisplayName("로그 필드 매핑 정확성")
         void logFields_mappedCorrectly() {
+            Pageable pageable = PageRequest.of(0, 20);
             LocalDateTime chargedAt = LocalDateTime.of(2026, 4, 8, 0, 0, 0);
             LandTaxLog log =
                     LandTaxLog.builder()
@@ -293,7 +298,7 @@ class LandTaxServiceTest {
             given(landTaxLogRepository.findByUserIdOrderByChargedAtDesc(eq(1L), any()))
                     .willReturn(new PageImpl<>(List.of(log)));
 
-            TaxLogResponse response = landTaxService.getLandTaxLogs(1L, 0, 20, null);
+            TaxLogResponse response = landTaxService.getLandTaxLogs(1L, null, pageable);
 
             TaxLogResponse.TaxLogItem item = response.logs().get(0);
             assertThat(item.logId()).isEqualTo(42L);
@@ -306,10 +311,11 @@ class LandTaxServiceTest {
         @Test
         @DisplayName("페이지 파라미터가 Repository에 전달됨")
         void pageParams_passedToRepository() {
+            Pageable pageable = PageRequest.of(2, 5);
             given(landTaxLogRepository.findByUserIdOrderByChargedAtDesc(eq(1L), any()))
                     .willReturn(new PageImpl<>(Collections.emptyList()));
 
-            landTaxService.getLandTaxLogs(1L, 2, 5, null);
+            landTaxService.getLandTaxLogs(1L, null, pageable);
 
             then(landTaxLogRepository)
                     .should()
