@@ -27,7 +27,7 @@
 {
   "hasSeasonPass": true,
   "seasonPass": {
-    "passId": 1,
+    "seasonPassId": 1,
     "name": "시즌 패스 Vol.1",
     "startedAt": "2026-04-08T12:00:00Z",
     "expiresAt": "2026-05-08T12:00:00Z",
@@ -43,16 +43,16 @@
 
 > 미보유 시: `{ "hasSeasonPass": false, "seasonPass": null }`
 
-| field | 타입 | 설명 | 출처 |
-|---|---|---|---|
-| `hasSeasonPass` | Boolean | 시즌 패스 보유 여부 | `user_season_passes.is_active` AND `expires_at > now()` |
-| `seasonPass.passId` | Long (nullable) | 패스 ID | `user_season_passes.season_pass_id` |
-| `seasonPass.name` | String (nullable) | 패스 이름 | `season_passes.name` |
-| `seasonPass.startedAt` | DateTime (nullable) | 패스 시작 시각 | `user_season_passes.started_at` |
-| `seasonPass.expiresAt` | DateTime (nullable) | 패스 만료 시각 | `user_season_passes.expires_at` |
-| `seasonPass.daysRemaining` | Integer (nullable) | 남은 일수 | `expires_at - now()` 계산값 |
+| field                                | 타입 | 설명 | 출처 |
+|--------------------------------------|---|---|---|
+| `hasSeasonPass`                      | Boolean | 시즌 패스 보유 여부 | `user_season_passes.is_active` AND `expires_at > now()` |
+| `seasonPass.seasonPassId`           | Long (nullable) | 패스 ID | `user_season_passes.season_pass_id` |
+| `seasonPass.name`                    | String (nullable) | 패스 이름 | `season_passes.name` |
+| `seasonPass.startedAt`               | DateTime (nullable) | 패스 시작 시각 | `user_season_passes.started_at` |
+| `seasonPass.expiresAt`               | DateTime (nullable) | 패스 만료 시각 | `user_season_passes.expires_at` |
+| `seasonPass.daysRemaining`           | Integer (nullable) | 남은 일수 | `expires_at - now()` 계산값 |
 | `seasonPass.benefits.islandBonusPct` | Integer (nullable) | 섬 GP 생산 보너스 (%) | `season_passes.island_bonus_pct` |
-| `seasonPass.benefits.extraBuilders` | Integer (nullable) | 추가 건설 슬롯 수 | `season_passes.extra_builders` |
+| `seasonPass.benefits.extraBuilders`  | Integer (nullable) | 추가 건설 슬롯 수 | `season_passes.extra_builders` |
 | `seasonPass.benefits.taxExemptBonus` | Integer (nullable) | 세금 면제 보너스 영토 수 | `season_passes.tax_exempt_bonus` |
 
 ### 비즈니스 규칙
@@ -108,18 +108,18 @@
 }
 ```
 
-| field | 타입 | 설명 | 출처 |
-|---|---|---|---|
-| `seasonId` | Long | 시즌 ID | `seasons.id` |
-| `seasonName` | String | 시즌 이름 | `seasons.name` |
-| `passType` | String | `FREE` / `PREMIUM` | `user_season_passes.is_active` 기반 |
-| `currentLevel` | Integer | 현재 시즌패스 레벨 | `season_pass_progress.level` |
-| `currentXp` | Integer | 현재 경험치 | `season_pass_progress.xp` |
-| `nextLevelXp` | Integer | 다음 레벨까지 필요 경험치 | 시즌 정책 기준 |
-| `rewards[].level` | Integer | 보상 해금 레벨 | `season_rewards.level` |
+| field                  | 타입 | 설명 | 출처 |
+|------------------------|---|---|---|
+| `seasonId`             | Long | 시즌 ID | `seasons.id` |
+| `seasonName`           | String | 시즌 이름 | `seasons.name` |
+| `passType`             | String | `FREE` / `PREMIUM` | `user_season_passes.is_active` 기반 |
+| `currentLevel`         | Integer | 현재 시즌패스 레벨 | `season_pass_progress.level` |
+| `currentXp`            | Integer | 현재 경험치 | `season_pass_progress.xp` |
+| `nextLevelXp`          | Integer | 다음 레벨까지 필요 경험치 | 시즌 정책 기준 |
+| `rewards[].level`      | Integer | 보상 해금 레벨 | `season_rewards.level` |
 | `rewards[].rewardName` | String | 보상 이름 | `season_rewards` |
-| `rewards[].claimed` | Boolean | 보상 수령 여부 | `season_pass_progress` |
-| `seasonEndsAt` | DateTime | 시즌 종료 시각 | `seasons.ended_at` |
+| `rewards[].isClaimed`  | Boolean | 보상 수령 여부 | `season_pass_progress` |
+| `seasonEndsAt`         | DateTime | 시즌 종료 시각 | `seasons.ended_at` |
 
 ### 에러
 
@@ -164,7 +164,7 @@
 
 ```json
 {
-  "passId": 1,
+  "seasonPassId": 1,
   "name": "시즌 패스 Vol.1",
   "startedAt": "2026-04-08T12:00:00Z",
   "expiresAt": "2026-05-08T12:00:00Z",
@@ -178,16 +178,16 @@
 }
 ```
 
-| field | 타입 | 설명 | 출처 |
-|---|---|---|---|
-| `passId` | Long | 구매한 시즌 패스 ID | `season_passes.id` |
-| `name` | String | 시즌 패스 이름 | `season_passes.name` |
-| `startedAt` | DateTime | 패스 시작 시각 | `user_season_passes.started_at` |
-| `expiresAt` | DateTime | 패스 만료 시각 | `user_season_passes.expires_at` |
-| `costAP` | Integer | 차감된 AP | `season_passes.cost_ap` |
-| `remainingAP` | Integer | 구매 후 잔여 AP | `wallets.available_ap` |
+| field                     | 타입 | 설명 | 출처 |
+|---------------------------|---|---|---|
+| `seasonPassId`            | Long | 구매한 시즌 패스 ID | `season_passes.id` |
+| `name`                    | String | 시즌 패스 이름 | `season_passes.name` |
+| `startedAt`               | DateTime | 패스 시작 시각 | `user_season_passes.started_at` |
+| `expiresAt`               | DateTime | 패스 만료 시각 | `user_season_passes.expires_at` |
+| `costAP`                  | Integer | 차감된 AP | `season_passes.cost_ap` |
+| `remainingAP`             | Integer | 구매 후 잔여 AP | `wallets.available_ap` |
 | `benefits.islandBonusPct` | Integer | 섬 GP 생산 보너스 (%) | `season_passes.island_bonus_pct` |
-| `benefits.extraBuilders` | Integer | 추가 건설 슬롯 수 | `season_passes.extra_builders` |
+| `benefits.extraBuilders`  | Integer | 추가 건설 슬롯 수 | `season_passes.extra_builders` |
 | `benefits.taxExemptBonus` | Integer | 세금 면제 보너스 영토 수 | `season_passes.tax_exempt_bonus` |
 
 ### 에러
