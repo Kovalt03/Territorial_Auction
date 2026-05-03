@@ -1,7 +1,25 @@
 # Global Vault API
 
-> Notion 원본: https://www.notion.so/33c2efa4278d813a9cd8ddedef8e7ed7  
+> Notion 상세 기능 명세: [F-10 이중 저장소](https://www.notion.so/Functional-Specification-Access-Control-Matrix-3332efa4278d804e8ccfdb31151e9943)  
 > 구현 상태: 🔲 미구현
+
+## 이중 저장소 개요 (F-10)
+
+| 구분 | 영토 저장소 (Territory Storage) | 글로벌 금고 (Global Vault) |
+|---|---|---|
+| 활성화 | Storage 건물 건설 시 (F-10.1) | 계정 생성 시 자동 생성 (F-10.2) |
+| 약탈 위험 | ✅ (Storage 파괴 시 N% 약탈 가능) | ❌ (타 유저 접근 불가) |
+| 용량 | 건물 레벨에 비례 | GP/AP로 업그레이드 가능 |
+| 이전 | ↔ 글로벌 금고 상호 이전 가능 | ↔ 영토 저장소 상호 이전 가능 |
+
+---
+
+## 목차
+
+| Method | Endpoint | 기능 |
+|---|---|---|
+| GET | `/api/v1/global-vault` | [글로벌 금고 조회](#글로벌-금고-조회) |
+| POST | `/api/v1/global-vault/transfer` | [자원 이전](#자원-이전) |
 
 ---
 
@@ -9,101 +27,115 @@
 
 **GET** `/api/v1/global-vault`
 
-**Authorization**: Bearer `{{accessToken}}` (선택 — 로그인 시 `myStoredGP` 포함)
+**Authorization**: Bearer `{{accessToken}}` (필수)
 
-사용 페이지: 메인 화면 (금고 현황 + 기부 랭킹 위젯)
+사용 페이지: 마이페이지, 자산 현황
+
+내 글로벌 금고의 현재 잔액, 용량, 쿨다운 상태를 반환합니다. (Notion F-10.2)
 
 ### Response (200 OK)
 
 ```json
 {
-  "status": 200,
-  "message": "OK",
-  "data": {
-    "totalGP": 1250000,
-    "myStoredGP": 500,
-    "topDonors": [
-      { "rank": 1, "userId": 5, "nickname": "기부왕", "storedGP": 12000 },
-      { "rank": 2, "userId": 9, "nickname": "선한전사", "storedGP": 8500 }
-    ],
-    "lastUpdatedAt": "2026-04-08T12:00:00Z"
-  }
+  "storedGP": 18500,
+  "capacity": 50000,
+  "lastTransferAt": "2026-04-08T12:00:00Z",
+  "nextTransferAvailableAt": "2026-04-08T12:10:00Z",
+  "isTransferAvailable": false
 }
 ```
 
-| field | 설명 | 출처 |
-|---|---|---|
-| `totalGP` | 누적 글로벌 금고 GP | Redis `global_vault:total` (실시간) |
-| `myStoredGP` | 내가 기부한 GP (로그인 시만) | `global_vaults.stored_gp` |
-| `topDonors` | 기부 순위 상위 5명 | `global_vaults.stored_gp` 기준 DB 직접 조회 |
-| `lastUpdatedAt` | 마지막 업데이트 시각 | Redis 시각 또는 스케줄러 기록 |
-
-> 비로그인 시 `myStoredGP` 필드 없음
+| field | 타입 | 설명 | 출처 |
+|---|---|---|---|
+| `storedGP` | Long | 현재 금고 보관 GP | `global_vaults.stored_gp` |
+| `capacity` | Long | 금고 최대 용량 | `global_vaults.capacity` |
+| `lastTransferAt` | DateTime (nullable) | 마지막 이전 시각 | `global_vaults.last_transfer_at` |
+| `nextTransferAvailableAt` | DateTime (nullable) | 다음 이전 가능 시각 | `last_transfer_at + VAULT_TRANSFER_COOLDOWN` |
+| `isTransferAvailable` | Boolean | 현재 이전 가능 여부 | `now() >= nextTransferAvailableAt` |
 
 ### 에러
 
 | HTTP | 에러 코드 | 설명 |
 |---|---|---|
-| 500 | INTERNAL_ERROR | 서버 오류 |
+| 401 | `UNAUTHORIZED` | 인증 실패 |
 
-### 남은작업
-- 서비스 구현
-- Redis `global_vault:total` 연동
+### 남은 작업
+- ⬜ `GlobalVaultService.getVault()` 구현
 
 ---
 
-## 글로벌 금고 기부
+## 자원 이전
 
-**POST** `/api/v1/global-vault/donate`
+**POST** `/api/v1/global-vault/transfer`
 
 **Authorization**: Bearer `{{accessToken}}` (필수)
 
-유저의 GP를 글로벌 금고에 기부합니다.
+점유 중인 영토의 창고에 있는 GP를 글로벌 금고로 이전하거나, 글로벌 금고에서 영토 창고로 역이전합니다. (Notion F-10.3)
+
+영토 창고의 GP는 공격으로 탈취당할 수 있지만, 글로벌 금고에 보관된 GP는 계정에 귀속되어 안전합니다.
+
+> 쿨다운: 이전 후 `VAULT_TRANSFER_COOLDOWN_MINUTES`(config, 기본 10분) 간 재이전 불가
 
 ### Request
 
 ```json
 {
+  "direction": "TO_VAULT",
+  "sourceTerritoryId": 42,
   "amount": 5000
 }
 ```
 
 | field | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `amount` | Long | Y | 기부할 GP 수량 (최소 100) |
+| `direction` | String | Y | `TO_VAULT` (영토→금고) / `FROM_VAULT` (금고→영토) |
+| `sourceTerritoryId` | Long | Y | 이전 대상 영토 ID |
+| `amount` | Long | Y | 이전할 GP 수량 (1 이상) |
 
 ### 비즈니스 규칙
-- 유저 `available_gp` 차감
-- Redis `global_vault:total` INCR (원자적 누적)
-- `global_vaults.stored_gp` 업데이트
-- `global_vault_logs`에 기부 이력 저장
-
-> 기부금은 글로벌 금고 목표 달성 시 전체 유저에게 비율 분배됩니다.
+- 본인 점유 영토(`territories.owner_id = userId`)에서만 이전 가능
+- `TO_VAULT`: 영토 창고 잔여 GP 이상 이전 불가 (`territory_storages.stored_gp >= amount`)
+- `FROM_VAULT`: 금고 잔여 GP 이상 이전 불가 (`global_vaults.stored_gp >= amount`)
+- 금고 용량 초과 불가 (`global_vaults.stored_gp + amount <= global_vaults.capacity`)
+- 이전 성공 시 양쪽 GP 원자적 차감/증가 (DB 트랜잭션 보장)
+- `global_vaults.last_transfer_at` 갱신 → 쿨다운 계산 기준
 
 ### Response (200 OK)
 
 ```json
 {
-  "status": 200,
-  "message": "OK",
-  "data": {
-    "donatedAmount": 5000,
-    "userGoldAfter": 12000,
-    "globalVaultTotal": 2450000,
-    "myTotalDonated": 8500,
-    "message": "글로벌 금고에 5000 GP를 기부했습니다."
-  }
+  "direction": "TO_VAULT",
+  "transferredAmount": 5000,
+  "sourceTerritoryId": 42,
+  "territoryStorageAfter": 3200,
+  "vaultStoredAfter": 18500,
+  "vaultCapacity": 50000,
+  "nextTransferAvailableAt": "2026-04-08T12:10:00Z"
 }
 ```
+
+| field | 타입 | 설명 | 출처 |
+|---|---|---|---|
+| `direction` | String | 이전 방향 | 요청 `direction` |
+| `transferredAmount` | Long | 이번에 이전된 GP 수량 | 요청 `amount` |
+| `sourceTerritoryId` | Long | 대상 영토 ID | 요청 `sourceTerritoryId` |
+| `territoryStorageAfter` | Long | 이전 후 영토 창고 잔여 GP | `territory_storages.stored_gp` |
+| `vaultStoredAfter` | Long | 이전 후 글로벌 금고 잔액 | `global_vaults.stored_gp` |
+| `vaultCapacity` | Long | 글로벌 금고 최대 용량 | `global_vaults.capacity` |
+| `nextTransferAvailableAt` | DateTime | 다음 이전 가능 시각 | `global_vaults.last_transfer_at + 쿨다운` |
 
 ### 에러
 
 | HTTP | 에러 코드 | 설명 |
 |---|---|---|
-| 400 | INSUFFICIENT_GP | 보유 GP 부족 |
-| 400 | DONATION_AMOUNT_TOO_LOW | 최소 금액 미달 (100 GP) |
-| 401 | UNAUTHORIZED | 인증 토큰 없음 또는 만료 |
+| 400 | `INVALID_AMOUNT` | 이전 수량 1 미만 |
+| 400 | `INSUFFICIENT_GP` | 출처 GP 부족 |
+| 403 | `NOT_TERRITORY_OWNER` | 본인 점유 영토가 아님 |
+| 404 | `TERRITORY_NOT_FOUND` | 존재하지 않는 영토 |
+| 409 | `VAULT_CAPACITY_EXCEEDED` | 금고 용량 초과 |
+| 429 | `TRANSFER_COOLDOWN_ACTIVE` | 쿨다운 중 |
 
-### 남은작업
-- 서비스 구현
-- Redis `global_vault:total` INCR 연동
+### 남은 작업
+- ⬜ `GlobalVaultService.transfer()` 구현
+- ⬜ 영토 창고 ↔ 금고 원자적 GP 이동 트랜잭션
+- ⬜ 쿨다운 검증 (`last_transfer_at + 쿨다운 > now()` 체크)

@@ -248,3 +248,32 @@
 
 > `bids[0]`: 경매 시작가(시스템 입찰, `bidderNickname=null`)  
 > 출처: `auction_bids` (INDEX: `auction_id, bid_at ASC`)
+
+---
+
+## 영토 등급 시스템 (참고)
+
+> Notion F-13 — 맵 초기화 시 부여되는 고정 등급 체계
+
+### 등급 분류 (F-13.1)
+
+맵 시드 초기화 시 영토별로 S/A/B/C/D 등급을 `spawn_rate` 확률에 따라 무작위 부여. **이후 변경 불가**.
+
+| 등급 | 특징 |
+|---|---|
+| 🟣 S | 최고 생산 배율, 2~3개 건물 사전 배치, 높은 시작 경매가 |
+| 🔵 A | 높은 생산 배율, 1개 건물 사전 배치 |
+| 🟢 B | 일반 |
+| 🟡 C | 낮은 생산 배율 |
+| 🔴 D | 최저 생산 배율 |
+
+### 등급 효과
+
+- **생산 배율 (F-13.2)**: 낙찰 시 `Territory.base_production_rate × TerritoryGrade.production_multiplier`로 실질 생산량 결정
+- **시작 경매가 배율 (F-13.3)**: `Auction.start_price × TerritoryGrade.auction_price_multiplier`로 초기 경매가 설정
+- **사전 배치 건물 (F-13.4)**: S급 2~3개, A급 1개 건물이 낙찰 시점에 자동 생성. 낙찰자 즉시 소유
+
+### UI 표시 (F-13.5)
+
+- 영토 팝업 모달 상단에 등급 배지 항상 노출 (비로그인 포함 모든 유저 조회 가능)
+- `GET /api/v1/map/territories/{territoryId}` 응답의 `grade` 필드로 확인
