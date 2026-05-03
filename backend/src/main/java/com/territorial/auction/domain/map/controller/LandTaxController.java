@@ -6,6 +6,9 @@ import com.territorial.auction.domain.map.entity.LandTaxLog.TaxStatus;
 import com.territorial.auction.domain.map.service.LandTaxService;
 import com.territorial.auction.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,10 +32,14 @@ public class LandTaxController {
     @GetMapping("/logs")
     public ResponseEntity<ApiResponse<TaxLogResponse>> getLandTaxLogs(
             @AuthenticationPrincipal Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) TaxStatus status) {
+            @RequestParam(required = false) TaxStatus status,
+            @PageableDefault(
+                            page = 0,
+                            size = 10,
+                            sort = "chargedAt",
+                            direction = Sort.Direction.DESC)
+                    Pageable pageable) {
         return ResponseEntity.ok(
-                ApiResponse.ok(landTaxService.getLandTaxLogs(userId, page, size, status)));
+                ApiResponse.ok(landTaxService.getLandTaxLogs(userId, status, pageable)));
     }
 }
