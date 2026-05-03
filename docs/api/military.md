@@ -1,5 +1,6 @@
 # Military API
 
+> Notion 상세 기능 명세: [F-11 전투/공성 시스템](https://www.notion.so/Functional-Specification-Access-Control-Matrix-3332efa4278d804e8ccfdb31151e9943), [F-12 공격권](https://www.notion.so/Functional-Specification-Access-Control-Matrix-3332efa4278d804e8ccfdb31151e9943)  
 > 구현 상태: 🔲 미구현
 
 ---
@@ -421,3 +422,67 @@
 
 ### 남은작업
 - 서비스 구현
+
+---
+
+## 전투 계산 공식 (참고)
+
+> Notion F-11.4 — 구현 시 참고용
+
+공격 선언 후 `SIEGE_COUNTDOWN_MINUTES`(config) 경과 시 아래 공식으로 전투 자동 계산.
+
+### 전력 계산
+
+```
+ATK = Σ(파견 유닛 attack_power × 수량)
+DEF = Σ(방어 유닛 defense_power × 수량) + Σ(해당 Zone 방어 건물 defense_power)
+```
+
+### 성공 판정
+
+- `ATK > DEF` → 공격 성공
+- `ATK ≤ DEF` → 공격 실패
+
+### Zone 클리어 판정
+
+- `Σ(Zone 방어 건물 hp) / Σ(Zone 방어 건물 max_hp) < (1 − ZONE_CLEAR_THRESHOLD)` → 클리어 (별도 컬럼 불필요, 동적 계산)
+
+### 건물 HP 감소 (공격 성공 시)
+
+- 잉여 공격력 `(ATK − DEF)`를 해당 Zone 방어 건물들에게 현재 HP 비율로 분산 적용
+
+### 유닛 손실
+
+| 상황 | 손실 공식 |
+|---|---|
+| 공격자 (성공) | `파견 수 × (DEF / ATK) × ATTACKER_LOSS_RATE` (기본 0.3) |
+| 공격자 (실패) | `파견 수 × ATTACKER_FAIL_LOSS_RATE` (기본 0.5) |
+| 방어자 (공격 성공 시) | `방어 수 × (ATK / DEF) × DEFENDER_LOSS_RATE` (기본 0.3) |
+| 방어자 (공격 실패 시) | 피해 없음 |
+
+### 전투 결과 처리 (F-11.5)
+
+| 결과 | 처리 |
+|---|---|
+| Storage 파괴 | 영토 저장소 자원 N% 약탈 (DB 트랜잭션 보장) |
+| Workshop 파괴 | 생산량 제로 디버프 T시간 |
+| Barracks 파괴 | 유닛 생산 중단 T시간 |
+| Castle 파괴 | 영토 강제 경매 전환 + 보호 기간 재시작 |
+| 공격 실패 | 공격 유닛 일부 손실, 전투 리포트 양측 발송 |
+
+---
+
+## 공격 쿨다운 및 보호 기간
+
+> Notion F-11.6, F-11.7
+
+### 공격 쿨다운 (F-11.6)
+
+- 공격 실패 후 `ATTACK_COOLDOWN_HOURS`(config) 동안 같은 영토 재공격 불가
+- `siege_events`의 실패 기록으로 쿨다운 계산
+
+### 보호 기간 (F-11.7)
+
+- 경매 낙찰 후 `PROTECTION_DURATION_HOURS`(config) 동안 공격 수신 불가
+- Castle 파괴 후 강제 경매 → 재낙찰 시 보호 기간 재시작
+- 보호 기간 중 공격 선언 시 → `TERRITORY_PROTECTED` 에러 반환

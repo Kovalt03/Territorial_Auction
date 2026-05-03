@@ -185,7 +185,7 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("존재하지 않는 email 시 USER_NOT_FOUND 예외")
+        @DisplayName("존재하지 않는 email 시 INVALID_CREDENTIALS 예외")
         void login_userNotFound() {
             LoginRequest request = new LoginRequest("unknown@example.com", "password1!");
             given(userRepository.findByEmail("unknown@example.com")).willReturn(Optional.empty());
@@ -193,7 +193,7 @@ class AuthServiceTest {
             assertThatThrownBy(() -> authService.login(request))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
-                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
+                    .isEqualTo(ErrorCode.INVALID_CREDENTIALS);
         }
 
         @Test
@@ -223,7 +223,7 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("비밀번호 불일치 시 INVALID_PASSWORD 예외")
+        @DisplayName("비밀번호 불일치 시 INVALID_CREDENTIALS 예외")
         void login_invalidPassword() {
             LoginRequest request = new LoginRequest("user@example.com", "wrongPassword1!");
             given(userRepository.findByEmail("user@example.com"))
@@ -233,7 +233,7 @@ class AuthServiceTest {
             assertThatThrownBy(() -> authService.login(request))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
-                    .isEqualTo(ErrorCode.INVALID_PASSWORD);
+                    .isEqualTo(ErrorCode.INVALID_CREDENTIALS);
         }
     }
 

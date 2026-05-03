@@ -63,18 +63,18 @@ Authorization: Bearer {accessToken}
 
 | 파일 | 도메인 | 엔드포인트 수 |
 |---|---|---|
-| [auth.md](./auth.md) | 인증/회원 | 8 |
-| [user.md](./user.md) | 유저 프로필·자산·영토 | 6 |
-| [map.md](./map.md) | 맵·영토·대륙 | 6 |
-| [auction.md](./auction.md) | 경매·입찰 | 4 |
-| [building.md](./building.md) | 건물·섬·보관함 | 10 |
-| [military.md](./military.md) | 군사·공성전 | 6 |
+| [auth.md](./auth.md) | 인증 (회원가입·로그인·토큰·중복확인) | 7 |
+| [user.md](./user.md) | 유저 프로필·자산·영토·AP 충전 | 10 |
+| [map.md](./map.md) | 맵·영토·대륙 | 5 |
+| [auction.md](./auction.md) | 경매·입찰·경매 이력 | 6 |
+| [building.md](./building.md) | 건물·섬·보관함 | 11 |
+| [military.md](./military.md) | 군사·공성전 | 9 |
 | [notification.md](./notification.md) | 알림 | 3 |
-| [ranking.md](./ranking.md) | 랭킹 | 5 |
-| [global-vault.md](./global-vault.md) | 글로벌 금고 | 2 |
-| [payment.md](./payment.md) | 결제·아이템 | 3 |
+| [ranking.md](./ranking.md) | 랭킹 | 6 |
+| [global-vault.md](./global-vault.md) | 글로벌 금고 (개인 이전) | 2 |
+| [payment.md](./payment.md) | 아이템 샵 | 4 |
 | [guild.md](./guild.md) | 길드 | 7 |
-| [season.md](./season.md) | 시즌 패스 | 2 |
-| [tax.md](./tax.md) | 토지세 | 1 |
+| [season.md](./season.md) | 시즌 패스 | 3 |
+| [tax.md](./tax.md) | 토지세 | 2 |
 | [websocket.md](./websocket.md) | WebSocket (STOMP) | — |
 | [errors.md](./errors.md) | 에러 코드 레퍼런스 | — |

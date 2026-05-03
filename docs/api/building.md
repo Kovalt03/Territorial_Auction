@@ -1,5 +1,6 @@
 # Building API
 
+> Notion 상세 기능 명세: [F-9 건물 건설 및 관리](https://www.notion.so/Functional-Specification-Access-Control-Matrix-3332efa4278d804e8ccfdb31151e9943), [F-8 Home Island](https://www.notion.so/Functional-Specification-Access-Control-Matrix-3332efa4278d804e8ccfdb31151e9943)  
 > 구현 상태: 🔲 미구현
 
 ---
@@ -371,3 +372,102 @@
 
 ### 남은작업
 - 서비스 구현
+
+---
+
+## 건물 이동
+
+**PATCH** `/api/v1/buildings/{buildingId}/move`
+
+**Authorization**: Bearer `{{accessToken}}` (필수, 점유자만)
+
+건물을 같은 영토/섬 내 다른 빈 셀로 이동합니다. GP 소비 없음. (Notion F-9.7)
+
+### Request
+
+```json
+{
+  "posX": 4,
+  "posY": 2
+}
+```
+
+| field | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `posX` | Integer | Y | 이동할 X 좌표 |
+| `posY` | Integer | Y | 이동할 Y 좌표 |
+
+### 비즈니스 규칙
+- 같은 영토/섬 내 이동만 가능
+- 건물 크기에 맞는 빈 셀 필요
+- Castle은 Zone 1 내에서만 이동 가능
+- GP 소비 없음
+
+### Response (200 OK)
+
+```json
+{
+  "buildingId": 10,
+  "type": "STORAGE",
+  "posX": 4,
+  "posY": 2
+}
+```
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 404 | `BUILDING_NOT_FOUND` | 존재하지 않는 건물 |
+| 403 | `NOT_TERRITORY_OWNER` | 점유자 아님 |
+| 400 | `INVALID_POSITION` | 배치 불가 위치 |
+| 400 | `ZONE_RESTRICTION_VIOLATED` | Castle을 Zone 1 밖으로 이동 시도 |
+
+### 남은 작업
+- ⬜ 서비스 구현
+
+---
+
+## 건물 보관
+
+**POST** `/api/v1/buildings/{buildingId}/store`
+
+**Authorization**: Bearer `{{accessToken}}` (필수, 점유자만)
+
+건물을 그리드에서 제거하여 보관함에 저장합니다. Castle은 보관 불가. 레벨 및 현재 HP 유지. (Notion F-9.8)
+
+### 비즈니스 규칙
+- Castle(`type = CASTLE`) 보관 불가
+- 보관 시 건물의 레벨 및 현재 HP 그대로 유지
+- GP 소비 없음
+
+### Response (200 OK)
+
+```json
+{
+  "buildingId": 10,
+  "type": "STORAGE",
+  "level": 2,
+  "hp": 80,
+  "storedAt": "2026-04-28T12:00:00Z"
+}
+```
+
+| field | 타입 | 설명 |
+|---|---|---|
+| `buildingId` | Long | 보관된 건물 ID |
+| `type` | String | 건물 타입 |
+| `level` | Integer | 보관 시점 레벨 (유지됨) |
+| `hp` | Integer | 보관 시점 HP (유지됨) |
+| `storedAt` | DateTime | 보관 시각 |
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 404 | `BUILDING_NOT_FOUND` | 존재하지 않는 건물 |
+| 403 | `NOT_TERRITORY_OWNER` | 점유자 아님 |
+| 400 | `CASTLE_CANNOT_BE_STORED` | Castle은 보관 불가 |
+
+### 남은 작업
+- ⬜ 서비스 구현
