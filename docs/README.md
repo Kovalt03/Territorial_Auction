@@ -36,18 +36,18 @@
 
 | 파일 | 도메인 | 엔드포인트 수 | 구현 상태 |
 |---|---|---|---|
-| [auth.md](./api/auth.md) | 인증·회원 | 8 | ✅ 완료 |
-| [user.md](./api/user.md) | 유저 프로필·자산·영토 | 6 | ✅ 완료 |
-| [map.md](./api/map.md) | 맵·영토·대륙 | 6 | ✅ 완료 |
-| [auction.md](./api/auction.md) | 경매·입찰 | 4 | 🔲 미구현 |
-| [building.md](./api/building.md) | 건물·섬·보관함 | 10 | 🔲 미구현 |
+| [auth.md](./api/auth.md) | 인증·회원 | 7 | ✅ 완료 |
+| [user.md](./api/user.md) | 유저 프로필·자산·영토·AP 충전 | 10 | 🔄 일부 완료 |
+| [map.md](./api/map.md) | 맵·영토·대륙 | 5 | ✅ 완료 |
+| [auction.md](./api/auction.md) | 경매·입찰·경매 이력 | 6 | 🔄 진행 중 |
+| [building.md](./api/building.md) | 건물·섬·보관함 | 11 | 🔲 미구현 |
 | [military.md](./api/military.md) | 군사·공성전 | 9 | 🔲 미구현 |
 | [notification.md](./api/notification.md) | 알림 | 3 | 🔲 미구현 |
 | [ranking.md](./api/ranking.md) | 랭킹 | 6 | 🔲 미구현 |
 | [global-vault.md](./api/global-vault.md) | 글로벌 금고 | 2 | 🔲 미구현 |
-| [payment.md](./api/payment.md) | 결제·아이템 | 4 | 🔲 미구현 |
-| [season.md](./api/season.md) | 시즌 패스 | 2 | 🔲 미구현 |
-| [tax.md](./api/tax.md) | 토지세 | 1 | 🔲 미구현 |
+| [payment.md](./api/payment.md) | 아이템 샵 | 4 | 🔲 미구현 |
+| [season.md](./api/season.md) | 시즌 패스 | 3 | 🔲 미구현 |
+| [tax.md](./api/tax.md) | 토지세 | 2 | 🔲 미구현 |
 | [guild.md](./api/guild.md) | 길드 | 7 | 🔲 미구현 |
 
 ### 실시간 (WebSocket/STOMP)
