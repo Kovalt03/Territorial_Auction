@@ -370,14 +370,53 @@
 
 **Authorization**: Bearer `{{accessToken}}` (필수)
 
-> ❌ **미구현** — 결제 도메인 연동 후 구현 예정
+외부 결제(PG)를 통해 AP 포인트를 충전합니다.
 
-### Request Body (예정)
+### Request
 
 ```json
 {
   "amount": 1000,
-  "paymentKey": "payment_key_from_pg",
-  "orderId": "order_abc123"
+  "paymentKey": "tgen_20260408...",
+  "orderId": "order_user1_1744113600"
 }
 ```
+
+| field | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `amount` | Integer | Y | 충전할 AP 수량 |
+| `paymentKey` | String | Y | PG사 결제 키 (검증용) |
+| `orderId` | String | Y | 주문 ID (멱등성 보장) |
+
+### 비즈니스 규칙
+- PG사 API 검증 후 `wallets.available_ap` 원자적 증가
+- `orderId` 기반 멱등성 처리 (중복 요청 방지)
+- AP:원화 환율은 서버 config 기준
+
+### Response (200 OK)
+
+```json
+{
+  "availableAP": 1300,
+  "chargedAmount": 1000,
+  "chargedAt": "2026-04-08T12:00:00Z"
+}
+```
+
+| field | 타입 | 설명 | 출처 |
+|---|---|---|---|
+| `availableAP` | Integer | 충전 후 사용 가능 AP 잔액 | `wallets.available_ap` |
+| `chargedAmount` | Integer | 이번에 충전된 AP 수량 | 요청 `amount` |
+| `chargedAt` | DateTime | 충전 완료 시각 | `wallets.updated_at` |
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 400 | `INVALID_PAYMENT` | PG 검증 실패 |
+| 409 | `DUPLICATE_ORDER` | 중복 주문 ID |
+| 422 | `PAYMENT_AMOUNT_MISMATCH` | 결제 금액 불일치 |
+
+### 남은 작업
+- ⬜ `PaymentService.chargeAp()` 구현
+- ⬜ PG 연동 (Toss Payments 등)

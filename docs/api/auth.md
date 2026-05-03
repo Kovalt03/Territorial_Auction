@@ -213,25 +213,3 @@ pm.environment.set('accessToken', '');
 }
 ```
 
----
-
-## 회원 탈퇴
-
-**DELETE** `/api/v1/auth/withdraw`
-
-**Authorization**: Bearer `{{accessToken}}` (필수)
-
-### Response (200 OK)
-
-```json
-{
-  "status": 200,
-  "message": "OK",
-  "data": {
-    "message": "회원 탈퇴가 완료되었습니다."
-  }
-}
-```
-
-- `users.status` → `WITHDRAWN` 으로 변경 (소프트 삭제)
-- 진행 중인 경매 환불 처리

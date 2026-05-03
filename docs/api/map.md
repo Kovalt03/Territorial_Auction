@@ -188,34 +188,6 @@
 
 ---
 
-## 영토 경매 이력 조회
-
-**GET** `/api/v1/map/territories/{territoryId}/auction-history`
-
-- 인증 불필요
-
-### Response (200 OK)
-
-```json
-{
-  "status": 200,
-  "message": "OK",
-  "data": [
-    {
-      "auctionId": 1,
-      "winnerId": 5,
-      "winnerNickname": "테스트유저",
-      "finalPrice": 1500,
-      "wonAt": "2026-04-01T00:00:00Z"
-    }
-  ]
-}
-```
-
-출처: `auction_histories` (해당 영토의 낙찰 이력)
-
----
-
 ## 가격 변동 그래프 데이터
 
 **GET** `/api/v1/map/territories/{territoryId}/price-history?days={7|30|90}`
