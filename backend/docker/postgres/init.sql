@@ -166,12 +166,24 @@ CREATE TABLE IF NOT EXISTS land_tax_logs (
 
 -- items
 CREATE TABLE IF NOT EXISTS items (
-    id          BIGSERIAL   PRIMARY KEY,
-    name        VARCHAR(50) NOT NULL,
-    item_type   VARCHAR(20) NOT NULL,
+    id          BIGSERIAL    PRIMARY KEY,
+    name        VARCHAR(50)  NOT NULL,
+    item_type   VARCHAR(20)  NOT NULL,
+    description VARCHAR(200),
     cost_ap     INTEGER,
     cost_gp     INTEGER,
-    daily_limit INTEGER
+    daily_limit INTEGER,
+    gp_reward   INTEGER
+);
+
+-- user_items
+CREATE TABLE IF NOT EXISTS user_items (
+    id         BIGSERIAL   PRIMARY KEY,
+    user_id    BIGINT      NOT NULL REFERENCES users(id),
+    item_id    BIGINT      NOT NULL REFERENCES items(id),
+    quantity   INTEGER     NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (user_id, item_id)
 );
 
 -- item_purchases

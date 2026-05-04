@@ -55,4 +55,8 @@ public class Wallet {
     public void spendAp(int amount) {
         this.availableAp -= amount;
     }
+
+    public void addGp(int amount) {
+        this.availableGp += amount;
+    }
 }

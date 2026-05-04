@@ -58,7 +58,16 @@ public enum ErrorCode {
 
     // Season
     SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "진행 중인 시즌이 없습니다."),
-    SEASON_PASS_NOT_FOUND(HttpStatus.NOT_FOUND, "시즌 패스 정보를 찾을 수 없습니다.");
+    SEASON_PASS_NOT_FOUND(HttpStatus.NOT_FOUND, "시즌 패스 정보를 찾을 수 없습니다."),
+
+    // Item
+    ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "아이템을 찾을 수 없습니다."),
+    ITEM_OUT_OF_STOCK(HttpStatus.CONFLICT, "보유 수량이 없습니다."),
+    DAILY_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "일일 구매 한도를 초과했습니다."),
+    TARGET_TERRITORY_REQUIRED(HttpStatus.BAD_REQUEST, "대상 영토를 입력해주세요."),
+    ALREADY_INVINCIBLE(HttpStatus.CONFLICT, "이미 무적 상태인 영토입니다."),
+    ITEM_NOT_USABLE(HttpStatus.BAD_REQUEST, "해당 아이템은 구매 시 자동으로 적용됩니다."),
+    SIEGE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "공성전 아이템 사용은 현재 지원하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
