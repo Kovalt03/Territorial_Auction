@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -52,8 +54,8 @@ public class SeasonPassService {
 
     public SeasonPassResponse getProgress(Long userId) {
         Object cached = redisTemplate.opsForValue().get(CACHE_PROGRESS + userId);
-        if (cached != null) {
-            return (SeasonPassResponse) cached;
+        if (cached instanceof SeasonPassResponse response) {
+            return response;
         }
 
         Season season =
@@ -108,8 +110,8 @@ public class SeasonPassService {
 
     public MySeasonPassResponse getMyPass(Long userId) {
         Object cached = redisTemplate.opsForValue().get(CACHE_MY_PASS + userId);
-        if (cached != null) {
-            return (MySeasonPassResponse) cached;
+        if (cached instanceof MySeasonPassResponse response) {
+            return response;
         }
 
         MySeasonPassResponse response =
@@ -164,10 +166,14 @@ public class SeasonPassService {
                                     .build());
         }
 
-        redisTemplate
-                .opsForValue()
-                .set(CACHE_MY_PASS + userId, MySeasonPassResponse.from(userPass), CACHE_TTL);
-        redisTemplate.delete(CACHE_PROGRESS + userId);
+        try {
+            redisTemplate
+                    .opsForValue()
+                    .set(CACHE_MY_PASS + userId, MySeasonPassResponse.from(userPass), CACHE_TTL);
+            redisTemplate.delete(CACHE_PROGRESS + userId);
+        } catch (Exception e) {
+            log.warn("시즌 패스 구매 후 Redis 캐시 갱신 실패 - userId: {}", userId, e);
+        }
 
         return PurchaseSeasonPassResponse.of(userPass, wallet.getAvailableAp());
     }
