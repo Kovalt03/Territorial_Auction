@@ -1,7 +1,7 @@
 # Global Vault API
 
 > Notion 상세 기능 명세: [F-10 이중 저장소](https://www.notion.so/Functional-Specification-Access-Control-Matrix-3332efa4278d804e8ccfdb31151e9943)  
-> 구현 상태: 🔲 미구현
+> 구현 상태: ✅ 구현 완료
 
 ## 이중 저장소 개요 (F-10)
 
@@ -16,10 +16,12 @@
 
 ## 목차
 
-| Method | Endpoint | 기능 |
-|---|---|---|
-| GET | `/api/v1/global-vault` | [글로벌 금고 조회](#글로벌-금고-조회) |
-| POST | `/api/v1/global-vault/transfer` | [자원 이전](#자원-이전) |
+| Method | Endpoint | 기능 | 구현 | 남은 작업 |
+|---|---|---|---|---|
+| GET | `/api/v1/global-vault` | [글로벌 금고 조회](#글로벌-금고-조회) | ✅ | - |
+| POST | `/api/v1/global-vault/transfer` | [자원 이전](#자원-이전) | ✅ | - |
+
+> **구현 참고:** `territory_storages` 테이블 미존재 → 영토 창고는 `wallets.available_gp`로 매핑. `sourceTerritoryId`는 점유자 검증에만 사용.
 
 ---
 
@@ -59,8 +61,6 @@
 |---|---|---|
 | 401 | `UNAUTHORIZED` | 인증 실패 |
 
-### 남은 작업
-- ⬜ `GlobalVaultService.getVault()` 구현
 
 ---
 
@@ -135,7 +135,3 @@
 | 409 | `VAULT_CAPACITY_EXCEEDED` | 금고 용량 초과 |
 | 429 | `TRANSFER_COOLDOWN_ACTIVE` | 쿨다운 중 |
 
-### 남은 작업
-- ⬜ `GlobalVaultService.transfer()` 구현
-- ⬜ 영토 창고 ↔ 금고 원자적 GP 이동 트랜잭션
-- ⬜ 쿨다운 검증 (`last_transfer_at + 쿨다운 > now()` 체크)

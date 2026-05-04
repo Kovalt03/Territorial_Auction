@@ -1141,6 +1141,105 @@
           }
         }
       ]
+    },
+    {
+      "name": "Global Vault",
+      "item": [
+        {
+          "name": "글로벌 금고 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/global-vault",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "global-vault"]
+            }
+          }
+        },
+        {
+          "name": "자원 이전 — 영토→금고 (TO_VAULT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"TO_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 5000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "global-vault", "transfer"]
+            }
+          }
+        },
+        {
+          "name": "자원 이전 — 금고→영토 (FROM_VAULT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"FROM_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 3000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "global-vault", "transfer"]
+            }
+          }
+        },
+        {
+          "name": "자원 이전 — GP 부족 (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"TO_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 9999999\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "global-vault", "transfer"]
+            }
+          }
+        },
+        {
+          "name": "자원 이전 — 쿨다운 중 (429)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"TO_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 100\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "global-vault", "transfer"]
+            }
+          }
+        }
+      ]
     }
   ]
 }
