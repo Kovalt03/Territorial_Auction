@@ -242,6 +242,7 @@ CREATE TABLE IF NOT EXISTS building_instances (
     territory_id     BIGINT    REFERENCES territories(id),
     island_id        BIGINT    REFERENCES home_islands(id),
     building_type_id BIGINT    NOT NULL REFERENCES building_types(id),
+    user_id          BIGINT    REFERENCES users(id),  -- 보관함 소유자 (territory/island 없을 때)
     pos_x            INTEGER   NOT NULL,
     pos_y            INTEGER   NOT NULL,
     hp               INTEGER   NOT NULL,

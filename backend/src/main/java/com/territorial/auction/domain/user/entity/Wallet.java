@@ -59,4 +59,8 @@ public class Wallet {
     public void addGp(int amount) {
         this.availableGp += amount;
     }
+
+    public void spendGp(int amount) {
+        this.availableGp -= amount;
+    }
 }
