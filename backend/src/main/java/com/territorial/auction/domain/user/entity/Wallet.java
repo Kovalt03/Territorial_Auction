@@ -51,4 +51,8 @@ public class Wallet {
     public void consumeLockedAp(int amount) {
         this.lockedAp -= amount;
     }
+
+    public void spendAp(int amount) {
+        this.availableAp -= amount;
+    }
 }

@@ -6,6 +6,7 @@ import com.territorial.auction.domain.season.dto.SeasonPassResponse;
 import com.territorial.auction.domain.season.service.SeasonPassService;
 import com.territorial.auction.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,6 +36,7 @@ public class SeasonPassController {
     @PostMapping("/purchase")
     public ResponseEntity<ApiResponse<PurchaseSeasonPassResponse>> purchaseSeasonPass(
             @AuthenticationPrincipal Long userId) {
-        return ResponseEntity.ok(ApiResponse.ok(seasonPassService.purchase(userId)));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(seasonPassService.purchase(userId)));
     }
 }

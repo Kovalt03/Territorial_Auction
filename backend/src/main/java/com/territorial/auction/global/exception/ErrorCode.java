@@ -54,7 +54,11 @@ public enum ErrorCode {
     INSUFFICIENT_TROOPS(HttpStatus.BAD_REQUEST, "병력이 부족합니다."),
 
     // Island
-    ISLAND_NOT_FOUND(HttpStatus.NOT_FOUND, "섬을 찾을 수 없습니다.");
+    ISLAND_NOT_FOUND(HttpStatus.NOT_FOUND, "섬을 찾을 수 없습니다."),
+
+    // Season
+    SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "진행 중인 시즌이 없습니다."),
+    SEASON_PASS_NOT_FOUND(HttpStatus.NOT_FOUND, "시즌 패스 정보를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
