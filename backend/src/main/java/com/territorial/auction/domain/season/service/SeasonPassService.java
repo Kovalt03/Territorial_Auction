@@ -53,9 +53,13 @@ public class SeasonPassService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     public SeasonPassResponse getProgress(Long userId) {
-        Object cached = redisTemplate.opsForValue().get(CACHE_PROGRESS + userId);
-        if (cached instanceof SeasonPassResponse response) {
-            return response;
+        try {
+            Object cached = redisTemplate.opsForValue().get(CACHE_PROGRESS + userId);
+            if (cached instanceof SeasonPassResponse response) {
+                return response;
+            }
+        } catch (Exception e) {
+            log.warn("시즌 패스 현황 Redis 캐시 조회 실패 - userId: {}", userId, e);
         }
 
         Season season =
@@ -104,14 +108,22 @@ public class SeasonPassService {
                         season.getEndedAt(),
                         rewardItems);
 
-        redisTemplate.opsForValue().set(CACHE_PROGRESS + userId, response, CACHE_TTL);
+        try {
+            redisTemplate.opsForValue().set(CACHE_PROGRESS + userId, response, CACHE_TTL);
+        } catch (Exception e) {
+            log.warn("시즌 패스 현황 Redis 캐시 저장 실패 - userId: {}", userId, e);
+        }
         return response;
     }
 
     public MySeasonPassResponse getMyPass(Long userId) {
-        Object cached = redisTemplate.opsForValue().get(CACHE_MY_PASS + userId);
-        if (cached instanceof MySeasonPassResponse response) {
-            return response;
+        try {
+            Object cached = redisTemplate.opsForValue().get(CACHE_MY_PASS + userId);
+            if (cached instanceof MySeasonPassResponse response) {
+                return response;
+            }
+        } catch (Exception e) {
+            log.warn("시즌 패스 보유 Redis 캐시 조회 실패 - userId: {}", userId, e);
         }
 
         MySeasonPassResponse response =
@@ -121,7 +133,11 @@ public class SeasonPassService {
                         .map(MySeasonPassResponse::from)
                         .orElse(new MySeasonPassResponse(false, null));
 
-        redisTemplate.opsForValue().set(CACHE_MY_PASS + userId, response, CACHE_TTL);
+        try {
+            redisTemplate.opsForValue().set(CACHE_MY_PASS + userId, response, CACHE_TTL);
+        } catch (Exception e) {
+            log.warn("시즌 패스 보유 Redis 캐시 저장 실패 - userId: {}", userId, e);
+        }
         return response;
     }
 
@@ -173,6 +189,8 @@ public class SeasonPassService {
             redisTemplate.delete(CACHE_PROGRESS + userId);
         } catch (Exception e) {
             log.warn("시즌 패스 구매 후 Redis 캐시 갱신 실패 - userId: {}", userId, e);
+            redisTemplate.delete(CACHE_MY_PASS + userId);
+            redisTemplate.delete(CACHE_PROGRESS + userId);
         }
 
         return PurchaseSeasonPassResponse.of(userPass, wallet.getAvailableAp());
