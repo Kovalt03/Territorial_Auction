@@ -55,6 +55,11 @@ public enum ErrorCode {
     INSUFFICIENT_GP(HttpStatus.BAD_REQUEST, "GP 잔액이 부족합니다."),
     CASTLE_CANNOT_BE_STORED(HttpStatus.BAD_REQUEST, "Castle은 보관할 수 없습니다."),
 
+    // Payment
+    INVALID_PAYMENT(HttpStatus.BAD_REQUEST, "결제 검증에 실패했습니다."),
+    DUPLICATE_ORDER(HttpStatus.CONFLICT, "중복된 주문 ID입니다."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.UNPROCESSABLE_ENTITY, "결제 금액이 일치하지 않습니다."),
+
     // Military
     INSUFFICIENT_TROOPS(HttpStatus.BAD_REQUEST, "병력이 부족합니다."),
 

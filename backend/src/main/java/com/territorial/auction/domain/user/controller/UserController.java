@@ -1,8 +1,10 @@
 package com.territorial.auction.domain.user.controller;
 
 import com.territorial.auction.domain.user.dto.*;
+import com.territorial.auction.domain.user.service.PaymentService;
 import com.territorial.auction.domain.user.service.UserService;
 import com.territorial.auction.global.common.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final PaymentService paymentService;
 
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getUser(@PathVariable Long userId) {
@@ -76,5 +79,11 @@ public class UserController {
             @AuthenticationPrincipal Long userId, @RequestBody ChangePasswordRequest request) {
         userService.changeUserPassword(userId, request.currentPassword(), request.newPassword());
         return ResponseEntity.ok(ApiResponse.ok("비밀번호가 성공적으로 변경되었습니다.", null));
+    }
+
+    @PostMapping("/me/ap/charge")
+    public ResponseEntity<ApiResponse<ChargeApResponse>> chargeAp(
+            @AuthenticationPrincipal Long userId, @RequestBody @Valid ChargeApRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(paymentService.chargeAp(userId, request)));
     }
 }
