@@ -30,4 +30,16 @@ public class GlobalVault {
     public GlobalVault(User user) {
         this.user = user;
     }
+
+    public void receiveGp(int amount) {
+        this.storedGp += amount;
+    }
+
+    public void withdrawGp(int amount) {
+        this.storedGp -= amount;
+    }
+
+    public void recordTransfer() {
+        this.lastTransferAt = java.time.LocalDateTime.now();
+    }
 }
