@@ -1,7 +1,25 @@
 # Building API
 
 > Notion 상세 기능 명세: [F-9 건물 건설 및 관리](https://www.notion.so/Functional-Specification-Access-Control-Matrix-3332efa4278d804e8ccfdb31151e9943), [F-8 Home Island](https://www.notion.so/Functional-Specification-Access-Control-Matrix-3332efa4278d804e8ccfdb31151e9943)  
-> 구현 상태: 🔲 미구현
+> 구현 상태: ✅ 구현 완료
+
+---
+
+## 목차
+
+| Method | Endpoint | 기능 | 구현 | 남은 작업 |
+|---|---|---|---|---|
+| GET | `/api/v1/map/territories/{territoryId}/buildings` | [영토 건물 목록 조회](#영토-건물-목록-조회) | ✅ | - |
+| POST | `/api/v1/map/territories/{territoryId}/buildings` | [영토 건물 배치](#영토-건물-배치) | ✅ | - |
+| POST | `/api/v1/buildings/{buildingId}/upgrade` | [건물 업그레이드](#건물-업그레이드) | ✅ | - |
+| POST | `/api/v1/buildings/{buildingId}/repair` | [건물 수리](#건물-수리) | ✅ | - |
+| GET | `/api/v1/island` | [섬 정보 조회](#섬-정보-조회) | ✅ | - |
+| GET | `/api/v1/island/buildings` | [섬 건물 목록 조회](#섬-건물-목록-조회) | ✅ | - |
+| POST | `/api/v1/island/buildings` | [섬 건물 배치](#섬-건물-배치) | ✅ | 일꾼 슬롯 소모 미구현 |
+| GET | `/api/v1/inventory` | [보관함 건물 목록 조회](#보관함-아이템-목록-조회) | ✅ | - |
+| POST | `/api/v1/inventory/{inventoryId}/place` | [보관함 건물 배치](#보관함-아이템-배치) | ✅ | - |
+| PATCH | `/api/v1/buildings/{buildingId}/move` | [건물 이동](#건물-이동) | ✅ | - |
+| POST | `/api/v1/buildings/{buildingId}/store` | [건물 보관](#건물-보관) | ✅ | - |
 
 ---
 
@@ -37,9 +55,6 @@
 ```
 
 출처: `building_instances`, `building_types`, `territories`
-
-### 남은작업
-- 서비스 구현
 
 ---
 
@@ -96,9 +111,6 @@
 | 400 | ZONE_RESTRICTION_VIOLATED | Zone 제약 위반 |
 | 400 | INSUFFICIENT_GP | GP 부족 |
 
-### 남은작업
-- 서비스 구현
-
 ---
 
 ## 건물 업그레이드
@@ -128,9 +140,6 @@
 | 404 | BUILDING_NOT_FOUND | 존재하지 않는 건물 |
 | 403 | NOT_TERRITORY_OWNER | 점유자 아님 |
 | 400 | INSUFFICIENT_GP | GP 부족 |
-
-### 남은작업
-- 서비스 구현
 
 ---
 
@@ -163,9 +172,6 @@
 | 404 | BUILDING_NOT_FOUND | 존재하지 않는 건물 |
 | 403 | NOT_TERRITORY_OWNER | 점유자 아님 |
 | 400 | INSUFFICIENT_GP | GP 부족 |
-
-### 남은작업
-- 서비스 구현
 
 ---
 
@@ -203,9 +209,6 @@
 
 출처: `home_islands`, `building_instances`, `building_types`
 
-### 남은작업
-- 서비스 구현
-
 ---
 
 ## 섬 건물 목록 조회
@@ -234,9 +237,6 @@
   ]
 }
 ```
-
-### 남은작업
-- 서비스 구현
 
 ---
 
@@ -276,8 +276,8 @@
 }
 ```
 
-### 남은작업
-- 서비스 구현
+### 남은 작업
+- TODO: 일꾼 슬롯 소모 로직 미구현 (시즌 패스 연동 필요)
 
 ---
 
@@ -308,10 +308,7 @@
 }
 ```
 
-출처: `item_purchases` (미배치 건물 아이템)
-
-### 남은작업
-- 서비스 구현
+출처: `building_instances` (posX=-1, posY=-1인 보관 건물)
 
 ---
 
@@ -365,13 +362,10 @@
 
 | HTTP | 에러 코드 | 설명 |
 |---|---|---|
-| 404 | INVENTORY_ITEM_NOT_FOUND | 보관함에 없는 아이템 |
+| 404 | BUILDING_NOT_FOUND | 보관함에 없는 건물 |
 | 403 | NOT_TERRITORY_OWNER | 영토 점유자 아님 |
 | 400 | INVALID_POSITION | 배치 불가 위치 |
 | 400 | ZONE_RESTRICTION_VIOLATED | Zone 제약 위반 |
-
-### 남은작업
-- 서비스 구현
 
 ---
 
@@ -423,9 +417,6 @@
 | 400 | `INVALID_POSITION` | 배치 불가 위치 |
 | 400 | `ZONE_RESTRICTION_VIOLATED` | Castle을 Zone 1 밖으로 이동 시도 |
 
-### 남은 작업
-- ⬜ 서비스 구현
-
 ---
 
 ## 건물 보관
@@ -468,6 +459,3 @@
 | 404 | `BUILDING_NOT_FOUND` | 존재하지 않는 건물 |
 | 403 | `NOT_TERRITORY_OWNER` | 점유자 아님 |
 | 400 | `CASTLE_CANNOT_BE_STORED` | Castle은 보관 불가 |
-
-### 남은 작업
-- ⬜ 서비스 구현

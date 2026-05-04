@@ -15,7 +15,7 @@
 | GET | `/api/v1/users/me/territories` | 나의 영토 목록 조회 | ✅ (일부 TODO) |
 | PATCH | `/api/v1/users/me/nickname` | 닉네임 변경 | ✅ (일부 TODO) |
 | PATCH | `/api/v1/users/me/password` | 비밀번호 변경 | ✅ |
-| POST | `/api/v1/users/me/ap/charge` | AP 충전 | ❌ 미구현 |
+| POST | `/api/v1/users/me/ap/charge` | AP 충전 | ✅ (PG 연동 TODO) |
 
 ---
 
@@ -418,5 +418,4 @@
 | 422 | `PAYMENT_AMOUNT_MISMATCH` | 결제 금액 불일치 |
 
 ### 남은 작업
-- ⬜ `PaymentService.chargeAp()` 구현
-- ⬜ PG 연동 (Toss Payments 등)
+- TODO: PG 연동 (Toss Payments 등) — 현재 `validatePayment()` 는 stub 구현
