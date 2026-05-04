@@ -57,3 +57,14 @@ Content-Type: application/json
   "currentPassword": "password1!",
   "newPassword": "newPassword1!"
 }
+
+### AP 충전
+POST {{baseUrl}}/api/v1/users/me/ap/charge
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "amount": 1000,
+  "paymentKey": "tgen_20260408_test_key",
+  "orderId": "order_user1_1744113600"
+}
