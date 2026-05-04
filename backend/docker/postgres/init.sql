@@ -304,6 +304,32 @@ CREATE TABLE IF NOT EXISTS seasons (
     ended_at      TIMESTAMPTZ
 );
 
+-- season_pass_progress
+CREATE TABLE IF NOT EXISTS season_pass_progress (
+    id        BIGSERIAL PRIMARY KEY,
+    user_id   BIGINT    NOT NULL REFERENCES users(id),
+    season_id BIGINT    NOT NULL REFERENCES seasons(id),
+    level     INTEGER   NOT NULL DEFAULT 1,
+    xp        INTEGER   NOT NULL DEFAULT 0,
+    UNIQUE (user_id, season_id)
+);
+
+-- season_pass_level_rewards
+CREATE TABLE IF NOT EXISTS season_pass_level_rewards (
+    id          BIGSERIAL    PRIMARY KEY,
+    season_id   BIGINT       NOT NULL REFERENCES seasons(id),
+    level       INTEGER      NOT NULL,
+    reward_name VARCHAR(100) NOT NULL
+);
+
+-- season_pass_reward_claims
+CREATE TABLE IF NOT EXISTS season_pass_reward_claims (
+    id         BIGSERIAL   PRIMARY KEY,
+    user_id    BIGINT      NOT NULL REFERENCES users(id),
+    reward_id  BIGINT      NOT NULL REFERENCES season_pass_level_rewards(id),
+    claimed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- user_trophies
 CREATE TABLE IF NOT EXISTS user_trophies (
     user_id    BIGINT      PRIMARY KEY REFERENCES users(id),

@@ -565,6 +565,159 @@
       ]
     },
     {
+      "name": "Land Tax",
+      "item": [
+        {
+          "name": "토지세 현황 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/land-tax/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "land-tax", "status"]
+            }
+          }
+        },
+        {
+          "name": "납세 내역 조회 (전체)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/land-tax/logs?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "land-tax", "logs"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "납세 내역 조회 (PAID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/land-tax/logs?page=0&size=10&status=PAID",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "land-tax", "logs"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "status", "value": "PAID" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "납세 내역 조회 (FAILED)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/land-tax/logs?page=0&size=10&status=FAILED",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "land-tax", "logs"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "status", "value": "FAILED" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "납세 내역 조회 - 잘못된 status (400)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/land-tax/logs?status=WRONG",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "land-tax", "logs"],
+              "query": [
+                { "key": "status", "value": "WRONG" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Season Pass",
+      "item": [
+        {
+          "name": "시즌 패스 보유 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/season-pass/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "season-pass", "me"]
+            }
+          }
+        },
+        {
+          "name": "시즌 패스 현황 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/season-pass",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "season-pass"]
+            }
+          }
+        },
+        {
+          "name": "시즌 패스 구매",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/season-pass/purchase",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "season-pass", "purchase"]
+            }
+          }
+        },
+        {
+          "name": "시즌 패스 구매 - AP 부족 (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/season-pass/purchase",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "season-pass", "purchase"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Map",
       "item": [
         {

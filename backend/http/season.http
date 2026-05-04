@@ -1,0 +1,18 @@
+baseUrl = http://localhost:8080
+
+### 시즌 패스 보유 여부 조회
+GET {{baseUrl}}/api/v1/season-pass/me
+Authorization: Bearer {{accessToken}}
+
+### 시즌 패스 현황 조회 (레벨·보상 목록)
+GET {{baseUrl}}/api/v1/season-pass
+Authorization: Bearer {{accessToken}}
+
+### 시즌 패스 구매
+POST {{baseUrl}}/api/v1/season-pass/purchase
+Authorization: Bearer {{accessToken}}
+
+### 시즌 패스 구매 — AP 부족 (400 에러 확인)
+# available_ap < cost_ap 상태의 계정으로 요청
+POST {{baseUrl}}/api/v1/season-pass/purchase
+Authorization: Bearer {{accessToken}}
