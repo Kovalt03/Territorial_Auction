@@ -1,7 +1,7 @@
 # Item API
 
 > Notion 상세 기능 명세: [F-15 아이템 시스템](https://www.notion.so/Functional-Specification-Access-Control-Matrix-3332efa4278d804e8ccfdb31151e9943)  
-> 구현 상태: 🔲 미구현
+> 구현 상태: ✅ 구현 완료
 
 > **도메인 분리 안내**
 > - AP 충전: [user.md](./user.md) — `POST /api/v1/users/me/ap/charge`
@@ -15,10 +15,10 @@
 
 | Method | Endpoint | 기능 | 구현 | 남은 작업 |
 |---|---|---|---|---|
-| GET | `/api/v1/items` | [아이템 목록 조회](#아이템-목록-조회) | ⬜ | 서비스 구현 |
-| POST | `/api/v1/items/purchase` | [아이템 구매](#아이템-구매) | ⬜ | 서비스 구현 |
-| POST | `/api/v1/items/use` | [아이템 사용](#아이템-사용) | ⬜ | 서비스 구현, Redis invincible, Redis 무효화 |
-| GET | `/api/v1/items/inventory` | [보유 아이템 목록 조회](#보유-아이템-목록-조회) | ⬜ | 서비스 구현 |
+| GET | `/api/v1/items` | [아이템 목록 조회](#아이템-목록-조회) | ✅ | Redis 캐시 조회 연동, items 시딩 |
+| POST | `/api/v1/items/purchase` | [아이템 구매](#아이템-구매) | ✅ | items 시딩 |
+| POST | `/api/v1/items/use` | [아이템 사용](#아이템-사용) | ✅ | 공격권 — 공성전 도메인 구현 후 연동 |
+| GET | `/api/v1/items/inventory` | [보유 아이템 목록 조회](#보유-아이템-목록-조회) | ✅ | - |
 
 ---
 
@@ -87,9 +87,8 @@
 | 401 | `UNAUTHORIZED` | 인증 실패 |
 
 ### 남은 작업
-- ⬜ `PaymentService.getItems()` 구현
-- ⬜ `items` 테이블 초기 데이터 시딩 (위 3종 아이템)
-- ⬜ Redis `user:item:{userId}` 캐시에서 `myInventory` 조회
+- TODO: `items` 테이블 초기 데이터 시딩 (무적권·공격권·GP구매권 3종)
+- TODO: `getItems()` — Redis `user:item:{userId}` 캐시 우선 조회 연동 (현재 DB 직접 조회)
 
 ---
 
@@ -153,9 +152,7 @@ AP를 소모하여 아이템을 구매합니다. 구매 즉시 인벤토리에 �
 | 429 | `DAILY_LIMIT_EXCEEDED` | 일일 구매 한도 초과 |
 
 ### 남은 작업
-- ⬜ `PaymentService.purchaseItem()` 구현
-- ⬜ 일일 한도 체크 로직 (`item_purchases` 당일 집계)
-- ⬜ Redis `user:item:{userId}` 무효화
+- TODO: `items` 테이블 초기 데이터 시딩 (무적권·공격권·GP구매권 3종)
 
 ---
 
@@ -221,9 +218,7 @@ AP를 소모하여 아이템을 구매합니다. 구매 즉시 인벤토리에 �
 | 409 | `ALREADY_INVINCIBLE` | 이미 무적 상태인 영토 |
 
 ### 남은 작업
-- ⬜ `PaymentService.useItem()` 구현
-- ⬜ Redis `invincible:{territoryId}` 생성 (TTL 3600s)
-- ⬜ Redis `user:item:{userId}` 무효화
+- TODO: `ATTACK_NORMAL` / `ATTACK_PRECISION` 사용 — 공성전(siege) 도메인 구현 후 연동 (현재 `SIEGE_NOT_SUPPORTED` 예외 반환)
 
 ---
 
@@ -279,5 +274,3 @@ AP를 소모하여 아이템을 구매합니다. 구매 즉시 인벤토리에 �
 |---|---|---|
 | 401 | `UNAUTHORIZED` | 인증 토큰 없음 또는 만료 |
 
-### 남은 작업
-- ⬜ `PaymentService.getInventory()` 구현

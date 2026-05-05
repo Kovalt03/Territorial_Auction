@@ -51,4 +51,20 @@ public class Wallet {
     public void consumeLockedAp(int amount) {
         this.lockedAp -= amount;
     }
+
+    public void spendAp(int amount) {
+        this.availableAp -= amount;
+    }
+
+    public void addGp(int amount) {
+        this.availableGp += amount;
+    }
+
+    public void addAp(int amount) {
+        this.availableAp += amount;
+    }
+
+    public void spendGp(int amount) {
+        this.availableGp -= amount;
+    }
 }

@@ -1,14 +1,14 @@
 # Land Tax API
 
 > Notion 상세 기능 명세: [F-14 토지세 시스템](https://www.notion.so/Functional-Specification-Access-Control-Matrix-3332efa4278d804e8ccfdb31151e9943)  
-> 구현 상태: 🔲 미구현
+> 구현 상태: 🔄 일부 완료
 
 ## 목차
 
-| Method | Endpoint | 기능 |
-|---|---|---|
-| GET | `/api/v1/land-tax/status` | [토지세 현황 조회](#토지세-현황-조회) |
-| GET | `/api/v1/land-tax/logs` | [납세 내역 조회](#납세-내역-조회) |
+| Method | Endpoint | 기능 | 구현 |
+|---|---|---|---|
+| GET | `/api/v1/land-tax/status` | [토지세 현황 조회](#토지세-현황-조회) | ✅ |
+| GET | `/api/v1/land-tax/logs` | [납세 내역 조회](#납세-내역-조회) | ✅ |
 
 ---
 
@@ -83,14 +83,14 @@
 | 401 | `UNAUTHORIZED` | 인증 실패 |
 
 ### 남은 작업
-- ⬜ `LandTaxService.getLandTaxStatus()` 구현
+- ✅ `LandTaxService.getLandTaxStatus()` 구현
 - ⬜ Redis `land_tax:expected:{userId}` 캐시 연동 (TTL: 자정까지)
 
 ---
 
 ## 납세 내역 조회
 
-**GET** `/api/v1/land-tax/logs?page={0}&size={20}&status={ALL}`
+**GET** `/api/v1/land-tax/logs?page={0}&size={10}&status={PAID|FAILED}`
 
 **Authorization**: Bearer `{{accessToken}}` (필수)
 
@@ -101,8 +101,8 @@
 | parameter | 타입 | 필수 | 기본값 | 설명 |
 |---|---|---|---|---|
 | `page` | Integer | N | 0 | 페이지 번호 (0-based) |
-| `size` | Integer | N | 20 | 페이지 크기 |
-| `status` | String | N | ALL | `ALL` / `PAID` / `FAILED` |
+| `size` | Integer | N | 10 | 페이지 크기 |
+| `status` | String | N | (전체) | `PAID` / `FAILED` — 생략 시 전체 조회 |
 
 ### Response (200 OK)
 
@@ -146,4 +146,7 @@
 | 401 | `UNAUTHORIZED` | 인증 실패 |
 
 ### 남은 작업
-- ⬜ `LandTaxService.getLandTaxLogs()` 구현
+- ✅ `LandTaxService.getLandTaxLogs()` 구현
+- ⬜ 세금 납부/환수 스케줄러 구현 (`processAllUsersTax`, `processUserTax`, `enforceEviction`)
+- ⬜ GP 부족 처리 및 유예 기간 로직 구현 (F-14.3, F-14.4)
+- ⬜ Redis `land_tax:expected:{userId}` 캐시 연동 (TTL: 자정까지)

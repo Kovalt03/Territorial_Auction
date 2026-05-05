@@ -49,12 +49,39 @@ public enum ErrorCode {
 
     // Building
     BUILDING_NOT_FOUND(HttpStatus.NOT_FOUND, "건물을 찾을 수 없습니다."),
+    BUILDING_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "건물 타입을 찾을 수 없습니다."),
+    INVALID_POSITION(HttpStatus.BAD_REQUEST, "배치 불가능한 위치입니다."),
+    ZONE_RESTRICTION_VIOLATED(HttpStatus.BAD_REQUEST, "Zone 제약 위반입니다."),
+    INSUFFICIENT_GP(HttpStatus.BAD_REQUEST, "GP 잔액이 부족합니다."),
+    CASTLE_CANNOT_BE_STORED(HttpStatus.BAD_REQUEST, "Castle은 보관할 수 없습니다."),
+
+    // Payment
+    INVALID_PAYMENT(HttpStatus.BAD_REQUEST, "결제 검증에 실패했습니다."),
+    DUPLICATE_ORDER(HttpStatus.CONFLICT, "중복된 주문 ID입니다."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.UNPROCESSABLE_ENTITY, "결제 금액이 일치하지 않습니다."),
+
+    // Global Vault
+    VAULT_CAPACITY_EXCEEDED(HttpStatus.CONFLICT, "금고 용량을 초과합니다."),
+    TRANSFER_COOLDOWN_ACTIVE(HttpStatus.TOO_MANY_REQUESTS, "이전 쿨다운 중입니다. 잠시 후 다시 시도하세요."),
 
     // Military
     INSUFFICIENT_TROOPS(HttpStatus.BAD_REQUEST, "병력이 부족합니다."),
 
     // Island
-    ISLAND_NOT_FOUND(HttpStatus.NOT_FOUND, "섬을 찾을 수 없습니다.");
+    ISLAND_NOT_FOUND(HttpStatus.NOT_FOUND, "섬을 찾을 수 없습니다."),
+
+    // Season
+    SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "진행 중인 시즌이 없습니다."),
+    SEASON_PASS_NOT_FOUND(HttpStatus.NOT_FOUND, "시즌 패스 정보를 찾을 수 없습니다."),
+
+    // Item
+    ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "아이템을 찾을 수 없습니다."),
+    ITEM_OUT_OF_STOCK(HttpStatus.CONFLICT, "보유 수량이 없습니다."),
+    DAILY_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "일일 구매 한도를 초과했습니다."),
+    TARGET_TERRITORY_REQUIRED(HttpStatus.BAD_REQUEST, "대상 영토를 입력해주세요."),
+    ALREADY_INVINCIBLE(HttpStatus.CONFLICT, "이미 무적 상태인 영토입니다."),
+    ITEM_NOT_USABLE(HttpStatus.BAD_REQUEST, "해당 아이템은 구매 시 자동으로 적용됩니다."),
+    SIEGE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "공성전 아이템 사용은 현재 지원하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

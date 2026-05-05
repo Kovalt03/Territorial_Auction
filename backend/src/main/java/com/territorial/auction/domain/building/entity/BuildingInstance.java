@@ -1,7 +1,9 @@
 package com.territorial.auction.domain.building.entity;
 
 import com.territorial.auction.domain.map.entity.Territory;
+import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.*;
 
 @Entity
@@ -16,15 +18,20 @@ public class BuildingInstance {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "territory_id")
-    private Territory territory; // NULL이면 섬 건물
+    private Territory territory;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "island_id")
-    private HomeIsland island; // NULL이면 영토 건물
+    private HomeIsland island;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "building_type_id", nullable = false)
     private BuildingType buildingType;
+
+    // 보관함 소유자 — territory/island 둘 다 null일 때(보관 상태) 사용
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User owner;
 
     @Column(nullable = false)
     private Integer posX;
@@ -39,7 +46,7 @@ public class BuildingInstance {
     private Integer level = 1;
 
     @Column(nullable = false)
-    private Integer zone; // 1 / 2 / 3
+    private Integer zone;
 
     @Column(nullable = false)
     private boolean isDestroyed = false;
@@ -49,6 +56,7 @@ public class BuildingInstance {
             Territory territory,
             HomeIsland island,
             BuildingType buildingType,
+            User owner,
             Integer posX,
             Integer posY,
             Integer hp,
@@ -56,9 +64,74 @@ public class BuildingInstance {
         this.territory = territory;
         this.island = island;
         this.buildingType = buildingType;
+        this.owner = owner;
         this.posX = posX;
         this.posY = posY;
         this.hp = hp;
         this.zone = zone;
+    }
+
+    public void upgrade() {
+        this.level++;
+        this.hp = this.buildingType.getMaxHp();
+    }
+
+    public void repair() {
+        this.hp = this.buildingType.getMaxHp();
+        this.isDestroyed = false;
+    }
+
+    public void store(User user) {
+        this.owner = user;
+        this.territory = null;
+        this.island = null;
+        this.posX = -1;
+        this.posY = -1;
+        this.zone = 0;
+    }
+
+    public void movePosition(int posX, int posY, int zone) {
+        this.posX = posX;
+        this.posY = posY;
+        this.zone = zone;
+    }
+
+    public void placeOnTerritory(Territory territory, int posX, int posY, int zone) {
+        this.territory = territory;
+        this.island = null;
+        this.owner = null;
+        this.posX = posX;
+        this.posY = posY;
+        this.zone = zone;
+    }
+
+    public void placeOnIsland(HomeIsland island, int posX, int posY, int zone) {
+        this.island = island;
+        this.territory = null;
+        this.owner = null;
+        this.posX = posX;
+        this.posY = posY;
+        this.zone = zone;
+    }
+
+    public boolean isInInventory() {
+        return this.territory == null && this.island == null;
+    }
+
+    public Long ownerId() {
+        if (territory != null && territory.getOwner() != null) {
+            return territory.getOwner().getId();
+        }
+        if (island != null) {
+            return island.getUser().getId();
+        }
+        if (owner != null) {
+            return owner.getId();
+        }
+        return null;
+    }
+
+    public LocalDateTime storedAt() {
+        return LocalDateTime.now();
     }
 }

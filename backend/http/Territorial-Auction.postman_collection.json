@@ -396,6 +396,26 @@
               "path": ["api", "v1", "users", "me"]
             }
           }
+        },
+        {
+          "name": "AP 충전",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000,\n  \"paymentKey\": \"tgen_20260408_test_key\",\n  \"orderId\": \"order_user1_1744113600\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/ap/charge",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me", "ap", "charge"]
+            }
+          }
         }
       ]
     },
@@ -565,6 +585,159 @@
       ]
     },
     {
+      "name": "Land Tax",
+      "item": [
+        {
+          "name": "토지세 현황 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/land-tax/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "land-tax", "status"]
+            }
+          }
+        },
+        {
+          "name": "납세 내역 조회 (전체)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/land-tax/logs?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "land-tax", "logs"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "납세 내역 조회 (PAID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/land-tax/logs?page=0&size=10&status=PAID",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "land-tax", "logs"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "status", "value": "PAID" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "납세 내역 조회 (FAILED)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/land-tax/logs?page=0&size=10&status=FAILED",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "land-tax", "logs"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "status", "value": "FAILED" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "납세 내역 조회 - 잘못된 status (400)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/land-tax/logs?status=WRONG",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "land-tax", "logs"],
+              "query": [
+                { "key": "status", "value": "WRONG" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Season Pass",
+      "item": [
+        {
+          "name": "시즌 패스 보유 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/season-pass/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "season-pass", "me"]
+            }
+          }
+        },
+        {
+          "name": "시즌 패스 현황 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/season-pass",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "season-pass"]
+            }
+          }
+        },
+        {
+          "name": "시즌 패스 구매",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/season-pass/purchase",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "season-pass", "purchase"]
+            }
+          }
+        },
+        {
+          "name": "시즌 패스 구매 - AP 부족 (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/season-pass/purchase",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "season-pass", "purchase"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Map",
       "item": [
         {
@@ -653,6 +826,416 @@
               "raw": "{{baseUrl}}/api/v1/map/territories/1/color",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "map", "territories", "1", "color"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Building",
+      "item": [
+        {
+          "name": "영토 건물 목록 조회",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/map/territories/1/buildings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "map", "territories", "1", "buildings"]
+            }
+          }
+        },
+        {
+          "name": "영토 건물 배치",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buildingTypeId\": 1,\n  \"posX\": 3,\n  \"posY\": 3\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/map/territories/1/buildings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "map", "territories", "1", "buildings"]
+            }
+          }
+        },
+        {
+          "name": "건물 업그레이드",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/buildings/1/upgrade",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "buildings", "1", "upgrade"]
+            }
+          }
+        },
+        {
+          "name": "건물 수리",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/buildings/1/repair",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "buildings", "1", "repair"]
+            }
+          }
+        },
+        {
+          "name": "건물 보관",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/buildings/1/store",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "buildings", "1", "store"]
+            }
+          }
+        },
+        {
+          "name": "건물 이동",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"posX\": 4,\n  \"posY\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/buildings/1/move",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "buildings", "1", "move"]
+            }
+          }
+        },
+        {
+          "name": "섬 정보 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/island",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "island"]
+            }
+          }
+        },
+        {
+          "name": "섬 건물 목록 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/island/buildings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "island", "buildings"]
+            }
+          }
+        },
+        {
+          "name": "섬 건물 배치",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buildingTypeId\": 3,\n  \"posX\": 0,\n  \"posY\": 0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/island/buildings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "island", "buildings"]
+            }
+          }
+        },
+        {
+          "name": "보관함 건물 목록 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory"]
+            }
+          }
+        },
+        {
+          "name": "보관함 건물 배치",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"territoryId\": 1,\n  \"posX\": 2,\n  \"posY\": 3\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/1/place",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "1", "place"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Item",
+      "item": [
+        {
+          "name": "아이템 목록 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "items"]
+            }
+          }
+        },
+        {
+          "name": "아이템 구매 (무적권 2개)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": 1,\n  \"quantity\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/items/purchase",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "items", "purchase"]
+            }
+          }
+        },
+        {
+          "name": "아이템 구매 (GP 구매권)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": 3,\n  \"quantity\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/items/purchase",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "items", "purchase"]
+            }
+          }
+        },
+        {
+          "name": "아이템 사용 (무적권)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": 1,\n  \"targetTerritoryId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/items/use",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "items", "use"]
+            }
+          }
+        },
+        {
+          "name": "아이템 사용 (일반 공격권)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": 2,\n  \"targetTerritoryId\": 5\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/items/use",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "items", "use"]
+            }
+          }
+        },
+        {
+          "name": "보유 아이템 목록 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/items/inventory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "items", "inventory"]
+            }
+          }
+        },
+        {
+          "name": "보유 아이템 목록 조회 (타입 필터)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/items/inventory?type=INVINCIBILITY",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "items", "inventory"],
+              "query": [
+                { "key": "type", "value": "INVINCIBILITY" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Global Vault",
+      "item": [
+        {
+          "name": "글로벌 금고 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/global-vault",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "global-vault"]
+            }
+          }
+        },
+        {
+          "name": "자원 이전 — 영토→금고 (TO_VAULT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"TO_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 5000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "global-vault", "transfer"]
+            }
+          }
+        },
+        {
+          "name": "자원 이전 — 금고→영토 (FROM_VAULT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"FROM_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 3000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "global-vault", "transfer"]
+            }
+          }
+        },
+        {
+          "name": "자원 이전 — GP 부족 (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"TO_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 9999999\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "global-vault", "transfer"]
+            }
+          }
+        },
+        {
+          "name": "자원 이전 — 쿨다운 중 (429)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"TO_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 100\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "global-vault", "transfer"]
             }
           }
         }

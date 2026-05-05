@@ -27,19 +27,32 @@ public class Item {
     @Column(nullable = false, length = 20)
     private ItemType itemType;
 
-    private Integer costAp; // NULL이면 AP로 구매 불가
+    @Column(length = 200)
+    private String description;
 
-    private Integer costGp; // NULL이면 GP로 구매 불가
+    private Integer costAp;
 
-    private Integer dailyLimit; // NULL이면 무제한
+    private Integer costGp;
+
+    private Integer dailyLimit;
+
+    private Integer gpReward; // GP_PURCHASE 타입: 구매 즉시 지급할 GP 수량
 
     @Builder
     public Item(
-            String name, ItemType itemType, Integer costAp, Integer costGp, Integer dailyLimit) {
+            String name,
+            ItemType itemType,
+            String description,
+            Integer costAp,
+            Integer costGp,
+            Integer dailyLimit,
+            Integer gpReward) {
         this.name = name;
         this.itemType = itemType;
+        this.description = description;
         this.costAp = costAp;
         this.costGp = costGp;
         this.dailyLimit = dailyLimit;
+        this.gpReward = gpReward;
     }
 }

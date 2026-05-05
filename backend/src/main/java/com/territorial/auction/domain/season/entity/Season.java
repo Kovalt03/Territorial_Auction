@@ -20,11 +20,13 @@ public class Season {
     @Column(nullable = false)
     private LocalDateTime startedAt;
 
-    private LocalDateTime endedAt; // NULL이면 진행 중
+    @Column(nullable = false)
+    private LocalDateTime endedAt;
 
     @Builder
-    public Season(Integer seasonNumber, LocalDateTime startedAt) {
+    public Season(Integer seasonNumber, LocalDateTime startedAt, LocalDateTime endedAt) {
         this.seasonNumber = seasonNumber;
         this.startedAt = startedAt;
+        this.endedAt = endedAt;
     }
 }

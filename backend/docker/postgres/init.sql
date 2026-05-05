@@ -166,12 +166,24 @@ CREATE TABLE IF NOT EXISTS land_tax_logs (
 
 -- items
 CREATE TABLE IF NOT EXISTS items (
-    id          BIGSERIAL   PRIMARY KEY,
-    name        VARCHAR(50) NOT NULL,
-    item_type   VARCHAR(20) NOT NULL,
+    id          BIGSERIAL    PRIMARY KEY,
+    name        VARCHAR(50)  NOT NULL,
+    item_type   VARCHAR(20)  NOT NULL,
+    description VARCHAR(200),
     cost_ap     INTEGER,
     cost_gp     INTEGER,
-    daily_limit INTEGER
+    daily_limit INTEGER,
+    gp_reward   INTEGER
+);
+
+-- user_items
+CREATE TABLE IF NOT EXISTS user_items (
+    id         BIGSERIAL   PRIMARY KEY,
+    user_id    BIGINT      NOT NULL REFERENCES users(id),
+    item_id    BIGINT      NOT NULL REFERENCES items(id),
+    quantity   INTEGER     NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (user_id, item_id)
 );
 
 -- item_purchases
@@ -230,6 +242,7 @@ CREATE TABLE IF NOT EXISTS building_instances (
     territory_id     BIGINT    REFERENCES territories(id),
     island_id        BIGINT    REFERENCES home_islands(id),
     building_type_id BIGINT    NOT NULL REFERENCES building_types(id),
+    user_id          BIGINT    REFERENCES users(id),  -- 보관함 소유자 (territory/island 없을 때)
     pos_x            INTEGER   NOT NULL,
     pos_y            INTEGER   NOT NULL,
     hp               INTEGER   NOT NULL,
@@ -302,6 +315,32 @@ CREATE TABLE IF NOT EXISTS seasons (
     season_number INTEGER     NOT NULL UNIQUE,
     started_at    TIMESTAMPTZ NOT NULL,
     ended_at      TIMESTAMPTZ
+);
+
+-- season_pass_progress
+CREATE TABLE IF NOT EXISTS season_pass_progress (
+    id        BIGSERIAL PRIMARY KEY,
+    user_id   BIGINT    NOT NULL REFERENCES users(id),
+    season_id BIGINT    NOT NULL REFERENCES seasons(id),
+    level     INTEGER   NOT NULL DEFAULT 1,
+    xp        INTEGER   NOT NULL DEFAULT 0,
+    UNIQUE (user_id, season_id)
+);
+
+-- season_pass_level_rewards
+CREATE TABLE IF NOT EXISTS season_pass_level_rewards (
+    id          BIGSERIAL    PRIMARY KEY,
+    season_id   BIGINT       NOT NULL REFERENCES seasons(id),
+    level       INTEGER      NOT NULL,
+    reward_name VARCHAR(100) NOT NULL
+);
+
+-- season_pass_reward_claims
+CREATE TABLE IF NOT EXISTS season_pass_reward_claims (
+    id         BIGSERIAL   PRIMARY KEY,
+    user_id    BIGINT      NOT NULL REFERENCES users(id),
+    reward_id  BIGINT      NOT NULL REFERENCES season_pass_level_rewards(id),
+    claimed_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- user_trophies

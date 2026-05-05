@@ -40,4 +40,8 @@ public class UserSeasonPass {
         this.startedAt = startedAt;
         this.expiresAt = expiresAt;
     }
+
+    public void extend(int days) {
+        this.expiresAt = this.expiresAt.plusDays(days);
+    }
 }
