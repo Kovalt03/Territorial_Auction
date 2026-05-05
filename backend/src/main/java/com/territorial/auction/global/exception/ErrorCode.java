@@ -64,6 +64,16 @@ public enum ErrorCode {
     VAULT_CAPACITY_EXCEEDED(HttpStatus.CONFLICT, "금고 용량을 초과합니다."),
     TRANSFER_COOLDOWN_ACTIVE(HttpStatus.TOO_MANY_REQUESTS, "이전 쿨다운 중입니다. 잠시 후 다시 시도하세요."),
 
+    // Guild
+    GUILD_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 길드입니다."),
+    GUILD_NAME_DUPLICATED(HttpStatus.CONFLICT, "이미 존재하는 길드명입니다."),
+    ALREADY_IN_GUILD(HttpStatus.CONFLICT, "이미 길드에 소속되어 있습니다."),
+    NOT_IN_GUILD(HttpStatus.NOT_FOUND, "소속된 길드가 없습니다."),
+    ALREADY_APPLIED(HttpStatus.CONFLICT, "이미 가입 신청한 길드입니다."),
+    NOT_GUILD_MASTER(HttpStatus.FORBIDDEN, "길드장 권한이 없습니다."),
+    GUILD_FULL(HttpStatus.BAD_REQUEST, "길드 정원이 초과되었습니다."),
+    APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "가입 신청을 찾을 수 없습니다."),
+
     // Military
     INSUFFICIENT_TROOPS(HttpStatus.BAD_REQUEST, "병력이 부족합니다."),
 

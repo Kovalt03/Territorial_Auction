@@ -1,6 +1,13 @@
 package com.territorial.auction.domain.season.repository;
 
 import com.territorial.auction.domain.season.entity.UserTrophy;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-public interface UserTrophyRepository extends JpaRepository<UserTrophy, Long> {}
+public interface UserTrophyRepository extends JpaRepository<UserTrophy, Long> {
+
+    @Query("SELECT COALESCE(SUM(ut.score), 0) FROM UserTrophy ut WHERE ut.user.id IN :userIds")
+    long sumScoreByUserIdIn(@Param("userIds") List<Long> userIds);
+}
