@@ -1,0 +1,58 @@
+baseUrl = http://localhost:8080
+
+### 길드 목록 조회 (검색어 없음)
+GET {{baseUrl}}/api/v1/guilds?page=0&size=20
+
+### 길드 목록 조회 (검색어 있음)
+GET {{baseUrl}}/api/v1/guilds?page=0&size=20&search=정복
+
+### 길드 상세 조회
+GET {{baseUrl}}/api/v1/guilds/1
+
+### 나의 길드 조회
+GET {{baseUrl}}/api/v1/guilds/me
+Authorization: Bearer {{accessToken}}
+
+### 길드 생성
+POST {{baseUrl}}/api/v1/guilds
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "정복자들",
+  "description": "영토 정복을 목표로 하는 길드입니다.",
+  "emblem": "https://cdn.example.com/emblems/001.png"
+}
+
+### 길드 가입 신청
+POST {{baseUrl}}/api/v1/guilds/1/join
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "message": "열심히 하겠습니다!"
+}
+
+### 길드 가입 승인 (길드장만 가능)
+PATCH {{baseUrl}}/api/v1/guilds/1/members/2/approve
+Authorization: Bearer {{accessToken}}
+
+### 길드 가입 신청 목록 조회 (길드장만 가능)
+GET {{baseUrl}}/api/v1/guilds/1/applications
+Authorization: Bearer {{accessToken}}
+
+### 에러: 존재하지 않는 길드 (404 GUILD_NOT_FOUND)
+GET {{baseUrl}}/api/v1/guilds/99999
+
+### 에러: 이미 길드 소속 상태에서 가입 신청 (409 ALREADY_IN_GUILD)
+POST {{baseUrl}}/api/v1/guilds/1/join
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "message": "중복 신청"
+}
+
+### 에러: 길드장 권한 없이 승인 시도 (403 NOT_GUILD_MASTER)
+PATCH {{baseUrl}}/api/v1/guilds/1/members/3/approve
+Authorization: Bearer {{accessToken}}
