@@ -1,6 +1,20 @@
 # Guild API
 
-> 구현 상태: 🔲 미구현
+> 구현 상태: ✅ 구현 완료
+
+---
+
+## 목차 (구현 현황)
+
+| 엔드포인트 | 메서드 | 인증 | 상태 |
+|---|---|---|---|
+| `/api/v1/guilds` | POST | 필수 | ✅ 완료 |
+| `/api/v1/guilds` | GET | 불필요 | ✅ 완료 |
+| `/api/v1/guilds/{guildId}` | GET | 불필요 | ✅ 완료 |
+| `/api/v1/guilds/me` | GET | 필수 | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/join` | POST | 필수 | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/members/{userId}/approve` | PATCH | 필수 (MASTER) | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/applications` | GET | 필수 (MASTER) | ✅ 완료 |
 
 ---
 
@@ -55,9 +69,6 @@
 | 409 | GUILD_NAME_DUPLICATED | 이미 존재하는 길드명 |
 | 409 | ALREADY_IN_GUILD | 이미 길드에 소속된 유저 |
 
-### 남은작업
-- 서비스 구현
-
 ---
 
 ## 길드 목록 조회
@@ -103,9 +114,7 @@
 | field | 설명 |
 |---|---|
 | `recruitingStatus` | `OPEN` (모집 중) / `CLOSED` (모집 마감) |
-
-### 남은작업
-- 서비스 구현
+| `totalTrophyPoints` | `user_trophies.score` 합계 (ACTIVE 멤버 기준) |
 
 ---
 
@@ -167,9 +176,6 @@
 |---|---|---|
 | 404 | GUILD_NOT_FOUND | 존재하지 않는 길드 |
 
-### 남은작업
-- 서비스 구현
-
 ---
 
 ## 나의 길드 정보 조회
@@ -205,9 +211,6 @@
 |---|---|---|
 | 404 | NOT_IN_GUILD | 길드에 소속되지 않은 유저 |
 
-### 남은작업
-- 서비스 구현
-
 ---
 
 ## 길드 가입 신청
@@ -216,9 +219,19 @@
 
 **Authorization**: Bearer `{{accessToken}}` (필수)
 
+### Request Body (optional)
+
+```json
+{
+  "message": "열심히 하겠습니다!"
+}
+```
+
+> `message` 필드는 선택값 (최대 200자). Request body 자체도 생략 가능.
+
 ### 비즈니스 규칙
 - `guild_members`에 role=`MEMBER`, status=`PENDING`으로 등록
-- 길드장에게 즉시 WebSocket 알림 + `notification_logs` 기록
+- 길드장에게 즉시 WebSocket 알림 + `notification_logs` 기록 (TODO)
 
 ### Response (202 Accepted)
 
@@ -238,9 +251,6 @@
 | 409 | ALREADY_IN_GUILD | 이미 다른 길드에 소속 |
 | 409 | ALREADY_APPLIED | 이미 가입 신청한 길드 |
 
-### 남은작업
-- 서비스 구현
-
 ---
 
 ## 길드 가입 승인
@@ -251,7 +261,8 @@
 
 ### 비즈니스 규칙
 - `PENDING` → `ACTIVE` 상태 전환
-- 승인된 유저에게 알림 발송 (WebSocket + `notification_logs`)
+- 정원(`maxMembers`) 초과 시 승인 불가
+- 승인된 유저에게 알림 발송 (WebSocket + `notification_logs`) (TODO)
 
 ### Response (200 OK)
 
@@ -271,9 +282,6 @@
 | 403 | NOT_GUILD_MASTER | 길드장 권한 없음 |
 | 404 | GUILD_NOT_FOUND | 존재하지 않는 길드 |
 | 404 | APPLICATION_NOT_FOUND | 해당 유저의 가입 신청 없음 |
-
-### 남은작업
-- 서비스 구현
 
 ---
 
@@ -299,7 +307,6 @@
         "userId": 1055,
         "nickname": "NewWarrior",
         "trophyPoints": 1200,
-        "message": "열심히 하겠습니다!",
         "appliedAt": "2026-04-27T15:30:00Z"
       }
     ]
@@ -307,7 +314,8 @@
 }
 ```
 
-출처: `guild_members` WHERE `status = PENDING`
+> `trophyPoints`: 해당 유저의 `user_trophies.score` 값
+> 출처: `guild_members` WHERE `status = PENDING`
 
 ### 에러
 
@@ -316,6 +324,3 @@
 | 401 | UNAUTHORIZED | 인증 토큰 없음 또는 만료 |
 | 403 | NOT_GUILD_MASTER | 길드장 권한 없음 |
 | 404 | GUILD_NOT_FOUND | 존재하지 않는 길드 |
-
-### 남은작업
-- 서비스 구현
