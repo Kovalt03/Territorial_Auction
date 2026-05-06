@@ -376,3 +376,26 @@ CREATE TABLE IF NOT EXISTS season_rewards (
     title_reward           VARCHAR(30),
     created_at             TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- guilds
+CREATE TABLE IF NOT EXISTS guilds (
+    id                BIGSERIAL    PRIMARY KEY,
+    name              VARCHAR(20)  NOT NULL UNIQUE,
+    description       VARCHAR(200),
+    emblem            VARCHAR(255),
+    master_id         BIGINT       NOT NULL REFERENCES users(id),
+    max_members       INTEGER      NOT NULL DEFAULT 30,
+    recruiting_status VARCHAR(6)   NOT NULL DEFAULT 'OPEN',
+    created_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+-- guild_members
+CREATE TABLE IF NOT EXISTS guild_members (
+    id        BIGSERIAL    PRIMARY KEY,
+    guild_id  BIGINT       NOT NULL REFERENCES guilds(id),
+    user_id   BIGINT       NOT NULL REFERENCES users(id),
+    role      VARCHAR(10)  NOT NULL DEFAULT 'MEMBER',
+    status    VARCHAR(10)  NOT NULL DEFAULT 'PENDING',
+    message   VARCHAR(200),
+    joined_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
