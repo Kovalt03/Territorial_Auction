@@ -476,4 +476,281 @@ class GuildServiceTest {
                     .isEqualTo(ErrorCode.NOT_GUILD_MASTER);
         }
     }
+
+    // ─── rejectApplication() ──────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("rejectApplication()")
+    class RejectApplication {
+
+        @Test
+        @DisplayName("성공 → 신청 CANCELLED로 변경")
+        void rejectApplication_success() {
+            GuildMember application =
+                    GuildMember.builder()
+                            .guild(guild)
+                            .user(user)
+                            .role(GuildMember.Role.MEMBER)
+                            .status(GuildMember.Status.PENDING)
+                            .message(null)
+                            .build();
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+            given(
+                            guildMemberRepository.findByUser_IdAndGuild_IdAndStatus(
+                                    1L, 10L, GuildMember.Status.PENDING))
+                    .willReturn(Optional.of(application));
+
+            guildService.rejectApplication(2L, 10L, 1L);
+
+            assertThat(application.getStatus()).isEqualTo(GuildMember.Status.CANCELLED);
+        }
+
+        @Test
+        @DisplayName("길드장 아님 → NOT_GUILD_MASTER")
+        void rejectApplication_notGuildMaster() {
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+
+            assertThatThrownBy(() -> guildService.rejectApplication(1L, 10L, 1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.NOT_GUILD_MASTER);
+        }
+
+        @Test
+        @DisplayName("PENDING 신청 없음 → APPLICATION_NOT_FOUND")
+        void rejectApplication_applicationNotFound() {
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+            given(
+                            guildMemberRepository.findByUser_IdAndGuild_IdAndStatus(
+                                    1L, 10L, GuildMember.Status.PENDING))
+                    .willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> guildService.rejectApplication(2L, 10L, 1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.APPLICATION_NOT_FOUND);
+        }
+    }
+
+    // ─── transferMaster() ─────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("transferMaster()")
+    class TransferMaster {
+
+        @Test
+        @DisplayName("성공 → 길드 master 변경, 기존 길드장 MEMBER로, 신규 길드장 MASTER로")
+        void transferMaster_success() {
+            GuildMember newMasterMember =
+                    GuildMember.builder()
+                            .guild(guild)
+                            .user(user)
+                            .role(GuildMember.Role.MEMBER)
+                            .status(GuildMember.Status.ACTIVE)
+                            .message(null)
+                            .build();
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+            given(
+                            guildMemberRepository.findByUser_IdAndGuild_IdAndStatus(
+                                    2L, 10L, GuildMember.Status.ACTIVE))
+                    .willReturn(Optional.of(masterMember));
+            given(
+                            guildMemberRepository.findByUser_IdAndGuild_IdAndStatus(
+                                    1L, 10L, GuildMember.Status.ACTIVE))
+                    .willReturn(Optional.of(newMasterMember));
+
+            guildService.transferMaster(
+                    2L,
+                    10L,
+                    new com.territorial.auction.domain.guild.dto.TransferMasterRequest(1L));
+
+            assertThat(masterMember.getRole()).isEqualTo(GuildMember.Role.MEMBER);
+            assertThat(newMasterMember.getRole()).isEqualTo(GuildMember.Role.MASTER);
+        }
+
+        @Test
+        @DisplayName("길드장 아님 → NOT_GUILD_MASTER")
+        void transferMaster_notGuildMaster() {
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+
+            assertThatThrownBy(
+                            () ->
+                                    guildService.transferMaster(
+                                            1L,
+                                            10L,
+                                            new com.territorial.auction.domain.guild.dto
+                                                    .TransferMasterRequest(3L)))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.NOT_GUILD_MASTER);
+        }
+
+        @Test
+        @DisplayName("자기 자신에게 이전 → CANNOT_TRANSFER_TO_SELF")
+        void transferMaster_toSelf() {
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+
+            assertThatThrownBy(
+                            () ->
+                                    guildService.transferMaster(
+                                            2L,
+                                            10L,
+                                            new com.territorial.auction.domain.guild.dto
+                                                    .TransferMasterRequest(2L)))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.CANNOT_TRANSFER_TO_SELF);
+        }
+
+        @Test
+        @DisplayName("대상이 ACTIVE 멤버 아님 → NOT_IN_GUILD")
+        void transferMaster_targetNotInGuild() {
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+            given(
+                            guildMemberRepository.findByUser_IdAndGuild_IdAndStatus(
+                                    2L, 10L, GuildMember.Status.ACTIVE))
+                    .willReturn(Optional.of(masterMember));
+            given(
+                            guildMemberRepository.findByUser_IdAndGuild_IdAndStatus(
+                                    99L, 10L, GuildMember.Status.ACTIVE))
+                    .willReturn(Optional.empty());
+
+            assertThatThrownBy(
+                            () ->
+                                    guildService.transferMaster(
+                                            2L,
+                                            10L,
+                                            new com.territorial.auction.domain.guild.dto
+                                                    .TransferMasterRequest(99L)))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.NOT_IN_GUILD);
+        }
+    }
+
+    // ─── kickMember() ─────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("kickMember()")
+    class KickMember {
+
+        @Test
+        @DisplayName("성공 → 멤버 status KICKED로 변경")
+        void kickMember_success() {
+            GuildMember target =
+                    GuildMember.builder()
+                            .guild(guild)
+                            .user(user)
+                            .role(GuildMember.Role.MEMBER)
+                            .status(GuildMember.Status.ACTIVE)
+                            .message(null)
+                            .build();
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+            given(
+                            guildMemberRepository.findByUser_IdAndGuild_IdAndStatus(
+                                    1L, 10L, GuildMember.Status.ACTIVE))
+                    .willReturn(Optional.of(target));
+
+            guildService.kickMember(2L, 10L, 1L);
+
+            assertThat(target.getStatus()).isEqualTo(GuildMember.Status.KICKED);
+        }
+
+        @Test
+        @DisplayName("길드장 아님 → NOT_GUILD_MASTER")
+        void kickMember_notGuildMaster() {
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+
+            assertThatThrownBy(() -> guildService.kickMember(1L, 10L, 3L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.NOT_GUILD_MASTER);
+        }
+
+        @Test
+        @DisplayName("길드장 추방 시도 → CANNOT_KICK_MASTER")
+        void kickMember_cannotKickMaster() {
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+            given(
+                            guildMemberRepository.findByUser_IdAndGuild_IdAndStatus(
+                                    2L, 10L, GuildMember.Status.ACTIVE))
+                    .willReturn(Optional.of(masterMember));
+
+            assertThatThrownBy(() -> guildService.kickMember(2L, 10L, 2L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.CANNOT_KICK_MASTER);
+        }
+
+        @Test
+        @DisplayName("해당 멤버 없음 → NOT_IN_GUILD")
+        void kickMember_memberNotFound() {
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+            given(
+                            guildMemberRepository.findByUser_IdAndGuild_IdAndStatus(
+                                    99L, 10L, GuildMember.Status.ACTIVE))
+                    .willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> guildService.kickMember(2L, 10L, 99L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.NOT_IN_GUILD);
+        }
+    }
+
+    // ─── updateGuild() ────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("updateGuild()")
+    class UpdateGuild {
+
+        @Test
+        @DisplayName("성공 — 모든 필드 변경")
+        void updateGuild_success_allFields() {
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+
+            guildService.updateGuild(
+                    2L,
+                    10L,
+                    new com.territorial.auction.domain.guild.dto.UpdateGuildRequest(
+                            "새 소개글", "https://cdn.example.com/002.png", "CLOSED"));
+
+            assertThat(guild.getDescription()).isEqualTo("새 소개글");
+            assertThat(guild.getEmblem()).isEqualTo("https://cdn.example.com/002.png");
+            assertThat(guild.getRecruitingStatus()).isEqualTo(Guild.RecruitingStatus.CLOSED);
+        }
+
+        @Test
+        @DisplayName("성공 — null 필드는 기존 값 유지")
+        void updateGuild_success_partialUpdate() {
+            ReflectionTestUtils.setField(guild, "description", "기존 소개글");
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+
+            guildService.updateGuild(
+                    2L,
+                    10L,
+                    new com.territorial.auction.domain.guild.dto.UpdateGuildRequest(
+                            null, null, "CLOSED"));
+
+            assertThat(guild.getDescription()).isEqualTo("기존 소개글");
+            assertThat(guild.getRecruitingStatus()).isEqualTo(Guild.RecruitingStatus.CLOSED);
+        }
+
+        @Test
+        @DisplayName("길드장 아님 → NOT_GUILD_MASTER")
+        void updateGuild_notGuildMaster() {
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+
+            assertThatThrownBy(
+                            () ->
+                                    guildService.updateGuild(
+                                            1L,
+                                            10L,
+                                            new com.territorial.auction.domain.guild.dto
+                                                    .UpdateGuildRequest("설명", null, null)))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.NOT_GUILD_MASTER);
+        }
+    }
 }
