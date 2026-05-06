@@ -1416,6 +1416,170 @@
               "path": ["api", "v1", "guilds", "1", "members", "3", "approve"]
             }
           }
+        },
+        {
+          "name": "길드 탈퇴",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/guilds/1/members/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "guilds", "1", "members", "me"]
+            }
+          }
+        },
+        {
+          "name": "가입 신청 취소",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/guilds/1/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "guilds", "1", "join"]
+            }
+          }
+        },
+        {
+          "name": "가입 신청 거절 (길드장만 가능)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/guilds/1/members/2/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "guilds", "1", "members", "2", "reject"]
+            }
+          }
+        },
+        {
+          "name": "길드장 이전 (길드장만 가능)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newMasterId\": 3\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/guilds/1/master",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "guilds", "1", "master"]
+            }
+          }
+        },
+        {
+          "name": "멤버 강제 추방 (길드장만 가능)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/guilds/1/members/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "guilds", "1", "members", "2"]
+            }
+          }
+        },
+        {
+          "name": "길드 정보 수정 — 전체 필드 (길드장만 가능)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"새로운 길드 소개글입니다.\",\n  \"emblem\": \"https://cdn.example.com/emblems/002.png\",\n  \"recruitingStatus\": \"CLOSED\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/guilds/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "guilds", "1"]
+            }
+          }
+        },
+        {
+          "name": "길드 정보 수정 — 모집 상태만 변경",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recruitingStatus\": \"OPEN\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/guilds/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "guilds", "1"]
+            }
+          }
+        },
+        {
+          "name": "에러: 자기 자신에게 길드장 이전 (400 CANNOT_TRANSFER_TO_SELF)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newMasterId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/guilds/1/master",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "guilds", "1", "master"]
+            }
+          }
+        },
+        {
+          "name": "에러: 길드장 추방 시도 (403 CANNOT_KICK_MASTER)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/guilds/1/members/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "guilds", "1", "members", "1"]
+            }
+          }
+        },
+        {
+          "name": "에러: 길드장 탈퇴 시도 (403 GUILD_MASTER_CANNOT_LEAVE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/guilds/1/members/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "guilds", "1", "members", "me"]
+            }
+          }
         }
       ]
     }

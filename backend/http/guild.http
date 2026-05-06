@@ -56,3 +56,69 @@ Content-Type: application/json
 ### 에러: 길드장 권한 없이 승인 시도 (403 NOT_GUILD_MASTER)
 PATCH {{baseUrl}}/api/v1/guilds/1/members/3/approve
 Authorization: Bearer {{accessToken}}
+
+### 길드 탈퇴
+DELETE {{baseUrl}}/api/v1/guilds/1/members/me
+Authorization: Bearer {{accessToken}}
+
+### 가입 신청 취소
+DELETE {{baseUrl}}/api/v1/guilds/1/join
+Authorization: Bearer {{accessToken}}
+
+### 가입 신청 거절 (길드장만 가능)
+PATCH {{baseUrl}}/api/v1/guilds/1/members/2/reject
+Authorization: Bearer {{accessToken}}
+
+### 길드장 이전 (길드장만 가능)
+PATCH {{baseUrl}}/api/v1/guilds/1/master
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "newMasterId": 3
+}
+
+### 멤버 강제 추방 (길드장만 가능)
+DELETE {{baseUrl}}/api/v1/guilds/1/members/2
+Authorization: Bearer {{accessToken}}
+
+### 길드 정보 수정 — 전체 필드 (길드장만 가능)
+PATCH {{baseUrl}}/api/v1/guilds/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "description": "새로운 길드 소개글입니다.",
+  "emblem": "https://cdn.example.com/emblems/002.png",
+  "recruitingStatus": "CLOSED"
+}
+
+### 길드 정보 수정 — 부분 업데이트 (모집 상태만 변경)
+PATCH {{baseUrl}}/api/v1/guilds/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "recruitingStatus": "OPEN"
+}
+
+### 에러: 길드장 아닌 멤버가 거절 시도 (403 NOT_GUILD_MASTER)
+PATCH {{baseUrl}}/api/v1/guilds/1/members/2/reject
+Authorization: Bearer {{accessToken}}
+
+### 에러: 자기 자신에게 길드장 이전 (400 CANNOT_TRANSFER_TO_SELF)
+PATCH {{baseUrl}}/api/v1/guilds/1/master
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "newMasterId": 1
+}
+
+### 에러: 길드장 추방 시도 (403 CANNOT_KICK_MASTER)
+DELETE {{baseUrl}}/api/v1/guilds/1/members/1
+Authorization: Bearer {{accessToken}}
+
+### 에러: 길드장 탈퇴 시도 (403 GUILD_MASTER_CANNOT_LEAVE)
+DELETE {{baseUrl}}/api/v1/guilds/1/members/me
+Authorization: Bearer {{accessToken}}
