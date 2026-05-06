@@ -54,4 +54,14 @@ public class Guild {
         this.emblem = emblem;
         this.master = master;
     }
+
+    public void transferMaster(User newMaster) {
+        this.master = newMaster;
+    }
+
+    public void updateInfo(String description, String emblem, RecruitingStatus recruitingStatus) {
+        if (description != null) this.description = description;
+        if (emblem != null) this.emblem = emblem;
+        if (recruitingStatus != null) this.recruitingStatus = recruitingStatus;
+    }
 }

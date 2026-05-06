@@ -19,7 +19,10 @@ public class GuildMember {
 
     public enum Status {
         PENDING,
-        ACTIVE
+        ACTIVE,
+        INACTIVE,
+        KICKED,
+        CANCELLED
     }
 
     @Id
@@ -60,5 +63,25 @@ public class GuildMember {
 
     public void approve() {
         this.status = Status.ACTIVE;
+    }
+
+    public void leave() {
+        this.status = Status.INACTIVE;
+    }
+
+    public void cancel() {
+        this.status = Status.CANCELLED;
+    }
+
+    public void kick() {
+        this.status = Status.KICKED;
+    }
+
+    public void promoteToMaster() {
+        this.role = Role.MASTER;
+    }
+
+    public void demoteToMember() {
+        this.role = Role.MEMBER;
     }
 }

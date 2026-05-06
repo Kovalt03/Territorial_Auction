@@ -73,6 +73,9 @@ public enum ErrorCode {
     NOT_GUILD_MASTER(HttpStatus.FORBIDDEN, "길드장 권한이 없습니다."),
     GUILD_FULL(HttpStatus.BAD_REQUEST, "길드 정원이 초과되었습니다."),
     APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "가입 신청을 찾을 수 없습니다."),
+    GUILD_MASTER_CANNOT_LEAVE(HttpStatus.FORBIDDEN, "길드장은 탈퇴할 수 없습니다. 길드장을 먼저 이전하세요."),
+    CANNOT_TRANSFER_TO_SELF(HttpStatus.BAD_REQUEST, "자기 자신에게 길드장을 이전할 수 없습니다."),
+    CANNOT_KICK_MASTER(HttpStatus.FORBIDDEN, "길드장은 강제 추방할 수 없습니다."),
 
     // Military
     INSUFFICIENT_TROOPS(HttpStatus.BAD_REQUEST, "병력이 부족합니다."),
