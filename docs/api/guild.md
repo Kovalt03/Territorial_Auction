@@ -8,19 +8,19 @@
 
 | 엔드포인트 | 메서드 | 인증 | 상태 |
 |---|---|---|---|
-| `/api/v1/guilds` | POST | 필수 | ✅ 완료 |
-| `/api/v1/guilds` | GET | 불필요 | ✅ 완료 |
-| `/api/v1/guilds/{guildId}` | GET | 불필요 | ✅ 완료 |
-| `/api/v1/guilds/me` | GET | 필수 | ✅ 완료 |
-| `/api/v1/guilds/{guildId}` | PATCH | 필수 (MASTER) | ✅ 완료 |
-| `/api/v1/guilds/{guildId}/join` | POST | 필수 | ✅ 완료 |
-| `/api/v1/guilds/{guildId}/join` | DELETE | 필수 | ✅ 완료 |
-| `/api/v1/guilds/{guildId}/master` | PATCH | 필수 (MASTER) | ✅ 완료 |
-| `/api/v1/guilds/{guildId}/members/{userId}/approve` | PATCH | 필수 (MASTER) | ✅ 완료 |
-| `/api/v1/guilds/{guildId}/members/{userId}/reject` | PATCH | 필수 (MASTER) | ✅ 완료 |
-| `/api/v1/guilds/{guildId}/members/me` | DELETE | 필수 | ✅ 완료 |
-| `/api/v1/guilds/{guildId}/members/{userId}` | DELETE | 필수 (MASTER) | ✅ 완료 |
-| `/api/v1/guilds/{guildId}/applications` | GET | 필수 (MASTER) | ✅ 완료 |
+| `/api/v1/guilds` | [POST](#길드-생성) | 필수 | ✅ 완료 |
+| `/api/v1/guilds` | [GET](#길드-목록-조회) | 불필요 | ✅ 완료 |
+| `/api/v1/guilds/{guildId}` | [GET](#길드-정보-조회) | 불필요 | ✅ 완료 |
+| `/api/v1/guilds/me` | [GET](#나의-길드-정보-조회) | 필수 | ✅ 완료 |
+| `/api/v1/guilds/{guildId}` | [PATCH](#길드-정보-수정) | 필수 (MASTER) | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/join` | [POST](#길드-가입-신청) | 필수 | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/join` | [DELETE](#가입-신청-취소) | 필수 | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/master` | [PATCH](#길드장-이전) | 필수 (MASTER) | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/members/{userId}/approve` | [PATCH](#가입-승인) | 필수 (MASTER) | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/members/{userId}/reject` | [PATCH](#가입-신청-거절) | 필수 (MASTER) | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/members/me` | [DELETE](#길드-탈퇴) | 필수 | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/members/{userId}` | [DELETE](#멤버-강제-추방) | 필수 (MASTER) | ✅ 완료 |
+| `/api/v1/guilds/{guildId}/applications` | [GET](#가입-신청-목록-조회) | 필수 (MASTER) | ✅ 완료 |
 
 ---
 
