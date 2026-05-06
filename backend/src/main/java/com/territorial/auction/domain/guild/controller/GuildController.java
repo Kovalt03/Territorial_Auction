@@ -7,6 +7,8 @@ import com.territorial.auction.domain.guild.dto.GuildDetailResponse;
 import com.territorial.auction.domain.guild.dto.GuildListResponse;
 import com.territorial.auction.domain.guild.dto.JoinGuildRequest;
 import com.territorial.auction.domain.guild.dto.MyGuildResponse;
+import com.territorial.auction.domain.guild.dto.TransferMasterRequest;
+import com.territorial.auction.domain.guild.dto.UpdateGuildRequest;
 import com.territorial.auction.domain.guild.service.GuildService;
 import com.territorial.auction.global.common.ApiResponse;
 import jakarta.validation.Valid;
@@ -15,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -81,5 +84,55 @@ public class GuildController {
     public ResponseEntity<ApiResponse<GuildApplicationListResponse>> getApplications(
             @AuthenticationPrincipal Long userId, @PathVariable Long guildId) {
         return ResponseEntity.ok(ApiResponse.ok(guildService.getApplications(userId, guildId)));
+    }
+
+    @PatchMapping("/{guildId}/members/{targetUserId}/reject")
+    public ResponseEntity<ApiResponse<Void>> rejectApplication(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long guildId,
+            @PathVariable Long targetUserId) {
+        guildService.rejectApplication(userId, guildId, targetUserId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PatchMapping("/{guildId}/master")
+    public ResponseEntity<ApiResponse<Void>> transferMaster(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long guildId,
+            @RequestBody @Valid TransferMasterRequest request) {
+        guildService.transferMaster(userId, guildId, request);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @DeleteMapping("/{guildId}/members/{targetUserId}")
+    public ResponseEntity<ApiResponse<Void>> kickMember(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long guildId,
+            @PathVariable Long targetUserId) {
+        guildService.kickMember(userId, guildId, targetUserId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PatchMapping("/{guildId}")
+    public ResponseEntity<ApiResponse<Void>> updateGuild(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long guildId,
+            @RequestBody @Valid UpdateGuildRequest request) {
+        guildService.updateGuild(userId, guildId, request);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @DeleteMapping("/{guildId}/members/me")
+    public ResponseEntity<ApiResponse<Void>> leaveGuild(
+            @AuthenticationPrincipal Long userId, @PathVariable Long guildId) {
+        guildService.leaveGuild(userId, guildId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @DeleteMapping("/{guildId}/join")
+    public ResponseEntity<ApiResponse<Void>> cancelJoinApplication(
+            @AuthenticationPrincipal Long userId, @PathVariable Long guildId) {
+        guildService.cancelJoinApplication(userId, guildId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

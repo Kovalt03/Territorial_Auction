@@ -7,6 +7,8 @@ import com.territorial.auction.domain.guild.dto.GuildDetailResponse;
 import com.territorial.auction.domain.guild.dto.GuildListResponse;
 import com.territorial.auction.domain.guild.dto.JoinGuildRequest;
 import com.territorial.auction.domain.guild.dto.MyGuildResponse;
+import com.territorial.auction.domain.guild.dto.TransferMasterRequest;
+import com.territorial.auction.domain.guild.dto.UpdateGuildRequest;
 import com.territorial.auction.domain.guild.entity.Guild;
 import com.territorial.auction.domain.guild.entity.GuildMember;
 import com.territorial.auction.domain.guild.repository.GuildMemberRepository;
@@ -195,6 +197,70 @@ public class GuildService {
         return new GuildApplicationListResponse(guildId, infos);
     }
 
+    @Transactional
+    public void rejectApplication(Long masterId, Long guildId, Long targetUserId) {
+        Guild guild = findGuildWithMasterOrThrow(guildId);
+        validateMaster(guild, masterId);
+        GuildMember application = findPendingApplicationOrThrow(targetUserId, guildId);
+        application.cancel();
+    }
+
+    @Transactional
+    public void transferMaster(Long currentMasterId, Long guildId, TransferMasterRequest request) {
+        Guild guild = findGuildWithMasterOrThrow(guildId);
+        validateMaster(guild, currentMasterId);
+        if (currentMasterId.equals(request.newMasterId())) {
+            throw new CustomException(ErrorCode.CANNOT_TRANSFER_TO_SELF);
+        }
+        GuildMember currentMasterMember = findActiveMemberOrThrow(currentMasterId, guildId);
+        GuildMember newMasterMember = findActiveMemberOrThrow(request.newMasterId(), guildId);
+        guild.transferMaster(newMasterMember.getUser());
+        currentMasterMember.demoteToMember();
+        newMasterMember.promoteToMaster();
+    }
+
+    @Transactional
+    public void kickMember(Long masterId, Long guildId, Long targetUserId) {
+        Guild guild = findGuildWithMasterOrThrow(guildId);
+        validateMaster(guild, masterId);
+        GuildMember target = findActiveMemberOrThrow(targetUserId, guildId);
+        if (target.getRole() == GuildMember.Role.MASTER) {
+            throw new CustomException(ErrorCode.CANNOT_KICK_MASTER);
+        }
+        target.kick();
+    }
+
+    @Transactional
+    public void updateGuild(Long masterId, Long guildId, UpdateGuildRequest request) {
+        Guild guild = findGuildWithMasterOrThrow(guildId);
+        validateMaster(guild, masterId);
+        Guild.RecruitingStatus recruitingStatus =
+                request.recruitingStatus() != null
+                        ? Guild.RecruitingStatus.valueOf(request.recruitingStatus())
+                        : null;
+        guild.updateInfo(request.description(), request.emblem(), recruitingStatus);
+    }
+
+    @Transactional
+    public void leaveGuild(Long userId, Long guildId) {
+        Guild guild = findGuildWithMasterOrThrow(guildId);
+        GuildMember member = findActiveMemberOrThrow(userId, guildId);
+        if (member.getRole() == GuildMember.Role.MASTER) {
+            validateMasterCanLeave(guildId);
+        }
+        member.leave();
+    }
+
+    @Transactional
+    public void cancelJoinApplication(Long userId, Long guildId) {
+        GuildMember application =
+                guildMemberRepository
+                        .findByUser_IdAndGuild_IdAndStatus(
+                                userId, guildId, GuildMember.Status.PENDING)
+                        .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
+        application.cancel();
+    }
+
     // ── private helpers ──────────────────────────────────────────────────────
 
     private Guild findGuildOrThrow(Long guildId) {
@@ -219,6 +285,26 @@ public class GuildService {
         if (guildMemberRepository.existsByUser_IdAndStatusIn(
                 userId, List.of(GuildMember.Status.ACTIVE, GuildMember.Status.PENDING))) {
             throw new CustomException(ErrorCode.ALREADY_IN_GUILD);
+        }
+    }
+
+    private GuildMember findPendingApplicationOrThrow(Long userId, Long guildId) {
+        return guildMemberRepository
+                .findByUser_IdAndGuild_IdAndStatus(userId, guildId, GuildMember.Status.PENDING)
+                .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
+    }
+
+    private GuildMember findActiveMemberOrThrow(Long userId, Long guildId) {
+        return guildMemberRepository
+                .findByUser_IdAndGuild_IdAndStatus(userId, guildId, GuildMember.Status.ACTIVE)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_IN_GUILD));
+    }
+
+    private void validateMasterCanLeave(Long guildId) {
+        long activeCount =
+                guildMemberRepository.countByGuild_IdAndStatus(guildId, GuildMember.Status.ACTIVE);
+        if (activeCount > 1) {
+            throw new CustomException(ErrorCode.GUILD_MASTER_CANNOT_LEAVE);
         }
     }
 
