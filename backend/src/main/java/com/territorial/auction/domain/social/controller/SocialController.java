@@ -12,6 +12,6 @@ public class SocialController {
 
     @GetMapping("/friends")
     public ResponseEntity<ApiResponse<Void>> getFriends() {
-        return ResponseEntity.ok(ApiResponse.ok(null));
+        return ResponseEntity.status(501).body(ApiResponse.error("지원하지 않는 기능입니다."));
     }
 }

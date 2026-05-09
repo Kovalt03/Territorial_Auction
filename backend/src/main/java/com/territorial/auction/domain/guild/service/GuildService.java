@@ -15,6 +15,9 @@ import com.territorial.auction.domain.guild.repository.GuildMemberRepository;
 import com.territorial.auction.domain.guild.repository.GuildRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
+import com.territorial.auction.domain.social.entity.ChatRoom;
+import com.territorial.auction.domain.social.entity.ChatRoom.ChatRoomType;
+import com.territorial.auction.domain.social.repository.ChatRoomRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.global.exception.CustomException;
@@ -36,6 +39,7 @@ public class GuildService {
     private final UserRepository userRepository;
     private final TerritoryRepository territoryRepository;
     private final UserTrophyRepository userTrophyRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
     @Transactional
     public CreateGuildResponse createGuild(Long userId, CreateGuildRequest request) {
@@ -59,6 +63,8 @@ public class GuildService {
                         .role(GuildMember.Role.MASTER)
                         .status(GuildMember.Status.ACTIVE)
                         .build());
+        chatRoomRepository.save(
+                ChatRoom.builder().type(ChatRoomType.GUILD).targetId(guild.getId()).build());
         return new CreateGuildResponse(
                 guild.getId(),
                 guild.getName(),

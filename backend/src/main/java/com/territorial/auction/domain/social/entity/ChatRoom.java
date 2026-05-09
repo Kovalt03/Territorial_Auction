@@ -25,6 +25,14 @@ public class ChatRoom {
         this.targetId = targetId;
     }
 
+    public String toRoomId() {
+        return switch (type) {
+            case GLOBAL -> "room_global";
+            case GUILD -> "room_guild_" + targetId;
+            case TERRITORY -> "room_territory_" + targetId;
+        };
+    }
+
     public enum ChatRoomType {
         GLOBAL,
         GUILD,

@@ -129,6 +129,13 @@
 | `NOT_GUILD_MASTER` | 403 | 길드장 권한 없음 |
 | `APPLICATION_NOT_FOUND` | 404 | 해당 유저의 가입 신청 없음 |
 
+### 채팅 (Chat)
+
+| 에러 코드 | HTTP | 설명 |
+|---|---|---|
+| `CHAT_ROOM_NOT_FOUND` | 404 | 존재하지 않는 채팅방 또는 잘못된 roomId 형식 |
+| `CHAT_ACCESS_DENIED` | 403 | 해당 채팅방에 접근 권한 없음 (길드 비멤버 등) |
+
 ### 서버 공통
 
 | 에러 코드 | HTTP | 설명 |
