@@ -19,6 +19,8 @@ import com.territorial.auction.domain.guild.repository.GuildMemberRepository;
 import com.territorial.auction.domain.guild.repository.GuildRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
+import com.territorial.auction.domain.social.entity.ChatRoom;
+import com.territorial.auction.domain.social.repository.ChatRoomRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.global.exception.CustomException;
@@ -49,6 +51,7 @@ class GuildServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private TerritoryRepository territoryRepository;
     @Mock private UserTrophyRepository userTrophyRepository;
+    @Mock private ChatRoomRepository chatRoomRepository;
 
     private User user;
     private User master;
@@ -115,6 +118,12 @@ class GuildServiceTest {
             given(userRepository.findById(1L)).willReturn(Optional.of(user));
             given(guildRepository.save(any(Guild.class))).willReturn(guild);
             given(guildMemberRepository.save(any(GuildMember.class))).willReturn(masterMember);
+            given(chatRoomRepository.save(any(ChatRoom.class)))
+                    .willReturn(
+                            ChatRoom.builder()
+                                    .type(ChatRoom.ChatRoomType.GUILD)
+                                    .targetId(10L)
+                                    .build());
 
             CreateGuildRequest request = new CreateGuildRequest("신규길드", "설명", null);
             CreateGuildResponse response = guildService.createGuild(1L, request);

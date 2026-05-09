@@ -1,5 +1,7 @@
 # Territorial Auction — 문서 인덱스
 
+> 전체 구현 현황 → **[checklist.md](./checklist.md)**
+
 픽셀 경매 · 사이버 영토 전쟁 프로젝트 전체 문서 목록입니다.
 
 ---
@@ -23,6 +25,8 @@
 | [access-control-matrix.md](./design/access-control-matrix.md) | 기능별 접근 제어 매트릭스 (F-코드 × 유저 역할) |
 | [building-specs.md](./design/building-specs.md) | 건물 타입별 세부 스펙, Zone 배치 규칙, 파괴 효과 |
 | [military-specs.md](./design/military-specs.md) | 유닛 타입별 세부 스펙, 전투 공식, 트로피 증감표 |
+| [chat-architecture.md](./design/chat-architecture.md) | 채팅 STOMP 구조, 채팅방 타입, 접근 제어, 구현 순서 |
+| [chat-broker-strategy.md](./design/chat-broker-strategy.md) | SimpleBroker · Redis Pub-Sub · Kafka · RabbitMQ 비교 및 단계별 전략 |
 
 ---
 

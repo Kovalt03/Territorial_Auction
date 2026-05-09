@@ -1582,6 +1582,115 @@
           }
         }
       ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "[GLOBAL] 최신 메시지 30개 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_global/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "chat", "rooms", "room_global", "messages"]
+            }
+          }
+        },
+        {
+          "name": "[GLOBAL] 커서 페이징 — messageId 100 이전 30개",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_global/messages?before=100&size=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "chat", "rooms", "room_global", "messages"],
+              "query": [
+                { "key": "before", "value": "100" },
+                { "key": "size", "value": "30" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[GUILD] 길드 채팅 히스토리 조회 (guildId=1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_guild_1/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "chat", "rooms", "room_guild_1", "messages"]
+            }
+          }
+        },
+        {
+          "name": "[GUILD] 커서 페이징 — messageId 50 이전 20개 (guildId=1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_guild_1/messages?before=50&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "chat", "rooms", "room_guild_1", "messages"],
+              "query": [
+                { "key": "before", "value": "50" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[TERRITORY] 영토 채팅 히스토리 조회 (territoryId=7)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_territory_7/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "chat", "rooms", "room_territory_7", "messages"]
+            }
+          }
+        },
+        {
+          "name": "에러: 잘못된 roomId 형식 (404 CHAT_ROOM_NOT_FOUND)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/invalid_room_id/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "chat", "rooms", "invalid_room_id", "messages"]
+            }
+          }
+        },
+        {
+          "name": "에러: 인증 없이 조회 (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_global/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "chat", "rooms", "room_global", "messages"]
+            }
+          }
+        }
+      ]
     }
   ]
 }
