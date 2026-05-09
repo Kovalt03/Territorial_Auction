@@ -1,6 +1,6 @@
 # 구현 체크리스트
 
-> 마지막 갱신: 2026-05-08  
+> 마지막 갱신: 2026-05-09  
 > 기준 브랜치: `dev`
 
 범례: ✅ 완료 · 🔄 일부 완료 · ⬜ 미구현
@@ -179,17 +179,17 @@
 ### 기반 설정
 | 상태 | 항목 | 비고 |
 |---|---|---|
-| 🔄 | `WebSocketConfig` | skeleton 존재, prefix `/pub`·`/sub` 변경 필요 |
-| ⬜ | `StompChannelInterceptor` | CONNECT 단계 JWT 검증 |
+| ✅ | `WebSocketConfig` | `/pub`·`/sub` prefix, SockJS, StompChannelInterceptor 등록 |
+| ✅ | `StompChannelInterceptor` | CONNECT 단계 JWT 검증, 미인증 연결 허용 (공개 채널용) |
 
 ### 채팅
 | 상태 | 채널 | 설명 |
 |---|---|---|
-| ⬜ | `/pub/chat/{roomId}` | 클라이언트 메시지 발행 |
-| ⬜ | `/sub/chat/{roomId}` | 채팅 메시지 수신 |
-| ⬜ | `GET /api/v1/chat/rooms/{roomId}/messages` | 히스토리 조회 (커서 페이징) |
-| ⬜ | `POST /api/v1/chat/rooms` | 채팅방 생성 |
-| ⬜ | `ChatRoom` enum 수정 | `GLOBAL` / `GUILD` / `TERRITORY` |
+| ✅ | `/pub/chat/{roomId}` | 클라이언트 메시지 발행 (미인증 시 CHAT_ACCESS_DENIED) |
+| ✅ | `/sub/chat/{roomId}` | 채팅 메시지 수신 |
+| ✅ | `GET /api/v1/chat/rooms/{roomId}/messages` | 히스토리 조회 (커서 페이징, 길드 접근 검증 포함) |
+| ✅ | `ChatRoom` 타입 | `GLOBAL` / `GUILD` / `TERRITORY`, 길드 생성 시 GUILD 방 자동 생성 |
+| ✅ | WebSocket 에러 응답 | `CustomException` → `/user/queue/errors` 전송 |
 
 ### 경매 실시간
 | 상태 | 채널 | 설명 |
@@ -244,13 +244,11 @@
 ## 진행 순서 (권장)
 
 ```
-현재 브랜치: feature/be-15-chat
-  1. WebSocketConfig 수정 (/pub, /sub prefix)
-  2. StompChannelInterceptor JWT 검증
-  3. 채팅 구현 (ChatRoom enum, ChatController, ChatService)
-  4. 알림 구현 (NotificationService + /sub/user/{userId}/notification)
-  5. 경매 WebSocket 브로드캐스트 (입찰 이벤트, 낙찰 결과)
-  6. 맵 업데이트 브로드캐스트
+완료 브랜치: feature/be-15-chat ✅
+  - WebSocketConfig (/pub, /sub prefix, SockJS)
+  - StompChannelInterceptor JWT 검증
+  - 채팅 구현 (ChatRoom 타입, ChatController, ChatService)
+  - 길드 생성 시 GUILD 채팅방 자동 생성
 
 다음 예상 브랜치:
   feature/be-16-notification
