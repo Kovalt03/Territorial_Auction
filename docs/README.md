@@ -1,5 +1,7 @@
 # Territorial Auction — 문서 인덱스
 
+> 전체 구현 현황 → **[checklist.md](./checklist.md)**
+
 픽셀 경매 · 사이버 영토 전쟁 프로젝트 전체 문서 목록입니다.
 
 ---
