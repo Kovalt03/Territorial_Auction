@@ -185,7 +185,7 @@
 | ✅ | `/pub/chat/{roomId}` | 클라이언트 메시지 발행 (미인증 시 CHAT_ACCESS_DENIED) |
 | ✅ | `/sub/chat/{roomId}` | 채팅 메시지 수신 |
 | ✅ | `GET /api/v1/chat/rooms/{roomId}/messages` | 히스토리 조회 (커서 페이징, 길드 접근 검증 포함) |
-| 🔄 | `ChatRoom` 타입 | **코드 수정 필요** — 현재 구현: `GLOBAL` / `TERRITORY` / `GUILD` → 변경 목표: `WORLD` / `CONTINENT` / `GUILD`. Enum 값 및 관련 로직 일괄 수정 필요 |
+| ✅ | `ChatRoom` 타입 | `WORLD` / `CONTINENT` / `GUILD`. Enum 값 및 관련 로직 일괄 수정 완료 |
 | ✅ | WebSocket 에러 응답 | `CustomException` → `/user/queue/errors` 전송 |
 
 ### 경매 실시간
