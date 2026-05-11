@@ -1594,9 +1594,9 @@
               { "key": "Authorization", "value": "Bearer {{accessToken}}" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_global/messages",
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_world/messages",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_global", "messages"]
+              "path": ["api", "v1", "chat", "rooms", "room_world", "messages"]
             }
           }
         },
@@ -1608,9 +1608,9 @@
               { "key": "Authorization", "value": "Bearer {{accessToken}}" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_global/messages?before=100&size=30",
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_world/messages?before=100&size=30",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_global", "messages"],
+              "path": ["api", "v1", "chat", "rooms", "room_world", "messages"],
               "query": [
                 { "key": "before", "value": "100" },
                 { "key": "size", "value": "30" }
@@ -1658,9 +1658,9 @@
               { "key": "Authorization", "value": "Bearer {{accessToken}}" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_territory_7/messages",
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_continent_7/messages",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_territory_7", "messages"]
+              "path": ["api", "v1", "chat", "rooms", "room_continent_7", "messages"]
             }
           }
         },
@@ -1684,9 +1684,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_global/messages",
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_world/messages",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_global", "messages"]
+              "path": ["api", "v1", "chat", "rooms", "room_world", "messages"]
             }
           }
         }
