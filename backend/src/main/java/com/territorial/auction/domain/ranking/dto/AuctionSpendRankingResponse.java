@@ -5,10 +5,12 @@ import java.util.List;
 
 public record AuctionSpendRankingResponse(
         Long seasonId,
+        Integer seasonNumber,
+        String type,
         List<RankEntry> rankings,
-        int myRank,
-        long myScore,
+        Integer myRank,
+        Long myScore,
         LocalDateTime updatedAt) {
 
-    public record RankEntry(int rank, Long userId, String nickname, long score) {}
+    public record RankEntry(int rank, Long userId, String nickname, long totalSpentAP) {}
 }

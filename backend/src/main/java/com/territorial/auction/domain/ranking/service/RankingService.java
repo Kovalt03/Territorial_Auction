@@ -5,6 +5,8 @@ import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.ranking.dto.AuctionSpendRankingResponse;
 import com.territorial.auction.domain.ranking.dto.AuctionSpendRankingResponse.RankEntry;
 import com.territorial.auction.domain.ranking.dto.MyRankingResponse;
+import com.territorial.auction.domain.ranking.dto.MyRankingResponse.AuctionSpendSummary;
+import com.territorial.auction.domain.ranking.dto.MyRankingResponse.TerritoryHoldSummary;
 import com.territorial.auction.domain.ranking.dto.TerritoryHoldRankingResponse;
 import com.territorial.auction.domain.ranking.entity.SeasonTerritoryHold;
 import com.territorial.auction.domain.ranking.event.AuctionSettledEvent;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -43,6 +46,7 @@ public class RankingService {
     private static final String AUCTION_SPEND_KEY = "ranking:season:%d:auction_spend";
     private static final String TERRITORY_HOLD_UPDATED_AT_KEY =
             "ranking:season:%d:territory_hold:updated_at";
+    private static final int MAX_SIZE = 100;
 
     private static final Map<String, Integer> GRADE_WEIGHT =
             Map.of("S", 5, "A", 4, "B", 3, "C", 2, "D", 1);
@@ -54,65 +58,89 @@ public class RankingService {
     private final UserRepository userRepository;
 
     public TerritoryHoldRankingResponse getTerritoryHoldRanking(Long userId, int page, int size) {
+        int effectiveSize = Math.min(size, MAX_SIZE);
         Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
         if (seasonOpt.isEmpty()) {
-            return new TerritoryHoldRankingResponse(null, List.of(), 0, 0L, null);
+            return new TerritoryHoldRankingResponse(
+                    null, null, "TERRITORY_HOLD", List.of(), null, null, null);
         }
         Season season = seasonOpt.get();
         String key = String.format(TERRITORY_HOLD_KEY, season.getId());
         LocalDateTime updatedAt = parseUpdatedAt(season.getId());
 
-        long start = (long) page * size;
-        long stop = start + size - 1;
+        long start = (long) page * effectiveSize;
+        long stop = start + effectiveSize - 1;
         Set<ZSetOperations.TypedTuple<String>> tuples =
                 stringRedisTemplate.opsForZSet().reverseRangeWithScores(key, start, stop);
 
+        List<SeasonTerritoryHold> allHolds =
+                seasonTerritoryHoldRepository.findAllBySeasonId(season.getId());
         List<TerritoryHoldRankingResponse.RankEntry> rankings =
-                buildTerritoryHoldEntries(tuples, season.getId(), start);
-        int myRank = userId != null ? findMyRank(key, String.valueOf(userId)) : 0;
-        long myScore = userId != null ? getMyScore(key, String.valueOf(userId)) : 0L;
+                buildTerritoryHoldEntries(tuples, allHolds, start);
+        Integer myRank = userId != null ? findMyRank(key, String.valueOf(userId)) : null;
+        Long myScore = userId != null ? getMyScore(key, String.valueOf(userId)) : null;
 
         return new TerritoryHoldRankingResponse(
-                season.getId(), rankings, myRank, myScore, updatedAt);
+                season.getId(),
+                season.getSeasonNumber(),
+                "TERRITORY_HOLD",
+                rankings,
+                myRank,
+                myScore,
+                updatedAt);
     }
 
     public AuctionSpendRankingResponse getAuctionSpendRanking(Long userId, int page, int size) {
+        int effectiveSize = Math.min(size, MAX_SIZE);
         Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
         if (seasonOpt.isEmpty()) {
-            return new AuctionSpendRankingResponse(null, List.of(), 0, 0L, LocalDateTime.now());
+            return new AuctionSpendRankingResponse(
+                    null, null, "AUCTION_SPEND", List.of(), null, null, LocalDateTime.now());
         }
         Season season = seasonOpt.get();
         String key = String.format(AUCTION_SPEND_KEY, season.getId());
 
-        long start = (long) page * size;
-        long stop = start + size - 1;
+        long start = (long) page * effectiveSize;
+        long stop = start + effectiveSize - 1;
         Set<ZSetOperations.TypedTuple<String>> tuples =
                 stringRedisTemplate.opsForZSet().reverseRangeWithScores(key, start, stop);
 
         List<RankEntry> rankings = buildAuctionSpendEntries(tuples, start);
-        int myRank = userId != null ? findMyRank(key, String.valueOf(userId)) : 0;
-        long myScore = userId != null ? getMyScore(key, String.valueOf(userId)) : 0L;
+        Integer myRank = userId != null ? findMyRank(key, String.valueOf(userId)) : null;
+        Long myScore = userId != null ? getMyScore(key, String.valueOf(userId)) : null;
 
         return new AuctionSpendRankingResponse(
-                season.getId(), rankings, myRank, myScore, LocalDateTime.now());
+                season.getId(),
+                season.getSeasonNumber(),
+                "AUCTION_SPEND",
+                rankings,
+                myRank,
+                myScore,
+                LocalDateTime.now());
     }
 
     public MyRankingResponse getMyRanking(Long userId) {
         Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
         if (seasonOpt.isEmpty()) {
-            return new MyRankingResponse(null, 0, 0L, 0, 0L);
+            return new MyRankingResponse(null, null, null, null);
         }
         Season season = seasonOpt.get();
         String holdKey = String.format(TERRITORY_HOLD_KEY, season.getId());
         String spendKey = String.format(AUCTION_SPEND_KEY, season.getId());
         String userIdStr = String.valueOf(userId);
 
+        Integer holdRank = findMyRank(holdKey, userIdStr);
+        Long holdScore = getMyScore(holdKey, userIdStr);
+        Map<String, Long> gradeBreakdown = buildGradeBreakdownForUser(season.getId(), userId);
+
+        Integer spendRank = findMyRank(spendKey, userIdStr);
+        Long spendScore = getMyScore(spendKey, userIdStr);
+
         return new MyRankingResponse(
                 season.getId(),
-                findMyRank(holdKey, userIdStr),
-                getMyScore(holdKey, userIdStr),
-                findMyRank(spendKey, userIdStr),
-                getMyScore(spendKey, userIdStr));
+                season.getSeasonNumber(),
+                new TerritoryHoldSummary(holdRank, holdScore, gradeBreakdown),
+                new AuctionSpendSummary(spendRank, spendScore));
     }
 
     @EventListener
@@ -198,14 +226,14 @@ public class RankingService {
         return raw != null ? LocalDateTime.parse(raw) : null;
     }
 
-    private int findMyRank(String key, String userIdStr) {
+    private Integer findMyRank(String key, String userIdStr) {
         Long rank = stringRedisTemplate.opsForZSet().reverseRank(key, userIdStr);
-        return rank != null ? (int) (rank + 1) : 0;
+        return rank != null ? (int) (rank + 1) : null;
     }
 
-    private long getMyScore(String key, String userIdStr) {
+    private Long getMyScore(String key, String userIdStr) {
         Double score = stringRedisTemplate.opsForZSet().score(key, userIdStr);
-        return score != null ? score.longValue() : 0L;
+        return score != null ? score.longValue() : null;
     }
 
     private Map<Long, Long> calculateScoresByUser(List<SeasonTerritoryHold> holds) {
@@ -229,15 +257,24 @@ public class RankingService {
     }
 
     private List<TerritoryHoldRankingResponse.RankEntry> buildTerritoryHoldEntries(
-            Set<ZSetOperations.TypedTuple<String>> tuples, Long seasonId, long start) {
+            Set<ZSetOperations.TypedTuple<String>> tuples,
+            List<SeasonTerritoryHold> allHolds,
+            long start) {
         if (tuples == null) return List.of();
+
+        List<Long> uids =
+                tuples.stream().map(t -> Long.parseLong(t.getValue())).collect(Collectors.toList());
+
+        Map<Long, String> nicknameByUser = batchLoadNicknames(uids);
+        Map<Long, Map<String, Long>> breakdownByUser = buildBreakdownByUser(allHolds);
+
         List<TerritoryHoldRankingResponse.RankEntry> entries = new ArrayList<>();
         int index = 0;
         for (ZSetOperations.TypedTuple<String> tuple : tuples) {
             Long uid = Long.parseLong(tuple.getValue());
             long score = tuple.getScore() != null ? tuple.getScore().longValue() : 0L;
-            String nickname = findNickname(uid);
-            Map<String, Long> breakdown = buildGradeBreakdown(seasonId, uid);
+            String nickname = nicknameByUser.getOrDefault(uid, "알 수 없음");
+            Map<String, Long> breakdown = breakdownByUser.getOrDefault(uid, Map.of());
             entries.add(
                     new TerritoryHoldRankingResponse.RankEntry(
                             (int) (start + index + 1), uid, nickname, score, breakdown));
@@ -249,28 +286,51 @@ public class RankingService {
     private List<RankEntry> buildAuctionSpendEntries(
             Set<ZSetOperations.TypedTuple<String>> tuples, long start) {
         if (tuples == null) return List.of();
+
+        List<Long> uids =
+                tuples.stream().map(t -> Long.parseLong(t.getValue())).collect(Collectors.toList());
+
+        Map<Long, String> nicknameByUser = batchLoadNicknames(uids);
+
         List<RankEntry> entries = new ArrayList<>();
         int index = 0;
         for (ZSetOperations.TypedTuple<String> tuple : tuples) {
             Long uid = Long.parseLong(tuple.getValue());
             long score = tuple.getScore() != null ? tuple.getScore().longValue() : 0L;
-            String nickname = findNickname(uid);
+            String nickname = nicknameByUser.getOrDefault(uid, "알 수 없음");
             entries.add(new RankEntry((int) (start + index + 1), uid, nickname, score));
             index++;
         }
         return entries;
     }
 
-    private String findNickname(Long userId) {
-        return userRepository.findById(userId).map(User::getNickname).orElse("알 수 없음");
+    private Map<Long, String> batchLoadNicknames(List<Long> userIds) {
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getNickname));
     }
 
-    private Map<String, Long> buildGradeBreakdown(Long seasonId, Long userId) {
+    private Map<Long, Map<String, Long>> buildBreakdownByUser(List<SeasonTerritoryHold> holds) {
+        Map<Long, Map<String, Long>> result = new HashMap<>();
+        for (SeasonTerritoryHold hold : holds) {
+            Long uid = hold.getUser().getId();
+            LocalDateTime until =
+                    hold.getHeldUntil() != null ? hold.getHeldUntil() : LocalDateTime.now();
+            long seconds = Duration.between(hold.getHeldFrom(), until).getSeconds();
+            result.computeIfAbsent(uid, k -> new HashMap<>())
+                    .merge(hold.getGrade(), seconds, Long::sum);
+        }
+        return result;
+    }
+
+    private Map<String, Long> buildGradeBreakdownForUser(Long seasonId, Long userId) {
         List<SeasonTerritoryHold> holds =
                 seasonTerritoryHoldRepository.findBySeasonIdAndUserId(seasonId, userId);
         Map<String, Long> breakdown = new HashMap<>();
         for (SeasonTerritoryHold hold : holds) {
-            breakdown.merge(hold.getGrade(), 1L, Long::sum);
+            LocalDateTime until =
+                    hold.getHeldUntil() != null ? hold.getHeldUntil() : LocalDateTime.now();
+            long seconds = Duration.between(hold.getHeldFrom(), until).getSeconds();
+            breakdown.merge(hold.getGrade(), seconds, Long::sum);
         }
         return breakdown;
     }

@@ -6,9 +6,11 @@ import java.util.Map;
 
 public record TerritoryHoldRankingResponse(
         Long seasonId,
+        Integer seasonNumber,
+        String type,
         List<RankEntry> rankings,
-        int myRank,
-        long myScore,
+        Integer myRank,
+        Long myScore,
         LocalDateTime updatedAt) {
 
     public record RankEntry(

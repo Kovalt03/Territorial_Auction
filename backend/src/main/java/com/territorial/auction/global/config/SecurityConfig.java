@@ -61,7 +61,8 @@ public class SecurityConfig {
                                     .requestMatchers("/ws/**").permitAll()
                                     .requestMatchers(HttpMethod.GET, "/api/v1/auctions", "/api/v1/auctions/**").permitAll()
                                     .requestMatchers(HttpMethod.GET, "/api/v1/guilds", "/api/v1/guilds/{guildId}").permitAll()
-                                    .requestMatchers(HttpMethod.GET, "/api/v1/rankings/**").permitAll()
+                                    .requestMatchers(HttpMethod.GET, "/api/v1/rankings/territory-hold").permitAll()
+                                    .requestMatchers(HttpMethod.GET, "/api/v1/rankings/auction-spend").permitAll()
                                     .anyRequest().authenticated())
                         // spotless:on
                 .oauth2Login(

@@ -22,9 +22,8 @@ public class RankingController {
             @AuthenticationPrincipal Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        int cappedSize = Math.min(size, 100);
         return ResponseEntity.ok(
-                ApiResponse.ok(rankingService.getTerritoryHoldRanking(userId, page, cappedSize)));
+                ApiResponse.ok(rankingService.getTerritoryHoldRanking(userId, page, size)));
     }
 
     @GetMapping("/auction-spend")
@@ -32,9 +31,8 @@ public class RankingController {
             @AuthenticationPrincipal Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        int cappedSize = Math.min(size, 100);
         return ResponseEntity.ok(
-                ApiResponse.ok(rankingService.getAuctionSpendRanking(userId, page, cappedSize)));
+                ApiResponse.ok(rankingService.getAuctionSpendRanking(userId, page, size)));
     }
 
     @GetMapping("/me")
