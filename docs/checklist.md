@@ -103,7 +103,7 @@
 |---|---|---|---|
 | ✅ | 토지세 현황 조회 | `GET /api/v1/land-tax/status` | |
 | ✅ | 납세 내역 조회 | `GET /api/v1/land-tax/logs` | |
-| ⬜ | 세금 배치 스케줄러 | — | 매일 자정 차감, GP 부족 처리, 강제 경매 전환 |
+| ⬜ | 세금 배치 스케줄러 | — | 매일 자정 차감, GP 부족 시 경고 → 유예기간 → 최저 등급 영토 순차 강제 경매 전환 (무적/보호 무시), 세금 충족 시 처분 중단 |
 | ⬜ | Redis 캐시 연동 | — | `land_tax:expected:{userId}` (TTL: 자정까지) |
 
 ---
@@ -165,12 +165,9 @@
 ### Ranking
 | 상태 | 기능 | 엔드포인트 | 비고 |
 |---|---|---|---|
-| ⬜ | 영토 왕 랭킹 | `GET /api/v1/rankings/territory` | Redis Sorted Set |
-| ⬜ | 자산가 랭킹 | `GET /api/v1/rankings/wealth` | Redis Sorted Set |
-| ⬜ | 트로피 랭킹 | `GET /api/v1/rankings/trophy` | Redis Sorted Set |
-| ⬜ | 대륙 지배자 랭킹 | `GET /api/v1/rankings/continent` | |
-| ⬜ | 생산 효율왕 랭킹 | `GET /api/v1/rankings/production` | |
-| ⬜ | 내 랭킹 조회 | `GET /api/v1/rankings/me` | |
+| ⬜ | 시즌 영토 등급 보유 랭킹 | `GET /api/v1/rankings/territory-hold` | Redis Sorted Set, 주기적 배치 집계 |
+| ⬜ | 시즌 경매 AP 소비 랭킹 | `GET /api/v1/rankings/auction-spend` | Redis Sorted Set, 낙찰마다 즉시 갱신 |
+| ⬜ | 내 랭킹 조회 | `GET /api/v1/rankings/me` | 두 카테고리 모두 포함 |
 
 ---
 
@@ -188,7 +185,7 @@
 | ✅ | `/pub/chat/{roomId}` | 클라이언트 메시지 발행 (미인증 시 CHAT_ACCESS_DENIED) |
 | ✅ | `/sub/chat/{roomId}` | 채팅 메시지 수신 |
 | ✅ | `GET /api/v1/chat/rooms/{roomId}/messages` | 히스토리 조회 (커서 페이징, 길드 접근 검증 포함) |
-| ✅ | `ChatRoom` 타입 | `GLOBAL` / `GUILD` / `TERRITORY`, 길드 생성 시 GUILD 방 자동 생성 |
+| ✅ | `ChatRoom` 타입 | `WORLD` / `CONTINENT` / `GUILD`, 길드 생성 시 GUILD 방 자동 생성 |
 | ✅ | WebSocket 에러 응답 | `CustomException` → `/user/queue/errors` 전송 |
 
 ### 경매 실시간
@@ -218,8 +215,8 @@
 | ⬜ | 토지세 배치 스케줄러 | 매일 자정 차감 + GP 부족 처리 |
 | ⬜ | 시즌 패스 만료 알림 스케줄러 | 만료 3일 전·당일 |
 | ⬜ | 영토 소득 정산 스케줄러 | 주기적 GP 생산량 적립 |
-| ⬜ | 시즌 종료 배치 | 리그별 보상 지급 + 트로피 50% 리셋 |
-| ⬜ | 랭킹 집계 배치 | 생산 효율왕 등 주기적 집계 |
+| ⬜ | 시즌 종료 배치 | 리그별 보상 지급 + 트로피 50% 리셋. 관리자가 `seasons.ended_at` 설정 시 자동 트리거 |
+| ⬜ | 시즌 영토 등급 보유 집계 배치 | `season_territory_holds` → Redis Sorted Set 갱신 (주기적) |
 
 ---
 
@@ -233,11 +230,19 @@
 | ⬜ | `auction:lock:{auctionId}` | 입찰 분산락 |
 | ⬜ | `auction:bid:{auctionId}` | 경매 상세 캐시 |
 | ⬜ | `land_tax:expected:{userId}` | 예상 세금 캐시 (TTL: 자정까지) |
-| ⬜ | `ranking:territory` | 영토 왕 Sorted Set |
-| ⬜ | `ranking:wealth` | 자산가 Sorted Set |
-| ⬜ | `ranking:trophy` | 트로피 Sorted Set |
+| ⬜ | `ranking:season:{seasonId}:territory_hold` | 시즌 영토 등급 보유 Sorted Set |
+| ⬜ | `ranking:season:{seasonId}:auction_spend` | 시즌 경매 AP 소비 Sorted Set |
 | ⬜ | `ws:chat:{roomId}` | 채팅 Pub-Sub 채널 (스케일아웃 시) |
 | ⬜ | `ws:user:{userId}` | 개인 알림 Pub-Sub 채널 (스케일아웃 시) |
+
+---
+
+## TODO — 구현 보류 항목
+
+| 항목 | 이유 |
+|---|---|
+| **식량 생산 수단** | 가장 마지막 구현 요소. Workshop이 GP만 생산하는지 식량도 생산하는지 별도 기획 필요. `wallets.available_food` 컬럼은 예약됨. |
+| **GP 생산 정산 스케줄러 주기** | 분 단위 희망하나 서버 부하 고려 중. 별도 의논 후 결정. |
 
 ---
 
@@ -252,6 +257,6 @@
 
 다음 예상 브랜치:
   feature/be-16-notification
-  feature/be-17-ranking
+  feature/be-17-ranking   (새 랭킹 스펙: territory-hold + auction-spend)
   feature/be-18-military
 ```

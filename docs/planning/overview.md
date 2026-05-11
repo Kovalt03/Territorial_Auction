@@ -41,7 +41,13 @@
 
 ### 4.1 이중 화폐 (AP / GP)
 - **AP (Auction Point)**: 현금 충전으로만 획득. 경매 입찰·정밀 공격권 구매 전용
-- **GP (Grid Point)**: 영토·섬의 생산소에서 생산. 건물 건설·유닛 생산·일반 공격권 구매에 사용
+- **GP (Grid Point)**: 영토·섬의 생산소(Workshop)에서 생산. 건물 건설·유닛 생산·일반 공격권 구매·토지세 납부에 사용
+
+**GP 흐름 (Territory-Scoped)**:
+1. Workshop이 GP를 생산 → 해당 **영토 저장소(Storage 건물)**에 적립 (약탈 대상)
+2. 영토 저장소 GP는 **해당 영토 내에서만** 건설·업그레이드에 직접 사용 가능
+3. 일정량을 **글로벌 금고(Global Vault)**로 이전하면 어디서든 사용 가능 (공격 불가, 이전 쿨다운 존재)
+4. 섬(Home Island) 저장소 GP도 동일한 방식으로 글로벌 금고로 이전 가능
 
 ### 4.2 Home Island (섬)
 - 계정 생성 시 **자동 부여, 영구 보유, 공격 불가**
@@ -53,6 +59,7 @@
 - 50×50 맵의 영토를 AP로 입찰
 - 입찰 조건: `Next ≥ Current × 1.05` AND `Next ≥ Current + 10`
 - Anti-Sniping: 종료 1분 전 입찰 시 30초 연장 (최대 10분)
+- **현재 최고 입찰자는 재입찰 금지** — 다른 유저에게 찬탈당한 후에만 재입찰 가능
 - 낙찰 후 **보호 기간(config)** 동안 공격 수신 불가
 
 ### 4.4 건물 시스템
@@ -99,7 +106,11 @@ Zone 3 (외곽) → Zone 2 (중간) → Zone 1 (핵심·성)
 | 7~10개 | 150 GP/일 |
 | 11개 이상 | 400 GP/일 |
 
-- GP 부족 시: 경고 알림 → 24시간 내 미납 시 최저 등급 영토 강제 경매 전환
+- **미납 처리 흐름**:
+  1. GP 부족 → 경고 알림 발송
+  2. 유예기간(config) 내 미납 시 → **최저 등급 영토부터 순차 강제 경매 전환**으로 자금 마련
+  3. 강제 경매 낙찰 대금으로 세금이 충족되면 추가 처분 중단
+  4. 강제 처분 대상 결정 시 **무적 상태·보호 기간 무시**
 - Home Island는 세금 대상 아님
 
 ### 4.9 유닛 시스템
@@ -115,13 +126,14 @@ Zone 3 (외곽) → Zone 2 (중간) → Zone 1 (핵심·성)
 
 ### 4.10 랭킹 시스템
 
+시즌 기간 동안의 성과를 기준으로 하는 2개 카테고리 랭킹.
+
 | | 카테고리 | 기준 | 갱신 |
 |---|---|---|---|
-| 🏰 | **영토 왕** | 현재 점유 중인 영토 수 | 실시간 |
-| 💰 | **자산가** | AP + GP + 글로벌 금고 합산 | 실시간 |
-| 🏆 | **트로피 랭킹** | 현재 트로피 점수 | 전투마다 |
-| 👑 | **대륙 지배자** | 대륙별 점유 영토 수 1위 유저 | 실시간 |
-| ⚙️ | **생산 효율왕** | 누적 GP 생산량 | 주기적 배치 |
+| 🏅 | **시즌 영토 등급 보유** | 시즌 중 높은 등급의 영토를 오랫동안 보유한 시간 (등급 가중치 반영) | 주기적 배치 |
+| 💸 | **시즌 경매 소비** | 시즌 중 경매 낙찰에 사용한 총 AP 금액 | 낙찰마다 갱신 |
+
+> 트로피 점수는 전투 보상 리그(Bronze~Champion) 계산에만 사용하며 별도 랭킹 페이지로 노출하지 않는다.
 
 #### 트로피 증감표
 
@@ -190,14 +202,14 @@ Zone 3 (외곽) → Zone 2 (중간) → Zone 1 (핵심·성)
 
 | 도메인 | 책임 | 핵심 엔티티 |
 |---|---|---|
-| **User** | 회원, AP/GP 지갑, 알림 설정 | `User`, `Wallet`, `NotificationSetting` |
+| **User** | 회원, AP/GP 지갑, 알림 설정, 글로벌 금고 | `User`, `Wallet`, `GlobalVault`, `NotificationSetting` |
 | **Island** | Home Island 관리 | `HomeIsland`, `IslandBuilding` |
 | **Map** | 영토, 대륙, 좌표, 보너스타일 | `Territory`, `Continent`, `BonusTile` |
-| **Building** | 건물 타입·배치·HP·생산 | `BuildingType`, `BuildingInstance` |
+| **Building** | 건물 타입·배치·HP·GP 저장 | `BuildingType`, `BuildingInstance` |
 | **Auction** | 경매 진행, 입찰, 낙찰 처리 | `Auction`, `AuctionHistory` |
 | **Military** | 유닛, 공격권, 공성 이벤트 | `UnitType`, `UnitInstance`, `AttackToken`, `SiegeEvent` |
 | **Finance** | 토지세, 아이템 샵, 시즌 패스 | `LandTaxLog`, `Item`, `SeasonPass` |
-| **Social** | 실시간 채팅 | `ChatRoom`, `ChatMessage` |
+| **Social** | 실시간 채팅, 길드 | `ChatRoom`, `ChatMessage`, `Guild`, `GuildMember` |
 | **Notification** | 이벤트 기반 알림 | `InterestGroup`, `NotificationLog` |
 
 ---

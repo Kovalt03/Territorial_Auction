@@ -148,6 +148,22 @@
 | `title_reward` | `VARCHAR(30)` | NULL | Champion 전용 칭호 |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL | |
 
+#### season_territory_holds (시즌 영토 등급 보유 집계)
+
+영토 낙찰 / 점유 종료 이벤트마다 누적. 주기적 배치로 랭킹 점수를 계산한다.
+
+| column | 자료형 | 조건 | 설명 |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | PK | |
+| `season_id` | `BIGINT` | FK → seasons.id | |
+| `user_id` | `BIGINT` | FK → users.id | |
+| `territory_id` | `BIGINT` | FK → territories.id | |
+| `grade` | `VARCHAR(1)` | NOT NULL | S / A / B / C / D |
+| `held_from` | `TIMESTAMPTZ` | NOT NULL | 점유 시작 (낙찰 시각) |
+| `held_until` | `TIMESTAMPTZ` | NULL 허용 | 점유 종료. NULL이면 현재 보유 중 |
+
+INDEX: `(season_id, user_id)` — 랭킹 집계 최적화
+
 ---
 
 ### 🗺️ Map Domain
@@ -267,18 +283,49 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `winner_id` | `BIGINT` | FK → users.id | |
 | `final_price` | `INTEGER` | NOT NULL | |
 | `won_at` | `TIMESTAMPTZ` | NOT NULL | |
+| `season_id` | `BIGINT` | FK → seasons.id, NULL 허용 | 시즌 중 낙찰 시 연결 (경매 AP 소비 랭킹 집계용) |
 
 ---
 
 ### 💬 Social Domain
+
+#### guilds
+
+| column | 자료형 | 조건 | 설명 |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | PK | |
+| `name` | `VARCHAR(30)` | NOT NULL, UNIQUE | |
+| `description` | `VARCHAR(200)` | NULL 허용 | |
+| `master_id` | `BIGINT` | FK → users.id | |
+| `max_members` | `INTEGER` | NOT NULL, DEFAULT 30 | |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT now() | |
+
+#### guild_members
+
+| column | 자료형 | 조건 | 설명 |
+|---|---|---|---|
+| `guild_id` | `BIGINT` | PK, FK → guilds.id | |
+| `user_id` | `BIGINT` | PK, FK → users.id | |
+| `role` | `VARCHAR(10)` | NOT NULL | MASTER / MEMBER |
+| `joined_at` | `TIMESTAMPTZ` | NOT NULL | |
+
+#### guild_applications
+
+| column | 자료형 | 조건 | 설명 |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | PK | |
+| `guild_id` | `BIGINT` | FK → guilds.id | |
+| `applicant_id` | `BIGINT` | FK → users.id | |
+| `status` | `VARCHAR(10)` | NOT NULL, DEFAULT 'PENDING' | PENDING / APPROVED / REJECTED |
+| `applied_at` | `TIMESTAMPTZ` | NOT NULL | |
 
 #### chat_rooms
 
 | column | 자료형 | 조건 | 설명 |
 |---|---|---|---|
 | `id` | `BIGSERIAL` | PK | |
-| `type` | `VARCHAR(10)` | NOT NULL | WORLD / CONTINENT |
-| `target_id` | `BIGINT` | NULL 허용 | 대륙 ID (CONTINENT 타입 시) |
+| `type` | `VARCHAR(10)` | NOT NULL | WORLD / CONTINENT / GUILD |
+| `target_id` | `BIGINT` | NULL 허용 | 대륙 ID (CONTINENT 타입) 또는 길드 ID (GUILD 타입) |
 
 #### chat_messages
 
@@ -343,6 +390,7 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `level` | `INTEGER` | NOT NULL, DEFAULT 1 | |
 | `zone` | `INTEGER` | NOT NULL | 1/2/3 |
 | `is_destroyed` | `BOOLEAN` | DEFAULT false | |
+| `stored_gp` | `INTEGER` | NOT NULL, DEFAULT 0 | STORAGE 건물만 사용. 영토 내 적립 GP (약탈 대상) |
 
 #### global_vaults
 
@@ -434,7 +482,8 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 |---|---|---|---|
 | `session:jwt_refresh:{user_id}` | String | 14일 | JWT Refresh Token |
 | `adjacent_bonus:{territory_id}:{user_id}` | Integer | 60초 | 인접 영토 점유 수 캐시 |
-| `ranking:trophy` / `ranking:territory` / `ranking:wealth` | Sorted Set | 이벤트 기반 | 랭킹 고속 조회 |
+| `ranking:season:{seasonId}:territory_hold` | Sorted Set | 시즌 종료까지 | 시즌 영토 등급 보유 랭킹 (score = 가중 보유 시간) |
+| `ranking:season:{seasonId}:auction_spend` | Sorted Set | 시즌 종료까지 | 시즌 경매 AP 소비 랭킹 (score = 누적 AP) |
 | `auction:bid:{auctionId}` | Hash | 경매 end_at까지 | 입찰 실시간 캐시 |
 | `auction:lock:{auctionId}` | String | 500ms | 동시 입찰 분산 락 |
 | `invincible:{territoryId}` | String | 무적권 지속 시간 | 공격 선언 전 무적 상태 확인 |

@@ -8,14 +8,14 @@
 
 서비스는 10개의 독립된 영역으로 나뉩니다. 각 경계는 나중에 Microservice 단위가 됩니다.
 
-1. **User Domain**: 사용자 정보, 자산(AP/GP), 알림 설정, 프로필 이미지 관리
+1. **User Domain**: 사용자 정보, 자산(AP/GP), 글로벌 금고, 알림 설정, 프로필 이미지 관리
 2. **Item Domain**: 아이템 종류 정의 및 구매 이력 관리
-3. **Season Domain**: 시즌, 시즌 패스, 트로피, 리그 관리
+3. **Season Domain**: 시즌, 시즌 패스, 트로피, 리그, 시즌 랭킹 관리
 4. **Map Domain**: 지도 물리 구조(영토, 대륙, 좌표, 등급, 토지세) 관리
 5. **Auction Domain**: 경매 프로세스, 입찰 규칙, 가격 변동 이력 관리
-6. **Social Domain**: 실시간 채팅 세션 및 메시지 로그 관리
+6. **Social Domain**: 실시간 채팅, 길드 조직 및 멤버십 관리
 7. **Notification Domain**: 이벤트 기반 알림 발송 및 수신 이력 관리
-8. **Building Domain**: 영토 내 건물 배치 및 효과 관리
+8. **Building Domain**: 영토 내 건물 배치, HP, GP 저장 관리
 9. **Island Domain**: 유저 귀속 항시 보유 섬 관리 (공격 불가, 신규 유저 보호 거점)
 10. **Military Domain**: 유닛 보유/배치, 공성전 이벤트 및 결과 관리
 
@@ -85,6 +85,14 @@
 |---|---|---|---|
 | **ChatRoom** | Entity | 채팅방 | `id`, `type`(WORLD/CONTINENT/GUILD), `target_id` |
 | **ChatMessage** | Entity | 메시지 로그 | `id`, `room_id`, `sender_id`, `content`, `sent_at` |
+| **Guild** | Entity | 길드 | `id`, `name`, `description`, `master_id`, `max_members`, `created_at` |
+| **GuildMember** | Entity | 길드 멤버십 | `guild_id`, `user_id`, `role`(MASTER/MEMBER), `joined_at` |
+| **GuildApplication** | Entity | 가입 신청 | `id`, `guild_id`, `applicant_id`, `status`(PENDING/APPROVED/REJECTED), `applied_at` |
+
+**채팅방 타입 정의:**
+- `WORLD`: 전체 유저 참여 가능한 월드 채팅
+- `CONTINENT`: 해당 대륙 클릭 시 자동 입장하는 대륙 채팅
+- `GUILD`: 길드 생성 시 자동 생성되는 길드 채팅 (멤버만 입장 가능)
 
 ### 7. Notification Context
 
@@ -136,6 +144,7 @@
 ### 3.2 경매 진행 규칙
 
 - 상회 입찰 조건: `Next ≥ Current × 1.05` AND `Next ≥ Current + 10`
+- **재입찰 제한**: 현재 `current_bidder_id`와 동일한 유저는 입찰 불가 — 찬탈 후에만 재입찰 가능
 - Anti-Sniping: 종료 1분 전 입찰 시 30초 연장 (최대 연장 한도 초과 불가)
 - `Territory.occupied_until` 만료 + 유예시간(Idle) 이후 새 `Auction` 자동 생성
 
@@ -152,6 +161,12 @@
 - 생산 중단: `Territory.occupied_until` 만료 시 즉시 중단
 - 비동기 처리: 생산 적립은 경매 로직과 독립된 스케줄러 담당
 
+**GP 저장 흐름 (Territory-Scoped GP)**:
+1. Workshop 생산 → 해당 영토의 **Storage 건물 `stored_gp`**에 적립 (공격 시 약탈 대상)
+2. Storage 내 GP는 해당 영토 내 건설·업그레이드에만 직접 사용 가능
+3. 일부를 **Global Vault(`global_vaults.stored_gp`)**로 이전 → 어디서든 사용 가능 (이전 쿨다운 적용)
+4. `wallets.available_gp`: 글로벌 금고에서 인출되어 즉시 사용 가능한 GP 잔고
+
 ### 3.5 전투 계산
 
 - ATK = Σ(파견 유닛 `attack_power` × 수량)
@@ -159,14 +174,27 @@
 - 성공 판정: ATK > DEF
 - Zone 클리어: `Σ(Zone 방어 건물 hp) / Σ(Zone 방어 건물 max_hp) < (1 − ZONE_CLEAR_THRESHOLD)`
 
-### 3.6 실시간 채팅
+### 3.5 토지세 미납 처리
 
-- WORLD 채팅은 누구나 참여, CONTINENT 채팅은 해당 대륙 클릭 시 자동 입장
+1. 매일 자정 GP 잔액 부족 → 경고 알림 발송
+2. 유예기간(config) 내 납부 없을 시: **최저 등급(D→C→B→A→S) 영토부터 순차 강제 경매 전환**
+3. 강제 경매 낙찰 대금 합계가 미납 세금 이상 되면 **즉시 처분 중단**
+4. 강제 처분 시 **무적 상태·보호 기간 무시** (유일한 무적/보호 우회 예외)
+
+### 3.6 시즌 관리
+
+- **반자동 운영**: 관리자가 DB에 시즌 `started_at`·`ended_at`을 설정하면 스케줄러가 자동 처리
+- 시즌 종료 시: 리그별 보상 지급 → 트로피 50% 소프트 리셋 → 신규 시즌 레코드 생성
+- 시즌 1은 전체 구현 완료 후 관리자가 수동으로 시작
+
+### 3.7 실시간 채팅
+
+- WORLD 채팅은 누구나 참여, CONTINENT 채팅은 해당 대륙 클릭 시 자동 입장, GUILD 채팅은 멤버만 접근
 - 구현: REST API가 아닌 **WebSocket + STOMP** 프로토콜 사용
 - 다중 서버 확장 시 Redis Pub-Sub 브로커 사용
 - 채팅 로그는 최신 100건만 유지 (V1 정책)
 
-### 3.7 알림 유형
+### 3.8 알림 유형
 
 - **상회 입찰(Outbid)**: 내가 최고 입찰자인 경매에서 상회 입찰 시 즉시 발송 (최우선순위)
 - **관심 그룹 경매 시작(Auction Start)**: 구독한 `InterestGroup` 내 영토 BIDDING 전환 시
