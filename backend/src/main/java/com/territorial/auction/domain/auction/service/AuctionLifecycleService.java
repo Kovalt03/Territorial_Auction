@@ -9,12 +9,19 @@ import com.territorial.auction.domain.auction.repository.AuctionHistoryRepositor
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.ranking.event.AuctionSettledEvent;
+import com.territorial.auction.domain.ranking.event.TerritoryHoldClosedEvent;
+import com.territorial.auction.domain.ranking.event.TerritoryHoldStartedEvent;
+import com.territorial.auction.domain.season.entity.Season;
+import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +36,8 @@ public class AuctionLifecycleService {
     private final AuctionHistoryRepository auctionHistoryRepository;
     private final TerritoryRepository territoryRepository;
     private final WalletRepository walletRepository;
+    private final SeasonRepository seasonRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** 종료된 미정산 경매를 일괄 정산 */
     public void settlePendingAuctions() {
@@ -48,11 +57,24 @@ public class AuctionLifecycleService {
         LocalDateTime now = LocalDateTime.now();
         List<Territory> expired =
                 territoryRepository.findAllExpiredOccupied(Territory.TerritoryStatus.OCCUPIED, now);
+        Optional<Season> seasonOpt = seasonRepository.findActiveSeason(now);
         for (Territory territory : expired) {
+            publishHoldClosedEvent(territory, seasonOpt, now);
             // 점유 만료 즉시 재경매 예약
             territory.release(now);
             log.info("[AuctionLifecycle] 영토 점유 만료 territoryId={}", territory.getId());
         }
+    }
+
+    private void publishHoldClosedEvent(
+            Territory territory, Optional<Season> seasonOpt, LocalDateTime now) {
+        if (seasonOpt.isEmpty() || territory.getOwner() == null) return;
+        eventPublisher.publishEvent(
+                new TerritoryHoldClosedEvent(
+                        territory.getOwner().getId(),
+                        seasonOpt.get().getId(),
+                        territory.getId(),
+                        now));
     }
 
     /** nextAuctionAt이 도달한 IDLE 영토에 신규 경매 생성 */
@@ -84,6 +106,9 @@ public class AuctionLifecycleService {
                     .findById(winner.getId())
                     .ifPresent(wallet -> wallet.consumeLockedAp(auction.getCurrentPrice()));
 
+            Optional<Season> seasonOpt = seasonRepository.findActiveSeason(now);
+            Season season = seasonOpt.orElse(null);
+
             auctionHistoryRepository.save(
                     AuctionHistory.builder()
                             .auction(auction)
@@ -91,7 +116,10 @@ public class AuctionLifecycleService {
                             .winner(winner)
                             .finalPrice(auction.getCurrentPrice())
                             .wonAt(now)
+                            .season(season)
                             .build());
+
+            publishSettlementEvents(winner, season, auction, territory, now);
 
             log.info(
                     "[AuctionLifecycle] 낙찰 정산 auctionId={} winner={} price={}",
@@ -110,6 +138,19 @@ public class AuctionLifecycleService {
         }
 
         auction.settle();
+    }
+
+    private void publishSettlementEvents(
+            User winner, Season season, Auction auction, Territory territory, LocalDateTime now) {
+        if (season == null) return;
+        Long seasonId = season.getId();
+        String grade = territory.getGrade() != null ? territory.getGrade().getGrade() : "D";
+
+        eventPublisher.publishEvent(
+                new AuctionSettledEvent(winner.getId(), seasonId, auction.getCurrentPrice()));
+        eventPublisher.publishEvent(
+                new TerritoryHoldStartedEvent(
+                        winner.getId(), seasonId, territory.getId(), grade, now));
     }
 
     private void createAuction(Territory territory, LocalDateTime now) {
