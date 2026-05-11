@@ -1693,6 +1693,93 @@
       ]
     },
     {
+      "name": "Ranking",
+      "item": [
+        {
+          "name": "영토 등급 보유 랭킹 조회 (비로그인)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/rankings/territory-hold?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "rankings", "territory-hold"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "영토 등급 보유 랭킹 조회 (로그인)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/rankings/territory-hold?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "rankings", "territory-hold"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "경매 AP 소비 랭킹 조회 (비로그인)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/rankings/auction-spend?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "rankings", "auction-spend"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "경매 AP 소비 랭킹 조회 (로그인)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/rankings/auction-spend?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "rankings", "auction-spend"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "내 랭킹 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/rankings/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "rankings", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Notification",
       "item": [
         {
