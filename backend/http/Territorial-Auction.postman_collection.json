@@ -1594,9 +1594,9 @@
               { "key": "Authorization", "value": "Bearer {{accessToken}}" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_global/messages",
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_world/messages",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_global", "messages"]
+              "path": ["api", "v1", "chat", "rooms", "room_world", "messages"]
             }
           }
         },
@@ -1608,9 +1608,9 @@
               { "key": "Authorization", "value": "Bearer {{accessToken}}" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_global/messages?before=100&size=30",
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_world/messages?before=100&size=30",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_global", "messages"],
+              "path": ["api", "v1", "chat", "rooms", "room_world", "messages"],
               "query": [
                 { "key": "before", "value": "100" },
                 { "key": "size", "value": "30" }
@@ -1658,9 +1658,9 @@
               { "key": "Authorization", "value": "Bearer {{accessToken}}" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_territory_7/messages",
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_continent_7/messages",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_territory_7", "messages"]
+              "path": ["api", "v1", "chat", "rooms", "room_continent_7", "messages"]
             }
           }
         },
@@ -1684,9 +1684,100 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_global/messages",
+              "raw": "{{baseUrl}}/api/v1/chat/rooms/room_world/messages",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_global", "messages"]
+              "path": ["api", "v1", "chat", "rooms", "room_world", "messages"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notification",
+      "item": [
+        {
+          "name": "알림 목록 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "알림 단건 읽음 처리",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/1/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "1", "read"]
+            }
+          }
+        },
+        {
+          "name": "알림 전체 읽음 처리",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "read-all"]
+            }
+          }
+        },
+        {
+          "name": "에러: 존재하지 않는 알림 (404 NOTIFICATION_NOT_FOUND)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/99999/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "99999", "read"]
+            }
+          }
+        },
+        {
+          "name": "에러: 타인의 알림 읽음 처리 (403 NOTIFICATION_FORBIDDEN)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/1/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "1", "read"]
+            }
+          }
+        },
+        {
+          "name": "에러: 인증 없이 조회 (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications"]
             }
           }
         }

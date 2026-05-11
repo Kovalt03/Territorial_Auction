@@ -141,9 +141,9 @@
 ### Notification
 | 상태 | 기능 | 엔드포인트 | 비고 |
 |---|---|---|---|
-| ⬜ | 알림 목록 조회 | `GET /api/v1/notifications` | skeleton만 존재 |
-| ⬜ | 알림 읽음 처리 | `PATCH /api/v1/notifications/{id}/read` | |
-| ⬜ | 전체 읽음 처리 | `PATCH /api/v1/notifications/read-all` | |
+| ✅ | 알림 목록 조회 | `GET /api/v1/notifications` | Redis unread 카운터 연동 |
+| ✅ | 알림 읽음 처리 | `PATCH /api/v1/notifications/{id}/read` | Redis DECR |
+| ✅ | 전체 읽음 처리 | `PATCH /api/v1/notifications/read-all` | Redis SET 0 |
 
 ---
 

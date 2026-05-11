@@ -24,7 +24,7 @@
         "type": "OUTBID",
         "message": "테스트영토(2,3)에 상회 입찰이 발생했습니다. 현재가: 2,500 AP",
         "isRead": false,
-        "createdAt": "2026-04-27T12:00:00Z"
+        "createdAt": "2026-04-27T12:00:00"
       }
     ]
   }
