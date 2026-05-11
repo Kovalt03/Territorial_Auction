@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.auction.entity;
 
 import com.territorial.auction.domain.map.entity.Territory;
+import com.territorial.auction.domain.season.entity.Season;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -34,17 +35,23 @@ public class AuctionHistory {
     @Column(nullable = false)
     private LocalDateTime wonAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "season_id", nullable = true)
+    private Season season;
+
     @Builder
     public AuctionHistory(
             Auction auction,
             Territory territory,
             User winner,
             Integer finalPrice,
-            LocalDateTime wonAt) {
+            LocalDateTime wonAt,
+            Season season) {
         this.auction = auction;
         this.territory = territory;
         this.winner = winner;
         this.finalPrice = finalPrice;
         this.wonAt = wonAt;
+        this.season = season;
     }
 }
