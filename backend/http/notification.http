@@ -20,5 +20,9 @@ Authorization: Bearer {{accessToken}}
 PATCH {{baseUrl}}/api/v1/notifications/99999/read
 Authorization: Bearer {{accessToken}}
 
+### 에러: 타인의 알림 읽음 처리 (403 NOTIFICATION_FORBIDDEN)
+PATCH {{baseUrl}}/api/v1/notifications/1/read
+Authorization: Bearer {{accessToken}}
+
 ### 에러: 인증 없이 알림 조회 (401)
 GET {{baseUrl}}/api/v1/notifications

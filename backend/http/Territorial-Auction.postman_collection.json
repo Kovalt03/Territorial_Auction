@@ -1756,6 +1756,20 @@
           }
         },
         {
+          "name": "에러: 타인의 알림 읽음 처리 (403 NOTIFICATION_FORBIDDEN)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/1/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "1", "read"]
+            }
+          }
+        },
+        {
           "name": "에러: 인증 없이 조회 (401)",
           "request": {
             "method": "GET",
