@@ -165,9 +165,9 @@
 ### Ranking
 | 상태 | 기능 | 엔드포인트 | 비고 |
 |---|---|---|---|
-| ⬜ | 시즌 영토 등급 보유 랭킹 | `GET /api/v1/rankings/territory-hold` | Redis Sorted Set, 주기적 배치 집계 |
-| ⬜ | 시즌 경매 AP 소비 랭킹 | `GET /api/v1/rankings/auction-spend` | Redis Sorted Set, 낙찰마다 즉시 갱신 |
-| ⬜ | 내 랭킹 조회 | `GET /api/v1/rankings/me` | 두 카테고리 모두 포함 |
+| ✅ | 시즌 영토 등급 보유 랭킹 | `GET /api/v1/rankings/territory-hold` | Redis Sorted Set, 주기적 배치 집계 |
+| ✅ | 시즌 경매 AP 소비 랭킹 | `GET /api/v1/rankings/auction-spend` | Redis Sorted Set, 낙찰마다 즉시 갱신 |
+| ✅ | 내 랭킹 조회 | `GET /api/v1/rankings/me` | 두 카테고리 모두 포함 |
 
 ---
 
@@ -212,11 +212,11 @@
 | 상태 | 항목 | 비고 |
 |---|---|---|
 | ✅ | 경매 생명주기 스케줄러 | `AuctionLifecycleService` |
+| ✅ | 시즌 영토 등급 보유 집계 배치 | `season_territory_holds` → Redis Sorted Set 갱신 (1시간 주기) |
 | ⬜ | 토지세 배치 스케줄러 | 매일 자정 차감 + GP 부족 처리 |
 | ⬜ | 시즌 패스 만료 알림 스케줄러 | 만료 3일 전·당일 |
 | ⬜ | 영토 소득 정산 스케줄러 | 주기적 GP 생산량 적립 |
 | ⬜ | 시즌 종료 배치 | 리그별 보상 지급 + 트로피 50% 리셋. 관리자가 `seasons.ended_at` 설정 시 자동 트리거 |
-| ⬜ | 시즌 영토 등급 보유 집계 배치 | `season_territory_holds` → Redis Sorted Set 갱신 (주기적) |
 
 ---
 
@@ -227,11 +227,11 @@
 | ✅ | `refresh_token:{userId}` | RefreshToken 저장 |
 | ✅ | `season_pass:my:{userId}` | 시즌 패스 상태 캐시 (TTL 30분) |
 | ✅ | `season_pass:progress:{userId}` | 시즌 패스 진행도 캐시 (TTL 30분) |
+| ✅ | `ranking:season:{seasonId}:territory_hold` | 시즌 영토 등급 보유 Sorted Set |
+| ✅ | `ranking:season:{seasonId}:auction_spend` | 시즌 경매 AP 소비 Sorted Set |
 | ⬜ | `auction:lock:{auctionId}` | 입찰 분산락 |
 | ⬜ | `auction:bid:{auctionId}` | 경매 상세 캐시 |
 | ⬜ | `land_tax:expected:{userId}` | 예상 세금 캐시 (TTL: 자정까지) |
-| ⬜ | `ranking:season:{seasonId}:territory_hold` | 시즌 영토 등급 보유 Sorted Set |
-| ⬜ | `ranking:season:{seasonId}:auction_spend` | 시즌 경매 AP 소비 Sorted Set |
 | ⬜ | `ws:chat:{roomId}` | 채팅 Pub-Sub 채널 (스케일아웃 시) |
 | ⬜ | `ws:user:{userId}` | 개인 알림 Pub-Sub 채널 (스케일아웃 시) |
 
