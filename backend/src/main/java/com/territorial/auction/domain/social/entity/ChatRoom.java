@@ -17,7 +17,7 @@ public class ChatRoom {
     @Column(nullable = false, length = 10)
     private ChatRoomType type;
 
-    private Long targetId; // 길드 ID (GUILD) 또는 영토 ID (TERRITORY), GLOBAL은 null
+    private Long targetId; // 길드 ID (GUILD) 또는 대륙 ID (CONTINENT), WORLD는 null
 
     @Builder
     public ChatRoom(ChatRoomType type, Long targetId) {
@@ -27,15 +27,15 @@ public class ChatRoom {
 
     public String toRoomId() {
         return switch (type) {
-            case GLOBAL -> "room_global";
+            case WORLD -> "room_world";
             case GUILD -> "room_guild_" + targetId;
-            case TERRITORY -> "room_territory_" + targetId;
+            case CONTINENT -> "room_continent_" + targetId;
         };
     }
 
     public enum ChatRoomType {
-        GLOBAL,
+        WORLD,
         GUILD,
-        TERRITORY
+        CONTINENT
     }
 }

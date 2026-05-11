@@ -63,7 +63,7 @@ class ChatServiceTest {
                         .build();
         ReflectionTestUtils.setField(sender, "id", 1L);
 
-        globalRoom = ChatRoom.builder().type(ChatRoomType.GLOBAL).targetId(null).build();
+        globalRoom = ChatRoom.builder().type(ChatRoomType.WORLD).targetId(null).build();
         ReflectionTestUtils.setField(globalRoom, "id", 1L);
 
         guildRoom = ChatRoom.builder().type(ChatRoomType.GUILD).targetId(42L).build();
@@ -84,23 +84,22 @@ class ChatServiceTest {
     class SendMessage {
 
         @Test
-        @DisplayName("GLOBAL 채팅방 — 메시지 저장 + /sub/chat/room_global 브로드캐스트")
-        void sendMessage_global_success() {
-            given(chatRoomRepository.findByType(ChatRoomType.GLOBAL))
+        @DisplayName("WORLD 채팅방 — 메시지 저장 + /sub/chat/room_world 브로드캐스트")
+        void sendMessage_world_success() {
+            given(chatRoomRepository.findByType(ChatRoomType.WORLD))
                     .willReturn(Optional.of(globalRoom));
             given(userRepository.findById(1L)).willReturn(Optional.of(sender));
             given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(chatMessage);
 
             ChatMessageResponse response =
-                    chatService.sendMessage(
-                            1L, "room_global", new SendChatMessageRequest("안녕하세요!"));
+                    chatService.sendMessage(1L, "room_world", new SendChatMessageRequest("안녕하세요!"));
 
-            assertThat(response.roomId()).isEqualTo("room_global");
+            assertThat(response.roomId()).isEqualTo("room_world");
             assertThat(response.senderNickname()).isEqualTo("픽셀전사");
             assertThat(response.content()).isEqualTo("안녕하세요!");
             then(messagingTemplate)
                     .should()
-                    .convertAndSend(eq("/sub/chat/room_global"), any(ChatMessageResponse.class));
+                    .convertAndSend(eq("/sub/chat/room_world"), any(ChatMessageResponse.class));
         }
 
         @Test
@@ -156,12 +155,12 @@ class ChatServiceTest {
         @Test
         @DisplayName("존재하지 않는 roomId → CHAT_ROOM_NOT_FOUND")
         void sendMessage_roomNotFound() {
-            given(chatRoomRepository.findByType(ChatRoomType.GLOBAL)).willReturn(Optional.empty());
+            given(chatRoomRepository.findByType(ChatRoomType.WORLD)).willReturn(Optional.empty());
 
             assertThatThrownBy(
                             () ->
                                     chatService.sendMessage(
-                                            1L, "room_global", new SendChatMessageRequest("채팅")))
+                                            1L, "room_world", new SendChatMessageRequest("채팅")))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.CHAT_ROOM_NOT_FOUND);
@@ -175,13 +174,13 @@ class ChatServiceTest {
         @Test
         @DisplayName("beforeId 없음 → 최신 메시지 반환")
         void getMessageHistory_noBeforeId() {
-            given(chatRoomRepository.findByType(ChatRoomType.GLOBAL))
+            given(chatRoomRepository.findByType(ChatRoomType.WORLD))
                     .willReturn(Optional.of(globalRoom));
             given(chatMessageRepository.findByRoom_IdOrderByIdDesc(eq(1L), any(Pageable.class)))
                     .willReturn(List.of(chatMessage));
 
             ChatHistoryResponse response =
-                    chatService.getMessageHistory(1L, "room_global", null, 30);
+                    chatService.getMessageHistory(1L, "room_world", null, 30);
 
             assertThat(response.messages()).hasSize(1);
             assertThat(response.hasNext()).isFalse();
@@ -190,7 +189,7 @@ class ChatServiceTest {
         @Test
         @DisplayName("beforeId 있음 → 해당 ID 이전 메시지 반환")
         void getMessageHistory_withBeforeId() {
-            given(chatRoomRepository.findByType(ChatRoomType.GLOBAL))
+            given(chatRoomRepository.findByType(ChatRoomType.WORLD))
                     .willReturn(Optional.of(globalRoom));
             given(
                             chatMessageRepository.findByRoom_IdAndIdLessThanOrderByIdDesc(
@@ -198,7 +197,7 @@ class ChatServiceTest {
                     .willReturn(List.of(chatMessage));
 
             ChatHistoryResponse response =
-                    chatService.getMessageHistory(1L, "room_global", 200L, 30);
+                    chatService.getMessageHistory(1L, "room_world", 200L, 30);
 
             assertThat(response.messages()).hasSize(1);
             assertThat(response.messages().get(0).messageId()).isEqualTo(100L);
@@ -207,15 +206,14 @@ class ChatServiceTest {
         @Test
         @DisplayName("반환 개수 > size → hasNext=true, size개만 반환")
         void getMessageHistory_hasNextTrue() {
-            given(chatRoomRepository.findByType(ChatRoomType.GLOBAL))
+            given(chatRoomRepository.findByType(ChatRoomType.WORLD))
                     .willReturn(Optional.of(globalRoom));
 
             List<ChatMessage> messages = makeMessages(3); // size=2, fetch size+1=3
             given(chatMessageRepository.findByRoom_IdOrderByIdDesc(eq(1L), any(Pageable.class)))
                     .willReturn(messages);
 
-            ChatHistoryResponse response =
-                    chatService.getMessageHistory(1L, "room_global", null, 2);
+            ChatHistoryResponse response = chatService.getMessageHistory(1L, "room_world", null, 2);
 
             assertThat(response.hasNext()).isTrue();
             assertThat(response.messages()).hasSize(2);
@@ -224,13 +222,13 @@ class ChatServiceTest {
         @Test
         @DisplayName("반환 개수 <= size → hasNext=false")
         void getMessageHistory_hasNextFalse() {
-            given(chatRoomRepository.findByType(ChatRoomType.GLOBAL))
+            given(chatRoomRepository.findByType(ChatRoomType.WORLD))
                     .willReturn(Optional.of(globalRoom));
             given(chatMessageRepository.findByRoom_IdOrderByIdDesc(eq(1L), any(Pageable.class)))
                     .willReturn(List.of(chatMessage));
 
             ChatHistoryResponse response =
-                    chatService.getMessageHistory(1L, "room_global", null, 30);
+                    chatService.getMessageHistory(1L, "room_world", null, 30);
 
             assertThat(response.hasNext()).isFalse();
         }
@@ -254,9 +252,9 @@ class ChatServiceTest {
         @Test
         @DisplayName("존재하지 않는 roomId → CHAT_ROOM_NOT_FOUND")
         void getMessageHistory_roomNotFound() {
-            given(chatRoomRepository.findByType(ChatRoomType.GLOBAL)).willReturn(Optional.empty());
+            given(chatRoomRepository.findByType(ChatRoomType.WORLD)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> chatService.getMessageHistory(1L, "room_global", null, 30))
+            assertThatThrownBy(() -> chatService.getMessageHistory(1L, "room_world", null, 30))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.CHAT_ROOM_NOT_FOUND);

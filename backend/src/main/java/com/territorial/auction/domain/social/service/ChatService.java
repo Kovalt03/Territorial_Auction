@@ -80,9 +80,9 @@ public class ChatService {
     }
 
     private ChatRoom findChatRoomOrThrow(String roomId) {
-        if ("room_global".equals(roomId)) {
+        if ("room_world".equals(roomId)) {
             return chatRoomRepository
-                    .findByType(ChatRoomType.GLOBAL)
+                    .findByType(ChatRoomType.WORLD)
                     .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
         }
         if (roomId.startsWith("room_guild_")) {
@@ -91,10 +91,10 @@ public class ChatService {
                     .findByTypeAndTargetId(ChatRoomType.GUILD, guildId)
                     .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
         }
-        if (roomId.startsWith("room_territory_")) {
-            Long territoryId = Long.parseLong(roomId.substring("room_territory_".length()));
+        if (roomId.startsWith("room_continent_")) {
+            Long continentId = Long.parseLong(roomId.substring("room_continent_".length()));
             return chatRoomRepository
-                    .findByTypeAndTargetId(ChatRoomType.TERRITORY, territoryId)
+                    .findByTypeAndTargetId(ChatRoomType.CONTINENT, continentId)
                     .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
         }
         throw new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND);
