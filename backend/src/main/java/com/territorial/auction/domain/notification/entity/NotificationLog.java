@@ -43,10 +43,19 @@ public class NotificationLog {
         this.message = message;
     }
 
+    public void markAsRead() {
+        this.isRead = true;
+    }
+
     public enum NotificationType {
         OUTBID,
-        AUCTION_START,
-        RESULT,
-        INCOME
+        AUCTION_WIN,
+        AUCTION_LOSE,
+        SIEGE_ALERT,
+        SIEGE_RESULT,
+        TAX_CHARGED,
+        INCOME,
+        GUILD_JOIN_REQUEST,
+        GUILD_JOIN_APPROVED
     }
 }
