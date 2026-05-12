@@ -110,9 +110,8 @@ class RankingServiceTest {
                     .willReturn(tuples);
             given(zSetOperations.reverseRank(anyString(), eq("10"))).willReturn(0L);
             given(zSetOperations.score(anyString(), eq("10"))).willReturn(5000.0);
-            given(userRepository.findById(10L)).willReturn(Optional.of(user));
-            given(seasonTerritoryHoldRepository.findBySeasonIdAndUserId(1L, 10L))
-                    .willReturn(List.of(hold));
+            given(userRepository.findAllById(any())).willReturn(List.of(user));
+            given(seasonTerritoryHoldRepository.findAllBySeasonId(1L)).willReturn(List.of(hold));
 
             TerritoryHoldRankingResponse response =
                     rankingService.getTerritoryHoldRanking(10L, 0, 10);
@@ -135,7 +134,7 @@ class RankingServiceTest {
 
             assertThat(response.seasonId()).isNull();
             assertThat(response.rankings()).isEmpty();
-            assertThat(response.myRank()).isZero();
+            assertThat(response.myRank()).isNull();
         }
     }
 
@@ -156,7 +155,7 @@ class RankingServiceTest {
                     .willReturn(tuples);
             given(zSetOperations.reverseRank(anyString(), eq("10"))).willReturn(0L);
             given(zSetOperations.score(anyString(), eq("10"))).willReturn(3000.0);
-            given(userRepository.findById(10L)).willReturn(Optional.of(user));
+            given(userRepository.findAllById(any())).willReturn(List.of(user));
 
             AuctionSpendRankingResponse response =
                     rankingService.getAuctionSpendRanking(10L, 0, 10);
@@ -178,7 +177,7 @@ class RankingServiceTest {
 
             assertThat(response.seasonId()).isNull();
             assertThat(response.rankings()).isEmpty();
-            assertThat(response.myRank()).isZero();
+            assertThat(response.myRank()).isNull();
         }
     }
 
