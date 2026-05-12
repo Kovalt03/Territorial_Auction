@@ -20,6 +20,7 @@ import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.entity.Territory.TerritoryStatus;
 import com.territorial.auction.domain.map.entity.TerritoryGrade;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.WalletRepository;
@@ -36,6 +37,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,6 +50,8 @@ class AuctionLifecycleServiceTest {
     @Mock private AuctionHistoryRepository auctionHistoryRepository;
     @Mock private TerritoryRepository territoryRepository;
     @Mock private WalletRepository walletRepository;
+    @Mock private SeasonRepository seasonRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     @Captor private ArgumentCaptor<Auction> auctionCaptor;
     @Captor private ArgumentCaptor<AuctionBid> auctionBidCaptor;
@@ -113,6 +117,7 @@ class AuctionLifecycleServiceTest {
 
             given(auctionRepository.findAllExpiredUnsettled(any())).willReturn(List.of(auction));
             given(walletRepository.findById(10L)).willReturn(Optional.of(wallet));
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
 
             lifecycleService.settlePendingAuctions();
 
@@ -131,6 +136,7 @@ class AuctionLifecycleServiceTest {
 
             given(auctionRepository.findAllExpiredUnsettled(any())).willReturn(List.of(auction));
             given(walletRepository.findById(10L)).willReturn(Optional.empty());
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
 
             lifecycleService.settlePendingAuctions();
 
@@ -170,6 +176,7 @@ class AuctionLifecycleServiceTest {
             given(auctionRepository.findAllExpiredUnsettled(any()))
                     .willReturn(List.of(failingAuction, successAuction));
             given(walletRepository.findById(20L)).willReturn(Optional.of(wallet));
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
 
             lifecycleService.settlePendingAuctions(); // 예외 전파되지 않아야 함
 
@@ -188,6 +195,7 @@ class AuctionLifecycleServiceTest {
         void noExpiredTerritories_nothingHappens() {
             given(territoryRepository.findAllExpiredOccupied(eq(TerritoryStatus.OCCUPIED), any()))
                     .willReturn(Collections.emptyList());
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
 
             lifecycleService.releaseExpiredTerritories();
 
@@ -200,6 +208,7 @@ class AuctionLifecycleServiceTest {
             Territory territory = mockTerritory(5L, "A");
             given(territoryRepository.findAllExpiredOccupied(eq(TerritoryStatus.OCCUPIED), any()))
                     .willReturn(List.of(territory));
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
 
             lifecycleService.releaseExpiredTerritories();
 
@@ -214,6 +223,7 @@ class AuctionLifecycleServiceTest {
             Territory territory3 = mockTerritory(3L, "D");
             given(territoryRepository.findAllExpiredOccupied(eq(TerritoryStatus.OCCUPIED), any()))
                     .willReturn(List.of(territory1, territory2, territory3));
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
 
             lifecycleService.releaseExpiredTerritories();
 
