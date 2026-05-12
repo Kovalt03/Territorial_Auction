@@ -163,7 +163,7 @@ class RankingServiceTest {
 
             assertThat(response.seasonId()).isEqualTo(1L);
             assertThat(response.rankings()).hasSize(1);
-            assertThat(response.rankings().get(0).score()).isEqualTo(3000L);
+            assertThat(response.rankings().get(0).totalSpentAP()).isEqualTo(3000L);
             assertThat(response.myScore()).isEqualTo(3000L);
         }
 
@@ -204,10 +204,10 @@ class RankingServiceTest {
             MyRankingResponse response = rankingService.getMyRanking(10L);
 
             assertThat(response.seasonId()).isEqualTo(1L);
-            assertThat(response.territoryHoldRank()).isEqualTo(3);
-            assertThat(response.territoryHoldScore()).isEqualTo(4000L);
-            assertThat(response.auctionSpendRank()).isEqualTo(5);
-            assertThat(response.auctionSpendScore()).isEqualTo(1500L);
+            assertThat(response.territoryHold().rank()).isEqualTo(3);
+            assertThat(response.territoryHold().score()).isEqualTo(4000L);
+            assertThat(response.auctionSpend().rank()).isEqualTo(5);
+            assertThat(response.auctionSpend().totalSpentAP()).isEqualTo(1500L);
         }
     }
 
