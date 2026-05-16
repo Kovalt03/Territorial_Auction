@@ -13,6 +13,8 @@ import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -127,8 +129,7 @@ public class LandTaxService {
         Wallet wallet =
                 walletRepository
                         .findById(userId)
-                        .orElseThrow(
-                                () -> new IllegalStateException("지갑을 찾을 수 없음. userId=" + userId));
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (wallet.getAvailableGp() >= taxAmount) {
             wallet.spendGp(taxAmount);
@@ -148,7 +149,8 @@ public class LandTaxService {
         List<Territory> territories =
                 territoryRepository.findAllOccupiedByOwnerId(
                         userId, Territory.TerritoryStatus.OCCUPIED);
-        LocalDateTime nextAuctionAt = LocalDateTime.now().plusHours(1);
+        LocalDateTime nextAuctionAt =
+                LocalDateTime.now().plusHours(LandTaxPolicy.EVICTION_REAUCTION_DELAY_HOURS);
         for (Territory territory : territories) {
             territory.release(nextAuctionAt);
         }
