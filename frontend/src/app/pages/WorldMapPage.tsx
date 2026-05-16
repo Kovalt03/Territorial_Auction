@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 
 export interface ContinentDef {
   id: string;
+  dbId: number;   // DB primary key (seed.sql 삽입 순서와 일치)
   name: string;
   desc: string;
   color: string;
@@ -19,7 +20,7 @@ export interface ContinentDef {
 
 export const CONTINENTS: ContinentDef[] = [
   {
-    id: 'north', name: '북부 대륙', desc: '얼음과 강철의 땅',
+    id: 'north', dbId: 1, name: '북부 대륙', desc: '얼음과 강철의 땅',
     color: '#00f5ff', grade: 'S', topOwner: '강남부자', trophyReq: 5000,
     cx: 395, cy: 122, halfHeight: 80,
     // Russia / Eurasia — very wide east-west, irregular south with bay, Kamchatka-like eastern finger
@@ -40,7 +41,7 @@ export const CONTINENTS: ContinentDef[] = [
     `,
   },
   {
-    id: 'northwest', name: '북서부', desc: '글리치 구역',
+    id: 'northwest', dbId: 2, name: '북서부', desc: '글리치 구역',
     color: '#44aaff', grade: 'B', topOwner: '레이더', trophyReq: 1000,
     cx: 141, cy: 218, halfHeight: 75,
     // North America — wider at top, Florida-like SE peninsula, Great Lakes indent on E coast
@@ -58,7 +59,7 @@ export const CONTINENTS: ContinentDef[] = [
     `,
   },
   {
-    id: 'northeast', name: '북동부', desc: '바이트 필드',
+    id: 'northeast', dbId: 3, name: '북동부', desc: '바이트 필드',
     color: '#ff8c00', grade: 'B', topOwner: '글리치마스터', trophyReq: 1000,
     cx: 610, cy: 218, halfHeight: 75,
     // East Asia — two peninsulas going south (Korea-like and Indochina-like)
@@ -76,7 +77,7 @@ export const CONTINENTS: ContinentDef[] = [
     `,
   },
   {
-    id: 'west', name: '서부 대륙', desc: '크롬의 황야',
+    id: 'west', dbId: 4, name: '서부 대륙', desc: '크롬의 황야',
     color: '#00ff88', grade: 'B', topOwner: '사이버해커', trophyReq: 800,
     cx: 104, cy: 385, halfHeight: 105,
     // South America — wide north with east bulge (Brazil), sharply tapers to pointed south
@@ -94,7 +95,7 @@ export const CONTINENTS: ContinentDef[] = [
     `,
   },
   {
-    id: 'central', name: '중앙 자유 구역', desc: '개인 영토 자유 구역',
+    id: 'central', dbId: 5, name: '중앙 자유 구역', desc: '개인 영토 자유 구역',
     color: '#8b50ff', grade: 'S', topOwner: '강남부자', trophyReq: null,
     cx: 400, cy: 378, halfHeight: 108,
     // Archipelago — 3 distinct island clusters
@@ -111,7 +112,7 @@ export const CONTINENTS: ContinentDef[] = [
     `,
   },
   {
-    id: 'east', name: '동부 대륙', desc: '네온의 도시',
+    id: 'east', dbId: 6, name: '동부 대륙', desc: '네온의 도시',
     color: '#ff1493', grade: 'A', topOwner: '영토수집가', trophyReq: 3000,
     cx: 685, cy: 375, halfHeight: 90,
     // Europe — Scandinavian NW arm, Iberian SW stub, Italian-like S peninsula, Greek/Balkan SE
@@ -129,7 +130,7 @@ export const CONTINENTS: ContinentDef[] = [
     `,
   },
   {
-    id: 'south', name: '남부 대륙', desc: '사막의 전장',
+    id: 'south', dbId: 7, name: '남부 대륙', desc: '사막의 전장',
     color: '#ffd700', grade: 'A', topOwner: '픽셀왕', trophyReq: 2000,
     cx: 393, cy: 580, halfHeight: 95,
     // Africa — smooth wide west, Horn of Africa on NE, Cape at south
@@ -148,7 +149,7 @@ export const CONTINENTS: ContinentDef[] = [
     `,
   },
   {
-    id: 'southeast', name: '남동부', desc: '디지털 포트',
+    id: 'southeast', dbId: 8, name: '남동부', desc: '디지털 포트',
     color: '#ff6644', grade: 'C', topOwner: '뉴비123', trophyReq: 300,
     cx: 632, cy: 573, halfHeight: 82,
     // Australia — Gulf/bay indent on north, compact body, irregular east coast
