@@ -1,37 +1,65 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { GridBackground } from '../components/GridBackground';
+
 import { useApp } from '../context/AppContext';
+import { signupApi, loginApi, checkUsernameApi } from '../api/auth';
+import { fetchMyProfile, fetchMyWallet } from '../api/user';
+import { GridBackground } from '../components/GridBackground';
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const { login } = useApp();
-  const [form, setForm] = useState({ id: '', pw: '', pwConfirm: '', nickname: '' });
-  const [idChecked, setIdChecked] = useState(false);
-  const [idAvailable, setIdAvailable] = useState<boolean | null>(null);
+
+  const [form, setForm] = useState({ username: '', email: '', password: '', pwConfirm: '', nickname: '' });
+  const [usernameChecked, setUsernameChecked] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
 
   const handleChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
-    if (field === 'id') { setIdChecked(false); setIdAvailable(null); }
+    if (field === 'username') { setUsernameChecked(false); setUsernameAvailable(null); }
+    setError('');
   };
 
-  const checkId = () => {
-    if (!form.id) return;
-    const taken = ['admin', 'test', 'pixel'].includes(form.id.toLowerCase());
-    setIdAvailable(!taken);
-    setIdChecked(true);
+  const handleCheckUsername = async () => {
+    if (!form.username) return;
+    try {
+      await checkUsernameApi(form.username);
+      setUsernameAvailable(true);
+    } catch {
+      setUsernameAvailable(false);
+    }
+    setUsernameChecked(true);
   };
 
-  const handleSubmit = () => {
-    if (!idChecked || !idAvailable) return;
-    if (!form.pw || form.pw.length < 8) return;
-    if (form.pw !== form.pwConfirm) return;
-    if (!form.nickname) return;
-    setShowWelcome(true);
+  const handleSubmit = async () => {
+    setError('');
+    if (!usernameChecked || !usernameAvailable) { setError('아이디 중복확인을 해주세요.'); return; }
+    if (!form.email) { setError('이메일을 입력해주세요.'); return; }
+    if (form.password.length < 8) { setError('비밀번호는 8자 이상이어야 합니다.'); return; }
+    if (form.password !== form.pwConfirm) { setError('비밀번호가 일치하지 않습니다.'); return; }
+    if (!form.nickname) { setError('닉네임을 입력해주세요.'); return; }
+
+    setIsLoading(true);
+    try {
+      await signupApi(form.username, form.email, form.password, form.nickname);
+      const tokenData = await loginApi(form.email, form.password);
+      localStorage.setItem('accessToken', tokenData.accessToken);
+      const [profile, wallet] = await Promise.all([fetchMyProfile(), fetchMyWallet()]);
+      login(profile.nickname, { token: tokenData.accessToken, userId: profile.userId, ap: wallet.availableAP, gp: wallet.availableGP });
+      setShowWelcome(true);
+    } catch (e: unknown) {
+      const status = (e as { status?: number }).status;
+      if (status === 409) setError('이미 사용 중인 아이디 또는 이메일입니다.');
+      else setError('회원가입 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const pwMatch = form.pw && form.pwConfirm ? form.pw === form.pwConfirm : null;
+  const pwMatch = form.password && form.pwConfirm ? form.password === form.pwConfirm : null;
 
   return (
     <div className="min-h-screen bg-[#0a0e1a] relative flex items-center justify-center overflow-hidden">
@@ -53,69 +81,87 @@ export function RegisterPage() {
             </span>
           </div>
 
+          {/* 아이디 */}
           <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>아이디</label>
           <div className="flex gap-2 mb-1">
             <input
-              value={form.id}
-              onChange={e => handleChange('id', e.target.value)}
-              placeholder="아이디를 입력하세요"
+              value={form.username}
+              onChange={e => handleChange('username', e.target.value)}
+              placeholder="영문, 숫자 4~20자"
               className="flex-1 bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors"
               style={{ fontSize: 12 }}
             />
             <button
-              onClick={checkId}
+              onClick={handleCheckUsername}
               className="bg-[#2a3050] border border-[#00f5ff] rounded-md px-3 h-[38px] text-[#00f5ff] hover:bg-[#354064] transition-colors flex-shrink-0"
               style={{ fontSize: 12 }}
             >
               중복확인
             </button>
           </div>
-          {idChecked && (
-            <p className={`text-xs mb-3 ${idAvailable ? 'text-[#00ff88]' : 'text-[#ff3333]'}`}>
-              {idAvailable ? '✓ 사용 가능한 아이디입니다' : '✗ 이미 사용 중인 아이디입니다'}
+          {usernameChecked && (
+            <p className={`mb-3 ${usernameAvailable ? 'text-[#00ff88]' : 'text-[#ff3333]'}`} style={{ fontSize: 11 }}>
+              {usernameAvailable ? '✓ 사용 가능한 아이디입니다' : '✗ 이미 사용 중인 아이디입니다'}
             </p>
           )}
-          {!idChecked && <div className="mb-3" />}
+          {!usernameChecked && <div className="mb-3" />}
 
+          {/* 이메일 */}
+          <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>이메일</label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={e => handleChange('email', e.target.value)}
+            placeholder="example@email.com"
+            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4"
+            style={{ fontSize: 12 }}
+          />
+
+          {/* 비밀번호 */}
           <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>비밀번호</label>
           <input
             type="password"
-            value={form.pw}
-            onChange={e => handleChange('pw', e.target.value)}
+            value={form.password}
+            onChange={e => handleChange('password', e.target.value)}
             placeholder="8자 이상, 영문+숫자 조합"
             className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4"
             style={{ fontSize: 12 }}
           />
 
+          {/* 비밀번호 확인 */}
           <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>비밀번호 확인</label>
           <input
             type="password"
             value={form.pwConfirm}
             onChange={e => handleChange('pwConfirm', e.target.value)}
             placeholder="비밀번호를 다시 입력"
-            className={`w-full bg-[#2a3050] border rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none transition-colors mb-1 ${
+            className={`w-full bg-[#2a3050] border rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none transition-colors mb-4 ${
               pwMatch === null ? 'border-[#354064]' : pwMatch ? 'border-[#00ff88]' : 'border-[#ff3333]'
             }`}
             style={{ fontSize: 12 }}
           />
-          {pwMatch === false && <p className="text-[#ff3333] text-xs mb-3">비밀번호가 일치하지 않습니다</p>}
-          {pwMatch !== false && <div className="mb-3" />}
 
+          {/* 닉네임 */}
           <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>닉네임</label>
           <input
             value={form.nickname}
             onChange={e => handleChange('nickname', e.target.value)}
             placeholder="다른 유저에게 보이는 이름"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-5"
+            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4"
             style={{ fontSize: 12 }}
           />
 
+          {error && (
+            <p className="text-[#ff3333] mb-3" style={{ fontSize: 12 }}>⚠ {error}</p>
+          )}
+
           <button
             onClick={handleSubmit}
-            className="w-full h-12 bg-[#00f5ff] rounded-lg text-[#0a0e1a] font-bold hover:brightness-110 transition-all active:scale-[0.98] mb-3"
+            disabled={isLoading}
+            className="w-full h-12 bg-[#00f5ff] rounded-lg text-[#0a0e1a] font-bold hover:brightness-110 transition-all active:scale-[0.98] mb-3 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ fontSize: 15 }}
           >
-            가입하기
+            {isLoading ? '가입 중...' : '가입하기'}
           </button>
 
           <button
@@ -125,10 +171,6 @@ export function RegisterPage() {
           >
             ← 로그인으로 돌아가기
           </button>
-
-          <p className="text-center text-[#8892b0] mt-4" style={{ fontSize: 10 }}>
-            가입 시 이용약관 및 개인정보처리방침에 동의합니다
-          </p>
         </div>
       </div>
 
@@ -143,7 +185,7 @@ export function RegisterPage() {
               <p className="text-[#8892b0] text-sm mt-1">즉시 사용 가능</p>
             </div>
             <button
-              onClick={() => { login(form.nickname || form.id); setShowWelcome(false); navigate('/app/map'); }}
+              onClick={() => { setShowWelcome(false); navigate('/app/map'); }}
               className="w-full h-12 bg-[#00f5ff] rounded-lg text-[#0a0e1a] font-bold hover:brightness-110 transition-all"
               style={{ fontSize: 15 }}
             >
