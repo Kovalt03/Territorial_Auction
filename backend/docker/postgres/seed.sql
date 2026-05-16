@@ -25,7 +25,7 @@ INSERT INTO users (username, email, password_hash, nickname)
 VALUES (
     'testuser',
     'test@example.com',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$HHyA9yO4qN0DhT4unVqwOOBUiQDZ6i/OhobZ0g0xFn3rB2IjaqK06',
     '테스트유저'
 ) ON CONFLICT DO NOTHING;
 

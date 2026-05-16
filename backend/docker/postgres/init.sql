@@ -24,10 +24,11 @@ CREATE TABLE IF NOT EXISTS wallets (
 
 -- notification_settings
 CREATE TABLE IF NOT EXISTS notification_settings (
-    user_id                  BIGINT  PRIMARY KEY REFERENCES users(id),
-    is_outbid_enabled        BOOLEAN DEFAULT true,
-    is_auction_start_enabled BOOLEAN DEFAULT true,
-    is_marketing_enabled     BOOLEAN DEFAULT false
+    user_id                  BIGINT      PRIMARY KEY REFERENCES users(id),
+    is_outbid_enabled        BOOLEAN     DEFAULT true,
+    is_auction_start_enabled BOOLEAN     DEFAULT true,
+    is_marketing_enabled     BOOLEAN     DEFAULT false,
+    updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- continents
