@@ -14,6 +14,7 @@ import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class MapService {
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final ColorHistoryRepository colorHistoryRepository;
 
+    @Cacheable(value = "territory-grid", key = "#continentId ?: 'all'")
     public GridMapResponse getGridMap(Long continentId) {
         List<Territory> territories =
                 (continentId == null)

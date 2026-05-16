@@ -7,6 +7,7 @@ import com.territorial.auction.domain.map.repository.ContinentRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ public class ContinentService {
     private final ContinentRepository continentRepository;
     private final TerritoryRepository territoryRepository;
 
+    @Cacheable(value = "continent-list", key = "'all'")
     public ContinentListResponse getContinents() {
         List<Continent> continents = continentRepository.findAll();
 
