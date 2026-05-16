@@ -13,4 +13,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/api': process.env.API_TARGET ?? 'http://localhost:8080',
+      '/ws': { target: process.env.WS_TARGET ?? 'ws://localhost:8080', ws: true },
+    },
+  },
 })
