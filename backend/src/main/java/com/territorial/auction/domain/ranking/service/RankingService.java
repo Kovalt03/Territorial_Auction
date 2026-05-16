@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -57,6 +59,9 @@ public class RankingService {
     private final StringRedisTemplate stringRedisTemplate;
     private final UserRepository userRepository;
 
+    @Cacheable(
+            value = "ranking",
+            key = "'territory-hold:p' + #page + ':s' + #size + ':u' + #userId")
     public TerritoryHoldRankingResponse getTerritoryHoldRanking(Long userId, int page, int size) {
         int effectiveSize = Math.min(size, MAX_SIZE);
         Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
@@ -90,6 +95,7 @@ public class RankingService {
                 updatedAt);
     }
 
+    @Cacheable(value = "ranking", key = "'auction-spend:p' + #page + ':s' + #size + ':u' + #userId")
     public AuctionSpendRankingResponse getAuctionSpendRanking(Long userId, int page, int size) {
         int effectiveSize = Math.min(size, MAX_SIZE);
         Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
@@ -119,6 +125,7 @@ public class RankingService {
                 LocalDateTime.now());
     }
 
+    @Cacheable(value = "ranking", key = "'my:u' + #userId")
     public MyRankingResponse getMyRanking(Long userId) {
         Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
         if (seasonOpt.isEmpty()) {
@@ -201,6 +208,7 @@ public class RankingService {
                 event.territoryId());
     }
 
+    @CacheEvict(value = "ranking", allEntries = true)
     public void aggregateTerritoryHoldRanking(Long seasonId) {
         List<SeasonTerritoryHold> holds = seasonTerritoryHoldRepository.findAllBySeasonId(seasonId);
         Map<Long, Long> scoreByUser = calculateScoresByUser(holds);
