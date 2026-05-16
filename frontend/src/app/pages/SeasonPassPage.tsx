@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
+import { purchaseSeasonPass } from '../api/season';
 
 const benefits = [
   { icon: '💎', title: '섬 GP +50%', desc: '영토 내 모든 GP 생산량 50% 증가' },
@@ -11,19 +12,30 @@ const benefits = [
 ];
 
 export function SeasonPassPage() {
-  const { ap, hasPass, passEndDate, activatePass } = useApp();
+  const { ap, hasPass, passEndDate, syncAP, syncPass } = useApp();
   const [showConfirm, setShowConfirm] = useState(false);
   const [activated, setActivated] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
   const passDays = passEndDate
     ? Math.max(0, Math.ceil((passEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
-  const handleActivate = () => {
-    if (ap >= 1000) {
-      activatePass();
+  const handleActivate = async () => {
+    setIsProcessing(true);
+    setPurchaseError(null);
+    try {
+      const result = await purchaseSeasonPass();
+      syncAP(result.remainingAP);
+      syncPass(true, result.expiresAt);
       setActivated(true);
       setShowConfirm(false);
+      setTimeout(() => setActivated(false), 3000);
+    } catch {
+      setPurchaseError('구매에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -148,17 +160,20 @@ export function SeasonPassPage() {
               </div>
             )}
             {!hasPass && <div className="mb-5" />}
+            {purchaseError && (
+              <p className="text-[#ff3333] mb-3" style={{ fontSize: 12 }}>⚠ {purchaseError}</p>
+            )}
             <div className="flex gap-3">
               <button onClick={() => setShowConfirm(false)}
                 className="flex-1 h-11 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5]"
                 style={{ fontSize: 14 }}>취소</button>
               <button
-                onClick={handleActivate}
-                disabled={ap < 1000}
+                onClick={() => void handleActivate()}
+                disabled={ap < 1000 || isProcessing}
                 className="flex-1 h-11 bg-[#ffd700] rounded-xl text-[#0a0e1a] font-bold disabled:opacity-50"
                 style={{ fontSize: 14 }}
               >
-                {hasPass ? '연장하기' : '구매하기'}
+                {isProcessing ? '처리 중...' : hasPass ? '연장하기' : '구매하기'}
               </button>
             </div>
           </div>
