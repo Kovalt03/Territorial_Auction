@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
+import { useIsland } from '../hooks/useIsland';
+import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi } from '../api/island';
+import type { IslandData } from '../types/island';
 
 type BuildingType = 'castle' | 'workshop' | 'barracks' | 'storage' | 'wall' | 'tower' | 'garden' | 'bank' | 'lab' | 'port' | 'mine' | 'empty';
 
@@ -11,6 +14,7 @@ interface Cell {
   hp?: number;
   maxHp?: number;
   zone?: 1 | 2 | 3 | 4;
+  buildingId?: number;
 }
 
 const buildingColors: Record<BuildingType, string> = {
@@ -34,79 +38,46 @@ const buildingNames: Record<BuildingType, string> = {
 const COLS = 20;
 const ROWS = 16;
 
-const generatePersonalGrid = (): Cell[][] => {
-  const grid: Cell[][] = Array.from({ length: ROWS }, () =>
-    Array.from({ length: COLS }, () => ({ type: 'empty' as BuildingType }))
+function assignZone(x: number, y: number): 1 | 2 | 3 | 4 {
+  if (x >= 9 && x <= 10 && y >= 7 && y <= 8) return 1;
+  if (x >= 6 && x <= 13 && y >= 6 && y <= 9) return 2;
+  if (x >= 3 && x <= 16 && y >= 3 && y <= 12) return 3;
+  return 4;
+}
+
+function emptyGrid(): Cell[][] {
+  return Array.from({ length: ROWS }, (_, y) =>
+    Array.from({ length: COLS }, (_, x) => ({ type: 'empty' as BuildingType, zone: assignZone(x, y) }))
   );
+}
 
-  const setCell = (x: number, y: number, type: BuildingType, level: number, hp: number, maxHp: number, zone: 1 | 2 | 3 | 4) => {
-    if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
-      grid[y][x] = { type, level, hp, maxHp, zone };
-    }
-  };
-
-  setCell(9, 7, 'castle', 5, 800, 1000, 1); setCell(10, 7, 'castle', 5, 800, 1000, 1);
-  setCell(9, 8, 'castle', 5, 800, 1000, 1); setCell(10, 8, 'castle', 5, 800, 1000, 1);
-
-  setCell(7, 6, 'barracks', 4, 280, 300, 2); setCell(8, 6, 'barracks', 4, 280, 300, 2);
-  setCell(11, 6, 'barracks', 3, 200, 300, 2); setCell(12, 6, 'barracks', 3, 200, 300, 2);
-  setCell(7, 9, 'workshop', 3, 180, 200, 2); setCell(8, 9, 'workshop', 3, 180, 200, 2);
-  setCell(11, 9, 'workshop', 3, 160, 200, 2); setCell(12, 9, 'workshop', 3, 160, 200, 2);
-  setCell(6, 7, 'wall', 2, 350, 400, 2); setCell(6, 8, 'wall', 2, 350, 400, 2);
-  setCell(13, 7, 'wall', 2, 340, 400, 2); setCell(13, 8, 'wall', 2, 340, 400, 2);
-
-  setCell(4, 4, 'tower', 2, 160, 200, 3); setCell(15, 4, 'tower', 2, 155, 200, 3);
-  setCell(4, 11, 'tower', 2, 145, 200, 3); setCell(15, 11, 'tower', 2, 150, 200, 3);
-  setCell(3, 5, 'storage', 2, 900, 1000, 3); setCell(3, 6, 'storage', 2, 880, 1000, 3);
-  setCell(16, 5, 'storage', 2, 870, 1000, 3); setCell(16, 6, 'storage', 2, 860, 1000, 3);
-  setCell(3, 9, 'garden', 2, 180, 200, 3); setCell(3, 10, 'garden', 2, 180, 200, 3);
-  setCell(16, 9, 'garden', 1, 160, 200, 3); setCell(16, 10, 'garden', 1, 160, 200, 3);
-  for (let x = 5; x <= 14; x++) {
-    if (x !== 9 && x !== 10) {
-      setCell(x, 4, 'wall', 1, 260, 400, 3);
-      setCell(x, 11, 'wall', 1, 220, 400, 3);
-    }
-  }
-
-  setCell(1, 1, 'bank', 3, 600, 800, 4); setCell(2, 1, 'bank', 3, 600, 800, 4);
-  setCell(1, 2, 'bank', 3, 600, 800, 4); setCell(2, 2, 'bank', 3, 600, 800, 4);
-  setCell(17, 1, 'lab', 2, 400, 500, 4); setCell(18, 1, 'lab', 2, 400, 500, 4);
-  setCell(17, 2, 'lab', 2, 380, 500, 4); setCell(18, 2, 'lab', 2, 380, 500, 4);
-  setCell(0, 12, 'port', 2, 450, 600, 4); setCell(1, 12, 'port', 2, 450, 600, 4);
-  setCell(0, 13, 'port', 2, 440, 600, 4); setCell(1, 13, 'port', 2, 440, 600, 4);
-  setCell(17, 13, 'mine', 3, 700, 800, 4); setCell(18, 13, 'mine', 3, 680, 800, 4);
-  setCell(17, 14, 'mine', 3, 690, 800, 4); setCell(18, 14, 'mine', 3, 660, 800, 4);
-
-  for (let y = 0; y < ROWS; y++) {
-    for (let x = 0; x < COLS; x++) {
-      if (!grid[y][x].zone) {
-        const isZone1 = x >= 9 && x <= 10 && y >= 7 && y <= 8;
-        const isZone2 = x >= 6 && x <= 13 && y >= 6 && y <= 9;
-        const isZone3 = x >= 3 && x <= 16 && y >= 3 && y <= 12;
-        grid[y][x].zone = isZone1 ? 1 : isZone2 ? 2 : isZone3 ? 3 : 4;
-      }
-    }
+function buildGridFromIsland(island: IslandData): Cell[][] {
+  const grid = emptyGrid();
+  for (const b of island.buildings) {
+    if (b.isDestroyed || b.posY >= ROWS || b.posX >= COLS) continue;
+    grid[b.posY][b.posX] = {
+      type: b.type.toLowerCase() as BuildingType,
+      level: b.level,
+      hp: b.hp,
+      maxHp: b.maxHp,
+      buildingId: b.buildingId,
+      zone: assignZone(b.posX, b.posY),
+    };
   }
   return grid;
-};
-
-const GRID_DATA = generatePersonalGrid();
-
-function ResourceTicker() {
-  const [gp, setGp] = useState(248300);
-  useEffect(() => {
-    const t = setInterval(() => setGp(prev => prev + 48), 1000);
-    return () => clearInterval(t);
-  }, []);
-  return <>{gp.toLocaleString()}</>;
 }
 
 export function PersonalIslandPage() {
   const navigate = useNavigate();
-  const { ap, gp, useGP } = useApp();
+  const { ap, gp, username, useGP } = useApp();
+  const { island } = useIsland();
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [showBuild, setShowBuild] = useState(false);
-  const [grid, setGrid] = useState(GRID_DATA);
+  const [grid, setGrid] = useState<Cell[][]>(emptyGrid);
+
+  useEffect(() => {
+    if (island) setGrid(buildGridFromIsland(island));
+  }, [island]);
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingType | null>(null);
   const [buildError, setBuildError] = useState('');
   const [showZones, setShowZones] = useState(true);
@@ -135,9 +106,12 @@ export function PersonalIslandPage() {
   const handleCellClick = (x: number, y: number, cell: { type: BuildingType; level?: number; hp?: number; maxHp?: number; zone?: 1 | 2 | 3 | 4 }) => {
     if (moveMode && moveSourceCell) {
       if (cell.type === 'empty') {
-        const movingType = grid[moveSourceCell.y][moveSourceCell.x].type;
+        const sourceCell = grid[moveSourceCell.y][moveSourceCell.x];
         const destZone = grid[y][x].zone;
-        if (movingType === 'castle' && destZone !== 1) return;
+        if (sourceCell.type === 'castle' && destZone !== 1) return;
+        if (sourceCell.buildingId) {
+          moveBuildingApi(sourceCell.buildingId, x, y).catch(() => {});
+        }
         setGrid(prev => {
           const next = prev.map(row => row.map(c => ({ ...c })));
           next[y][x] = { ...next[moveSourceCell.y][moveSourceCell.x], zone: destZone };
@@ -182,6 +156,9 @@ export function PersonalIslandPage() {
     if (!selectedCell) return;
     const cell = grid[selectedCell.y][selectedCell.x];
     if (cell.type === 'castle') return;
+    if (cell.buildingId) {
+      storeBuildingApi(cell.buildingId).catch(() => {});
+    }
     setInventory(prev => [...prev, { type: cell.type, level: cell.level ?? 1, hp: cell.hp ?? 0, maxHp: cell.maxHp ?? 0 }]);
     setGrid(prev => {
       const next = prev.map(row => row.map(c => ({ ...c })));
@@ -310,7 +287,7 @@ export function PersonalIslandPage() {
           <span style={{ fontSize: 20 }}>🏝</span>
         </div>
         <div>
-          <h1 className="text-[#00ff88] font-bold" style={{ fontSize: 20 }}>나의 섬 · 강남부자</h1>
+          <h1 className="text-[#00ff88] font-bold" style={{ fontSize: 20 }}>나의 섬 · {username || '—'}</h1>
           <p className="text-[#7788a5]" style={{ fontSize: 12 }}>중앙 대륙 · S급 개인 영토 · 20×16 그리드</p>
         </div>
         <div className="flex items-center gap-2 ml-4">
@@ -325,11 +302,11 @@ export function PersonalIslandPage() {
         <div className="flex items-center gap-4 ml-auto">
           <div className="text-right">
             <p className="text-[#7788a5]" style={{ fontSize: 10 }}>총 GP 보유</p>
-            <p className="text-[#00ff88] font-bold" style={{ fontSize: 16 }}>💎 <ResourceTicker /></p>
+            <p className="text-[#00ff88] font-bold" style={{ fontSize: 16 }}>💎 {gp.toLocaleString()}</p>
           </div>
           <div className="text-right">
             <p className="text-[#7788a5]" style={{ fontSize: 10 }}>생산 속도</p>
-            <p className="text-[#ffd700] font-bold" style={{ fontSize: 16 }}>+105 GP/분</p>
+            <p className="text-[#ffd700] font-bold" style={{ fontSize: 16 }}>+{island?.productionRate ?? 0} GP/분</p>
           </div>
           <div className="text-right">
             <p className="text-[#7788a5]" style={{ fontSize: 10 }}>총 방어력</p>
@@ -547,7 +524,7 @@ export function PersonalIslandPage() {
               <div className="p-3 space-y-3">
                 <div className="bg-[#00ff8820] border border-[#00ff88] rounded-xl p-3">
                   <p className="text-[#00ff88] font-semibold" style={{ fontSize: 12 }}>섬 현황</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>현재 크기: 20×16 (320 타일)</p>
+                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>현재 크기: {island?.gridSize ?? COLS}×{ROWS} ({(island?.gridSize ?? COLS) * ROWS} 타일)</p>
                   <p className="text-[#7788a5]" style={{ fontSize: 11 }}>빈 타일: {grid.flat().filter(c => c.type === 'empty').length}개</p>
                 </div>
                 {[
