@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
+import { chargeAp } from '../api/user';
 import { useNavigate } from 'react-router';
 
 const packages = [
@@ -19,23 +20,32 @@ const payMethods = [
 
 export function ChargePage() {
   const navigate = useNavigate();
-  const { addAP, ap } = useApp();
+  const { syncAP } = useApp();
   const [selectedPkg, setSelectedPkg] = useState(2);
   const [selectedPay, setSelectedPay] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [newAP, setNewAP] = useState(0);
+  const [chargeResult, setChargeResult] = useState<{ availableAP: number; chargedAmount: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const pkg = packages[selectedPkg];
 
-  const handlePay = () => {
+  const handlePay = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
-      addAP(pkg.ap);
-      setNewAP(ap + pkg.ap);
-      setIsProcessing(false);
+    setError(null);
+    // orderId는 중복 방지를 위해 고유값 생성, paymentKey는 PG사 연동 시 교체
+    const orderId = `order-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const paymentKey = `mock-${selectedPay}-${orderId}`;
+    try {
+      const result = await chargeAp(pkg.ap, paymentKey, orderId);
+      syncAP(result.availableAP);
+      setChargeResult({ availableAP: result.availableAP, chargedAmount: result.chargedAmount });
       setSuccess(true);
-    }, 1500);
+    } catch {
+      setError('결제에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -45,6 +55,12 @@ export function ChargePage() {
       <div className="flex-1 overflow-y-auto p-5">
         <h1 className="text-[#e0e8ff] font-bold mb-1" style={{ fontSize: 24 }}>💎  AP (Auction Point) 충전</h1>
         <p className="text-[#7788a5] mb-6" style={{ fontSize: 14 }}>경매 입찰, 아이템 구매에 사용하는 프리미엄 포인트</p>
+
+        {error && (
+          <div className="bg-[#ff333310] border border-[#ff333340] rounded-xl px-4 py-2.5 mb-4">
+            <span className="text-[#ff3333]" style={{ fontSize: 13 }}>⚠ {error}</span>
+          </div>
+        )}
 
         <div className="grid grid-cols-4 gap-4 mb-6">
           {packages.map((p) => (
@@ -155,18 +171,18 @@ export function ChargePage() {
         </div>
       </div>
 
-      {success && (
+      {success && chargeResult && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
           <div className="bg-[#1a1f35] border-2 border-[#00f5ff] rounded-2xl p-8 text-center max-w-sm mx-4">
             <div className="text-5xl mb-4">💎</div>
             <h3 className="text-[#00f5ff] font-bold text-xl mb-2">충전 완료!</h3>
             <div className="bg-[#2a3050] rounded-xl py-4 px-6 mb-3">
               <p className="text-[#7788a5]" style={{ fontSize: 12 }}>충전 완료</p>
-              <p className="text-[#00f5ff] font-bold" style={{ fontSize: 28 }}>+{pkg.ap.toLocaleString()} AP</p>
+              <p className="text-[#00f5ff] font-bold" style={{ fontSize: 28 }}>+{chargeResult.chargedAmount.toLocaleString()} AP</p>
             </div>
             <div className="bg-[#2a3050] rounded-xl py-3 px-6 mb-6">
               <p className="text-[#7788a5]" style={{ fontSize: 12 }}>현재 보유 AP</p>
-              <p className="text-[#ffd700] font-bold" style={{ fontSize: 22 }}>{newAP.toLocaleString()} AP</p>
+              <p className="text-[#ffd700] font-bold" style={{ fontSize: 22 }}>{chargeResult.availableAP.toLocaleString()} AP</p>
             </div>
             <button
               onClick={() => { setSuccess(false); navigate('/app/map'); }}
