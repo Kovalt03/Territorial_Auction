@@ -79,7 +79,8 @@ class CustomOAuth2UserServiceTest {
         @DisplayName("신규 가입 시 Wallet/NotificationSetting/HomeIsland/UserProfile 각 1회 저장")
         void saveOrUpdate_newUser_createsDomainObjects() {
             // given
-            given(userRepository.findByEmail("oauth@example.com")).willReturn(Optional.empty());
+            given(userRepository.findByUsername("google:google-uid-999"))
+                    .willReturn(Optional.empty());
 
             User savedUser =
                     User.builder()
@@ -114,7 +115,7 @@ class CustomOAuth2UserServiceTest {
                             .nickname("기존유저_5678")
                             .build();
             ReflectionTestUtils.setField(existingUser, "id", 2L);
-            given(userRepository.findByEmail("oauth@example.com"))
+            given(userRepository.findByUsername("google:google-uid-999"))
                     .willReturn(Optional.of(existingUser));
 
             // when
