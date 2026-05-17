@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 import com.territorial.auction.domain.guild.dto.CreateGuildRequest;
 import com.territorial.auction.domain.guild.dto.CreateGuildResponse;
@@ -225,14 +226,47 @@ class GuildServiceTest {
                             guildMemberRepository.findByGuildIdAndStatusWithUser(
                                     10L, GuildMember.Status.ACTIVE))
                     .willReturn(List.of(masterMember));
+            // 배치 쿼리: countGroupByOwnerIds([2]) → [[2, 2]]
+            given(territoryRepository.countGroupByOwnerIds(List.of(2L)))
+                    .willReturn(List.of(new Object[] {2L, 2L}));
+            // totalTerritoryCount는 countByOwner_IdIn으로 집계
             given(territoryRepository.countByOwner_IdIn(List.of(2L))).willReturn(2L);
-            given(territoryRepository.countByOwnerId(2L)).willReturn(2L);
 
             GuildDetailResponse response = guildService.getGuildDetail(10L);
 
             assertThat(response.guildId()).isEqualTo(10L);
             assertThat(response.members()).hasSize(1);
             assertThat(response.totalTerritoryCount()).isEqualTo(2L);
+        }
+
+        @Test
+        @DisplayName("배치 쿼리 사용 — countGroupByOwnerIds 1회 호출, 멤버별 개별 쿼리 미호출")
+        void getGuildDetail_usesBatchQueryForTerritoryCount() {
+            GuildMember member2 =
+                    GuildMember.builder()
+                            .guild(guild)
+                            .user(user)
+                            .role(GuildMember.Role.MEMBER)
+                            .status(GuildMember.Status.ACTIVE)
+                            .message(null)
+                            .build();
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+            given(
+                            guildMemberRepository.findByGuildIdAndStatusWithUser(
+                                    10L, GuildMember.Status.ACTIVE))
+                    .willReturn(List.of(masterMember, member2));
+            List<Long> memberUserIds = List.of(2L, 1L);
+            given(territoryRepository.countGroupByOwnerIds(memberUserIds))
+                    .willReturn(List.of(new Object[] {2L, 3L}, new Object[] {1L, 1L}));
+            given(territoryRepository.countByOwner_IdIn(memberUserIds)).willReturn(4L);
+
+            guildService.getGuildDetail(10L);
+
+            // 배치 쿼리 1회
+            then(territoryRepository).should().countGroupByOwnerIds(memberUserIds);
+            // 멤버별 개별 쿼리 미호출
+            then(territoryRepository).should(never()).countByOwnerId(2L);
+            then(territoryRepository).should(never()).countByOwnerId(1L);
         }
 
         @Test
@@ -448,7 +482,7 @@ class GuildServiceTest {
     class GetApplications {
 
         @Test
-        @DisplayName("성공 → 신청 목록 반환")
+        @DisplayName("성공 → 신청 목록 반환 (sumScoreGroupByUserIds 배치 쿼리 사용)")
         void getApplications_success() {
             GuildMember application =
                     GuildMember.builder()
@@ -464,13 +498,55 @@ class GuildServiceTest {
                             guildMemberRepository.findByGuildIdAndStatusWithUser(
                                     10L, GuildMember.Status.PENDING))
                     .willReturn(List.of(application));
-            given(userTrophyRepository.sumScoreByUserIdIn(List.of(1L))).willReturn(1200L);
+            // 배치 쿼리: sumScoreGroupByUserIds([1]) → [[1, 1200]]
+            given(userTrophyRepository.sumScoreGroupByUserIds(List.of(1L)))
+                    .willReturn(List.of(new Object[] {1L, 1200L}));
 
             GuildApplicationListResponse response = guildService.getApplications(2L, 10L);
 
             assertThat(response.guildId()).isEqualTo(10L);
             assertThat(response.applications()).hasSize(1);
             assertThat(response.applications().get(0).trophyPoints()).isEqualTo(1200);
+        }
+
+        @Test
+        @DisplayName("배치 쿼리 사용 — sumScoreGroupByUserIds 1회 호출, 개별 합산 쿼리 미호출")
+        void getApplications_usesBatchQueryForTrophyScore() {
+            GuildMember app1 =
+                    GuildMember.builder()
+                            .guild(guild)
+                            .user(user)
+                            .role(GuildMember.Role.MEMBER)
+                            .status(GuildMember.Status.PENDING)
+                            .message(null)
+                            .build();
+            ReflectionTestUtils.setField(app1, "id", 201L);
+            GuildMember app2 =
+                    GuildMember.builder()
+                            .guild(guild)
+                            .user(master)
+                            .role(GuildMember.Role.MEMBER)
+                            .status(GuildMember.Status.PENDING)
+                            .message(null)
+                            .build();
+            ReflectionTestUtils.setField(app2, "id", 202L);
+
+            given(guildRepository.findByIdWithMaster(10L)).willReturn(Optional.of(guild));
+            given(
+                            guildMemberRepository.findByGuildIdAndStatusWithUser(
+                                    10L, GuildMember.Status.PENDING))
+                    .willReturn(List.of(app1, app2));
+            List<Long> applicantUserIds = List.of(1L, 2L);
+            given(userTrophyRepository.sumScoreGroupByUserIds(applicantUserIds))
+                    .willReturn(List.of(new Object[] {1L, 500L}, new Object[] {2L, 800L}));
+
+            guildService.getApplications(2L, 10L);
+
+            // 배치 쿼리 1회
+            then(userTrophyRepository).should().sumScoreGroupByUserIds(applicantUserIds);
+            // 개별 합산 쿼리 미호출
+            then(userTrophyRepository).should(never()).sumScoreByUserIdIn(List.of(1L));
+            then(userTrophyRepository).should(never()).sumScoreByUserIdIn(List.of(2L));
         }
 
         @Test
