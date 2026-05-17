@@ -37,6 +37,7 @@ import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
+import com.territorial.auction.global.security.jwt.RefreshTokenService;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -68,6 +69,7 @@ class UserServiceTest {
     @Mock private UserProfileRepository userProfileRepository;
     @Mock private UserTrophyRepository userTrophyRepository;
     @Mock private PasswordEncoder passwordEncoder;
+    @Mock private RefreshTokenService refreshTokenService;
 
     // ─── 공통 픽스처 ─────────────────────────────────────────────────────────
 
@@ -461,6 +463,7 @@ class UserServiceTest {
             // 소프트 삭제 검증: 하드 삭제 금지, status=WITHDRAWN 이어야 함
             then(userRepository).should(never()).delete(user);
             assertThat(user.getStatus()).isEqualTo(UserStatus.WITHDRAWN);
+            then(refreshTokenService).should().delete(1L);
         }
     }
 
