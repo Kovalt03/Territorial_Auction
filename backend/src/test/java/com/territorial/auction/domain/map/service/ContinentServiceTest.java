@@ -2,6 +2,8 @@ package com.territorial.auction.domain.map.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 import com.territorial.auction.domain.map.dto.ContinentListResponse;
 import com.territorial.auction.domain.map.dto.ContinentListResponse.ContinentInfo;
@@ -37,6 +39,11 @@ class ContinentServiceTest {
         return c;
     }
 
+    /** Object[] row matching the batch query result format: [continentId, count] */
+    private Object[] row(Long continentId, Long count) {
+        return new Object[] {continentId, count};
+    }
+
     // ────────────────────────────────────────────────────────────────
     // getContinents()
     // ────────────────────────────────────────────────────────────────
@@ -46,17 +53,43 @@ class ContinentServiceTest {
     class GetContinents {
 
         @Test
+        @DisplayName("배치 쿼리 사용 — countGroupByContinent, countByStatusGroupByContinent 각 1회 호출")
+        void getContinents_usesBatchQueries() {
+            Continent c1 = continent(1L, "붉은 사막");
+            Continent c2 = continent(2L, "얼음 벌판");
+            given(continentRepository.findAll()).willReturn(List.of(c1, c2));
+            given(territoryRepository.countGroupByContinent())
+                    .willReturn(List.of(row(1L, 10L), row(2L, 8L)));
+            given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
+                    .willReturn(List.of(row(1L, 3L), row(2L, 5L)));
+
+            continentService.getContinents();
+
+            // 배치 쿼리 각 1회 — N+1 쿼리 메서드 미호출
+            then(territoryRepository).should().countGroupByContinent();
+            then(territoryRepository)
+                    .should()
+                    .countByStatusGroupByContinent(TerritoryStatus.OCCUPIED);
+            then(territoryRepository).should(never()).countByContinentId(1L);
+            then(territoryRepository).should(never()).countByContinentId(2L);
+            then(territoryRepository)
+                    .should(never())
+                    .countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED);
+            then(territoryRepository)
+                    .should(never())
+                    .countByContinentIdAndStatus(2L, TerritoryStatus.OCCUPIED);
+        }
+
+        @Test
         @DisplayName("대륙이 존재하면 전체 목록과 totalContinents를 반환한다")
         void getContinents_returnsList() {
             Continent c1 = continent(1L, "붉은 사막");
             Continent c2 = continent(2L, "얼음 벌판");
             given(continentRepository.findAll()).willReturn(List.of(c1, c2));
-            given(territoryRepository.countByContinentId(1L)).willReturn(10L);
-            given(territoryRepository.countByContinentId(2L)).willReturn(8L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
-                    .willReturn(3L);
-            given(territoryRepository.countByContinentIdAndStatus(2L, TerritoryStatus.OCCUPIED))
-                    .willReturn(5L);
+            given(territoryRepository.countGroupByContinent())
+                    .willReturn(List.of(row(1L, 10L), row(2L, 8L)));
+            given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
+                    .willReturn(List.of(row(1L, 3L), row(2L, 5L)));
 
             ContinentListResponse response = continentService.getContinents();
 
@@ -69,9 +102,9 @@ class ContinentServiceTest {
         void getContinents_mapsIdAndName() {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
-            given(territoryRepository.countByContinentId(1L)).willReturn(0L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
-                    .willReturn(0L);
+            given(territoryRepository.countGroupByContinent()).willReturn(List.of(row(1L, 0L)));
+            given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
+                    .willReturn(List.of());
 
             ContinentInfo info = continentService.getContinents().continent().get(0);
 
@@ -80,13 +113,13 @@ class ContinentServiceTest {
         }
 
         @Test
-        @DisplayName("totalTerritories는 해당 대륙의 전체 영토 수를 반환한다")
+        @DisplayName("totalTerritories는 배치 결과의 합산 값을 대륙별로 매핑한다")
         void getContinents_totalTerritories() {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
-            given(territoryRepository.countByContinentId(1L)).willReturn(15L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
-                    .willReturn(0L);
+            given(territoryRepository.countGroupByContinent()).willReturn(List.of(row(1L, 15L)));
+            given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
+                    .willReturn(List.of());
 
             ContinentInfo info = continentService.getContinents().continent().get(0);
 
@@ -94,13 +127,13 @@ class ContinentServiceTest {
         }
 
         @Test
-        @DisplayName("occupiedTerritories는 OCCUPIED 상태 영토 수만 반환한다")
+        @DisplayName("occupiedTerritories는 OCCUPIED 배치 결과를 대륙별로 매핑한다")
         void getContinents_occupiedTerritories() {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
-            given(territoryRepository.countByContinentId(1L)).willReturn(10L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
-                    .willReturn(4L);
+            given(territoryRepository.countGroupByContinent()).willReturn(List.of(row(1L, 10L)));
+            given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
+                    .willReturn(List.of(row(1L, 4L)));
 
             ContinentInfo info = continentService.getContinents().continent().get(0);
 
@@ -108,13 +141,29 @@ class ContinentServiceTest {
         }
 
         @Test
+        @DisplayName("배치 결과에 해당 대륙 ID가 없으면 count 0으로 처리한다")
+        void getContinents_missingInBatchResult_defaultsToZero() {
+            Continent c = continent(99L, "신대륙");
+            given(continentRepository.findAll()).willReturn(List.of(c));
+            // 배치 결과에 continentId=99 없음
+            given(territoryRepository.countGroupByContinent()).willReturn(List.of());
+            given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
+                    .willReturn(List.of());
+
+            ContinentInfo info = continentService.getContinents().continent().get(0);
+
+            assertThat(info.totalTerritories()).isZero();
+            assertThat(info.occupiedTerritories()).isZero();
+        }
+
+        @Test
         @DisplayName("미구현 필드(dominantGuildName, avgTerritorytGrade, bonusDescription)는 null이다")
         void getContinents_todoFieldsAreNull() {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
-            given(territoryRepository.countByContinentId(1L)).willReturn(0L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
-                    .willReturn(0L);
+            given(territoryRepository.countGroupByContinent()).willReturn(List.of());
+            given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
+                    .willReturn(List.of());
 
             ContinentInfo info = continentService.getContinents().continent().get(0);
 
@@ -127,6 +176,9 @@ class ContinentServiceTest {
         @DisplayName("대륙이 없으면 빈 목록과 totalContinents 0을 반환한다")
         void getContinents_empty() {
             given(continentRepository.findAll()).willReturn(List.of());
+            given(territoryRepository.countGroupByContinent()).willReturn(List.of());
+            given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
+                    .willReturn(List.of());
 
             ContinentListResponse response = continentService.getContinents();
 
@@ -135,17 +187,15 @@ class ContinentServiceTest {
         }
 
         @Test
-        @DisplayName("여러 대륙의 영토 수가 각각 독립적으로 집계된다")
+        @DisplayName("여러 대륙의 영토 수가 배치 결과 기반으로 각각 독립 집계된다")
         void getContinents_multipleContinent_eachCountIndependent() {
             Continent c1 = continent(1L, "붉은 사막");
             Continent c2 = continent(2L, "얼음 벌판");
             given(continentRepository.findAll()).willReturn(List.of(c1, c2));
-            given(territoryRepository.countByContinentId(1L)).willReturn(20L);
-            given(territoryRepository.countByContinentId(2L)).willReturn(5L);
-            given(territoryRepository.countByContinentIdAndStatus(1L, TerritoryStatus.OCCUPIED))
-                    .willReturn(10L);
-            given(territoryRepository.countByContinentIdAndStatus(2L, TerritoryStatus.OCCUPIED))
-                    .willReturn(2L);
+            given(territoryRepository.countGroupByContinent())
+                    .willReturn(List.of(row(1L, 20L), row(2L, 5L)));
+            given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
+                    .willReturn(List.of(row(1L, 10L), row(2L, 2L)));
 
             List<ContinentInfo> infos = continentService.getContinents().continent();
 
