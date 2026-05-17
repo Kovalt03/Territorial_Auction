@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
@@ -29,6 +30,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserProfileRepository userProfileRepository;
 
     @Override
+    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
@@ -41,14 +43,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return new CustomOAuth2User(user, oAuth2User.getAttributes());
     }
 
-    @Transactional
     protected User saveOrUpdate(OAuth2UserInfo userInfo, String provider) {
         // username = "provider:providerId" (e.g. "google:1234567890")
         String username = provider + ":" + userInfo.getId();
         String email = userInfo.getEmail() != null ? userInfo.getEmail() : username + "@oauth";
 
         return userRepository
-                .findByEmail(email)
+                .findByUsername(username)
                 .orElseGet(() -> createNewOAuth2User(username, email, userInfo.getName()));
     }
 

@@ -137,7 +137,8 @@ public class UserService {
                 userRepository
                         .findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        if (!passwordEncoder.matches(password, user.getPasswordHash()))
+        if (!user.getPasswordHash().isEmpty()
+                && !passwordEncoder.matches(password, user.getPasswordHash()))
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
 
         user.updateStatus(UserStatus.WITHDRAWN);
