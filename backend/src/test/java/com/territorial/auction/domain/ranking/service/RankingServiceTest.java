@@ -232,6 +232,10 @@ class RankingServiceTest {
     @DisplayName("HandleTerritoryHoldStarted")
     class HandleTerritoryHoldStarted {
 
+        // handleTerritoryHoldStarted는 @Transactional(propagation = REQUIRES_NEW)로 선언되어
+        // 이벤트 발행 트랜잭션과 독립된 새 트랜잭션에서 DB 쓰기를 수행한다.
+        // 단위 테스트에서는 Spring 컨텍스트 없이 실행되므로 propagation 자체는 검증할 수 없고,
+        // save() 호출 여부로 DB 쓰기 동작을 검증한다.
         @Test
         @DisplayName("이벤트 수신 → SeasonTerritoryHold 저장 확인")
         void success() {
@@ -253,6 +257,8 @@ class RankingServiceTest {
     @DisplayName("HandleTerritoryHoldClosed")
     class HandleTerritoryHoldClosed {
 
+        // handleTerritoryHoldClosed도 @Transactional(propagation = REQUIRES_NEW)로 선언되어
+        // 독립 트랜잭션에서 hold.closeHold()를 통해 heldUntil을 설정한다.
         @Test
         @DisplayName("열린 레코드 존재 → closeHold() 호출 확인")
         void success() {
