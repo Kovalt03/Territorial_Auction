@@ -18,6 +18,7 @@ import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
+import com.territorial.auction.global.security.jwt.RefreshTokenService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +43,7 @@ public class UserService {
     private final UserTrophyRepository userTrophyRepository;
     private final NotificationSettingRepository notificationSettingRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
 
     public User findById(Long userId) {
         return userRepository
@@ -140,8 +142,7 @@ public class UserService {
 
         user.updateStatus(UserStatus.WITHDRAWN);
         userRepository.save(user);
-        // TODO: 탈퇴 처리 후 해당 userId의 JWT 토큰 무효화 필요
-        //       Redis 블랙리스트 등록 또는 토큰 버전(tokenVersion) 증가 방식으로 구현
+        refreshTokenService.delete(userId);
     }
 
     public NotificationSettingResponse getNotificationSetting(Long userId) {
