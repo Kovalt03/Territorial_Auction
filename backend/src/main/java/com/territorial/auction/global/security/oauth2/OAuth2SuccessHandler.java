@@ -1,6 +1,7 @@
 package com.territorial.auction.global.security.oauth2;
 
 import com.territorial.auction.global.security.jwt.JwtTokenProvider;
+import com.territorial.auction.global.security.jwt.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     // TODO: 프론트엔드 redirect URI로 변경
     private static final String REDIRECT_URI = "http://localhost:5173/oauth2/callback";
@@ -26,8 +28,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         String accessToken = jwtTokenProvider.createAccessToken(oAuth2User.getUserId());
         String refreshToken = jwtTokenProvider.createRefreshToken(oAuth2User.getUserId());
-
-        // TODO: refresh token은 DB 또는 Redis에 저장
+        refreshTokenService.save(oAuth2User.getUserId(), refreshToken);
 
         String redirectUrl =
                 REDIRECT_URI + "?accessToken=" + accessToken + "&refreshToken=" + refreshToken;
