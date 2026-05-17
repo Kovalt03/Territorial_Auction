@@ -18,6 +18,7 @@ import com.territorial.auction.domain.guild.entity.Guild;
 import com.territorial.auction.domain.guild.entity.GuildMember;
 import com.territorial.auction.domain.guild.repository.GuildMemberRepository;
 import com.territorial.auction.domain.guild.repository.GuildRepository;
+import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.social.entity.ChatRoom;
@@ -226,11 +227,11 @@ class GuildServiceTest {
                             guildMemberRepository.findByGuildIdAndStatusWithUser(
                                     10L, GuildMember.Status.ACTIVE))
                     .willReturn(List.of(masterMember));
-            // 배치 쿼리: countGroupByOwnerIds([2]) → [[2, 2]]
-            given(territoryRepository.countGroupByOwnerIds(List.of(2L)))
+            // 배치 쿼리: countGroupByOwnerIds([2], OCCUPIED) → [[2, 2]]
+            given(
+                            territoryRepository.countGroupByOwnerIds(
+                                    List.of(2L), Territory.TerritoryStatus.OCCUPIED))
                     .willReturn(List.of(new Object[] {2L, 2L}));
-            // totalTerritoryCount는 countByOwner_IdIn으로 집계
-            given(territoryRepository.countByOwner_IdIn(List.of(2L))).willReturn(2L);
 
             GuildDetailResponse response = guildService.getGuildDetail(10L);
 
@@ -256,14 +257,17 @@ class GuildServiceTest {
                                     10L, GuildMember.Status.ACTIVE))
                     .willReturn(List.of(masterMember, member2));
             List<Long> memberUserIds = List.of(2L, 1L);
-            given(territoryRepository.countGroupByOwnerIds(memberUserIds))
+            given(
+                            territoryRepository.countGroupByOwnerIds(
+                                    memberUserIds, Territory.TerritoryStatus.OCCUPIED))
                     .willReturn(List.of(new Object[] {2L, 3L}, new Object[] {1L, 1L}));
-            given(territoryRepository.countByOwner_IdIn(memberUserIds)).willReturn(4L);
 
             guildService.getGuildDetail(10L);
 
             // 배치 쿼리 1회
-            then(territoryRepository).should().countGroupByOwnerIds(memberUserIds);
+            then(territoryRepository)
+                    .should()
+                    .countGroupByOwnerIds(memberUserIds, Territory.TerritoryStatus.OCCUPIED);
             // 멤버별 개별 쿼리 미호출
             then(territoryRepository).should(never()).countByOwnerId(2L);
             then(territoryRepository).should(never()).countByOwnerId(1L);
