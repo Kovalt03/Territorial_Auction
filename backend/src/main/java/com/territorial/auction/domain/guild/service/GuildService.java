@@ -13,6 +13,7 @@ import com.territorial.auction.domain.guild.entity.Guild;
 import com.territorial.auction.domain.guild.entity.GuildMember;
 import com.territorial.auction.domain.guild.repository.GuildMemberRepository;
 import com.territorial.auction.domain.guild.repository.GuildRepository;
+import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.social.entity.ChatRoom;
@@ -95,14 +96,20 @@ public class GuildService {
         List<GuildMember> members =
                 guildMemberRepository.findByGuildIdAndStatusWithUser(
                         guildId, GuildMember.Status.ACTIVE);
-        long totalTerritoryCount =
-                countTerritories(members.stream().map(m -> m.getUser().getId()).toList());
         List<Long> memberUserIds = members.stream().map(m -> m.getUser().getId()).toList();
         Map<Long, Long> territoryCountMap =
                 memberUserIds.isEmpty()
                         ? Map.of()
-                        : territoryRepository.countGroupByOwnerIds(memberUserIds).stream()
-                                .collect(Collectors.toMap(r -> (Long) r[0], r -> (Long) r[1]));
+                        : territoryRepository
+                                .countGroupByOwnerIds(
+                                        memberUserIds, Territory.TerritoryStatus.OCCUPIED)
+                                .stream()
+                                .collect(
+                                        Collectors.toMap(
+                                                r -> (Long) r[0],
+                                                r -> ((Number) r[1]).longValue()));
+        long totalTerritoryCount =
+                territoryCountMap.values().stream().mapToLong(Long::longValue).sum();
         List<GuildDetailResponse.MemberInfo> memberInfos =
                 members.stream()
                         .map(
