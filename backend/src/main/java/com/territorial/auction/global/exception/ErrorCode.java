@@ -39,6 +39,7 @@ public enum ErrorCode {
     BID_AMOUNT_TOO_LOW(HttpStatus.BAD_REQUEST, "입찰 금액이 현재 최고가보다 낮습니다."),
     ALREADY_HIGHEST_BIDDER(HttpStatus.BAD_REQUEST, "이미 최고 입찰자입니다."),
     INSUFFICIENT_AP(HttpStatus.BAD_REQUEST, "AP 잔액이 부족합니다."),
+    LOCK_ACQUISITION_FAILED(HttpStatus.CONFLICT, "현재 요청을 처리할 수 없습니다. 잠시 후 다시 시도해주세요."),
 
     // Social
     FRIEND_NOT_FOUND(HttpStatus.NOT_FOUND, "친구 관계를 찾을 수 없습니다."),

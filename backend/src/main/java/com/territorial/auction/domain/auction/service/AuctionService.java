@@ -23,6 +23,7 @@ import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
+import com.territorial.auction.global.lock.DistributedLock;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -112,6 +113,7 @@ public class AuctionService {
     }
 
     @Transactional
+    @DistributedLock(key = "'lock:auction:' + #auctionId")
     public PlaceBidResponse placeBid(Long userId, Long auctionId, PlaceBidRequest request) {
         LocalDateTime now = LocalDateTime.now();
         Auction auction =
