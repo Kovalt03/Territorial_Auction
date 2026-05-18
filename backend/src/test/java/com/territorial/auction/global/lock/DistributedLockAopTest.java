@@ -47,7 +47,6 @@ class DistributedLockAopTest {
         given(methodSignature.getParameterNames()).willReturn(new String[] {});
         given(pjp.getArgs()).willReturn(new Object[] {});
         given(redissonClient.getLock(anyString())).willReturn(lock);
-        given(lock.isHeldByCurrentThread()).willReturn(true);
     }
 
     // 테스트용 내부 클래스
@@ -59,6 +58,11 @@ class DistributedLockAopTest {
     @Nested
     @DisplayName("락 획득 성공")
     class LockAcquired {
+
+        @BeforeEach
+        void setUpLockHeld() {
+            given(lock.isHeldByCurrentThread()).willReturn(true);
+        }
 
         @Test
         @DisplayName("락 획득 → 메서드 실행 → 락 해제")
