@@ -153,6 +153,7 @@ public class RankingService {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void handleAuctionSettled(AuctionSettledEvent event) {
         try {
             String key = String.format(AUCTION_SPEND_KEY, event.seasonId());
