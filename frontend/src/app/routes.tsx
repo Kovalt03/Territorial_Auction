@@ -14,6 +14,7 @@ import { SeasonPassPage } from './pages/SeasonPassPage';
 import { VaultPage } from './pages/VaultPage';
 import { PersonalIslandPage } from './pages/PersonalIslandPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { PrivateRoute } from './components/PrivateRoute';
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
@@ -22,15 +23,15 @@ export const router = createBrowserRouter([
   { path: '/app/map', Component: WorldMapPage },
   { path: '/app/continent/:id', Component: ContinentPage },
   { path: '/app/territory/:id', Component: TerritoryDetailPage },
-  { path: '/app/mypage', Component: MyPage },
   { path: '/app/ranking', Component: RankingPage },
-  { path: '/app/charge', Component: ChargePage },
-  { path: '/app/territory-grid/:id', Component: TerritoryGridPage },
-  { path: '/app/siege', Component: SiegePage },
-  { path: '/app/item-shop', Component: ItemShopPage },
-  { path: '/app/season-pass', Component: SeasonPassPage },
-  { path: '/app/vault', Component: VaultPage },
-  { path: '/app/my-island', Component: PersonalIslandPage },
-  { path: '/app/settings', Component: SettingsPage },
+  { path: '/app/mypage', element: <PrivateRoute><MyPage /></PrivateRoute> },
+  { path: '/app/charge', element: <PrivateRoute><ChargePage /></PrivateRoute> },
+  { path: '/app/territory-grid/:id', element: <PrivateRoute><TerritoryGridPage /></PrivateRoute> },
+  { path: '/app/siege', element: <PrivateRoute><SiegePage /></PrivateRoute> },
+  { path: '/app/item-shop', element: <PrivateRoute><ItemShopPage /></PrivateRoute> },
+  { path: '/app/season-pass', element: <PrivateRoute><SeasonPassPage /></PrivateRoute> },
+  { path: '/app/vault', element: <PrivateRoute><VaultPage /></PrivateRoute> },
+  { path: '/app/my-island', element: <PrivateRoute><PersonalIslandPage /></PrivateRoute> },
+  { path: '/app/settings', element: <PrivateRoute><SettingsPage /></PrivateRoute> },
   { path: '*', element: <Navigate to="/login" replace /> },
 ]);

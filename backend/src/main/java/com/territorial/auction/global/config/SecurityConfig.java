@@ -59,6 +59,8 @@ public class SecurityConfig {
                                 auth.requestMatchers("/api/v1/auth/logout").authenticated()
                                     .requestMatchers("/api/v1/auth/**", "/oauth2/**", "/login/**").permitAll()
                                     .requestMatchers("/ws/**").permitAll()
+                                    .requestMatchers(HttpMethod.GET, "/api/v1/map/**").permitAll()
+                                    .requestMatchers(HttpMethod.GET, "/api/v1/continents/**").permitAll()
                                     .requestMatchers(HttpMethod.GET, "/api/v1/auctions/my-bids").authenticated()
                                     .requestMatchers(HttpMethod.GET, "/api/v1/auctions", "/api/v1/auctions/**").permitAll()
                                     .requestMatchers(HttpMethod.GET, "/api/v1/guilds", "/api/v1/guilds/{guildId}").permitAll()

@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.auction.service;
 
 import com.territorial.auction.domain.auction.AuctionPolicy;
+import com.territorial.auction.domain.auction.dto.AuctionBidBroadcast;
 import com.territorial.auction.domain.auction.dto.AuctionBidHistoryResponse;
 import com.territorial.auction.domain.auction.dto.AuctionDetailResponse;
 import com.territorial.auction.domain.auction.dto.AuctionListResponse;
@@ -29,8 +30,11 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +47,7 @@ public class AuctionService {
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
     private final TerritoryRepository territoryRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public Auction findById(Long auctionId) {
         return auctionRepository
@@ -156,7 +161,25 @@ public class AuctionService {
 
         applyAntiSniping(auction, now);
 
-        return new PlaceBidResponse(auction.getId(), request.bidAmount(), auction.getEndAt());
+        LocalDateTime finalEndAt = auction.getEndAt();
+        AuctionBidBroadcast broadcast =
+                new AuctionBidBroadcast(
+                        auction.getId(),
+                        request.bidAmount(),
+                        bidder.getId(),
+                        bidder.getNickname(),
+                        now,
+                        finalEndAt);
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        messagingTemplate.convertAndSend(
+                                "/sub/auction/" + auction.getId(), broadcast);
+                    }
+                });
+
+        return new PlaceBidResponse(auction.getId(), request.bidAmount(), finalEndAt);
     }
 
     public MyBidListResponse getMyBids(Long userId, Pageable pageable) {
