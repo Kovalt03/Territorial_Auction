@@ -13,6 +13,7 @@ import com.territorial.auction.domain.guild.entity.Guild;
 import com.territorial.auction.domain.guild.entity.GuildMember;
 import com.territorial.auction.domain.guild.repository.GuildMemberRepository;
 import com.territorial.auction.domain.guild.repository.GuildRepository;
+import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.social.entity.ChatRoom;
@@ -23,6 +24,8 @@ import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -93,8 +96,20 @@ public class GuildService {
         List<GuildMember> members =
                 guildMemberRepository.findByGuildIdAndStatusWithUser(
                         guildId, GuildMember.Status.ACTIVE);
+        List<Long> memberUserIds = members.stream().map(m -> m.getUser().getId()).toList();
+        Map<Long, Long> territoryCountMap =
+                memberUserIds.isEmpty()
+                        ? Map.of()
+                        : territoryRepository
+                                .countGroupByOwnerIds(
+                                        memberUserIds, Territory.TerritoryStatus.OCCUPIED)
+                                .stream()
+                                .collect(
+                                        Collectors.toMap(
+                                                r -> (Long) r[0],
+                                                r -> ((Number) r[1]).longValue()));
         long totalTerritoryCount =
-                countTerritories(members.stream().map(m -> m.getUser().getId()).toList());
+                territoryCountMap.values().stream().mapToLong(Long::longValue).sum();
         List<GuildDetailResponse.MemberInfo> memberInfos =
                 members.stream()
                         .map(
@@ -103,8 +118,8 @@ public class GuildService {
                                                 m.getUser().getId(),
                                                 m.getUser().getNickname(),
                                                 m.getRole().name(),
-                                                territoryRepository.countByOwnerId(
-                                                        m.getUser().getId()),
+                                                territoryCountMap.getOrDefault(
+                                                        m.getUser().getId(), 0L),
                                                 m.getJoinedAt()))
                         .toList();
         return new GuildDetailResponse(
@@ -184,21 +199,24 @@ public class GuildService {
         List<GuildMember> applications =
                 guildMemberRepository.findByGuildIdAndStatusWithUser(
                         guildId, GuildMember.Status.PENDING);
+        List<Long> applicantUserIds = applications.stream().map(m -> m.getUser().getId()).toList();
+        Map<Long, Long> trophyScoreMap =
+                applicantUserIds.isEmpty()
+                        ? Map.of()
+                        : userTrophyRepository.sumScoreGroupByUserIds(applicantUserIds).stream()
+                                .collect(Collectors.toMap(r -> (Long) r[0], r -> (Long) r[1]));
         List<GuildApplicationListResponse.ApplicationInfo> infos =
                 applications.stream()
                         .map(
-                                m -> {
-                                    int score =
-                                            (int)
-                                                    userTrophyRepository.sumScoreByUserIdIn(
-                                                            List.of(m.getUser().getId()));
-                                    return new GuildApplicationListResponse.ApplicationInfo(
-                                            m.getId(),
-                                            m.getUser().getId(),
-                                            m.getUser().getNickname(),
-                                            score,
-                                            m.getJoinedAt());
-                                })
+                                m ->
+                                        new GuildApplicationListResponse.ApplicationInfo(
+                                                m.getId(),
+                                                m.getUser().getId(),
+                                                m.getUser().getNickname(),
+                                                trophyScoreMap
+                                                        .getOrDefault(m.getUser().getId(), 0L)
+                                                        .intValue(),
+                                                m.getJoinedAt()))
                         .toList();
         return new GuildApplicationListResponse(guildId, infos);
     }

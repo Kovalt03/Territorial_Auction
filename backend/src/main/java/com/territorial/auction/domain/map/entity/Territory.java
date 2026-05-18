@@ -75,6 +75,7 @@ public class Territory {
 
     public void release(LocalDateTime nextAuctionAt) {
         this.status = TerritoryStatus.IDLE;
+        this.owner = null;
         this.occupiedUntil = null;
         this.nextAuctionAt = nextAuctionAt;
     }

@@ -6,6 +6,8 @@ import com.territorial.auction.domain.map.entity.Territory.TerritoryStatus;
 import com.territorial.auction.domain.map.repository.ContinentRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,13 @@ public class ContinentService {
     public ContinentListResponse getContinents() {
         List<Continent> continents = continentRepository.findAll();
 
+        Map<Long, Long> totalCountMap =
+                territoryRepository.countGroupByContinent().stream()
+                        .collect(Collectors.toMap(r -> (Long) r[0], r -> (Long) r[1]));
+        Map<Long, Long> occupiedCountMap =
+                territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED).stream()
+                        .collect(Collectors.toMap(r -> (Long) r[0], r -> (Long) r[1]));
+
         List<ContinentListResponse.ContinentInfo> continentInfos =
                 continents.stream()
                         .map(
@@ -31,17 +40,13 @@ public class ContinentService {
                                                 .continentId(c.getId())
                                                 .continentName(c.getName())
                                                 .totalTerritories(
-                                                        (int)
-                                                                territoryRepository
-                                                                        .countByContinentId(
-                                                                                c.getId()))
+                                                        totalCountMap
+                                                                .getOrDefault(c.getId(), 0L)
+                                                                .intValue())
                                                 .occupiedTerritories(
-                                                        (int)
-                                                                territoryRepository
-                                                                        .countByContinentIdAndStatus(
-                                                                                c.getId(),
-                                                                                TerritoryStatus
-                                                                                        .OCCUPIED))
+                                                        occupiedCountMap
+                                                                .getOrDefault(c.getId(), 0L)
+                                                                .intValue())
                                                 .dominantGuildName(null) // TODO: Guild 도메인 구현 후 연동
                                                 .avgTerritorytGrade(null) // TODO: 등급별 집계 쿼리 구현 후 연동
                                                 .bonusDescription(null) // TODO: BonusTile 연동 후 구현

@@ -29,6 +29,19 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
 
     long countByContinentIdAndStatus(Long continentId, Territory.TerritoryStatus status);
 
+    @Query("SELECT t.continent.id, COUNT(t) FROM Territory t GROUP BY t.continent.id")
+    List<Object[]> countGroupByContinent();
+
+    @Query(
+            "SELECT t.continent.id, COUNT(t) FROM Territory t WHERE t.status = :status GROUP BY t.continent.id")
+    List<Object[]> countByStatusGroupByContinent(@Param("status") Territory.TerritoryStatus status);
+
+    @Query(
+            "SELECT t.owner.id, COUNT(t) FROM Territory t WHERE t.owner.id IN :ownerIds AND t.status = :status GROUP BY t.owner.id")
+    List<Object[]> countGroupByOwnerIds(
+            @Param("ownerIds") List<Long> ownerIds,
+            @Param("status") Territory.TerritoryStatus status);
+
     @Query(
             value =
                     "SELECT t FROM Territory t JOIN FETCH t.continent JOIN FETCH t.grade where t.owner.id = :userId",
