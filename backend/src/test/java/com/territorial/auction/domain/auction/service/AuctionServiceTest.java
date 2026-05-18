@@ -39,6 +39,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,7 +51,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionServiceTest {
@@ -62,6 +66,17 @@ class AuctionServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private WalletRepository walletRepository;
     @Mock private TerritoryRepository territoryRepository;
+    @Mock private SimpMessagingTemplate messagingTemplate;
+
+    @BeforeEach
+    void initTxSync() {
+        TransactionSynchronizationManager.initSynchronization();
+    }
+
+    @AfterEach
+    void clearTxSync() {
+        TransactionSynchronizationManager.clearSynchronization();
+    }
 
     // ─── 공통 픽스처 ─────────────────────────────────────────────────────────
 
