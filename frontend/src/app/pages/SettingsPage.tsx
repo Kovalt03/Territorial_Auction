@@ -1,5 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+
+import { useApp } from '../context/AppContext';
+import { logoutApi } from '../api/auth';
+import { fetchSettings, updateSettings, changePassword, deleteAccount } from '../api/user';
 import { GNB } from '../components/GNB';
 
 type Section = 'notifications' | 'security' | 'account';
@@ -12,7 +16,20 @@ interface NotificationSettings {
 
 export function SettingsPage() {
   const navigate = useNavigate();
+  const { logout } = useApp();
   const [activeSection, setActiveSection] = useState<Section>('notifications');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logoutApi();
+    } catch {
+      // 서버 오류여도 로컬 상태는 초기화
+    }
+    logout();
+    navigate('/login');
+  };
 
   // 알림 설정
   const [notifications, setNotifications] = useState<NotificationSettings>({
@@ -22,6 +39,12 @@ export function SettingsPage() {
   });
   const [notifSaving, setNotifSaving] = useState(false);
   const [notifSaved, setNotifSaved] = useState(false);
+
+  useEffect(() => {
+    fetchSettings()
+      .then(data => setNotifications(data))
+      .catch(() => {});
+  }, []);
 
   // 비밀번호 변경
   const [currentPassword, setCurrentPassword] = useState('');
@@ -44,11 +67,15 @@ export function SettingsPage() {
 
   const handleSaveNotifications = async () => {
     setNotifSaving(true);
-    // TODO: PATCH /api/v1/users/me/settings
-    await new Promise(r => setTimeout(r, 600));
-    setNotifSaving(false);
-    setNotifSaved(true);
-    setTimeout(() => setNotifSaved(false), 2500);
+    try {
+      await updateSettings(notifications);
+      setNotifSaved(true);
+      setTimeout(() => setNotifSaved(false), 2500);
+    } catch {
+      // keep current state on error
+    } finally {
+      setNotifSaving(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -67,14 +94,18 @@ export function SettingsPage() {
       return;
     }
     setPwLoading(true);
-    // TODO: PATCH /api/v1/users/me/password
-    await new Promise(r => setTimeout(r, 600));
-    setPwLoading(false);
-    setPwSuccess(true);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setTimeout(() => setPwSuccess(false), 3000);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPwSuccess(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPwSuccess(false), 3000);
+    } catch {
+      setPwError('비밀번호 변경에 실패했습니다. 현재 비밀번호를 확인해주세요.');
+    } finally {
+      setPwLoading(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -88,10 +119,15 @@ export function SettingsPage() {
       return;
     }
     setDeleteLoading(true);
-    // TODO: DELETE /api/v1/users/me
-    await new Promise(r => setTimeout(r, 600));
-    setDeleteLoading(false);
-    navigate('/login');
+    try {
+      await deleteAccount(deletePassword);
+      logout();
+      navigate('/login');
+    } catch {
+      setDeleteError('계정 삭제에 실패했습니다. 비밀번호를 확인해주세요.');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const sidebarItems: { id: Section; icon: string; label: string }[] = [
@@ -130,6 +166,25 @@ export function SettingsPage() {
               {item.label}
             </button>
           ))}
+
+          <div className="flex-1" />
+
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left w-full"
+            style={{
+              color: '#ff4466',
+              border: '1px solid transparent',
+              fontSize: 13,
+              opacity: isLoggingOut ? 0.5 : 1,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#ff006615')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <span style={{ fontSize: 16 }}>🚪</span>
+            {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+          </button>
         </aside>
 
         {/* Content */}

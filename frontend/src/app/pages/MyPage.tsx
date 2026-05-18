@@ -2,18 +2,20 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
+import { useMyBids } from '../hooks/useMyBids';
+import { useVault } from '../hooks/useVault';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 type ActivityTab = 'active' | 'mine' | 'history' | 'bids';
 
+const GRADE_COLOR: Record<string, string> = { S: '#ffd700', A: '#00f5ff', B: '#00ff88', C: '#8892b0' };
+
 export function MyPage() {
   const navigate = useNavigate();
-  const { ap, gp, territories, username, hasPass, passEndDate } = useApp();
+  const { ap, gp, username, hasPass, passEndDate } = useApp();
+  const { bids: myBids, isLoading: bidsLoading } = useMyBids();
+  const { territories, isLoading: territoriesLoading } = useVault();
   const [tab, setTab] = useState<ActivityTab>('active');
-
-  const myTerritories = territories.filter(t => t.status === 'mine');
-  const auctionTerritories = territories.filter(t => t.status === 'auction');
-  const bidTerritories = territories.filter(t => t.myBid !== undefined && t.myBid > 0);
 
   const passDays = passEndDate
     ? Math.max(0, Math.ceil((passEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -23,24 +25,17 @@ export function MyPage() {
     { name: 'AP', value: ap, color: '#ff0066' },
     { name: 'GP', value: gp, color: '#00ff88' },
   ];
-
   const totalAssets = ap + gp;
 
-  const tabItems: { id: ActivityTab; label: string; count: number }[] = [
-    { id: 'active', label: '경매 진행', count: auctionTerritories.length },
-    { id: 'mine', label: '내 영토', count: myTerritories.length },
-    { id: 'history', label: '거래 내역', count: 12 },
-    { id: 'bids', label: '입찰 현황', count: bidTerritories.length },
-  ];
+  const activeBids = myBids.filter(b => b.status === 'BIDDING');
+  const allBids = myBids;
 
-  const getTabList = () => {
-    switch (tab) {
-      case 'active': return auctionTerritories;
-      case 'mine': return myTerritories;
-      case 'bids': return bidTerritories;
-      default: return [];
-    }
-  };
+  const tabItems: { id: ActivityTab; label: string; count: number }[] = [
+    { id: 'active', label: '경매 진행', count: activeBids.length },
+    { id: 'mine', label: '내 영토', count: territories.length },
+    { id: 'history', label: '거래 내역', count: 12 },
+    { id: 'bids', label: '입찰 현황', count: allBids.length },
+  ];
 
   return (
     <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
@@ -66,9 +61,9 @@ export function MyPage() {
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { label: '영토', val: myTerritories.length, color: '#00f5ff' },
-                { label: '트로피', val: '1,240', color: '#ffd700' },
-                { label: '랭킹', val: '12위', color: '#ff8c00' },
+                { label: '영토', val: territories.length, color: '#00f5ff' },
+                { label: '입찰', val: allBids.length, color: '#ffd700' },
+                { label: '경매중', val: activeBids.length, color: '#ff8c00' },
               ].map(s => (
                 <div key={s.label} className="bg-[#2a3050] rounded-xl p-2 text-center">
                   <p className="font-bold" style={{ fontSize: 14, color: s.color }}>{s.val}</p>
@@ -85,24 +80,12 @@ export function MyPage() {
               <div style={{ width: 120, height: 120 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
-                      data={donutData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={35}
-                      outerRadius={55}
-                      dataKey="value"
-                      strokeWidth={0}
-                    >
+                    <Pie data={donutData} cx="50%" cy="50%" innerRadius={35} outerRadius={55} dataKey="value" strokeWidth={0}>
                       {donutData.map((entry, i) => (
                         <Cell key={i} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      contentStyle={{ background: '#1a1f35', border: '1px solid #354064', borderRadius: 8 }}
-                      labelStyle={{ color: '#e0e8ff' }}
-                      itemStyle={{ color: '#e0e8ff' }}
-                    />
+                    <Tooltip contentStyle={{ background: '#1a1f35', border: '1px solid #354064', borderRadius: 8 }} labelStyle={{ color: '#e0e8ff' }} itemStyle={{ color: '#e0e8ff' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -124,7 +107,7 @@ export function MyPage() {
             </div>
           </div>
 
-          {/* Quick access + Season Pass */}
+          {/* Quick access */}
           <div className="space-y-3">
             <div
               className="bg-[#1a1f35] border rounded-xl p-4 cursor-pointer hover:brightness-110 transition-all"
@@ -152,7 +135,7 @@ export function MyPage() {
                 <span style={{ fontSize: 24 }}>💰</span>
                 <div>
                   <p className="text-[#00ff88] font-bold" style={{ fontSize: 14 }}>글로벌 금고</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>8,200 / 10,000 GP</p>
+                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>보유 영토 {territories.length}개</p>
                 </div>
                 <span className="ml-auto text-[#7788a5]">→</span>
               </div>
@@ -165,7 +148,7 @@ export function MyPage() {
                 <span style={{ fontSize: 24 }}>🏝</span>
                 <div>
                   <p className="text-[#44aaff] font-bold" style={{ fontSize: 14 }}>나의 섬</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>S급 · 20×16 그리드</p>
+                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>건물 관리</p>
                 </div>
                 <span className="ml-auto text-[#7788a5]">→</span>
               </div>
@@ -222,41 +205,83 @@ export function MyPage() {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : tab === 'mine' ? (
             <div className="p-4">
-              {getTabList().length > 0 ? (
+              {territoriesLoading ? (
+                <div className="text-center py-8 text-[#4a5a7a]" style={{ fontSize: 14 }}>불러오는 중...</div>
+              ) : territories.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-[#4a5a7a]" style={{ fontSize: 14 }}>보유한 영토가 없습니다</p>
+                </div>
+              ) : (
                 <div className="space-y-2">
-                  {getTabList().map(t => (
+                  {territories.map(t => (
                     <button
-                      key={t.id}
-                      onClick={() => navigate(`/app/territory/${t.id}`)}
+                      key={t.territoryId}
+                      onClick={() => navigate(`/app/territory/${t.territoryId}`)}
                       className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[#12192c] transition-colors text-left"
                       style={{ border: '1px solid #1e2a3d' }}
                     >
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center font-bold flex-shrink-0"
-                        style={{ background: t.color + '30', border: `1px solid ${t.color}60`, color: t.color, fontSize: 14 }}
+                        style={{ background: (GRADE_COLOR[t.grade] ?? '#8892b0') + '30', border: `1px solid ${(GRADE_COLOR[t.grade] ?? '#8892b0')}60`, color: GRADE_COLOR[t.grade] ?? '#8892b0', fontSize: 14 }}
                       >
                         {t.grade}
                       </div>
                       <div className="flex-1">
-                        <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>{t.name}</p>
-                        <p className="text-[#7788a5]" style={{ fontSize: 11 }}>({t.x}, {t.y}) · +{t.gpPerMin} GP/분</p>
+                        <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>영토 #{t.territoryId}</p>
+                        <p className="text-[#7788a5]" style={{ fontSize: 11 }}>({t.position.x}, {t.position.y}) · {t.continentName}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[#ffd700] font-bold" style={{ fontSize: 13 }}>
-                          {tab === 'bids' ? `입찰 ${t.myBid?.toLocaleString()}` : t.currentBid.toLocaleString()} AP
-                        </p>
-                        <p className="text-[#7788a5]" style={{ fontSize: 10 }}>
-                          {tab === 'bids' ? '내 입찰' : '현재가'}
-                        </p>
-                      </div>
+                      <span className="text-[#7788a5]" style={{ fontSize: 11 }}>→</span>
                     </button>
                   ))}
                 </div>
-              ) : (
+              )}
+            </div>
+          ) : (
+            <div className="p-4">
+              {bidsLoading ? (
+                <div className="text-center py-8 text-[#4a5a7a]" style={{ fontSize: 14 }}>불러오는 중...</div>
+              ) : (tab === 'active' ? activeBids : allBids).length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-[#4a5a7a]" style={{ fontSize: 14 }}>데이터가 없습니다</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {(tab === 'active' ? activeBids : allBids).map(b => (
+                    <button
+                      key={b.auctionId}
+                      onClick={() => navigate(`/app/territory/${b.territoryId}`)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[#12192c] transition-colors text-left"
+                      style={{ border: '1px solid #1e2a3d' }}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center font-bold flex-shrink-0"
+                        style={{
+                          background: b.isHighestBidder ? '#00ff8820' : '#ff333320',
+                          border: `1px solid ${b.isHighestBidder ? '#00ff8860' : '#ff333360'}`,
+                          color: b.isHighestBidder ? '#00ff88' : '#ff3333',
+                          fontSize: 11,
+                        }}
+                      >
+                        {b.isHighestBidder ? '↑' : '↓'}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>
+                          ({b.coordX}, {b.coordY})
+                        </p>
+                        <p className="text-[#7788a5]" style={{ fontSize: 11 }}>
+                          내 입찰 {b.myBidAmount.toLocaleString()} AP · {b.isHighestBidder ? '최고가 유지' : '상회 입찰됨'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[#ffd700] font-bold" style={{ fontSize: 13 }}>
+                          {b.currentPrice.toLocaleString()} AP
+                        </p>
+                        <p className="text-[#7788a5]" style={{ fontSize: 10 }}>현재가</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
