@@ -52,4 +52,12 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
                     + " AND t.nextAuctionAt <= :now")
     List<Territory> findAllReadyForAuction(
             @Param("status") Territory.TerritoryStatus status, @Param("now") LocalDateTime now);
+
+    @Query(
+            "SELECT DISTINCT t.owner.id FROM Territory t WHERE t.owner IS NOT NULL AND t.status = :status")
+    List<Long> findAllDistinctOwnerIds(@Param("status") Territory.TerritoryStatus status);
+
+    @Query("SELECT t FROM Territory t WHERE t.owner.id = :userId AND t.status = :status")
+    List<Territory> findAllOccupiedByOwnerId(
+            @Param("userId") Long userId, @Param("status") Territory.TerritoryStatus status);
 }
