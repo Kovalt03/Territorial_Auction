@@ -30,11 +30,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Slf4j
 @Service
@@ -57,6 +61,9 @@ public class RankingService {
     private final StringRedisTemplate stringRedisTemplate;
     private final UserRepository userRepository;
 
+    @Cacheable(
+            value = "ranking",
+            key = "'territory-hold:p' + #page + ':s' + #size + ':u' + #userId")
     public TerritoryHoldRankingResponse getTerritoryHoldRanking(Long userId, int page, int size) {
         int effectiveSize = Math.min(size, MAX_SIZE);
         Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
@@ -90,6 +97,7 @@ public class RankingService {
                 updatedAt);
     }
 
+    @Cacheable(value = "ranking", key = "'auction-spend:p' + #page + ':s' + #size + ':u' + #userId")
     public AuctionSpendRankingResponse getAuctionSpendRanking(Long userId, int page, int size) {
         int effectiveSize = Math.min(size, MAX_SIZE);
         Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
@@ -119,6 +127,7 @@ public class RankingService {
                 LocalDateTime.now());
     }
 
+    @Cacheable(value = "ranking", key = "'my:u' + #userId")
     public MyRankingResponse getMyRanking(Long userId) {
         Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
         if (seasonOpt.isEmpty()) {
@@ -143,64 +152,78 @@ public class RankingService {
                 new AuctionSpendSummary(spendRank, spendScore));
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void handleAuctionSettled(AuctionSettledEvent event) {
-        String key = String.format(AUCTION_SPEND_KEY, event.seasonId());
-        stringRedisTemplate
-                .opsForZSet()
-                .incrementScore(key, String.valueOf(event.userId()), event.finalPrice());
-        log.info(
-                "경매 소비 랭킹 업데이트. userId={}, seasonId={}, price={}",
-                event.userId(),
-                event.seasonId(),
-                event.finalPrice());
+        try {
+            String key = String.format(AUCTION_SPEND_KEY, event.seasonId());
+            stringRedisTemplate
+                    .opsForZSet()
+                    .incrementScore(key, String.valueOf(event.userId()), event.finalPrice());
+            log.info(
+                    "경매 소비 랭킹 업데이트. userId={}, seasonId={}, price={}",
+                    event.userId(),
+                    event.seasonId(),
+                    event.finalPrice());
+        } catch (Exception e) {
+            log.error("랭킹 이벤트 처리 실패. event={}", event, e);
+        }
     }
 
-    @EventListener
-    @Transactional
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleTerritoryHoldStarted(TerritoryHoldStartedEvent event) {
-        Season season =
-                seasonRepository
-                        .findById(event.seasonId())
-                        .orElseThrow(() -> new CustomException(ErrorCode.SEASON_NOT_FOUND));
-        User user =
-                userRepository
-                        .findById(event.userId())
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        Territory territory =
-                territoryRepository
-                        .findById(event.territoryId())
-                        .orElseThrow(() -> new CustomException(ErrorCode.TERRITORY_NOT_FOUND));
+        try {
+            Season season =
+                    seasonRepository
+                            .findById(event.seasonId())
+                            .orElseThrow(() -> new CustomException(ErrorCode.SEASON_NOT_FOUND));
+            User user =
+                    userRepository
+                            .findById(event.userId())
+                            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            Territory territory =
+                    territoryRepository
+                            .findById(event.territoryId())
+                            .orElseThrow(() -> new CustomException(ErrorCode.TERRITORY_NOT_FOUND));
 
-        seasonTerritoryHoldRepository.save(
-                SeasonTerritoryHold.builder()
-                        .season(season)
-                        .user(user)
-                        .territory(territory)
-                        .grade(event.grade())
-                        .heldFrom(event.heldFrom())
-                        .build());
-        log.info(
-                "영토 점유 시작 기록. userId={}, seasonId={}, territoryId={}",
-                event.userId(),
-                event.seasonId(),
-                event.territoryId());
+            seasonTerritoryHoldRepository.save(
+                    SeasonTerritoryHold.builder()
+                            .season(season)
+                            .user(user)
+                            .territory(territory)
+                            .grade(event.grade())
+                            .heldFrom(event.heldFrom())
+                            .build());
+            log.info(
+                    "영토 점유 시작 기록. userId={}, seasonId={}, territoryId={}",
+                    event.userId(),
+                    event.seasonId(),
+                    event.territoryId());
+        } catch (Exception e) {
+            log.error("랭킹 이벤트 처리 실패. event={}", event, e);
+        }
     }
 
-    @EventListener
-    @Transactional
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleTerritoryHoldClosed(TerritoryHoldClosedEvent event) {
-        seasonTerritoryHoldRepository
-                .findBySeasonIdAndUserIdAndTerritoryIdAndHeldUntilIsNull(
-                        event.seasonId(), event.userId(), event.territoryId())
-                .ifPresent(hold -> hold.closeHold(event.heldUntil()));
-        log.info(
-                "영토 점유 종료 기록. userId={}, seasonId={}, territoryId={}",
-                event.userId(),
-                event.seasonId(),
-                event.territoryId());
+        try {
+            seasonTerritoryHoldRepository
+                    .findBySeasonIdAndUserIdAndTerritoryIdAndHeldUntilIsNull(
+                            event.seasonId(), event.userId(), event.territoryId())
+                    .ifPresent(hold -> hold.closeHold(event.heldUntil()));
+            log.info(
+                    "영토 점유 종료 기록. userId={}, seasonId={}, territoryId={}",
+                    event.userId(),
+                    event.seasonId(),
+                    event.territoryId());
+        } catch (Exception e) {
+            log.error("랭킹 이벤트 처리 실패. event={}", event, e);
+        }
     }
 
+    @CacheEvict(value = "ranking", allEntries = true)
     public void aggregateTerritoryHoldRanking(Long seasonId) {
         List<SeasonTerritoryHold> holds = seasonTerritoryHoldRepository.findAllBySeasonId(seasonId);
         Map<Long, Long> scoreByUser = calculateScoresByUser(holds);

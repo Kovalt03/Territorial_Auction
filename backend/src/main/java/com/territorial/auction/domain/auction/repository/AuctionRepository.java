@@ -47,4 +47,12 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                     + " LEFT JOIN FETCH a.currentBidder"
                     + " WHERE a.endAt <= :now AND a.settled = false")
     List<Auction> findAllExpiredUnsettled(@Param("now") LocalDateTime now);
+
+    @Query(
+            "SELECT a.territory.id FROM Auction a"
+                    + " WHERE a.territory.id IN :territoryIds"
+                    + " AND a.settled = false"
+                    + " AND a.endAt > :now")
+    List<Long> findActiveAuctionTerritoryIds(
+            @Param("territoryIds") List<Long> territoryIds, @Param("now") LocalDateTime now);
 }

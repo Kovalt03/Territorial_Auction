@@ -12,8 +12,11 @@ import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,11 +32,18 @@ public class MapService {
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final ColorHistoryRepository colorHistoryRepository;
 
+    @Cacheable(value = "territory-grid", key = "#continentId ?: 'all'")
     public GridMapResponse getGridMap(Long continentId) {
         List<Territory> territories =
                 (continentId == null)
                         ? territoryRepository.findAllWithContinentAndGrade()
                         : territoryRepository.findAllByContinentId(continentId);
+
+        List<Long> territoryIds = territories.stream().map(Territory::getId).toList();
+        Set<Long> activeAuctionTerritoryIds =
+                new HashSet<>(
+                        auctionRepository.findActiveAuctionTerritoryIds(
+                                territoryIds, LocalDateTime.now()));
 
         List<GridMapResponse.GridTerritoryDto> gridMapDtos =
                 territories.stream()
@@ -50,7 +60,7 @@ public class MapService {
                                                 t.getCurrentColor(),
                                                 t.getGrade().getGrade(),
                                                 t.getStatus().name(),
-                                                auctionRepository.existsByTerritoryId(t.getId()),
+                                                activeAuctionTerritoryIds.contains(t.getId()),
                                                 t.getContinent().getId(),
                                                 t.getGrade().getGridSize()))
                         .toList();

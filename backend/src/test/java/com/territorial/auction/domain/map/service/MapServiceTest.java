@@ -152,9 +152,8 @@ class MapServiceTest {
             List<Territory> territories =
                     List.of(territory(1L, 0, 0), territory(2L, 1, 0), territory(3L, 2, 0));
             given(territoryRepository.findAllWithContinentAndGrade()).willReturn(territories);
-            given(auctionRepository.existsByTerritoryId(1L)).willReturn(false);
-            given(auctionRepository.existsByTerritoryId(2L)).willReturn(false);
-            given(auctionRepository.existsByTerritoryId(3L)).willReturn(false);
+            given(auctionRepository.findActiveAuctionTerritoryIds(any(), any()))
+                    .willReturn(List.of());
 
             GridMapResponse response = mapService.getGridMap(null);
 
@@ -167,7 +166,8 @@ class MapServiceTest {
         void getGridMap_withContinentFilter_returnsFiltered() {
             List<Territory> filtered = List.of(territory(1L, 0, 0));
             given(territoryRepository.findAllByContinentId(1L)).willReturn(filtered);
-            given(auctionRepository.existsByTerritoryId(1L)).willReturn(false);
+            given(auctionRepository.findActiveAuctionTerritoryIds(any(), any()))
+                    .willReturn(List.of());
 
             GridMapResponse response = mapService.getGridMap(1L);
 
@@ -180,7 +180,8 @@ class MapServiceTest {
         void getGridMap_isAuctioning_true() {
             Territory t = territory(1L, 0, 0);
             given(territoryRepository.findAllWithContinentAndGrade()).willReturn(List.of(t));
-            given(auctionRepository.existsByTerritoryId(1L)).willReturn(true);
+            given(auctionRepository.findActiveAuctionTerritoryIds(any(), any()))
+                    .willReturn(List.of(1L));
 
             GridMapResponse response = mapService.getGridMap(null);
 
@@ -192,7 +193,8 @@ class MapServiceTest {
         void getGridMap_noOwner_ownerFieldsNull() {
             Territory t = territory(1L, 0, 0);
             given(territoryRepository.findAllWithContinentAndGrade()).willReturn(List.of(t));
-            given(auctionRepository.existsByTerritoryId(1L)).willReturn(false);
+            given(auctionRepository.findActiveAuctionTerritoryIds(any(), any()))
+                    .willReturn(List.of());
 
             GridMapResponse response = mapService.getGridMap(null);
 
