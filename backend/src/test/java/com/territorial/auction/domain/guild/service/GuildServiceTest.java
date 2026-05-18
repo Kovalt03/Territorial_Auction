@@ -231,7 +231,7 @@ class GuildServiceTest {
             given(
                             territoryRepository.countGroupByOwnerIds(
                                     List.of(2L), Territory.TerritoryStatus.OCCUPIED))
-                    .willReturn(List.of(new Object[] {2L, 2L}));
+                    .willReturn(List.<Object[]>of(new Object[] {2L, 2L}));
 
             GuildDetailResponse response = guildService.getGuildDetail(10L);
 
@@ -260,7 +260,7 @@ class GuildServiceTest {
             given(
                             territoryRepository.countGroupByOwnerIds(
                                     memberUserIds, Territory.TerritoryStatus.OCCUPIED))
-                    .willReturn(List.of(new Object[] {2L, 3L}, new Object[] {1L, 1L}));
+                    .willReturn(List.<Object[]>of(new Object[] {2L, 3L}, new Object[] {1L, 1L}));
 
             guildService.getGuildDetail(10L);
 
@@ -504,7 +504,7 @@ class GuildServiceTest {
                     .willReturn(List.of(application));
             // 배치 쿼리: sumScoreGroupByUserIds([1]) → [[1, 1200]]
             given(userTrophyRepository.sumScoreGroupByUserIds(List.of(1L)))
-                    .willReturn(List.of(new Object[] {1L, 1200L}));
+                    .willReturn(List.<Object[]>of(new Object[] {1L, 1200L}));
 
             GuildApplicationListResponse response = guildService.getApplications(2L, 10L);
 
@@ -542,7 +542,8 @@ class GuildServiceTest {
                     .willReturn(List.of(app1, app2));
             List<Long> applicantUserIds = List.of(1L, 2L);
             given(userTrophyRepository.sumScoreGroupByUserIds(applicantUserIds))
-                    .willReturn(List.of(new Object[] {1L, 500L}, new Object[] {2L, 800L}));
+                    .willReturn(
+                            List.<Object[]>of(new Object[] {1L, 500L}, new Object[] {2L, 800L}));
 
             guildService.getApplications(2L, 10L);
 

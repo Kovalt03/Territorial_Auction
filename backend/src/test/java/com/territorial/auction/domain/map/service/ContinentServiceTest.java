@@ -59,9 +59,9 @@ class ContinentServiceTest {
             Continent c2 = continent(2L, "얼음 벌판");
             given(continentRepository.findAll()).willReturn(List.of(c1, c2));
             given(territoryRepository.countGroupByContinent())
-                    .willReturn(List.of(row(1L, 10L), row(2L, 8L)));
+                    .willReturn(List.<Object[]>of(row(1L, 10L), row(2L, 8L)));
             given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
-                    .willReturn(List.of(row(1L, 3L), row(2L, 5L)));
+                    .willReturn(List.<Object[]>of(row(1L, 3L), row(2L, 5L)));
 
             continentService.getContinents();
 
@@ -87,9 +87,9 @@ class ContinentServiceTest {
             Continent c2 = continent(2L, "얼음 벌판");
             given(continentRepository.findAll()).willReturn(List.of(c1, c2));
             given(territoryRepository.countGroupByContinent())
-                    .willReturn(List.of(row(1L, 10L), row(2L, 8L)));
+                    .willReturn(List.<Object[]>of(row(1L, 10L), row(2L, 8L)));
             given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
-                    .willReturn(List.of(row(1L, 3L), row(2L, 5L)));
+                    .willReturn(List.<Object[]>of(row(1L, 3L), row(2L, 5L)));
 
             ContinentListResponse response = continentService.getContinents();
 
@@ -102,7 +102,8 @@ class ContinentServiceTest {
         void getContinents_mapsIdAndName() {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
-            given(territoryRepository.countGroupByContinent()).willReturn(List.of(row(1L, 0L)));
+            given(territoryRepository.countGroupByContinent())
+                    .willReturn(List.<Object[]>of(row(1L, 0L)));
             given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
                     .willReturn(List.of());
 
@@ -117,7 +118,8 @@ class ContinentServiceTest {
         void getContinents_totalTerritories() {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
-            given(territoryRepository.countGroupByContinent()).willReturn(List.of(row(1L, 15L)));
+            given(territoryRepository.countGroupByContinent())
+                    .willReturn(List.<Object[]>of(row(1L, 15L)));
             given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
                     .willReturn(List.of());
 
@@ -131,9 +133,10 @@ class ContinentServiceTest {
         void getContinents_occupiedTerritories() {
             Continent c = continent(1L, "붉은 사막");
             given(continentRepository.findAll()).willReturn(List.of(c));
-            given(territoryRepository.countGroupByContinent()).willReturn(List.of(row(1L, 10L)));
+            given(territoryRepository.countGroupByContinent())
+                    .willReturn(List.<Object[]>of(row(1L, 10L)));
             given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
-                    .willReturn(List.of(row(1L, 4L)));
+                    .willReturn(List.<Object[]>of(row(1L, 4L)));
 
             ContinentInfo info = continentService.getContinents().continent().get(0);
 
@@ -193,9 +196,9 @@ class ContinentServiceTest {
             Continent c2 = continent(2L, "얼음 벌판");
             given(continentRepository.findAll()).willReturn(List.of(c1, c2));
             given(territoryRepository.countGroupByContinent())
-                    .willReturn(List.of(row(1L, 20L), row(2L, 5L)));
+                    .willReturn(List.<Object[]>of(row(1L, 20L), row(2L, 5L)));
             given(territoryRepository.countByStatusGroupByContinent(TerritoryStatus.OCCUPIED))
-                    .willReturn(List.of(row(1L, 10L), row(2L, 2L)));
+                    .willReturn(List.<Object[]>of(row(1L, 10L), row(2L, 2L)));
 
             List<ContinentInfo> infos = continentService.getContinents().continent();
 
