@@ -4,6 +4,7 @@ public final class LandTaxPolicy {
 
     public static final int BASE_EXEMPT_COUNT = 3;
     public static final int SEASON_PASS_EXEMPT_BONUS = 2;
+    public static final int EVICTION_REAUCTION_DELAY_HOURS = 1;
 
     /**
      * taxableCount = territoryCount - effectiveExemptCount 1~3 → 50 GP, 4~7 → 150 GP, 8+ → 400 GP
