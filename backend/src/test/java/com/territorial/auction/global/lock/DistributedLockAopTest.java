@@ -43,7 +43,6 @@ class DistributedLockAopTest {
         annotation = TestTarget.class.getMethod("testMethod").getAnnotation(DistributedLock.class);
 
         given(pjp.getSignature()).willReturn(methodSignature);
-        given(methodSignature.getMethod()).willReturn(TestTarget.class.getMethod("testMethod"));
         given(methodSignature.getParameterNames()).willReturn(new String[] {});
         given(pjp.getArgs()).willReturn(new Object[] {});
         given(redissonClient.getLock(anyString())).willReturn(lock);
