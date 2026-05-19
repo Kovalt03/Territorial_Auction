@@ -30,6 +30,8 @@ public class BuildingType {
 
     private Integer zoneRestriction; // 1 = Zone1에만 배치 가능
 
+    @Column private Integer defensePower; // NULL 허용 — 방어 건물(WALL, TOWER)만 값 있음
+
     @Builder
     public BuildingType(
             String name,
@@ -37,12 +39,14 @@ public class BuildingType {
             Integer height,
             Integer maxHp,
             Integer baseCostGp,
-            Integer zoneRestriction) {
+            Integer zoneRestriction,
+            Integer defensePower) {
         this.name = name;
         this.width = width;
         this.height = height;
         this.maxHp = maxHp;
         this.baseCostGp = baseCostGp;
         this.zoneRestriction = zoneRestriction;
+        this.defensePower = defensePower;
     }
 }

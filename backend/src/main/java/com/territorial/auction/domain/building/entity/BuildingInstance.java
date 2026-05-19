@@ -51,6 +51,10 @@ public class BuildingInstance {
     @Column(nullable = false)
     private boolean isDestroyed = false;
 
+    // STORAGE 건물만 사용 — DB 스키마에 정의된 필드
+    @Column(nullable = false)
+    private Integer storedGp = 0;
+
     @Builder
     public BuildingInstance(
             Territory territory,
@@ -129,6 +133,23 @@ public class BuildingInstance {
             return owner.getId();
         }
         return null;
+    }
+
+    public void takeDamage(int damage) {
+        this.hp = Math.max(0, this.hp - damage);
+        if (this.hp == 0) {
+            this.isDestroyed = true;
+        }
+    }
+
+    public int loot(int amount) {
+        int actual = Math.min(amount, this.storedGp);
+        this.storedGp -= actual;
+        return actual;
+    }
+
+    public void addStoredGp(int amount) {
+        this.storedGp += amount;
     }
 
     public LocalDateTime storedAt() {
