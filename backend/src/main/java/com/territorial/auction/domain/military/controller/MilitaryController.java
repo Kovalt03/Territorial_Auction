@@ -1,8 +1,12 @@
 package com.territorial.auction.domain.military.controller;
 
+import com.territorial.auction.domain.military.dto.*;
+import com.territorial.auction.domain.military.service.MilitaryService;
 import com.territorial.auction.global.common.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -10,8 +14,47 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class MilitaryController {
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<Void>> getTroops() {
-        return ResponseEntity.ok(ApiResponse.ok(null));
+    private final MilitaryService militaryService;
+
+    @GetMapping("/attack-tokens")
+    public ResponseEntity<ApiResponse<AttackTokenResponse>> getAttackTokens(
+            @AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(ApiResponse.ok(militaryService.getAttackTokens(userId)));
+    }
+
+    @GetMapping("/units")
+    public ResponseEntity<ApiResponse<UnitListResponse>> getUnitList(
+            @AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(ApiResponse.ok(militaryService.getUnitList(userId)));
+    }
+
+    @PostMapping("/units")
+    public ResponseEntity<ApiResponse<ProduceUnitResponse>> produceUnit(
+            @AuthenticationPrincipal Long userId, @RequestBody @Valid ProduceUnitRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(militaryService.produceUnit(userId, request)));
+    }
+
+    @PostMapping("/units/deploy")
+    public ResponseEntity<ApiResponse<DeployUnitResponse>> deployUnit(
+            @AuthenticationPrincipal Long userId, @RequestBody @Valid DeployUnitRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(militaryService.deployUnit(userId, request)));
+    }
+
+    @PostMapping("/units/recall")
+    public ResponseEntity<ApiResponse<RecallUnitResponse>> recallUnit(
+            @AuthenticationPrincipal Long userId, @RequestBody @Valid RecallUnitRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(militaryService.recallUnit(userId, request)));
+    }
+
+    @PostMapping("/siege")
+    public ResponseEntity<ApiResponse<DeclareSiegeResponse>> declareSiege(
+            @AuthenticationPrincipal Long userId, @RequestBody @Valid DeclareSiegeRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(militaryService.declareSiege(userId, request)));
+    }
+
+    @GetMapping("/siege/{siegeId}/result")
+    public ResponseEntity<ApiResponse<SiegeResultResponse>> getSiegeResult(
+            @AuthenticationPrincipal Long userId, @PathVariable Long siegeId) {
+        return ResponseEntity.ok(ApiResponse.ok(militaryService.getSiegeResult(userId, siegeId)));
     }
 }
