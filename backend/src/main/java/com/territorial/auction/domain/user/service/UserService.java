@@ -1,9 +1,11 @@
 package com.territorial.auction.domain.user.service;
 
+import com.territorial.auction.domain.auction.AuctionPolicy;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
 import com.territorial.auction.domain.season.entity.UserSeasonPass;
 import com.territorial.auction.domain.season.entity.UserTrophy;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
@@ -18,16 +20,24 @@ import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
+import com.territorial.auction.global.security.jwt.JwtAuthenticationFilter;
+import com.territorial.auction.global.security.jwt.JwtTokenProvider;
 import com.territorial.auction.global.security.jwt.RefreshTokenService;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +54,9 @@ public class UserService {
     private final NotificationSettingRepository notificationSettingRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final UnitInstanceRepository unitInstanceRepository;
 
     public User findById(Long userId) {
         return userRepository
@@ -132,7 +145,7 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteMe(Long userId, String password) {
+    public void deleteMe(Long userId, String password, String accessToken) {
         User user =
                 userRepository
                         .findById(userId)
@@ -144,6 +157,19 @@ public class UserService {
         user.updateStatus(UserStatus.WITHDRAWN);
         userRepository.save(user);
         refreshTokenService.delete(userId);
+        blacklistAccessToken(accessToken);
+    }
+
+    private void blacklistAccessToken(String accessToken) {
+        if (!StringUtils.hasText(accessToken)) return;
+        long remainingMs = jwtTokenProvider.getRemainingMs(accessToken);
+        if (remainingMs <= 0) return;
+        stringRedisTemplate
+                .opsForValue()
+                .set(
+                        JwtAuthenticationFilter.BLACKLIST_KEY_PREFIX + accessToken,
+                        "1",
+                        Duration.ofMillis(remainingMs));
     }
 
     public NotificationSettingResponse getNotificationSetting(Long userId) {
@@ -171,8 +197,11 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public MyTerritoryResponse getMyTerritories(Long userId, Pageable pageable) {
-
         Page<Territory> territoryPage = territoryRepository.findAllByUserId(userId, pageable);
+        List<Long> ids = territoryPage.getContent().stream().map(Territory::getId).toList();
+
+        Map<Long, Long> unitCounts = buildUnitCountMap(ids);
+        Set<Long> invincibleIds = buildInvincibleSet(ids);
 
         List<MyTerritoryResponse.TerritoryInfo> territoryInfos =
                 territoryPage.getContent().stream()
@@ -183,13 +212,30 @@ public class UserService {
                                                 t.getGrade().getGrade(),
                                                 new PositionPair(t.getCoordX(), t.getCoordY()),
                                                 t.getContinent().getName(),
-                                                null, // TODO: 군사 도메인 구현 후 territories.occupied_at
-                                                // 연동
-                                                0, // TODO: 군사 도메인 구현 후 배치 유닛 수 집계 연동
-                                                false // TODO: 무적 아이템 도메인 구현 후 연동
-                                                ))
+                                                deriveOccupiedAt(t),
+                                                unitCounts.getOrDefault(t.getId(), 0L).intValue(),
+                                                invincibleIds.contains(t.getId())))
                         .toList();
         return new MyTerritoryResponse((int) territoryPage.getTotalElements(), territoryInfos);
+    }
+
+    private LocalDateTime deriveOccupiedAt(Territory t) {
+        if (t.getOccupiedUntil() == null) return null;
+        return t.getOccupiedUntil().minusDays(AuctionPolicy.OCCUPATION_DURATION_DAYS);
+    }
+
+    private Map<Long, Long> buildUnitCountMap(List<Long> territoryIds) {
+        if (territoryIds.isEmpty()) return Map.of();
+        return unitInstanceRepository.sumQuantityGroupByTerritoryIds(territoryIds).stream()
+                .collect(
+                        Collectors.toMap(
+                                row -> (Long) row[0], row -> ((Number) row[1]).longValue()));
+    }
+
+    private Set<Long> buildInvincibleSet(List<Long> territoryIds) {
+        return territoryIds.stream()
+                .filter(id -> Boolean.TRUE.equals(stringRedisTemplate.hasKey("invincible:" + id)))
+                .collect(Collectors.toSet());
     }
 
     @Transactional(readOnly = true)

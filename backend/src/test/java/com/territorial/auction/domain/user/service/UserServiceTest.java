@@ -70,6 +70,12 @@ class UserServiceTest {
     @Mock private UserTrophyRepository userTrophyRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private RefreshTokenService refreshTokenService;
+    @Mock private com.territorial.auction.global.security.jwt.JwtTokenProvider jwtTokenProvider;
+    @Mock private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+
+    @Mock
+    private com.territorial.auction.domain.military.repository.UnitInstanceRepository
+            unitInstanceRepository;
 
     // ─── 공통 픽스처 ─────────────────────────────────────────────────────────
 
@@ -432,7 +438,7 @@ class UserServiceTest {
         void deleteMe_userNotFound() {
             given(userRepository.findById(99L)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> userService.deleteMe(99L, "any"))
+            assertThatThrownBy(() -> userService.deleteMe(99L, "any", null))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.USER_NOT_FOUND);
@@ -445,7 +451,7 @@ class UserServiceTest {
             given(userRepository.findById(1L)).willReturn(Optional.of(user));
             given(passwordEncoder.matches("wrongPw", "encoded")).willReturn(false);
 
-            assertThatThrownBy(() -> userService.deleteMe(1L, "wrongPw"))
+            assertThatThrownBy(() -> userService.deleteMe(1L, "wrongPw", null))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INVALID_PASSWORD);
@@ -458,7 +464,7 @@ class UserServiceTest {
             given(userRepository.findById(1L)).willReturn(Optional.of(user));
             given(passwordEncoder.matches("rawPw", "encoded")).willReturn(true);
 
-            userService.deleteMe(1L, "rawPw");
+            userService.deleteMe(1L, "rawPw", null);
 
             // 소프트 삭제 검증: 하드 삭제 금지, status=WITHDRAWN 이어야 함
             then(userRepository).should(never()).delete(user);

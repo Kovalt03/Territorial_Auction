@@ -54,6 +54,7 @@ public class NotificationLog {
         SIEGE_ALERT,
         SIEGE_RESULT,
         TAX_CHARGED,
-        INCOME
+        INCOME,
+        SEASON_PASS_EXPIRING
     }
 }
