@@ -22,6 +22,7 @@ import com.territorial.auction.domain.building.repository.BuildingTypeRepository
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
@@ -45,6 +46,7 @@ public class BuildingService {
     private final TerritoryRepository territoryRepository;
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
+    private final UserSeasonPassRepository userSeasonPassRepository;
 
     public TerritoryBuildingResponse findTerritoryBuildings(Long territoryId) {
         territoryRepository
@@ -163,6 +165,7 @@ public class BuildingService {
 
         BuildingType buildingType = findBuildingTypeOrThrow(request.buildingTypeId());
         List<BuildingInstance> existing = buildingInstanceRepository.findByIslandId(island.getId());
+        validateBuilderSlot(userId, existing);
 
         int gridSize = island.getGridSize();
         int zone = calculateZone(request.posX(), request.posY(), gridSize);
@@ -282,6 +285,18 @@ public class BuildingService {
     }
 
     // ─── private helpers ──────────────────────────────────────────────────────
+
+    private void validateBuilderSlot(Long userId, List<BuildingInstance> existing) {
+        int extraBuilders =
+                userSeasonPassRepository
+                        .findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(userId)
+                        .map(p -> p.getSeasonPass().getExtraBuilders())
+                        .orElse(0);
+        int builderCount = 1 + extraBuilders;
+        if (existing.size() >= builderCount) {
+            throw new CustomException(ErrorCode.BUILDER_SLOT_FULL);
+        }
+    }
 
     private Territory findTerritoryOrThrow(Long territoryId) {
         return territoryRepository

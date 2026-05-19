@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
@@ -18,10 +19,13 @@ import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.entity.SeasonPass;
 import com.territorial.auction.domain.season.entity.UserSeasonPass;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
+import com.territorial.auction.domain.user.repository.UserRepository;
+import com.territorial.auction.domain.user.repository.WalletRepository;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,6 +36,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +48,17 @@ class LandTaxServiceTest {
     @Mock private TerritoryRepository territoryRepository;
     @Mock private LandTaxLogRepository landTaxLogRepository;
     @Mock private UserSeasonPassRepository userSeasonPassRepository;
+    @Mock private WalletRepository walletRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private RedisTemplate<String, Object> redisTemplate;
+    @Mock private ValueOperations<String, Object> valueOperations;
+
+    @BeforeEach
+    void setUpRedis() {
+        // getLandTaxLogs() 테스트는 Redis를 사용하지 않으므로 lenient로 선언
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(valueOperations.get(any())).thenReturn(null); // 기본 캐시 미스
+    }
 
     // ─── 공통 픽스처 ─────────────────────────────────────────────────────────
 
@@ -221,6 +238,26 @@ class LandTaxServiceTest {
             TaxStatusResponse response = landTaxService.getLandTaxStatus(1L);
 
             assertThat(response.nextChargeAt()).isAfter(LocalDateTime.now());
+        }
+
+        @Test
+        @DisplayName("Redis 캐시 히트 시 DB 조회 없이 캐시 값 반환")
+        void cacheHit_returnsWithoutDbQuery() {
+            TaxStatusResponse cached =
+                    new TaxStatusResponse(
+                            2,
+                            new TaxStatusResponse.TaxBreakdown(2, 0, 0),
+                            0,
+                            3,
+                            0,
+                            LocalDateTime.now().plusHours(3));
+
+            given(valueOperations.get("land_tax:expected:1")).willReturn(cached);
+
+            TaxStatusResponse response = landTaxService.getLandTaxStatus(1L);
+
+            assertThat(response).isEqualTo(cached);
+            then(territoryRepository).should(never()).countByOwnerId(any());
         }
     }
 
