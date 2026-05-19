@@ -19,7 +19,7 @@
 | ✅ | 사용자명 중복 확인 | `GET /api/v1/auth/check/username` | |
 | ✅ | 이메일 중복 확인 | `GET /api/v1/auth/check/email` | |
 | ✅ | 닉네임 중복 확인 | `GET /api/v1/auth/check/nickname` | |
-| ⬜ | 탈퇴 시 JWT 무효화 | — | Redis 블랙리스트 등록 필요 (be-21 OAuth2 보안 수정 완료, 탈퇴 시 무효화만 미구현) |
+| ✅ | 탈퇴 시 JWT 무효화 | — | Redis 블랙리스트 등록 (be-25) |
 
 ---
 
@@ -27,13 +27,13 @@
 | 상태 | 기능 | 엔드포인트 | 비고 |
 |---|---|---|---|
 | ✅ | 유저 프로필 조회 | `GET /api/v1/users/{userId}` | |
-| 🔄 | 내 프로필 조회 | `GET /api/v1/users/me` | 군사 카운트·무적 상태 등 미구현 |
-| 🔄 | 회원 탈퇴 | `DELETE /api/v1/users/me` | JWT 무효화 미구현 |
+| ✅ | 내 프로필 조회 | `GET /api/v1/users/me` | |
+| ✅ | 회원 탈퇴 | `DELETE /api/v1/users/me` | JWT 블랙리스트 무효화 완료 (be-25) |
 | ✅ | 알림 설정 조회 | `GET /api/v1/users/me/settings` | |
 | ✅ | 알림 수신 설정 변경 | `PATCH /api/v1/users/me/settings` | |
-| 🔄 | GP/AP 잔액 조회 | `GET /api/v1/users/me/wallet` | `lockedAP` 미완성 |
-| 🔄 | 나의 영토 목록 조회 | `GET /api/v1/users/me/territories` | 점유 시각·무적 상태 미구현 |
-| 🔄 | 닉네임 변경 | `PATCH /api/v1/users/me/nickname` | |
+| 🔄 | GP/AP 잔액 조회 | `GET /api/v1/users/me/wallet` | `lockedAP` 미완성 (식량 생산 보류와 동일) |
+| ✅ | 나의 영토 목록 조회 | `GET /api/v1/users/me/territories` | occupiedAt·militaryCount·isInvincible 완료 (be-25) |
+| ✅ | 닉네임 변경 | `PATCH /api/v1/users/me/nickname` | |
 | ✅ | 비밀번호 변경 | `PATCH /api/v1/users/me/password` | |
 | 🔄 | AP 충전 | `POST /api/v1/users/me/ap/charge` | PG 연동 미구현 (더미 처리 중) |
 
@@ -103,8 +103,8 @@
 |---|---|---|---|
 | ✅ | 토지세 현황 조회 | `GET /api/v1/land-tax/status` | |
 | ✅ | 납세 내역 조회 | `GET /api/v1/land-tax/logs` | |
-| ⬜ | 세금 배치 스케줄러 | — | 매일 자정 차감, GP 부족 시 경고 → 유예기간 → 최저 등급 영토 순차 강제 경매 전환 (무적/보호 무시), 세금 충족 시 처분 중단 |
-| ⬜ | Redis 캐시 연동 | — | `land_tax:expected:{userId}` (TTL: 자정까지) |
+| ✅ | 세금 배치 스케줄러 | — | 유예기간(24h) + D→S 순차 강제 경매 전환 구현 (be-27) |
+| ✅ | Redis 캐시 연동 | — | `land_tax:expected:{userId}` TTL 자정까지 (be-26) |
 
 ---
 
@@ -114,7 +114,7 @@
 | ✅ | 내 시즌 패스 상태 조회 | `GET /api/v1/season-pass/me` | Redis 캐시 완료 |
 | 🔄 | 시즌 패스 현황 조회 | `GET /api/v1/season-pass` | ⬜ XP 적립 로직 미연동 |
 | ✅ | 시즌 패스 구매 | `POST /api/v1/season-pass/purchase` | Redis 캐시 완료 |
-| ⬜ | 만료 알림 스케줄러 | — | 만료 3일 전·당일 알림 발송 |
+| ✅ | 만료 알림 스케줄러 | — | 만료 3일 전·당일 알림 발송 (SeasonPassScheduler, be-25) |
 | ⬜ | DB 시드 데이터 | — | `season_pass_level_rewards` 삽입 |
 
 ---
@@ -215,7 +215,7 @@
 | ✅ | 시즌 영토 등급 보유 집계 배치 | `season_territory_holds` → Redis Sorted Set 갱신 (1시간 주기) |
 | ✅ | 토지세 배치 스케줄러 | 매일 자정 차감 + GP 부족 처리 (be-20) |
 | ✅ | 전투 결과 처리 스케줄러 | 1분 주기, `SiegeScheduler` |
-| ⬜ | 시즌 패스 만료 알림 스케줄러 | 만료 3일 전·당일 |
+| ✅ | 시즌 패스 만료 알림 스케줄러 | 만료 3일 전·당일 (SeasonPassScheduler, be-25) |
 | ⬜ | 영토 소득 정산 스케줄러 | 주기적 GP 생산량 적립 (주기 미결정) |
 | ⬜ | 시즌 종료 배치 | 리그별 보상 지급 + 트로피 50% 리셋. 관리자가 `seasons.ended_at` 설정 시 자동 트리거 |
 
@@ -233,6 +233,7 @@
 | ✅ | `auction:lock:{auctionId}` | 입찰 분산락 (Redisson, be-18) |
 | ⬜ | `auction:bid:{auctionId}` | 경매 상세 캐시 |
 | ✅ | `land_tax:expected:{userId}` | 예상 세금 캐시 (TTL: 자정까지) |
+| ✅ | `land_tax:grace:{userId}` | 토지세 유예기간 키 (TTL: 24h, be-27) |
 | ⬜ | `ws:chat:{roomId}` | 채팅 Pub-Sub 채널 (스케일아웃 시) |
 | ⬜ | `ws:user:{userId}` | 개인 알림 Pub-Sub 채널 (스케일아웃 시) |
 
