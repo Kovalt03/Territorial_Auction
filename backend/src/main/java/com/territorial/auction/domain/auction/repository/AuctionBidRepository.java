@@ -28,4 +28,12 @@ public interface AuctionBidRepository extends JpaRepository<AuctionBid, Long> {
                             + " WHERE ab.bidder.id = :userId",
             countQuery = "SELECT COUNT(ab) FROM AuctionBid ab WHERE ab.bidder.id = :userId")
     Page<AuctionBid> findAllByBidderIdWithAuction(@Param("userId") Long userId, Pageable pageable);
+
+    @Query(
+            "SELECT DISTINCT ab.bidder.id FROM AuctionBid ab"
+                    + " WHERE ab.auction.id = :auctionId"
+                    + " AND ab.bidder IS NOT NULL"
+                    + " AND ab.bidder.id != :winnerId")
+    List<Long> findDistinctBidderIdsExcluding(
+            @Param("auctionId") Long auctionId, @Param("winnerId") Long winnerId);
 }
