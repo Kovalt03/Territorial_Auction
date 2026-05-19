@@ -28,6 +28,14 @@ public class AttackToken {
         this.user = user;
     }
 
+    public void addNormal() {
+        this.normalCount++;
+    }
+
+    public void addPrecision() {
+        this.precisionCount++;
+    }
+
     public void consumeNormal() {
         this.normalCount--;
     }
