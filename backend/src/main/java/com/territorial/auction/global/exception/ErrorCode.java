@@ -97,6 +97,7 @@ public enum ErrorCode {
 
     // Island
     ISLAND_NOT_FOUND(HttpStatus.NOT_FOUND, "섬을 찾을 수 없습니다."),
+    BUILDER_SLOT_FULL(HttpStatus.CONFLICT, "건설 슬롯이 가득 찼습니다. 시즌 패스로 슬롯을 추가할 수 있습니다."),
 
     // Season
     SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "진행 중인 시즌이 없습니다."),
