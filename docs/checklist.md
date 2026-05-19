@@ -1,6 +1,6 @@
 # 구현 체크리스트
 
-> 마지막 갱신: 2026-05-19 (2차)  
+> 마지막 갱신: 2026-05-20  
 > 기준 브랜치: `dev`
 
 범례: ✅ 완료 · 🔄 일부 완료 · ⬜ 미구현
@@ -74,7 +74,7 @@
 | ✅ | 건물 보관 | `POST /api/v1/buildings/{buildingId}/store` | |
 | ✅ | 섬 정보 조회 | `GET /api/v1/island` | |
 | ✅ | 섬 건물 목록 조회 | `GET /api/v1/island/buildings` | |
-| 🔄 | 섬 건물 배치 | `POST /api/v1/island/buildings` | ⬜ 일꾼 슬롯 소모 미구현 (시즌 패스 연동) |
+| ✅ | 섬 건물 배치 | `POST /api/v1/island/buildings` | 일꾼 슬롯 검증 완료 (기본 1, 시즌 패스 +extraBuilders) |
 | ✅ | 보관함 목록 조회 | `GET /api/v1/inventory` | |
 | ✅ | 보관함 건물 배치 | `POST /api/v1/inventory/{inventoryId}/place` | |
 
@@ -232,7 +232,7 @@
 | ✅ | `ranking:season:{seasonId}:auction_spend` | 시즌 경매 AP 소비 Sorted Set |
 | ✅ | `auction:lock:{auctionId}` | 입찰 분산락 (Redisson, be-18) |
 | ⬜ | `auction:bid:{auctionId}` | 경매 상세 캐시 |
-| ⬜ | `land_tax:expected:{userId}` | 예상 세금 캐시 (TTL: 자정까지) |
+| ✅ | `land_tax:expected:{userId}` | 예상 세금 캐시 (TTL: 자정까지) |
 | ⬜ | `ws:chat:{roomId}` | 채팅 Pub-Sub 채널 (스케일아웃 시) |
 | ⬜ | `ws:user:{userId}` | 개인 알림 Pub-Sub 채널 (스케일아웃 시) |
 
