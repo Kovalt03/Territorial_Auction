@@ -15,6 +15,8 @@ import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -22,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,13 +35,40 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class LandTaxService {
 
+    private static final String CACHE_KEY_PREFIX = "land_tax:expected:";
+
     private final TerritoryRepository territoryRepository;
     private final LandTaxLogRepository landTaxLogRepository;
     private final UserSeasonPassRepository userSeasonPassRepository;
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     public TaxStatusResponse getLandTaxStatus(Long userId) {
+        String cacheKey = CACHE_KEY_PREFIX + userId;
+        try {
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached instanceof TaxStatusResponse response) {
+                return response;
+            }
+        } catch (Exception e) {
+            log.warn("토지세 현황 Redis 캐시 조회 실패. userId={}", userId, e);
+        }
+
+        TaxStatusResponse response = computeTaxStatus(userId);
+
+        try {
+            LocalDateTime midnight = LocalDate.now().plusDays(1).atStartOfDay();
+            Duration ttl = Duration.between(LocalDateTime.now(), midnight);
+            redisTemplate.opsForValue().set(cacheKey, response, ttl);
+        } catch (Exception e) {
+            log.warn("토지세 현황 Redis 캐시 저장 실패. userId={}", userId, e);
+        }
+
+        return response;
+    }
+
+    private TaxStatusResponse computeTaxStatus(Long userId) {
         int territoryCount = (int) territoryRepository.countByOwnerId(userId);
 
         int seasonPassExemptBonus =
