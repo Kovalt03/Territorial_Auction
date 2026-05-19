@@ -28,6 +28,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,7 +40,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionLifecycleServiceTest {
@@ -52,9 +56,20 @@ class AuctionLifecycleServiceTest {
     @Mock private WalletRepository walletRepository;
     @Mock private SeasonRepository seasonRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private SimpMessagingTemplate messagingTemplate;
 
     @Captor private ArgumentCaptor<Auction> auctionCaptor;
     @Captor private ArgumentCaptor<AuctionBid> auctionBidCaptor;
+
+    @BeforeEach
+    void setUp() {
+        TransactionSynchronizationManager.initSynchronization();
+    }
+
+    @AfterEach
+    void tearDown() {
+        TransactionSynchronizationManager.clearSynchronization();
+    }
 
     // ─── 공통 픽스처 ─────────────────────────────────────────────────────────
 

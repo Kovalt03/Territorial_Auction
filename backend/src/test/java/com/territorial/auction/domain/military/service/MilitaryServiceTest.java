@@ -44,6 +44,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -55,7 +56,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class MilitaryServiceTest {
@@ -71,6 +74,7 @@ class MilitaryServiceTest {
     @Mock private WalletRepository walletRepository;
     @Mock private TerritoryRepository territoryRepository;
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
+    @Mock private SimpMessagingTemplate messagingTemplate;
 
     // --- fixtures ---
 
@@ -83,6 +87,7 @@ class MilitaryServiceTest {
 
     @BeforeEach
     void setUp() {
+        TransactionSynchronizationManager.initSynchronization();
         attacker =
                 User.builder()
                         .username("attacker1")
@@ -120,6 +125,11 @@ class MilitaryServiceTest {
         attackToken = AttackToken.builder().user(attacker).build();
         ReflectionTestUtils.setField(attackToken, "normalCount", 3);
         ReflectionTestUtils.setField(attackToken, "precisionCount", 1);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TransactionSynchronizationManager.clearSynchronization();
     }
 
     // --- helper factories ---

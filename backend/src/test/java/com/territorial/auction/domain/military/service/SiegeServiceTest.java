@@ -23,6 +23,7 @@ import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -33,7 +34,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class SiegeServiceTest {
@@ -45,6 +48,7 @@ class SiegeServiceTest {
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private WalletRepository walletRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private SimpMessagingTemplate messagingTemplate;
 
     private SiegeEvent event;
     private User attacker;
@@ -53,6 +57,7 @@ class SiegeServiceTest {
 
     @BeforeEach
     void setUp() {
+        TransactionSynchronizationManager.initSynchronization();
         attacker = mock(User.class);
         given(attacker.getId()).willReturn(1L);
 
@@ -67,6 +72,11 @@ class SiegeServiceTest {
         given(event.getAttacker()).willReturn(attacker);
         given(event.getDefender()).willReturn(defender);
         given(event.getTargetTerritory()).willReturn(territory);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TransactionSynchronizationManager.clearSynchronization();
     }
 
     private UnitInstance makeUnit(int attackPower, int defensePower, int quantity) {
