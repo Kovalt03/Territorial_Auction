@@ -2,6 +2,7 @@ package com.territorial.auction.domain.map.repository;
 
 import com.territorial.auction.domain.map.entity.LandTaxLog;
 import com.territorial.auction.domain.map.entity.LandTaxLog.TaxStatus;
+import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,4 +13,7 @@ public interface LandTaxLogRepository extends JpaRepository<LandTaxLog, Long> {
 
     Page<LandTaxLog> findByUserIdAndStatusOrderByChargedAtDesc(
             Long userId, TaxStatus status, Pageable pageable);
+
+    boolean existsByUserIdAndStatusAndChargedAtAfter(
+            Long userId, TaxStatus status, LocalDateTime after);
 }
