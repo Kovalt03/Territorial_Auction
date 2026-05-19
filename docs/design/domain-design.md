@@ -153,6 +153,9 @@
 1. **Auction Domain**: 입찰 성공 → `OUTBID` 이벤트 발행
 2. **User Domain**: 해당 유저의 `NotificationSetting` 확인
 3. **Notification Domain**: 설정이 `true`라면 알림 생성 후 발송
+4. **Military Domain**: Castle HP 0 도달 → `CastleDestroyedEvent` 발행 → **Auction Domain**: `Territory.release()` 후 `Auction` 즉시 생성
+
+> 도메인 간 Service 직접 주입 금지 규칙에 따라, Military → Auction 협력은 `ApplicationEventPublisher`를 통해 이벤트로 처리한다.
 
 ### 3.4 포인트 생산 규칙 (Passive Income)
 
@@ -173,6 +176,20 @@
 - DEF = Σ(방어 유닛 `defense_power` × 수량) + Σ(해당 Zone 방어 건물 `defense_power`)
 - 성공 판정: ATK > DEF
 - Zone 클리어: `Σ(Zone 방어 건물 hp) / Σ(Zone 방어 건물 max_hp) < (1 − ZONE_CLEAR_THRESHOLD)`
+
+**Zone별 전투 결과 (공격 성공 시)**:
+
+| Zone | 주요 건물 | 결과 유형 | 효과 |
+|---|---|---|---|
+| Zone 3 | Storage | `LOOT` | 공격자: `Wallet.availableGp += lootedGp`, Storage: `storedGp -= lootedGp` |
+| Zone 2 | Workshop / Tower | `DEBUFF` | 건물 HP 감소 → 0이면 `isDestroyed=true` |
+| Zone 1 | Castle | `AUCTION` | Castle HP 감소 → 0이면 `CastleDestroyedEvent` 발행 → 영토 강제 경매 전환 |
+
+**유닛 손실** (`MilitaryPolicy` 상수 기준):
+- 공격 성공: 공격자 `ATTACKER_LOSS_RATE(30%)`, 방어자 `DEFENDER_LOSS_RATE(30%)`
+- 공격 실패: 공격자 `ATTACKER_FAIL_LOSS_RATE(50%)`
+
+**스케줄러**: `SiegeScheduler` 1분 주기 polling. `resolveAt <= now`인 PENDING 이벤트를 일괄 처리한다.
 
 ### 3.5 토지세 미납 처리
 
