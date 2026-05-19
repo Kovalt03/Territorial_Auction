@@ -26,6 +26,9 @@ import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.entity.TerritoryGrade;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.season.entity.SeasonPass;
+import com.territorial.auction.domain.season.entity.UserSeasonPass;
+import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
@@ -33,6 +36,7 @@ import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +60,7 @@ class BuildingServiceTest {
     @Mock private TerritoryRepository territoryRepository;
     @Mock private WalletRepository walletRepository;
     @Mock private UserRepository userRepository;
+    @Mock private UserSeasonPassRepository userSeasonPassRepository;
 
     // ─── 공통 픽스처 ───────────────────────────────────────────────────────────
 
@@ -444,7 +449,7 @@ class BuildingServiceTest {
     class PlaceOnIsland {
 
         @Test
-        @DisplayName("섬 건물 배치 성공")
+        @DisplayName("섬 건물 배치 성공 — 패스 없음, 슬롯 1개, 기존 건물 없음")
         void success() {
             User user = sampleUser(1L);
             HomeIsland island = sampleIsland(user);
@@ -454,6 +459,8 @@ class BuildingServiceTest {
             given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
             given(buildingInstanceRepository.findByIslandId(1L))
                     .willReturn(Collections.emptyList());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
             given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
             given(buildingInstanceRepository.save(any()))
                     .willAnswer(
@@ -480,6 +487,8 @@ class BuildingServiceTest {
             given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
             given(buildingInstanceRepository.findByIslandId(1L))
                     .willReturn(Collections.emptyList());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
             given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 10)));
 
             PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
@@ -487,6 +496,83 @@ class BuildingServiceTest {
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INSUFFICIENT_GP);
+        }
+
+        @Test
+        @DisplayName("건설 슬롯 초과 (패스 없음, 기존 건물 1개) → BUILDER_SLOT_FULL")
+        void builder_slot_full_no_pass() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            BuildingType bt = storage();
+            BuildingInstance existingBuilding =
+                    BuildingInstance.builder()
+                            .buildingType(bt)
+                            .island(island)
+                            .posX(5)
+                            .posY(5)
+                            .hp(bt.getMaxHp())
+                            .zone(2)
+                            .build();
+            ReflectionTestUtils.setField(existingBuilding, "id", 99L);
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(List.of(existingBuilding));
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty()); // builderCount = 1, existing = 1 → full
+
+            PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
+            assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BUILDER_SLOT_FULL);
+        }
+
+        @Test
+        @DisplayName("시즌 패스 보유 시 슬롯 2개 → 기존 건물 1개면 배치 성공")
+        void season_pass_extra_slot_allows_second_building() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            BuildingType bt = storage();
+            BuildingInstance existingBuilding =
+                    BuildingInstance.builder()
+                            .buildingType(bt)
+                            .island(island)
+                            .posX(5)
+                            .posY(5)
+                            .hp(bt.getMaxHp())
+                            .zone(2)
+                            .build();
+            ReflectionTestUtils.setField(existingBuilding, "id", 99L);
+
+            SeasonPass seasonPass = SeasonPass.builder().extraBuilders(1).build();
+            UserSeasonPass userSeasonPass =
+                    UserSeasonPass.builder()
+                            .seasonPass(seasonPass)
+                            .startedAt(LocalDateTime.now().minusDays(1))
+                            .expiresAt(LocalDateTime.now().plusDays(30))
+                            .build();
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(List.of(existingBuilding));
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.of(userSeasonPass)); // builderCount = 2, existing = 1 → OK
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.save(any()))
+                    .willAnswer(
+                            inv -> {
+                                BuildingInstance saved = inv.getArgument(0);
+                                ReflectionTestUtils.setField(saved, "id", 202L);
+                                return saved;
+                            });
+
+            PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
+            PlaceBuildingResponse response = buildingService.placeOnIsland(1L, req);
+
+            assertThat(response.buildingId()).isEqualTo(202L);
         }
     }
 
