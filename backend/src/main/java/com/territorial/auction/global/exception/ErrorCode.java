@@ -83,6 +83,17 @@ public enum ErrorCode {
 
     // Military
     INSUFFICIENT_TROOPS(HttpStatus.BAD_REQUEST, "병력이 부족합니다."),
+    NO_BARRACKS(HttpStatus.BAD_REQUEST, "병영이 없습니다."),
+    INSUFFICIENT_UNITS(HttpStatus.BAD_REQUEST, "보유 유닛이 부족합니다."),
+    NO_ATTACK_TOKEN(HttpStatus.BAD_REQUEST, "공격권이 없습니다."),
+    ZONE_NOT_CLEARED(HttpStatus.BAD_REQUEST, "이전 Zone을 클리어해야 합니다."),
+    TERRITORY_PROTECTED(HttpStatus.BAD_REQUEST, "보호 기간 중인 영토입니다."),
+    ATTACK_COOLDOWN(HttpStatus.BAD_REQUEST, "공격 쿨다운 중입니다."),
+    SIEGE_NOT_FOUND(HttpStatus.NOT_FOUND, "공성전을 찾을 수 없습니다."),
+    SIEGE_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 공성전의 관계자가 아닙니다."),
+    UNIT_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "유닛 타입을 찾을 수 없습니다."),
+    SIEGE_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "공성전 결과가 아직 처리되지 않았습니다."),
+    CANNOT_ATTACK_OWN_TERRITORY(HttpStatus.FORBIDDEN, "자신의 영토는 공격할 수 없습니다."),
 
     // Island
     ISLAND_NOT_FOUND(HttpStatus.NOT_FOUND, "섬을 찾을 수 없습니다."),

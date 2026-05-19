@@ -27,4 +27,12 @@ public class AttackToken {
     public AttackToken(User user) {
         this.user = user;
     }
+
+    public void consumeNormal() {
+        this.normalCount--;
+    }
+
+    public void consumePrecision() {
+        this.precisionCount--;
+    }
 }

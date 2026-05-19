@@ -36,4 +36,20 @@ public class UnitInstance {
         this.unitType = unitType;
         this.quantity = quantity;
     }
+
+    public void addQuantity(int amount) {
+        this.quantity += amount;
+    }
+
+    public void subtractQuantity(int amount) {
+        this.quantity -= amount;
+    }
+
+    public void deployTo(Territory territory) {
+        this.deployedTerritory = territory;
+    }
+
+    public void recall() {
+        this.deployedTerritory = null;
+    }
 }
