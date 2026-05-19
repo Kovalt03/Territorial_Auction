@@ -14,7 +14,8 @@ public class LandTaxLog {
     public enum TaxStatus {
         PAID,
         FAILED,
-        EXEMPT
+        EXEMPT,
+        EVICTED
     }
 
     @Id
