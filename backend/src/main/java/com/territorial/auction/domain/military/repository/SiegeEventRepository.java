@@ -22,8 +22,9 @@ public interface SiegeEventRepository extends JpaRepository<SiegeEvent, Long> {
             @Param("status") SiegeEvent.SiegeStatus status,
             Pageable pageable);
 
-    @Query("SELECT s FROM SiegeEvent s WHERE s.status = 'PENDING' AND s.resolveAt <= :now")
-    List<SiegeEvent> findPendingToResolve(@Param("now") LocalDateTime now);
+    @Query("SELECT s FROM SiegeEvent s WHERE s.status = :status AND s.resolveAt <= :now")
+    List<SiegeEvent> findPendingToResolve(
+            @Param("status") SiegeEvent.SiegeStatus status, @Param("now") LocalDateTime now);
 
     @Query(
             "SELECT s FROM SiegeEvent s"

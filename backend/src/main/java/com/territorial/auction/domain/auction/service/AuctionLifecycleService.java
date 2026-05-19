@@ -33,7 +33,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class AuctionLifecycleService {
 
     private final AuctionRepository auctionRepository;
@@ -46,6 +46,7 @@ public class AuctionLifecycleService {
     private final SimpMessagingTemplate messagingTemplate;
 
     /** 종료된 미정산 경매를 일괄 정산 */
+    @Transactional
     public void settlePendingAuctions() {
         LocalDateTime now = LocalDateTime.now();
         List<Auction> expired = auctionRepository.findAllExpiredUnsettled(now);
@@ -59,6 +60,7 @@ public class AuctionLifecycleService {
     }
 
     /** 점유 기간이 만료된 영토를 IDLE로 전환 */
+    @Transactional
     public void releaseExpiredTerritories() {
         LocalDateTime now = LocalDateTime.now();
         List<Territory> expired =
@@ -102,6 +104,7 @@ public class AuctionLifecycleService {
     }
 
     /** nextAuctionAt이 도달한 IDLE 영토에 신규 경매 생성 */
+    @Transactional
     public void createPendingAuctions() {
         LocalDateTime now = LocalDateTime.now();
         List<Territory> ready =

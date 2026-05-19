@@ -20,7 +20,9 @@ public class SiegeScheduler {
 
     @Scheduled(fixedDelay = 60_000)
     public void resolveExpiredSieges() {
-        List<SiegeEvent> pending = siegeEventRepository.findPendingToResolve(LocalDateTime.now());
+        List<SiegeEvent> pending =
+                siegeEventRepository.findPendingToResolve(
+                        SiegeEvent.SiegeStatus.PENDING, LocalDateTime.now());
         if (pending.isEmpty()) return;
         log.info("공성전 처리 시작. count={}", pending.size());
         for (SiegeEvent event : pending) {

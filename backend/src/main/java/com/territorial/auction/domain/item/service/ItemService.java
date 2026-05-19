@@ -164,26 +164,32 @@ public class ItemService {
     }
 
     private int upsertUserItem(Long userId, Item item, int quantity) {
-        UserItem userItem =
-                userItemRepository.findByUser_IdAndItem_Id(userId, item.getId()).orElse(null);
-
-        if (userItem == null) {
-            User user =
-                    userRepository
-                            .findById(userId)
-                            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-            userItem =
-                    userItemRepository.save(
-                            UserItem.builder()
-                                    .user(user)
-                                    .item(item)
-                                    .quantity(quantity)
-                                    .createdAt(LocalDateTime.now())
-                                    .build());
-        } else {
-            userItem.add(quantity);
-        }
-        return userItem.getQuantity();
+        return userItemRepository
+                .findByUser_IdAndItem_Id(userId, item.getId())
+                .map(
+                        existing -> {
+                            existing.add(quantity);
+                            return existing.getQuantity();
+                        })
+                .orElseGet(
+                        () -> {
+                            User user =
+                                    userRepository
+                                            .findById(userId)
+                                            .orElseThrow(
+                                                    () ->
+                                                            new CustomException(
+                                                                    ErrorCode.USER_NOT_FOUND));
+                            return userItemRepository
+                                    .save(
+                                            UserItem.builder()
+                                                    .user(user)
+                                                    .item(item)
+                                                    .quantity(quantity)
+                                                    .createdAt(LocalDateTime.now())
+                                                    .build())
+                                    .getQuantity();
+                        });
     }
 
     private void saveItemPurchaseLog(Long userId, Item item, int quantity) {
@@ -265,7 +271,7 @@ public class ItemService {
         try {
             redisTemplate.delete(CACHE_USER_ITEMS + userId);
         } catch (Exception e) {
-            log.warn("아이템 Redis 캐시 무효화 실패 - userId: {}", userId, e);
+            log.warn("아이템 Redis 캐시 무효화 실패. userId={}", userId);
         }
     }
 }
