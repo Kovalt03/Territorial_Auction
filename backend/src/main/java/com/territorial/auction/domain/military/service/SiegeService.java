@@ -171,9 +171,10 @@ public class SiegeService {
         }
 
         if (totalLooted > 0) {
+            final int lootedGp = totalLooted;
             walletRepository
                     .findById(event.getAttacker().getId())
-                    .ifPresent(w -> w.addGp(totalLooted));
+                    .ifPresent(w -> w.addGp(lootedGp));
         }
         return totalLooted;
     }

@@ -462,7 +462,8 @@ class MilitaryServiceTest {
                             siegeEventRepository.findRecentByTerritoryAndAttacker(
                                     10L, 1L, SiegeEvent.SiegeStatus.RESOLVED))
                     .willReturn(Collections.emptyList());
-            given(attackTokenRepository.findByUserId(1L)).willReturn(Optional.of(attackToken));
+            given(attackTokenRepository.findByUserIdWithLock(1L))
+                    .willReturn(Optional.of(attackToken));
             given(
                             unitInstanceRepository
                                     .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
@@ -590,7 +591,7 @@ class MilitaryServiceTest {
                             siegeEventRepository.findRecentByTerritoryAndAttacker(
                                     10L, 1L, SiegeEvent.SiegeStatus.RESOLVED))
                     .willReturn(Collections.emptyList());
-            given(attackTokenRepository.findByUserId(1L)).willReturn(Optional.empty());
+            given(attackTokenRepository.findByUserIdWithLock(1L)).willReturn(Optional.empty());
 
             // when / then
             assertThatThrownBy(() -> militaryService.declareSiege(1L, validRequest))
@@ -609,7 +610,8 @@ class MilitaryServiceTest {
                             siegeEventRepository.findRecentByTerritoryAndAttacker(
                                     10L, 1L, SiegeEvent.SiegeStatus.RESOLVED))
                     .willReturn(Collections.emptyList());
-            given(attackTokenRepository.findByUserId(1L)).willReturn(Optional.of(attackToken));
+            given(attackTokenRepository.findByUserIdWithLock(1L))
+                    .willReturn(Optional.of(attackToken));
 
             // when / then
             assertThatThrownBy(() -> militaryService.declareSiege(1L, validRequest))
