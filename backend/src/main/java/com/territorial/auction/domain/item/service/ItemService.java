@@ -18,6 +18,8 @@ import com.territorial.auction.domain.item.repository.ItemRepository;
 import com.territorial.auction.domain.item.repository.UserItemRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.military.entity.AttackToken;
+import com.territorial.auction.domain.military.repository.AttackTokenRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
@@ -54,6 +56,7 @@ public class ItemService {
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
     private final TerritoryRepository territoryRepository;
+    private final AttackTokenRepository attackTokenRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
     public ItemListResponse getItems(Long userId) {
@@ -119,10 +122,6 @@ public class ItemService {
         if (item.getItemType() == ItemType.GP_PURCHASE) {
             throw new CustomException(ErrorCode.ITEM_NOT_USABLE);
         }
-        if (item.getItemType() == ItemType.ATTACK_NORMAL
-                || item.getItemType() == ItemType.ATTACK_PRECISION) {
-            throw new CustomException(ErrorCode.SIEGE_NOT_SUPPORTED);
-        }
 
         UserItem userItem =
                 userItemRepository
@@ -133,7 +132,13 @@ public class ItemService {
             throw new CustomException(ErrorCode.ITEM_OUT_OF_STOCK);
         }
 
-        UseResult result = applyInvincibility(userId, request.targetTerritoryId());
+        UseResult result =
+                switch (item.getItemType()) {
+                    case INVINCIBILITY -> applyInvincibility(userId, request.targetTerritoryId());
+                    case ATTACK_NORMAL -> applyAttackToken(userId, false);
+                    case ATTACK_PRECISION -> applyAttackToken(userId, true);
+                    default -> throw new CustomException(ErrorCode.ITEM_NOT_USABLE);
+                };
         userItem.use();
         invalidateItemCache(userId);
 
@@ -159,26 +164,32 @@ public class ItemService {
     }
 
     private int upsertUserItem(Long userId, Item item, int quantity) {
-        UserItem userItem =
-                userItemRepository.findByUser_IdAndItem_Id(userId, item.getId()).orElse(null);
-
-        if (userItem == null) {
-            User user =
-                    userRepository
-                            .findById(userId)
-                            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-            userItem =
-                    userItemRepository.save(
-                            UserItem.builder()
-                                    .user(user)
-                                    .item(item)
-                                    .quantity(quantity)
-                                    .createdAt(LocalDateTime.now())
-                                    .build());
-        } else {
-            userItem.add(quantity);
-        }
-        return userItem.getQuantity();
+        return userItemRepository
+                .findByUser_IdAndItem_Id(userId, item.getId())
+                .map(
+                        existing -> {
+                            existing.add(quantity);
+                            return existing.getQuantity();
+                        })
+                .orElseGet(
+                        () -> {
+                            User user =
+                                    userRepository
+                                            .findById(userId)
+                                            .orElseThrow(
+                                                    () ->
+                                                            new CustomException(
+                                                                    ErrorCode.USER_NOT_FOUND));
+                            return userItemRepository
+                                    .save(
+                                            UserItem.builder()
+                                                    .user(user)
+                                                    .item(item)
+                                                    .quantity(quantity)
+                                                    .createdAt(LocalDateTime.now())
+                                                    .build())
+                                    .getQuantity();
+                        });
     }
 
     private void saveItemPurchaseLog(Long userId, Item item, int quantity) {
@@ -217,7 +228,38 @@ public class ItemService {
         redisTemplate.opsForValue().set(redisKey, true, INVINCIBLE_TTL);
         LocalDateTime invincibleUntil = LocalDateTime.now().plus(INVINCIBLE_TTL);
 
-        return new UseResult(targetTerritoryId, invincibleUntil);
+        return UseResult.ofInvincibility(targetTerritoryId, invincibleUntil);
+    }
+
+    private UseResult applyAttackToken(Long userId, boolean isPrecision) {
+        AttackToken token =
+                attackTokenRepository
+                        .findByUserIdWithLock(userId)
+                        .orElseGet(
+                                () -> {
+                                    User user =
+                                            userRepository
+                                                    .findById(userId)
+                                                    .orElseThrow(
+                                                            () ->
+                                                                    new CustomException(
+                                                                            ErrorCode
+                                                                                    .USER_NOT_FOUND));
+                                    return attackTokenRepository.save(
+                                            AttackToken.builder().user(user).build());
+                                });
+        if (isPrecision) {
+            token.addPrecision();
+        } else {
+            token.addNormal();
+        }
+        log.info(
+                "공격권 지급. userId={}, type={}, normalCount={}, precisionCount={}",
+                userId,
+                isPrecision ? "PRECISION" : "NORMAL",
+                token.getNormalCount(),
+                token.getPrecisionCount());
+        return UseResult.ofAttackToken(token.getNormalCount(), token.getPrecisionCount());
     }
 
     private Map<Long, Integer> buildInventoryMap(Long userId) {
@@ -229,7 +271,7 @@ public class ItemService {
         try {
             redisTemplate.delete(CACHE_USER_ITEMS + userId);
         } catch (Exception e) {
-            log.warn("아이템 Redis 캐시 무효화 실패 - userId: {}", userId, e);
+            log.warn("아이템 Redis 캐시 무효화 실패. userId={}", userId);
         }
     }
 }

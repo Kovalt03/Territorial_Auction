@@ -35,7 +35,7 @@ public class SiegeEvent {
     private Territory targetTerritory;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "target_building_id", nullable = false)
+    @JoinColumn(name = "target_building_id")
     private BuildingInstance targetBuilding;
 
     @Column(nullable = false)
@@ -68,5 +68,9 @@ public class SiegeEvent {
         this.status = SiegeStatus.PENDING;
         this.siegeStartAt = siegeStartAt;
         this.resolveAt = resolveAt;
+    }
+
+    public void resolve() {
+        this.status = SiegeStatus.RESOLVED;
     }
 }

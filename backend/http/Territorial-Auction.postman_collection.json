@@ -28,8 +28,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/signup",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "signup"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "signup"
+              ]
             }
           }
         },
@@ -66,8 +73,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -90,8 +104,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/refresh",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "refresh"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ]
             }
           }
         },
@@ -118,8 +139,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "logout"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ]
             }
           }
         },
@@ -130,8 +158,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/check-username?username=testuser",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "check-username"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "check-username"
+              ],
               "query": [
                 {
                   "key": "username",
@@ -148,8 +183,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/check-email?email=test@example.com",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "check-email"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "check-email"
+              ],
               "query": [
                 {
                   "key": "email",
@@ -166,8 +208,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/check-nickname?nickname=테스트유저",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "check-nickname"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "check-nickname"
+              ],
               "query": [
                 {
                   "key": "nickname",
@@ -194,8 +243,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/users/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "users", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "1"
+              ]
             }
           }
         },
@@ -211,8 +267,15 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/users/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "users", "me"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
             }
           }
         },
@@ -228,8 +291,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/users/me/settings",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "users", "me", "settings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "settings"
+              ]
             }
           }
         },
@@ -258,8 +329,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/users/me/settings",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "users", "me", "settings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "settings"
+              ]
             }
           }
         },
@@ -275,8 +354,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/users/me/wallet",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "users", "me", "wallet"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "wallet"
+              ]
             }
           }
         },
@@ -292,8 +379,16 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/users/me/territories?page=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "users", "me", "territories"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "territories"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -332,8 +427,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/users/me/nickname",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "users", "me", "nickname"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "nickname"
+              ]
             }
           }
         },
@@ -362,8 +465,16 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/users/me/password",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "users", "me", "password"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "password"
+              ]
             }
           }
         },
@@ -392,8 +503,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/users/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "users", "me"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
             }
           }
         },
@@ -402,18 +520,37 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"amount\": 1000,\n  \"paymentKey\": \"tgen_20260408_test_key\",\n  \"orderId\": \"order_user1_1744113600\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/users/me/ap/charge",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "users", "me", "ap", "charge"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "ap",
+                "charge"
+              ]
             }
           }
         }
@@ -429,11 +566,23 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auctions?page=0&size=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auctions"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auctions"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -445,12 +594,27 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auctions?continentId=1&page=0&size=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auctions"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auctions"
+              ],
               "query": [
-                { "key": "continentId", "value": "1" },
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" }
+                {
+                  "key": "continentId",
+                  "value": "1"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -462,12 +626,27 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auctions?status=BIDDING&page=0&size=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auctions"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auctions"
+              ],
               "query": [
-                { "key": "status", "value": "BIDDING" },
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" }
+                {
+                  "key": "status",
+                  "value": "BIDDING"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -479,12 +658,27 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auctions?status=IDLE&page=0&size=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auctions"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auctions"
+              ],
               "query": [
-                { "key": "status", "value": "IDLE" },
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" }
+                {
+                  "key": "status",
+                  "value": "IDLE"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -496,14 +690,35 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auctions?continentId=1&status=BIDDING&page=0&size=20&sort=endAt,asc",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auctions"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auctions"
+              ],
               "query": [
-                { "key": "continentId", "value": "1" },
-                { "key": "status", "value": "BIDDING" },
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" },
-                { "key": "sort", "value": "endAt,asc" }
+                {
+                  "key": "continentId",
+                  "value": "1"
+                },
+                {
+                  "key": "status",
+                  "value": "BIDDING"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "endAt,asc"
+                }
               ]
             }
           }
@@ -515,8 +730,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auctions/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auctions", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auctions",
+                "1"
+              ]
             }
           }
         },
@@ -527,8 +749,16 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auctions/1/bids",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auctions", "1", "bids"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auctions",
+                "1",
+                "bids"
+              ]
             }
           }
         },
@@ -537,18 +767,36 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"bidAmount\": 1100\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auctions/1/bids",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auctions", "1", "bids"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auctions",
+                "1",
+                "bids"
+              ]
             }
           }
         },
@@ -557,15 +805,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auctions/my-bids?page=0&size=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auctions", "my-bids"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auctions",
+                "my-bids"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -577,8 +841,16 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auctions/territories/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auctions", "territories", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auctions",
+                "territories",
+                "1"
+              ]
             }
           }
         }
@@ -592,12 +864,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/land-tax/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "land-tax", "status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "land-tax",
+                "status"
+              ]
             }
           }
         },
@@ -606,15 +888,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/land-tax/logs?page=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "land-tax", "logs"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "land-tax",
+                "logs"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "10" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
               ]
             }
           }
@@ -624,16 +922,35 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/land-tax/logs?page=0&size=10&status=PAID",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "land-tax", "logs"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "land-tax",
+                "logs"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "10" },
-                { "key": "status", "value": "PAID" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "PAID"
+                }
               ]
             }
           }
@@ -643,16 +960,35 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/land-tax/logs?page=0&size=10&status=FAILED",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "land-tax", "logs"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "land-tax",
+                "logs"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "10" },
-                { "key": "status", "value": "FAILED" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "FAILED"
+                }
               ]
             }
           }
@@ -662,14 +998,27 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/land-tax/logs?status=WRONG",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "land-tax", "logs"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "land-tax",
+                "logs"
+              ],
               "query": [
-                { "key": "status", "value": "WRONG" }
+                {
+                  "key": "status",
+                  "value": "WRONG"
+                }
               ]
             }
           }
@@ -684,12 +1033,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/season-pass/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "season-pass", "me"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "season-pass",
+                "me"
+              ]
             }
           }
         },
@@ -698,12 +1057,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/season-pass",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "season-pass"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "season-pass"
+              ]
             }
           }
         },
@@ -712,12 +1080,22 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/season-pass/purchase",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "season-pass", "purchase"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "season-pass",
+                "purchase"
+              ]
             }
           }
         },
@@ -726,12 +1104,22 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/season-pass/purchase",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "season-pass", "purchase"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "season-pass",
+                "purchase"
+              ]
             }
           }
         }
@@ -752,8 +1140,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/continents",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "continents"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "continents"
+              ]
             }
           }
         },
@@ -764,8 +1158,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/map/grid",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "map", "grid"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "map",
+                "grid"
+              ]
             }
           }
         },
@@ -776,8 +1177,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/map/grid?continent=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "map", "grid"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "map",
+                "grid"
+              ],
               "query": [
                 {
                   "key": "continent",
@@ -794,8 +1202,16 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/map/territories/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "map", "territories", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "map",
+                "territories",
+                "1"
+              ]
             }
           }
         },
@@ -824,8 +1240,17 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/map/territories/1/color",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "map", "territories", "1", "color"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "map",
+                "territories",
+                "1",
+                "color"
+              ]
             }
           }
         }
@@ -841,8 +1266,17 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/map/territories/1/buildings",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "map", "territories", "1", "buildings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "map",
+                "territories",
+                "1",
+                "buildings"
+              ]
             }
           }
         },
@@ -851,18 +1285,37 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"buildingTypeId\": 1,\n  \"posX\": 3,\n  \"posY\": 3\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/map/territories/1/buildings",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "map", "territories", "1", "buildings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "map",
+                "territories",
+                "1",
+                "buildings"
+              ]
             }
           }
         },
@@ -871,12 +1324,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/buildings/1/upgrade",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "buildings", "1", "upgrade"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings",
+                "1",
+                "upgrade"
+              ]
             }
           }
         },
@@ -885,12 +1349,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/buildings/1/repair",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "buildings", "1", "repair"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings",
+                "1",
+                "repair"
+              ]
             }
           }
         },
@@ -899,12 +1374,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/buildings/1/store",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "buildings", "1", "store"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings",
+                "1",
+                "store"
+              ]
             }
           }
         },
@@ -913,18 +1399,36 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"posX\": 4,\n  \"posY\": 2\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/buildings/1/move",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "buildings", "1", "move"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings",
+                "1",
+                "move"
+              ]
             }
           }
         },
@@ -933,12 +1437,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/island",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "island"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "island"
+              ]
             }
           }
         },
@@ -947,12 +1460,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/island/buildings",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "island", "buildings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "island",
+                "buildings"
+              ]
             }
           }
         },
@@ -961,18 +1484,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"buildingTypeId\": 3,\n  \"posX\": 0,\n  \"posY\": 0\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/island/buildings",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "island", "buildings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "island",
+                "buildings"
+              ]
             }
           }
         },
@@ -981,12 +1521,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/inventory",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "inventory"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inventory"
+              ]
             }
           }
         },
@@ -995,18 +1544,36 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"territoryId\": 1,\n  \"posX\": 2,\n  \"posY\": 3\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/inventory/1/place",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "inventory", "1", "place"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inventory",
+                "1",
+                "place"
+              ]
             }
           }
         }
@@ -1020,12 +1587,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/items",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "items"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "items"
+              ]
             }
           }
         },
@@ -1034,18 +1610,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"itemId\": 1,\n  \"quantity\": 2\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/items/purchase",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "items", "purchase"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "items",
+                "purchase"
+              ]
             }
           }
         },
@@ -1054,18 +1647,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"itemId\": 3,\n  \"quantity\": 1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/items/purchase",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "items", "purchase"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "items",
+                "purchase"
+              ]
             }
           }
         },
@@ -1074,18 +1684,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"itemId\": 1,\n  \"targetTerritoryId\": 1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/items/use",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "items", "use"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "items",
+                "use"
+              ]
             }
           }
         },
@@ -1094,18 +1721,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"itemId\": 2,\n  \"targetTerritoryId\": 5\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/items/use",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "items", "use"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "items",
+                "use"
+              ]
             }
           }
         },
@@ -1114,12 +1758,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/items/inventory",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "items", "inventory"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "items",
+                "inventory"
+              ]
             }
           }
         },
@@ -1128,14 +1782,27 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/items/inventory?type=INVINCIBILITY",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "items", "inventory"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "items",
+                "inventory"
+              ],
               "query": [
-                { "key": "type", "value": "INVINCIBILITY" }
+                {
+                  "key": "type",
+                  "value": "INVINCIBILITY"
+                }
               ]
             }
           }
@@ -1150,12 +1817,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/global-vault",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "global-vault"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "global-vault"
+              ]
             }
           }
         },
@@ -1164,18 +1840,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"direction\": \"TO_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 5000\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "global-vault", "transfer"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "global-vault",
+                "transfer"
+              ]
             }
           }
         },
@@ -1184,18 +1877,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"direction\": \"FROM_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 3000\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "global-vault", "transfer"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "global-vault",
+                "transfer"
+              ]
             }
           }
         },
@@ -1204,18 +1914,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"direction\": \"TO_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 9999999\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "global-vault", "transfer"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "global-vault",
+                "transfer"
+              ]
             }
           }
         },
@@ -1224,18 +1951,35 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"direction\": \"TO_VAULT\",\n  \"sourceTerritoryId\": 1,\n  \"amount\": 100\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/global-vault/transfer",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "global-vault", "transfer"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "global-vault",
+                "transfer"
+              ]
             }
           }
         }
@@ -1251,11 +1995,23 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds?page=0&size=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -1267,12 +2023,27 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds?page=0&size=20&search=정복",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" },
-                { "key": "search", "value": "정복" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "정복"
+                }
               ]
             }
           }
@@ -1284,8 +2055,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1"
+              ]
             }
           }
         },
@@ -1294,12 +2072,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "me"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "me"
+              ]
             }
           }
         },
@@ -1308,18 +2096,34 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"정복자들\",\n  \"description\": \"영토 정복을 목표로 하는 길드입니다.\",\n  \"emblem\": \"https://cdn.example.com/emblems/001.png\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds"
+              ]
             }
           }
         },
@@ -1328,18 +2132,36 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"message\": \"열심히 하겠습니다!\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/join",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "join"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "join"
+              ]
             }
           }
         },
@@ -1348,12 +2170,25 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/members/2/approve",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "members", "2", "approve"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "members",
+                "2",
+                "approve"
+              ]
             }
           }
         },
@@ -1362,12 +2197,23 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/applications",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "applications"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "applications"
+              ]
             }
           }
         },
@@ -1378,8 +2224,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/99999",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "99999"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "99999"
+              ]
             }
           }
         },
@@ -1388,18 +2241,36 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"message\": \"중복 신청\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/join",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "join"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "join"
+              ]
             }
           }
         },
@@ -1408,12 +2279,25 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/members/3/approve",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "members", "3", "approve"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "members",
+                "3",
+                "approve"
+              ]
             }
           }
         },
@@ -1422,12 +2306,24 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/members/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "members", "me"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "members",
+                "me"
+              ]
             }
           }
         },
@@ -1436,12 +2332,23 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/join",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "join"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "join"
+              ]
             }
           }
         },
@@ -1450,12 +2357,25 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/members/2/reject",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "members", "2", "reject"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "members",
+                "2",
+                "reject"
+              ]
             }
           }
         },
@@ -1464,18 +2384,36 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"newMasterId\": 3\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/master",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "master"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "master"
+              ]
             }
           }
         },
@@ -1484,12 +2422,24 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/members/2",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "members", "2"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "members",
+                "2"
+              ]
             }
           }
         },
@@ -1498,18 +2448,35 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"description\": \"새로운 길드 소개글입니다.\",\n  \"emblem\": \"https://cdn.example.com/emblems/002.png\",\n  \"recruitingStatus\": \"CLOSED\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1"
+              ]
             }
           }
         },
@@ -1518,18 +2485,35 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"recruitingStatus\": \"OPEN\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1"
+              ]
             }
           }
         },
@@ -1538,18 +2522,36 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"newMasterId\": 1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/master",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "master"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "master"
+              ]
             }
           }
         },
@@ -1558,12 +2560,24 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/members/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "members", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "members",
+                "1"
+              ]
             }
           }
         },
@@ -1572,12 +2586,24 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/guilds/1/members/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "guilds", "1", "members", "me"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "guilds",
+                "1",
+                "members",
+                "me"
+              ]
             }
           }
         }
@@ -1591,12 +2617,24 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/chat/rooms/room_world/messages",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_world", "messages"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "rooms",
+                "room_world",
+                "messages"
+              ]
             }
           }
         },
@@ -1605,15 +2643,33 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/chat/rooms/room_world/messages?before=100&size=30",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_world", "messages"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "rooms",
+                "room_world",
+                "messages"
+              ],
               "query": [
-                { "key": "before", "value": "100" },
-                { "key": "size", "value": "30" }
+                {
+                  "key": "before",
+                  "value": "100"
+                },
+                {
+                  "key": "size",
+                  "value": "30"
+                }
               ]
             }
           }
@@ -1623,12 +2679,24 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/chat/rooms/room_guild_1/messages",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_guild_1", "messages"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "rooms",
+                "room_guild_1",
+                "messages"
+              ]
             }
           }
         },
@@ -1637,15 +2705,33 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/chat/rooms/room_guild_1/messages?before=50&size=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_guild_1", "messages"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "rooms",
+                "room_guild_1",
+                "messages"
+              ],
               "query": [
-                { "key": "before", "value": "50" },
-                { "key": "size", "value": "20" }
+                {
+                  "key": "before",
+                  "value": "50"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -1655,12 +2741,24 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/chat/rooms/room_continent_7/messages",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_continent_7", "messages"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "rooms",
+                "room_continent_7",
+                "messages"
+              ]
             }
           }
         },
@@ -1669,12 +2767,24 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/chat/rooms/invalid_room_id/messages",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "invalid_room_id", "messages"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "rooms",
+                "invalid_room_id",
+                "messages"
+              ]
             }
           }
         },
@@ -1685,8 +2795,17 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/chat/rooms/room_world/messages",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "chat", "rooms", "room_world", "messages"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "rooms",
+                "room_world",
+                "messages"
+              ]
             }
           }
         }
@@ -1702,11 +2821,24 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/rankings/territory-hold?page=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "rankings", "territory-hold"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rankings",
+                "territory-hold"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "10" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
               ]
             }
           }
@@ -1716,15 +2848,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/rankings/territory-hold?page=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "rankings", "territory-hold"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rankings",
+                "territory-hold"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "10" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
               ]
             }
           }
@@ -1736,11 +2884,24 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/rankings/auction-spend?page=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "rankings", "auction-spend"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rankings",
+                "auction-spend"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "10" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
               ]
             }
           }
@@ -1750,15 +2911,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/rankings/auction-spend?page=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "rankings", "auction-spend"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rankings",
+                "auction-spend"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "10" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
               ]
             }
           }
@@ -1768,12 +2945,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/rankings/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "rankings", "me"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rankings",
+                "me"
+              ]
             }
           }
         }
@@ -1787,15 +2974,30 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/notifications?page=0&size=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "notifications"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -1805,12 +3007,23 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/notifications/1/read",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "notifications", "1", "read"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "1",
+                "read"
+              ]
             }
           }
         },
@@ -1819,12 +3032,22 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/notifications/read-all",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "notifications", "read-all"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "read-all"
+              ]
             }
           }
         },
@@ -1833,12 +3056,23 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/notifications/99999/read",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "notifications", "99999", "read"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "99999",
+                "read"
+              ]
             }
           }
         },
@@ -1847,12 +3081,23 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/notifications/1/read",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "notifications", "1", "read"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "1",
+                "read"
+              ]
             }
           }
         },
@@ -1863,8 +3108,422 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/notifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "notifications"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Military",
+      "item": [
+        {
+          "name": "공격권 보유 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/military/attack-tokens",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "military",
+                "attack-tokens"
+              ]
+            }
+          }
+        },
+        {
+          "name": "유닛 현황 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/military/units",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "military",
+                "units"
+              ]
+            }
+          }
+        },
+        {
+          "name": "유닛 생산",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitTypeId\": 1,\n  \"quantity\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/military/units",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "military",
+                "units"
+              ]
+            }
+          }
+        },
+        {
+          "name": "병력 배치",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"territoryId\": 5,\n  \"unitTypeId\": 1,\n  \"quantity\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/military/units/deploy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "military",
+                "units",
+                "deploy"
+              ]
+            }
+          }
+        },
+        {
+          "name": "병력 회수",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"territoryId\": 5,\n  \"unitTypeId\": 1,\n  \"quantity\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/military/units/recall",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "military",
+                "units",
+                "recall"
+              ]
+            }
+          }
+        },
+        {
+          "name": "공격 선언 (일반 공격권)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetTerritoryId\": 10,\n  \"attackZone\": 3,\n  \"unitTypeId\": 1,\n  \"unitQuantity\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/military/siege",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "military",
+                "siege"
+              ]
+            }
+          }
+        },
+        {
+          "name": "공격 선언 (정밀 공격권)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetTerritoryId\": 10,\n  \"targetBuildingId\": 5,\n  \"attackZone\": 3,\n  \"unitTypeId\": 1,\n  \"unitQuantity\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/military/siege",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "military",
+                "siege"
+              ]
+            }
+          }
+        },
+        {
+          "name": "공성전 결과 조회",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/military/siege/1/result",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "military",
+                "siege",
+                "1",
+                "result"
+              ]
+            }
+          }
+        },
+        {
+          "name": "공성 이벤트 목록 (PENDING)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/siege/events?page=0&size=20&status=PENDING",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "siege",
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "공성 이벤트 목록 (RESOLVED)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/siege/events?page=0&size=20&status=RESOLVED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "siege",
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "RESOLVED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "나의 공성전 이력 (전체)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/siege/my-history?page=0&size=20&result=ALL",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "siege",
+                "my-history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "result",
+                  "value": "ALL"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "나의 공성전 이력 (승리만)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/siege/my-history?page=0&size=20&result=WIN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "siege",
+                "my-history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "result",
+                  "value": "WIN"
+                }
+              ]
             }
           }
         }

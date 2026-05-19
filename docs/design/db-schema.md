@@ -375,6 +375,7 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `max_hp` | `INTEGER` | |
 | `base_cost_gp` | `INTEGER` | |
 | `zone_restriction` | `INTEGER` NULL | 1 = Zone1에만 배치 가능 |
+| `defense_power` | `INTEGER` | NULL 허용. 방어 건물(WALL, TOWER, CASTLE)만 0 이상 값 보유. 전투 계산 시 DEF에 합산 |
 
 #### building_instances
 
