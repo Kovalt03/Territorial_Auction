@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.military.repository;
 
 import com.territorial.auction.domain.military.entity.SiegeEvent;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,9 @@ public interface SiegeEventRepository extends JpaRepository<SiegeEvent, Long> {
             @Param("userId") Long userId,
             @Param("status") SiegeEvent.SiegeStatus status,
             Pageable pageable);
+
+    @Query("SELECT s FROM SiegeEvent s WHERE s.status = 'PENDING' AND s.resolveAt <= :now")
+    List<SiegeEvent> findPendingToResolve(@Param("now") LocalDateTime now);
 
     @Query(
             "SELECT s FROM SiegeEvent s"

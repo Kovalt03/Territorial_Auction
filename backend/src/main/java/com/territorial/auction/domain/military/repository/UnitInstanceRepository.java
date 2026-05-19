@@ -14,4 +14,6 @@ public interface UnitInstanceRepository extends JpaRepository<UnitInstance, Long
 
     Optional<UnitInstance> findByUserIdAndUnitTypeIdAndDeployedTerritoryId(
             Long userId, Long unitTypeId, Long territoryId);
+
+    List<UnitInstance> findByUserIdAndDeployedTerritoryId(Long userId, Long territoryId);
 }

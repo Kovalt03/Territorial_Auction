@@ -9,4 +9,10 @@ public final class MilitaryPolicy {
     public static final double ATTACKER_LOSS_RATE = 0.3;
     public static final double ATTACKER_FAIL_LOSS_RATE = 0.5;
     public static final double DEFENDER_LOSS_RATE = 0.3;
+
+    /** Zone 3 약탈률 (STORAGE storedGp의 50%) */
+    public static final double LOOT_RATE = 0.5;
+
+    /** 건물 HP가 이 비율 이하일 때 Zone 클리어 판정 */
+    public static final double ZONE_CLEAR_THRESHOLD = 0.5;
 }
