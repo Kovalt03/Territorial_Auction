@@ -1,6 +1,6 @@
 # 구현 체크리스트
 
-> 마지막 갱신: 2026-05-09  
+> 마지막 갱신: 2026-05-19  
 > 기준 브랜치: `dev`
 
 범례: ✅ 완료 · 🔄 일부 완료 · ⬜ 미구현
@@ -19,7 +19,7 @@
 | ✅ | 사용자명 중복 확인 | `GET /api/v1/auth/check/username` | |
 | ✅ | 이메일 중복 확인 | `GET /api/v1/auth/check/email` | |
 | ✅ | 닉네임 중복 확인 | `GET /api/v1/auth/check/nickname` | |
-| ⬜ | 탈퇴 시 JWT 무효화 | — | Redis 블랙리스트 등록 필요 |
+| ⬜ | 탈퇴 시 JWT 무효화 | — | Redis 블랙리스트 등록 필요 (be-21 OAuth2 보안 수정 완료, 탈퇴 시 무효화만 미구현) |
 
 ---
 
@@ -59,7 +59,7 @@
 | ✅ | 가격 변동 그래프 데이터 | `GET /api/v1/auctions/{auctionId}/bids` | |
 | ✅ | 내 입찰 내역 조회 | `GET /api/v1/auctions/my-bids` | |
 | ✅ | 영토 경매 이력 조회 | `GET /api/v1/auctions/territories/{territoryId}` | |
-| ⬜ | 입찰 시 WebSocket 브로드캐스트 | — | STOMP 구현 선행 필요 |
+| ✅ | 입찰 시 WebSocket 브로드캐스트 | — | `/sub/auction/{auctionId}` (be-23) |
 
 ---
 
@@ -150,15 +150,15 @@
 ### Military (공성전)
 | 상태 | 기능 | 엔드포인트 | 비고 |
 |---|---|---|---|
-| ⬜ | 공성전 선언 | `POST /api/v1/siege` | entity·repository는 존재 |
-| ⬜ | 공성전 목록 조회 | `GET /api/v1/siege` | |
-| ⬜ | 공성전 상세 조회 | `GET /api/v1/siege/{siegeId}` | |
-| ⬜ | 유닛 생산 | `POST /api/v1/military/units` | |
-| ⬜ | 유닛 목록 조회 | `GET /api/v1/military/units` | |
-| ⬜ | 유닛 배치 | `POST /api/v1/military/units/{unitId}/deploy` | |
-| ⬜ | 공격권 조회 | `GET /api/v1/military/attack-tokens` | |
-| ⬜ | 전투 결과 처리 스케줄러 | — | 공성 카운트다운 후 전투 계산 |
-| ⬜ | 공성전 알림 WebSocket | — | `/sub/user/{userId}/siege-alert` |
+| ✅ | 공성전 선언 | `POST /api/v1/siege` | |
+| ✅ | 공성전 목록 조회 | `GET /api/v1/siege` | |
+| ✅ | 공성전 상세 조회 | `GET /api/v1/siege/{siegeId}` | |
+| ✅ | 유닛 생산 | `POST /api/v1/military/units` | |
+| ✅ | 유닛 목록 조회 | `GET /api/v1/military/units` | |
+| ✅ | 유닛 배치 | `POST /api/v1/military/units/{unitId}/deploy` | |
+| ✅ | 공격권 조회 | `GET /api/v1/military/attack-tokens` | |
+| ✅ | 전투 결과 처리 스케줄러 | — | 1분 주기, SiegeScheduler |
+| ✅ | 공성전 알림 WebSocket | — | `/sub/user/{userId}/siege-alert` (선언·결과 양측 발송) |
 
 ---
 
@@ -191,19 +191,19 @@
 ### 경매 실시간
 | 상태 | 채널 | 설명 |
 |---|---|---|
-| ⬜ | `/sub/auction/{auctionId}` | 입찰 현황 실시간 수신 |
-| ⬜ | `/sub/user/{userId}/auction-result` | 경매 낙찰/실패 개인 알림 |
+| ✅ | `/sub/auction/{auctionId}` | 입찰 현황 실시간 수신 (be-23) |
+| ✅ | `/sub/user/{userId}/auction-result` | 경매 낙찰(WIN)/패찰(LOSE) 개인 알림 |
 
 ### 맵 업데이트
 | 상태 | 채널 | 설명 |
 |---|---|---|
-| ⬜ | `/sub/map/update` | 영토 점유자 변경 브로드캐스트 |
+| ✅ | `/sub/map/update` | 영토 점유자 변경 브로드캐스트 (낙찰·점유 만료 시) |
 
 ### 알림
 | 상태 | 채널 | 설명 |
 |---|---|---|
-| ⬜ | `/sub/user/{userId}/notification` | 개인 알림 수신 |
-| ⬜ | `/sub/user/{userId}/siege-alert` | 공성전 선언 알림 |
+| ✅ | `/sub/user/{userId}/notification` | 개인 알림 수신 (be-17) |
+| ✅ | `/sub/user/{userId}/siege-alert` | 공성전 선언·결과 알림 |
 
 ---
 
@@ -213,9 +213,10 @@
 |---|---|---|
 | ✅ | 경매 생명주기 스케줄러 | `AuctionLifecycleService` |
 | ✅ | 시즌 영토 등급 보유 집계 배치 | `season_territory_holds` → Redis Sorted Set 갱신 (1시간 주기) |
-| ⬜ | 토지세 배치 스케줄러 | 매일 자정 차감 + GP 부족 처리 |
+| ✅ | 토지세 배치 스케줄러 | 매일 자정 차감 + GP 부족 처리 (be-20) |
+| ✅ | 전투 결과 처리 스케줄러 | 1분 주기, `SiegeScheduler` |
 | ⬜ | 시즌 패스 만료 알림 스케줄러 | 만료 3일 전·당일 |
-| ⬜ | 영토 소득 정산 스케줄러 | 주기적 GP 생산량 적립 |
+| ⬜ | 영토 소득 정산 스케줄러 | 주기적 GP 생산량 적립 (주기 미결정) |
 | ⬜ | 시즌 종료 배치 | 리그별 보상 지급 + 트로피 50% 리셋. 관리자가 `seasons.ended_at` 설정 시 자동 트리거 |
 
 ---
@@ -229,7 +230,7 @@
 | ✅ | `season_pass:progress:{userId}` | 시즌 패스 진행도 캐시 (TTL 30분) |
 | ✅ | `ranking:season:{seasonId}:territory_hold` | 시즌 영토 등급 보유 Sorted Set |
 | ✅ | `ranking:season:{seasonId}:auction_spend` | 시즌 경매 AP 소비 Sorted Set |
-| ⬜ | `auction:lock:{auctionId}` | 입찰 분산락 |
+| ✅ | `auction:lock:{auctionId}` | 입찰 분산락 (Redisson, be-18) |
 | ⬜ | `auction:bid:{auctionId}` | 경매 상세 캐시 |
 | ⬜ | `land_tax:expected:{userId}` | 예상 세금 캐시 (TTL: 자정까지) |
 | ⬜ | `ws:chat:{roomId}` | 채팅 Pub-Sub 채널 (스케일아웃 시) |
