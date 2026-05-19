@@ -19,4 +19,9 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
     @Query(
             "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType WHERE b.owner.id = :userId AND b.territory IS NULL AND b.island IS NULL")
     List<BuildingInstance> findStoredByOwnerId(@Param("userId") Long userId);
+
+    @Query(
+            "SELECT COUNT(b) > 0 FROM BuildingInstance b JOIN b.buildingType bt"
+                    + " WHERE b.territory.owner.id = :userId AND bt.name = 'BARRACKS' AND b.isDestroyed = false")
+    boolean existsActiveBarracksByOwnerId(@Param("userId") Long userId);
 }
