@@ -1,12 +1,14 @@
 package com.territorial.auction.domain.auction.service;
 
 import com.territorial.auction.domain.auction.AuctionPolicy;
+import com.territorial.auction.domain.auction.dto.AuctionResultAlert;
 import com.territorial.auction.domain.auction.entity.Auction;
 import com.territorial.auction.domain.auction.entity.AuctionBid;
 import com.territorial.auction.domain.auction.entity.AuctionHistory;
 import com.territorial.auction.domain.auction.repository.AuctionBidRepository;
 import com.territorial.auction.domain.auction.repository.AuctionHistoryRepository;
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
+import com.territorial.auction.domain.map.dto.MapUpdateBroadcast;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.ranking.event.AuctionSettledEvent;
@@ -22,8 +24,11 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -38,6 +43,7 @@ public class AuctionLifecycleService {
     private final WalletRepository walletRepository;
     private final SeasonRepository seasonRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /** 종료된 미정산 경매를 일괄 정산 */
     public void settlePendingAuctions() {
@@ -59,9 +65,27 @@ public class AuctionLifecycleService {
                 territoryRepository.findAllExpiredOccupied(Territory.TerritoryStatus.OCCUPIED, now);
         Optional<Season> seasonOpt = seasonRepository.findActiveSeason(now);
         for (Territory territory : expired) {
+            final long finalRelTerritoryId = territory.getId();
+            final int finalRelCoordX = territory.getCoordX();
+            final int finalRelCoordY = territory.getCoordY();
             publishHoldClosedEvent(territory, seasonOpt, now);
             // 점유 만료 즉시 재경매 예약
             territory.release(now);
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            messagingTemplate.convertAndSend(
+                                    "/sub/map/update",
+                                    new MapUpdateBroadcast(
+                                            finalRelTerritoryId,
+                                            finalRelCoordX,
+                                            finalRelCoordY,
+                                            null,
+                                            null,
+                                            "IDLE"));
+                        }
+                    });
             log.info("[AuctionLifecycle] 영토 점유 만료 territoryId={}", territory.getId());
         }
     }
@@ -120,6 +144,55 @@ public class AuctionLifecycleService {
                             .build());
 
             publishSettlementEvents(winner, season, auction, territory, now);
+
+            final long finalAuctionId = auction.getId();
+            final long finalTerritoryId = territory.getId();
+            final int finalCoordX = territory.getCoordX();
+            final int finalCoordY = territory.getCoordY();
+            final int finalPrice = auction.getCurrentPrice();
+            final long finalWinnerId = winner.getId();
+            final String finalWinnerNickname = winner.getNickname();
+            List<Long> runnerUpIds =
+                    auctionBidRepository.findDistinctBidderIdsExcluding(
+                            auction.getId(), winner.getId());
+            final List<Long> finalRunnerUpIds = List.copyOf(runnerUpIds);
+
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            messagingTemplate.convertAndSend(
+                                    "/sub/user/" + finalWinnerId + "/auction-result",
+                                    new AuctionResultAlert(
+                                            finalAuctionId,
+                                            finalTerritoryId,
+                                            finalCoordX,
+                                            finalCoordY,
+                                            finalPrice,
+                                            "WIN"));
+                            messagingTemplate.convertAndSend(
+                                    "/sub/map/update",
+                                    new MapUpdateBroadcast(
+                                            finalTerritoryId,
+                                            finalCoordX,
+                                            finalCoordY,
+                                            finalWinnerId,
+                                            finalWinnerNickname,
+                                            "OCCUPIED"));
+                            AuctionResultAlert loseAlert =
+                                    new AuctionResultAlert(
+                                            finalAuctionId,
+                                            finalTerritoryId,
+                                            finalCoordX,
+                                            finalCoordY,
+                                            finalPrice,
+                                            "LOSE");
+                            for (Long runnerUpId : finalRunnerUpIds) {
+                                messagingTemplate.convertAndSend(
+                                        "/sub/user/" + runnerUpId + "/auction-result", loseAlert);
+                            }
+                        }
+                    });
 
             log.info(
                     "[AuctionLifecycle] 낙찰 정산 auctionId={} winner={} price={}",

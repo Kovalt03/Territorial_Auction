@@ -23,8 +23,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -41,6 +44,7 @@ public class MilitaryService {
     private final WalletRepository walletRepository;
     private final TerritoryRepository territoryRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public AttackTokenResponse getAttackTokens(Long userId) {
         return attackTokenRepository
@@ -111,6 +115,41 @@ public class MilitaryService {
         siegeEventRepository.save(siege);
 
         int remaining = targetBuilding == null ? token.getNormalCount() : token.getPrecisionCount();
+
+        final long finalSiegeId = siege.getId();
+        final long finalTerritoryId = target.getId();
+        final int finalCoordX = target.getCoordX();
+        final int finalCoordY = target.getCoordY();
+        final int finalAttackZone = request.attackZone();
+        final long finalAttackerId = userId;
+        final String finalAttackerNickname = attacker.getNickname();
+        final long finalDefenderId = target.getOwner().getId();
+        final String finalDefenderNickname = target.getOwner().getNickname();
+        final LocalDateTime finalResolveAt = siege.getResolveAt();
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        messagingTemplate.convertAndSend(
+                                "/sub/user/" + finalDefenderId + "/siege-alert",
+                                new SiegeAlert(
+                                        finalSiegeId,
+                                        "DECLARED",
+                                        finalTerritoryId,
+                                        finalCoordX,
+                                        finalCoordY,
+                                        finalAttackZone,
+                                        finalAttackerId,
+                                        finalAttackerNickname,
+                                        finalDefenderId,
+                                        finalDefenderNickname,
+                                        finalResolveAt,
+                                        null,
+                                        null));
+                    }
+                });
+
         log.info(
                 "공성전 선언. siegeId={}, attackerId={}, targetTerritoryId={}",
                 siege.getId(),

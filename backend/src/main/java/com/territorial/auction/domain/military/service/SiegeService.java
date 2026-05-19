@@ -3,6 +3,7 @@ package com.territorial.auction.domain.military.service;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.military.MilitaryPolicy;
+import com.territorial.auction.domain.military.dto.SiegeAlert;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
 import com.territorial.auction.domain.military.entity.SiegeResult;
 import com.territorial.auction.domain.military.entity.UnitInstance;
@@ -10,12 +11,16 @@ import com.territorial.auction.domain.military.event.CastleDestroyedEvent;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -28,12 +33,20 @@ public class SiegeService {
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final WalletRepository walletRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public void resolveOneSiege(SiegeEvent event) {
         Long attackerId = event.getAttacker().getId();
         Long defenderId = event.getDefender().getId();
         Long territoryId = event.getTargetTerritory().getId();
+        final String finalAttackerNickname = event.getAttacker().getNickname();
+        final String finalDefenderNickname = event.getDefender().getNickname();
+        final int finalCoordX = event.getTargetTerritory().getCoordX();
+        final int finalCoordY = event.getTargetTerritory().getCoordY();
+        final int finalAttackZone = event.getAttackZone();
+        final LocalDateTime finalResolveAt = event.getResolveAt();
+        final Long finalSiegeId = event.getId();
 
         List<UnitInstance> attackerUnits =
                 unitInstanceRepository.findByUserIdAndDeployedTerritoryId(attackerId, territoryId);
@@ -57,6 +70,37 @@ public class SiegeService {
                 territoryId,
                 isAttackerWin,
                 resultType);
+
+        final boolean finalIsAttackerWin = isAttackerWin;
+        final String finalResultType = resultType != null ? resultType.name() : null;
+        final Long finalAttackerId = attackerId;
+        final Long finalDefenderId = defenderId;
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        SiegeAlert alert =
+                                new SiegeAlert(
+                                        finalSiegeId,
+                                        "RESOLVED",
+                                        territoryId,
+                                        finalCoordX,
+                                        finalCoordY,
+                                        finalAttackZone,
+                                        finalAttackerId,
+                                        finalAttackerNickname,
+                                        finalDefenderId,
+                                        finalDefenderNickname,
+                                        finalResolveAt,
+                                        finalIsAttackerWin,
+                                        finalResultType);
+                        messagingTemplate.convertAndSend(
+                                "/sub/user/" + finalAttackerId + "/siege-alert", alert);
+                        messagingTemplate.convertAndSend(
+                                "/sub/user/" + finalDefenderId + "/siege-alert", alert);
+                    }
+                });
     }
 
     private void saveSiegeResult(
