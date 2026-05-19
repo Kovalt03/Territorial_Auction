@@ -14,14 +14,21 @@ import com.territorial.auction.domain.map.dto.TaxLogResponse;
 import com.territorial.auction.domain.map.dto.TaxStatusResponse;
 import com.territorial.auction.domain.map.entity.LandTaxLog;
 import com.territorial.auction.domain.map.entity.LandTaxLog.TaxStatus;
+import com.territorial.auction.domain.map.entity.Territory;
+import com.territorial.auction.domain.map.entity.TerritoryGrade;
 import com.territorial.auction.domain.map.repository.LandTaxLogRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.notification.entity.NotificationLog.NotificationType;
+import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.season.entity.SeasonPass;
 import com.territorial.auction.domain.season.entity.UserSeasonPass;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
+import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -50,6 +57,8 @@ class LandTaxServiceTest {
     @Mock private UserSeasonPassRepository userSeasonPassRepository;
     @Mock private WalletRepository walletRepository;
     @Mock private UserRepository userRepository;
+    @Mock private NotificationService notificationService;
+    @Mock private Wallet wallet;
     @Mock private RedisTemplate<String, Object> redisTemplate;
     @Mock private ValueOperations<String, Object> valueOperations;
 
@@ -357,6 +366,139 @@ class LandTaxServiceTest {
             then(landTaxLogRepository)
                     .should()
                     .findByUserIdOrderByChargedAtDesc(eq(1L), eq(PageRequest.of(2, 5)));
+        }
+    }
+
+    // ─── processUserTax() ─────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("processUserTax()")
+    class ProcessUserTax {
+
+        @BeforeEach
+        void setUp() {
+            lenient()
+                    .when(
+                            userSeasonPassRepository
+                                    .findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .thenReturn(Optional.empty());
+            lenient().when(walletRepository.findById(1L)).thenReturn(Optional.of(wallet));
+        }
+
+        private Territory mockTerritory(String gradeStr) {
+            TerritoryGrade grade = mock(TerritoryGrade.class);
+            given(grade.getGrade()).willReturn(gradeStr);
+            Territory territory = mock(Territory.class);
+            given(territory.getGrade()).willReturn(grade);
+            return territory;
+        }
+
+        @Test
+        @DisplayName("영토 없음 → 조기 반환, 로그 미저장")
+        void processUserTax_noTerritories_returnsEarly() {
+            given(territoryRepository.countByOwnerId(1L)).willReturn(0L);
+
+            landTaxService.processUserTax(1L);
+
+            then(landTaxLogRepository).should(never()).save(any());
+        }
+
+        @Test
+        @DisplayName("면제 구간 영토 수 → EXEMPT 로그 저장, 지갑 조회 없음")
+        void processUserTax_exempt_savesExemptLog() {
+            given(territoryRepository.countByOwnerId(1L)).willReturn(3L);
+
+            landTaxService.processUserTax(1L);
+
+            then(landTaxLogRepository).should().save(any(LandTaxLog.class));
+            then(walletRepository).should(never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("GP 충분 → PAID 로그 저장 + 유예기간 키 삭제")
+        void processUserTax_gpSufficient_savesPaidLog() {
+            // taxableCount = 4-3 = 1 → taxAmount = 50
+            given(territoryRepository.countByOwnerId(1L)).willReturn(4L);
+            given(wallet.getAvailableGp()).willReturn(100);
+
+            landTaxService.processUserTax(1L);
+
+            then(wallet).should().spendGp(50);
+            then(landTaxLogRepository).should().save(any(LandTaxLog.class));
+            then(redisTemplate).should().delete("land_tax:grace:1");
+        }
+
+        @Test
+        @DisplayName("GP 부족 + 유예기간 키 존재 → FAILED 로그만 저장, 알림·강제 경매 없음")
+        void processUserTax_inGrace_savesFailedLogOnly() {
+            given(territoryRepository.countByOwnerId(1L)).willReturn(4L);
+            given(wallet.getAvailableGp()).willReturn(0);
+            given(redisTemplate.hasKey("land_tax:grace:1")).willReturn(true);
+
+            landTaxService.processUserTax(1L);
+
+            then(landTaxLogRepository).should().save(any(LandTaxLog.class));
+            then(notificationService).should(never()).sendNotification(any(), any(), any());
+            then(territoryRepository).should(never()).findAllOccupiedByOwnerId(any(), any());
+        }
+
+        @Test
+        @DisplayName("GP 부족 + 첫 실패 → FAILED 로그 + 유예기간 키 설정 + TAX_FAIL_WARNING 알림")
+        void processUserTax_firstFail_setsGraceAndSendsWarning() {
+            given(territoryRepository.countByOwnerId(1L)).willReturn(4L);
+            given(wallet.getAvailableGp()).willReturn(0);
+            given(redisTemplate.hasKey("land_tax:grace:1")).willReturn(false);
+            given(
+                            landTaxLogRepository.existsByUserIdAndStatusAndChargedAtAfter(
+                                    eq(1L), eq(TaxStatus.FAILED), any(LocalDateTime.class)))
+                    .willReturn(false);
+
+            landTaxService.processUserTax(1L);
+
+            then(landTaxLogRepository).should().save(any(LandTaxLog.class));
+            then(valueOperations)
+                    .should()
+                    .set(
+                            eq("land_tax:grace:1"),
+                            eq(1),
+                            eq(Duration.ofHours(LandTaxPolicy.GRACE_PERIOD_HOURS)));
+            then(notificationService)
+                    .should()
+                    .sendNotification(
+                            eq(1L), eq(NotificationType.TAX_FAIL_WARNING), any(String.class));
+            then(territoryRepository).should(never()).findAllOccupiedByOwnerId(any(), any());
+        }
+
+        @Test
+        @DisplayName("GP 부족 + 유예기간 만료 → EVICTED 로그 + 낮은 등급(D)부터 강제 경매 + TAX_EVICTION 알림")
+        void processUserTax_graceExpired_selectiveEviction() {
+            // taxableCount = 4-3 = 1 → taxAmount = 50
+            given(territoryRepository.countByOwnerId(1L)).willReturn(4L);
+            given(wallet.getAvailableGp()).willReturn(0);
+            given(redisTemplate.hasKey("land_tax:grace:1")).willReturn(false);
+            given(
+                            landTaxLogRepository.existsByUserIdAndStatusAndChargedAtAfter(
+                                    eq(1L), eq(TaxStatus.FAILED), any(LocalDateTime.class)))
+                    .willReturn(true);
+
+            Territory territoryA = mockTerritory("A"); // start price 5000
+            Territory territoryD =
+                    mockTerritory("D"); // start price 500 ≥ taxAmount 50 → stops here
+            given(
+                            territoryRepository.findAllOccupiedByOwnerId(
+                                    eq(1L), eq(Territory.TerritoryStatus.OCCUPIED)))
+                    .willReturn(new ArrayList<>(List.of(territoryA, territoryD)));
+
+            landTaxService.processUserTax(1L);
+
+            // D가 먼저 경매 전환되고, D 낙찰 대금(500) >= taxAmount(50)이므로 A는 건드리지 않음
+            then(territoryD).should().release(any(LocalDateTime.class));
+            then(territoryA).should(never()).release(any());
+            then(landTaxLogRepository).should().save(any(LandTaxLog.class));
+            then(notificationService)
+                    .should()
+                    .sendNotification(
+                            eq(1L), eq(NotificationType.TAX_EVICTION), eq("1개 영토가 강제 경매 전환됐습니다."));
         }
     }
 }
