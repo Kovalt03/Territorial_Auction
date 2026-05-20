@@ -79,7 +79,7 @@ creditedGp = min(storageCapacity, storage.storedGp + accumulatedGp) - storage.st
     "creditedGp": 48,
     "storedGp": 248,
     "productionRatePerMin": 3,
-    "lastProducedAt": "2026-05-20T14:32:00Z",
+    "lastProducedAt": "2026-05-20T14:32:00",
     "storageCapacity": 400
   }
 }
@@ -90,8 +90,27 @@ creditedGp = min(storageCapacity, storage.storedGp + accumulatedGp) - storage.st
 | `creditedGp` | int | 이번 수령으로 실제 적립된 GP (용량 초과분 제외) |
 | `storedGp` | int | 수령 후 Storage에 남은 총 GP |
 | `productionRatePerMin` | int | 현재 기준 분당 유효 생산량 (클라이언트 카운터 계산용) |
-| `lastProducedAt` | ISO 8601 | 이번 settle 완료 시각 (= 수령 요청 시각) |
+| `lastProducedAt` | LocalDateTime (UTC+9, Z 없음) | 이번 settle 완료 시각 (= 수령 요청 시각) |
 | `storageCapacity` | int | 현재 Storage 최대 용량 |
+
+#### STORAGE 파괴 시 응답
+
+STORAGE 건물이 존재하지만 파괴(`isDestroyed = true`)된 경우, 정산 없이 즉시 반환한다.
+
+```json
+{
+  "creditedGp": 0,
+  "storedGp": 50,
+  "productionRatePerMin": 0,
+  "lastProducedAt": "2026-05-20T14:32:00",
+  "storageCapacity": 0
+}
+```
+
+- `creditedGp = 0`: 파괴된 Storage에는 GP를 적립하지 않음
+- `storageCapacity = 0`: 파괴 상태이므로 용량 없음
+- `storedGp`: 파괴 전에 이미 적립된 GP는 유지됨 (약탈 대상)
+- `lastProducedAt`: 정산 미수행이므로 갱신하지 않음
 
 #### 에러
 
@@ -99,6 +118,7 @@ creditedGp = min(storageCapacity, storage.storedGp + accumulatedGp) - storage.st
 |------|-----------|------|
 | 404 | `TERRITORY_NOT_FOUND` | 존재하지 않는 영토 |
 | 403 | `NOT_TERRITORY_OWNER` | 요청자가 해당 영토의 소유자가 아님 |
+| 400 | `TERRITORY_NOT_OCCUPIED` | 영토가 OCCUPIED 상태가 아니거나 점유 기간 만료 |
 | 404 | `BUILDING_NOT_FOUND` | STORAGE 건물이 영토에 없는 경우 |
 
 #### 비즈니스 규칙
@@ -149,7 +169,7 @@ creditedGp = min(storageCapacity, storage.storedGp + accumulatedGp) - storage.st
     ],
     "auction": null,
     "productionRatePerMin": 3,
-    "lastProducedAt": "2026-05-20T14:32:00Z",
+    "lastProducedAt": "2026-05-20T14:32:00",
     "storedGp": 248,
     "storageCapacity": 400
   }
