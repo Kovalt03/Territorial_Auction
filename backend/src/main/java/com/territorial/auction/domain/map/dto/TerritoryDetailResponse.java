@@ -17,7 +17,11 @@ public record TerritoryDetailResponse(
         int baseProductionRate,
         boolean isInvincible,
         List<BuildingInfo> buildings,
-        AuctionInfo auction) {
+        AuctionInfo auction,
+        Integer productionRatePerMin,
+        LocalDateTime lastProducedAt,
+        Integer storedGp,
+        Integer storageCapacity) {
 
     public record OwnerInfo(Long userId, String nickname, String color) {}
 
