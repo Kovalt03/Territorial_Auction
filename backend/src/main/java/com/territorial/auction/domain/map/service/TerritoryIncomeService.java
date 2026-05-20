@@ -7,6 +7,7 @@ import com.territorial.auction.domain.map.dto.CollectTerritoryResponse;
 import com.territorial.auction.domain.map.entity.BonusTile;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.entity.TerritoryProductionLog;
+import com.territorial.auction.domain.map.entity.TerritoryProductionLog.ProductionReason;
 import com.territorial.auction.domain.map.repository.BonusTileRepository;
 import com.territorial.auction.domain.map.repository.TerritoryProductionLogRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
@@ -33,6 +34,14 @@ public class TerritoryIncomeService {
     private final TerritoryProductionLogRepository productionLogRepository;
     private final UserRepository userRepository;
 
+    private record RateBreakdown(int baseRate, int bonusTileRate, int adjacentRate) {
+        int total() {
+            return baseRate + bonusTileRate + adjacentRate;
+        }
+    }
+
+    private record GpBreakdown(int credited, int baseGp, int bonusTileGp, int adjacentGp) {}
+
     @Transactional
     public CollectTerritoryResponse collect(Long userId, Long territoryId) {
         Territory territory =
@@ -44,31 +53,70 @@ public class TerritoryIncomeService {
 
         BuildingInstance storage =
                 buildingInstanceRepository
-                        .findActiveStorageByTerritoryId(territoryId)
+                        .findStorageByTerritoryIdWithLock(territoryId)
                         .orElseThrow(() -> new CustomException(ErrorCode.BUILDING_NOT_FOUND));
 
-        int creditedGp = doSettle(territory, storage);
-        int storageCapacity = storage.getLevel() * TerritoryIncomePolicy.STORAGE_CAPACITY_PER_LEVEL;
+        if (storage.isDestroyed()) {
+            return destroyedStorageResponse(territory, storage);
+        }
 
-        return new CollectTerritoryResponse(
-                creditedGp,
-                storage.getStoredGp(),
-                calculateEffectiveRate(territory),
-                territory.getLastProducedAt(),
-                storageCapacity);
+        int creditedGp = doSettle(territory, storage);
+        return buildCollectResponse(territory, storage, creditedGp);
     }
 
     public int calculateEffectiveRate(Territory territory) {
         if (territory.getOwner() == null) return 0;
+        return computeRateBreakdown(territory).total();
+    }
 
-        double rate = territory.getBaseProductionRate();
-        rate *= territory.getGrade().getProductionMultiplier().doubleValue();
-
-        BonusTile bonusTile = bonusTileRepository.findByTerritoryId(territory.getId()).orElse(null);
-        if (bonusTile != null) {
-            rate *= bonusTile.getMultiplier().doubleValue();
+    private int doSettle(Territory territory, BuildingInstance storage) {
+        LocalDateTime now = LocalDateTime.now();
+        if (territory.getLastProducedAt() == null) {
+            territory.updateLastProducedAt(now);
+            return 0;
         }
+        long elapsedMinutes = ChronoUnit.MINUTES.between(territory.getLastProducedAt(), now);
+        if (elapsedMinutes < 1) return 0;
 
+        GpBreakdown gp = computeGpBreakdown(territory, storage, elapsedMinutes);
+        if (gp.credited() > 0) {
+            storage.addStoredGp(gp.credited());
+            User ownerRef = userRepository.getReferenceById(territory.getOwner().getId());
+            saveProductionLogs(territory, ownerRef, gp);
+            log.info(
+                    "영토 수입 정산. territoryId={}, ownerId={}, creditedGp={}, elapsedMinutes={}",
+                    territory.getId(),
+                    territory.getOwner().getId(),
+                    gp.credited(),
+                    elapsedMinutes);
+        }
+        territory.updateLastProducedAt(now);
+        return gp.credited();
+    }
+
+    private GpBreakdown computeGpBreakdown(
+            Territory territory, BuildingInstance storage, long elapsed) {
+        RateBreakdown rates = computeRateBreakdown(territory);
+        int cap =
+                Math.max(
+                        0,
+                        storage.getLevel() * TerritoryIncomePolicy.STORAGE_CAPACITY_PER_LEVEL
+                                - storage.getStoredGp());
+        long totalRaw = (long) rates.total() * elapsed;
+        int credited = (int) Math.min(totalRaw, cap);
+        if (credited == 0 || totalRaw == 0) return new GpBreakdown(0, 0, 0, 0);
+
+        double scale = (double) credited / totalRaw;
+        int baseGp = (int) Math.floor((long) rates.baseRate() * elapsed * scale);
+        int bonusTileGp = (int) Math.floor((long) rates.bonusTileRate() * elapsed * scale);
+        return new GpBreakdown(credited, baseGp, bonusTileGp, credited - baseGp - bonusTileGp);
+    }
+
+    private RateBreakdown computeRateBreakdown(Territory territory) {
+        double base = territory.getBaseProductionRate();
+        double grade = territory.getGrade().getProductionMultiplier().doubleValue();
+        BonusTile bonusTile = bonusTileRepository.findByTerritoryId(territory.getId()).orElse(null);
+        double btMul = bonusTile != null ? bonusTile.getMultiplier().doubleValue() : 1.0;
         int adjacentCount =
                 territoryRepository.countAdjacentOccupiedByOwner(
                         territory.getCoordX(),
@@ -76,49 +124,54 @@ public class TerritoryIncomeService {
                         territory.getOwner().getId(),
                         territory.getId(),
                         Territory.TerritoryStatus.OCCUPIED);
-        rate *= (1.0 + adjacentCount * TerritoryIncomePolicy.ADJACENT_BONUS_RATE);
 
-        return (int) Math.floor(rate);
+        int baseRate = (int) Math.floor(base * grade);
+        int rateWithBt = (int) Math.floor(base * grade * btMul);
+        int totalRate =
+                (int)
+                        Math.floor(
+                                base
+                                        * grade
+                                        * btMul
+                                        * (1.0
+                                                + adjacentCount
+                                                        * TerritoryIncomePolicy
+                                                                .ADJACENT_BONUS_RATE));
+        return new RateBreakdown(baseRate, rateWithBt - baseRate, totalRate - rateWithBt);
     }
 
-    private int doSettle(Territory territory, BuildingInstance storage) {
-        LocalDateTime now = LocalDateTime.now();
+    private void saveProductionLogs(Territory territory, User ownerRef, GpBreakdown gp) {
+        if (gp.baseGp() > 0) saveLog(territory, ownerRef, gp.baseGp(), ProductionReason.BASE);
+        if (gp.bonusTileGp() > 0)
+            saveLog(territory, ownerRef, gp.bonusTileGp(), ProductionReason.BONUS_TILE);
+        if (gp.adjacentGp() > 0)
+            saveLog(territory, ownerRef, gp.adjacentGp(), ProductionReason.ADJACENT_BONUS);
+    }
 
-        if (territory.getLastProducedAt() == null) {
-            territory.updateLastProducedAt(now);
-            return 0;
-        }
+    private void saveLog(Territory territory, User ownerRef, int amount, ProductionReason reason) {
+        productionLogRepository.save(
+                TerritoryProductionLog.builder()
+                        .territory(territory)
+                        .owner(ownerRef)
+                        .amount(amount)
+                        .reason(reason)
+                        .build());
+    }
 
-        long elapsedMinutes = ChronoUnit.MINUTES.between(territory.getLastProducedAt(), now);
-        if (elapsedMinutes < 1) return 0;
+    private CollectTerritoryResponse destroyedStorageResponse(
+            Territory territory, BuildingInstance storage) {
+        return new CollectTerritoryResponse(
+                0, storage.getStoredGp(), 0, territory.getLastProducedAt(), 0);
+    }
 
-        int effectiveRate = calculateEffectiveRate(territory);
-        long totalGp = (long) effectiveRate * elapsedMinutes;
-
-        int storageCapacity = storage.getLevel() * TerritoryIncomePolicy.STORAGE_CAPACITY_PER_LEVEL;
-        int availableSpace = Math.max(0, storageCapacity - storage.getStoredGp());
-        int creditedGp = (int) Math.min(totalGp, availableSpace);
-
-        if (creditedGp > 0) {
-            storage.addStoredGp(creditedGp);
-            User ownerRef = userRepository.getReferenceById(territory.getOwner().getId());
-            productionLogRepository.save(
-                    TerritoryProductionLog.builder()
-                            .territory(territory)
-                            .owner(ownerRef)
-                            .amount(creditedGp)
-                            .reason(TerritoryProductionLog.ProductionReason.BASE)
-                            .build());
-            log.info(
-                    "영토 수입 정산. territoryId={}, ownerId={}, creditedGp={}, elapsedMinutes={}",
-                    territory.getId(),
-                    territory.getOwner().getId(),
-                    creditedGp,
-                    elapsedMinutes);
-        }
-
-        territory.updateLastProducedAt(now);
-        return creditedGp;
+    private CollectTerritoryResponse buildCollectResponse(
+            Territory territory, BuildingInstance storage, int creditedGp) {
+        return new CollectTerritoryResponse(
+                creditedGp,
+                storage.getStoredGp(),
+                calculateEffectiveRate(territory),
+                territory.getLastProducedAt(),
+                storage.getLevel() * TerritoryIncomePolicy.STORAGE_CAPACITY_PER_LEVEL);
     }
 
     private void validateOwner(Territory territory, Long userId) {
