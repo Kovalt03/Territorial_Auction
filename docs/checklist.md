@@ -174,7 +174,7 @@
 ### Territory Income
 | 상태 | 기능 | 엔드포인트 | 비고 |
 |---|---|---|---|
-| ⬜ | 영토 수령 | `POST /api/v1/territories/{id}/collect` | Lazy Evaluation 방식, settle() 로직 포함 (be-28) |
+| ✅ | 영토 수령 | `POST /api/v1/territories/{id}/collect` | Lazy Evaluation 방식, settle() 로직 포함 (be-28) |
 
 ---
 
