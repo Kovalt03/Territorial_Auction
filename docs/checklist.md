@@ -171,6 +171,13 @@
 
 ---
 
+### Territory Income
+| 상태 | 기능 | 엔드포인트 | 비고 |
+|---|---|---|---|
+| ⬜ | 영토 수령 | `POST /api/v1/territories/{id}/collect` | Lazy Evaluation 방식, settle() 로직 포함 (be-28) |
+
+---
+
 ## WebSocket / STOMP (실시간)
 
 ### 기반 설정
@@ -215,8 +222,8 @@
 | ✅ | 시즌 영토 등급 보유 집계 배치 | `season_territory_holds` → Redis Sorted Set 갱신 (1시간 주기) |
 | ✅ | 토지세 배치 스케줄러 | 매일 자정 차감 + GP 부족 처리 (be-20) |
 | ✅ | 전투 결과 처리 스케줄러 | 1분 주기, `SiegeScheduler` |
-| ⬜ | 시즌 패스 만료 알림 스케줄러 | 만료 3일 전·당일 |
-| ⬜ | 영토 소득 정산 스케줄러 | 주기적 GP 생산량 적립 (주기 미결정) |
+| ✅ | 시즌 패스 만료 알림 스케줄러 | 만료 3일 전·당일 (SeasonPassScheduler, be-25) |
+| ⬜ | 일 정산 배치 (선택) | 미수령 생산량 settle + `territory_production_logs` 기록. 구현 여부 미확정 |
 | ⬜ | 시즌 종료 배치 | 리그별 보상 지급 + 트로피 50% 리셋. 관리자가 `seasons.ended_at` 설정 시 자동 트리거 |
 
 ---
@@ -243,7 +250,6 @@
 | 항목 | 이유 |
 |---|---|
 | **식량 생산 수단** | 가장 마지막 구현 요소. Workshop이 GP만 생산하는지 식량도 생산하는지 별도 기획 필요. `wallets.available_food` 컬럼은 예약됨. |
-| **GP 생산 정산 스케줄러 주기** | 분 단위 희망하나 서버 부하 고려 중. 별도 의논 후 결정. |
 
 ---
 
