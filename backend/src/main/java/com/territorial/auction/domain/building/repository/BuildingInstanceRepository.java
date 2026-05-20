@@ -1,9 +1,11 @@
 package com.territorial.auction.domain.building.repository;
 
 import com.territorial.auction.domain.building.entity.BuildingInstance;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -39,5 +41,15 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " AND b.posX >= 0"
                     + " AND b.isDestroyed = false")
     Optional<BuildingInstance> findActiveStorageByTerritoryId(
+            @Param("territoryId") Long territoryId);
+
+    // 파괴 여부 무관 조회 + 비관적 락 — collect() 전용
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(
+            "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType"
+                    + " WHERE b.territory.id = :territoryId"
+                    + " AND b.buildingType.name = 'STORAGE'"
+                    + " AND b.posX >= 0")
+    Optional<BuildingInstance> findStorageByTerritoryIdWithLock(
             @Param("territoryId") Long territoryId);
 }
