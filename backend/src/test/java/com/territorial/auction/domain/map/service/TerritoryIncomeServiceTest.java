@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
@@ -80,18 +81,19 @@ class TerritoryIncomeServiceTest {
     class Collect {
 
         @Test
-        @DisplayName("정상 수령 → creditedGp 적립 + 로그 저장")
+        @DisplayName("정상 수령 → creditedGp 적립 + BASE 로그 저장")
         void collect_success() {
-            // given
+            // given — base=1, grade=1.0, 보너스 없음, elapsed=60분 → 60GP
             ReflectionTestUtils.setField(
                     territory, "lastProducedAt", LocalDateTime.now().minusMinutes(60));
 
             BuildingInstance storage = mock(BuildingInstance.class);
+            given(storage.isDestroyed()).willReturn(false);
             given(storage.getLevel()).willReturn(2);
             given(storage.getStoredGp()).willReturn(0);
 
             given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.findActiveStorageByTerritoryId(10L))
+            given(buildingInstanceRepository.findStorageByTerritoryIdWithLock(10L))
                     .willReturn(Optional.of(storage));
             given(bonusTileRepository.findByTerritoryId(10L)).willReturn(Optional.empty());
             given(
@@ -100,7 +102,7 @@ class TerritoryIncomeServiceTest {
                     .willReturn(0);
             given(userRepository.getReferenceById(1L)).willReturn(owner);
 
-            // when — effectiveRate = floor(1 × 1.0 × 1.0) = 1 GP/min, elapsed = 60 min → 60 GP
+            // when
             CollectTerritoryResponse response = territoryIncomeService.collect(1L, 10L);
 
             // then
@@ -108,18 +110,42 @@ class TerritoryIncomeServiceTest {
             assertThat(response.productionRatePerMin()).isEqualTo(1);
             assertThat(response.storageCapacity()).isEqualTo(400);
             then(storage).should().addStoredGp(60);
-            then(productionLogRepository).should().save(any(TerritoryProductionLog.class));
+            // 보너스 없음 → BASE 로그 1건
+            then(productionLogRepository).should(times(1)).save(any(TerritoryProductionLog.class));
+        }
+
+        @Test
+        @DisplayName("STORAGE 파괴 → creditedGp=0, 로그 미저장, storageCapacity=0")
+        void collect_destroyedStorage_returnsZero() {
+            // given
+            ReflectionTestUtils.setField(
+                    territory, "lastProducedAt", LocalDateTime.now().minusMinutes(60));
+
+            BuildingInstance destroyedStorage = mock(BuildingInstance.class);
+            given(destroyedStorage.isDestroyed()).willReturn(true);
+            given(destroyedStorage.getStoredGp()).willReturn(50);
+
+            given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
+            given(buildingInstanceRepository.findStorageByTerritoryIdWithLock(10L))
+                    .willReturn(Optional.of(destroyedStorage));
+
+            // when
+            CollectTerritoryResponse response = territoryIncomeService.collect(1L, 10L);
+
+            // then
+            assertThat(response.creditedGp()).isEqualTo(0);
+            assertThat(response.storedGp()).isEqualTo(50);
+            assertThat(response.productionRatePerMin()).isEqualTo(0);
+            assertThat(response.storageCapacity()).isEqualTo(0);
+            then(productionLogRepository).should(never()).save(any());
         }
 
         @Test
         @DisplayName("STORAGE 없음 → BUILDING_NOT_FOUND 예외")
         void collect_noStorage_throwsBuildingNotFound() {
             // given
-            ReflectionTestUtils.setField(
-                    territory, "lastProducedAt", LocalDateTime.now().minusMinutes(30));
-
             given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.findActiveStorageByTerritoryId(10L))
+            given(buildingInstanceRepository.findStorageByTerritoryIdWithLock(10L))
                     .willReturn(Optional.empty());
 
             // when / then
@@ -145,9 +171,8 @@ class TerritoryIncomeServiceTest {
         @Test
         @DisplayName("점유 상태 아님 → TERRITORY_NOT_OCCUPIED 예외")
         void collect_notOccupied_throwsTerritoryNotOccupied() {
-            // given
+            // given — status만 IDLE로 변경, owner는 유지 → validateOwner 통과 후 validateOccupied 실패
             ReflectionTestUtils.setField(territory, "status", Territory.TerritoryStatus.IDLE);
-            ReflectionTestUtils.setField(territory, "owner", null);
 
             given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
 
@@ -155,22 +180,23 @@ class TerritoryIncomeServiceTest {
             assertThatThrownBy(() -> territoryIncomeService.collect(1L, 10L))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
-                    .isEqualTo(ErrorCode.NOT_TERRITORY_OWNER);
+                    .isEqualTo(ErrorCode.TERRITORY_NOT_OCCUPIED);
         }
 
         @Test
-        @DisplayName("저장소 용량 가득 → creditedGp = 0, 로그 미저장")
+        @DisplayName("저장소 용량 가득 → creditedGp=0, 로그 미저장")
         void collect_storageAtCapacity_creditedGpIsZero() {
             // given — level 1, capacity 200, storedGp 200 (full)
             ReflectionTestUtils.setField(
                     territory, "lastProducedAt", LocalDateTime.now().minusMinutes(60));
 
             BuildingInstance storage = mock(BuildingInstance.class);
+            given(storage.isDestroyed()).willReturn(false);
             given(storage.getLevel()).willReturn(1);
             given(storage.getStoredGp()).willReturn(200);
 
             given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.findActiveStorageByTerritoryId(10L))
+            given(buildingInstanceRepository.findStorageByTerritoryIdWithLock(10L))
                     .willReturn(Optional.of(storage));
             given(bonusTileRepository.findByTerritoryId(10L)).willReturn(Optional.empty());
             given(
@@ -188,18 +214,19 @@ class TerritoryIncomeServiceTest {
         }
 
         @Test
-        @DisplayName("경과 시간 1분 미만 → creditedGp = 0")
+        @DisplayName("경과 시간 1분 미만 → creditedGp=0")
         void collect_elapsedLessThanOneMinute_creditedGpIsZero() {
             // given — lastProducedAt 30초 전
             ReflectionTestUtils.setField(
                     territory, "lastProducedAt", LocalDateTime.now().minusSeconds(30));
 
             BuildingInstance storage = mock(BuildingInstance.class);
+            given(storage.isDestroyed()).willReturn(false);
             given(storage.getLevel()).willReturn(2);
             given(storage.getStoredGp()).willReturn(0);
 
             given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.findActiveStorageByTerritoryId(10L))
+            given(buildingInstanceRepository.findStorageByTerritoryIdWithLock(10L))
                     .willReturn(Optional.of(storage));
             given(bonusTileRepository.findByTerritoryId(10L)).willReturn(Optional.empty());
             given(
@@ -222,7 +249,7 @@ class TerritoryIncomeServiceTest {
         @Test
         @DisplayName("인접 2칸 소유 → effectiveRate에 20% 보너스 적용")
         void calculateEffectiveRate_withAdjacentBonus() {
-            // given — baseRate 1, gradeMultiplier 1.0, adjacent 2 → rate = 1.0 × 1.2 = 1 (floor)
+            // given — base=1, grade=1.0, adjacent=2 → rate = floor(1.0 × 1.2) = 1
             given(bonusTileRepository.findByTerritoryId(10L)).willReturn(Optional.empty());
             given(
                             territoryRepository.countAdjacentOccupiedByOwner(
@@ -232,7 +259,7 @@ class TerritoryIncomeServiceTest {
             // when
             int rate = territoryIncomeService.calculateEffectiveRate(territory);
 
-            // then — floor(1 × 1.0 × 1.2) = 1
+            // then
             assertThat(rate).isEqualTo(1);
         }
 
@@ -257,7 +284,7 @@ class TerritoryIncomeServiceTest {
         }
 
         @Test
-        @DisplayName("소유자 없음(비점유) → effectiveRate = 0")
+        @DisplayName("소유자 없음(비점유) → effectiveRate=0")
         void calculateEffectiveRate_noOwner_returnsZero() {
             // given
             ReflectionTestUtils.setField(territory, "owner", null);
