@@ -2,6 +2,7 @@ package com.territorial.auction.domain.building.repository;
 
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,4 +31,13 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " WHERE b.territory.id = :territoryId AND b.zone = :zone AND b.isDestroyed = false")
     List<BuildingInstance> findActiveByTerritoryIdAndZone(
             @Param("territoryId") Long territoryId, @Param("zone") Integer zone);
+
+    @Query(
+            "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType"
+                    + " WHERE b.territory.id = :territoryId"
+                    + " AND b.buildingType.name = 'STORAGE'"
+                    + " AND b.posX >= 0"
+                    + " AND b.isDestroyed = false")
+    Optional<BuildingInstance> findActiveStorageByTerritoryId(
+            @Param("territoryId") Long territoryId);
 }
