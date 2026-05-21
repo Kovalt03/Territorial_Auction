@@ -174,7 +174,7 @@
 | ✅ | BuildingType.unitCapacityPerLevel | RESIDENCE 전용 |
 | ✅ | FarmlandScheduler | 1시간 주기 식량 생산 적립 |
 | ✅ | CASTLE 레벨별 기본 유닛 슬롯 | MilitaryPolicy (1→5, 2→10, 3→15) |
-| ⬜ | FARMLAND·RESIDENCE·WORKSHOP 시드 데이터 | building_types INSERT 필요 |
+| ✅ | FARMLAND·RESIDENCE·WORKSHOP 시드 데이터 | building_types 8종 전체 seed.sql 삽입 완료 (be-33) |
 
 ### Building — WORKSHOP GP 생산 (be-30)
 | 상태 | 기능 | 비고 |
