@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.map.service;
 
+import com.territorial.auction.domain.auction.AuctionPolicy;
 import com.territorial.auction.domain.map.LandTaxPolicy;
 import com.territorial.auction.domain.map.dto.TaxLogResponse;
 import com.territorial.auction.domain.map.dto.TaxStatusResponse;
@@ -8,6 +9,8 @@ import com.territorial.auction.domain.map.entity.LandTaxLog.TaxStatus;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.LandTaxLogRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.notification.entity.NotificationLog.NotificationType;
+import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
@@ -19,7 +22,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,12 +41,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class LandTaxService {
 
     private static final String CACHE_KEY_PREFIX = "land_tax:expected:";
+    private static final String GRACE_KEY_PREFIX = "land_tax:grace:";
+    private static final Map<String, Integer> GRADE_EVICTION_ORDER =
+            Map.of("D", 1, "C", 2, "B", 3, "A", 4, "S", 5);
 
     private final TerritoryRepository territoryRepository;
     private final LandTaxLogRepository landTaxLogRepository;
     private final UserSeasonPassRepository userSeasonPassRepository;
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
     private final RedisTemplate<String, Object> redisTemplate;
 
     public TaxStatusResponse getLandTaxStatus(Long userId) {
@@ -164,27 +173,89 @@ public class LandTaxService {
         if (wallet.getAvailableGp() >= taxAmount) {
             wallet.spendGp(taxAmount);
             saveLog(userId, territoryCount, taxAmount, TaxStatus.PAID);
+            clearGraceKey(userId);
             log.info(
                     "토지세 납부 완료. userId={}, taxAmount={}, territoryCount={}",
                     userId,
                     taxAmount,
                     territoryCount);
-        } else {
-            enforceEviction(userId);
+            return;
+        }
+
+        String graceKey = GRACE_KEY_PREFIX + userId;
+        boolean isInGrace = Boolean.TRUE.equals(redisTemplate.hasKey(graceKey));
+        if (isInGrace) {
             saveLog(userId, territoryCount, 0, TaxStatus.FAILED);
+            return;
+        }
+
+        // 유예기간 키가 없는 상태에서 이전 FAILED 로그가 있으면 유예기간이 만료된 것으로 판단
+        boolean hadPreviousFail =
+                landTaxLogRepository.existsByUserIdAndStatusAndChargedAtAfter(
+                        userId, TaxStatus.FAILED, LocalDateTime.now().minusDays(2));
+        if (hadPreviousFail) {
+            saveLog(userId, territoryCount, 0, TaxStatus.EVICTED);
+            enforceSelectiveEviction(userId, taxAmount);
+        } else {
+            saveLog(userId, territoryCount, 0, TaxStatus.FAILED);
+            setGraceKey(userId);
+            notificationService.sendNotification(
+                    userId,
+                    NotificationType.TAX_FAIL_WARNING,
+                    "토지세 납부에 실패했습니다. "
+                            + LandTaxPolicy.GRACE_PERIOD_HOURS
+                            + "시간 내에 GP를 충전하지 않으면 영토가 강제 경매 전환됩니다.");
         }
     }
 
-    private void enforceEviction(Long userId) {
+    private void enforceSelectiveEviction(Long userId, int taxAmount) {
         List<Territory> territories =
                 territoryRepository.findAllOccupiedByOwnerId(
                         userId, Territory.TerritoryStatus.OCCUPIED);
+        territories.sort(
+                Comparator.comparingInt(
+                        t -> GRADE_EVICTION_ORDER.getOrDefault(t.getGrade().getGrade(), 99)));
         LocalDateTime nextAuctionAt =
                 LocalDateTime.now().plusHours(LandTaxPolicy.EVICTION_REAUCTION_DELAY_HOURS);
+        int remaining = taxAmount;
+        int evictedCount = 0;
         for (Territory territory : territories) {
+            if (remaining <= 0) break;
             territory.release(nextAuctionAt);
+            int startPrice =
+                    AuctionPolicy.GRADE_START_PRICES.getOrDefault(
+                            territory.getGrade().getGrade(), AuctionPolicy.DEFAULT_START_PRICE);
+            remaining -= startPrice;
+            evictedCount++;
         }
-        log.info("토지세 미납으로 영토 환수. userId={}, territoryCount={}", userId, territories.size());
+        notificationService.sendNotification(
+                userId, NotificationType.TAX_EVICTION, evictedCount + "개 영토가 강제 경매 전환됐습니다.");
+        log.info(
+                "토지세 미납 강제 경매 전환. userId={}, evictedCount={}, taxAmount={}",
+                userId,
+                evictedCount,
+                taxAmount);
+    }
+
+    private void setGraceKey(Long userId) {
+        try {
+            redisTemplate
+                    .opsForValue()
+                    .set(
+                            GRACE_KEY_PREFIX + userId,
+                            1,
+                            Duration.ofHours(LandTaxPolicy.GRACE_PERIOD_HOURS));
+        } catch (Exception e) {
+            log.error("토지세 유예기간 Redis 키 저장 실패. userId={}", userId, e);
+        }
+    }
+
+    private void clearGraceKey(Long userId) {
+        try {
+            redisTemplate.delete(GRACE_KEY_PREFIX + userId);
+        } catch (Exception e) {
+            log.error("토지세 유예기간 Redis 키 삭제 실패. userId={}", userId, e);
+        }
     }
 
     private int resolveSeasonPassExemptBonus(Long userId) {
