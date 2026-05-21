@@ -52,4 +52,30 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " AND b.posX >= 0")
     Optional<BuildingInstance> findStorageByTerritoryIdWithLock(
             @Param("territoryId") Long territoryId);
+
+    /** 유저 소유 영토의 활성 BARRACKS 중 최고 레벨 반환 */
+    @Query(
+            "SELECT MAX(b.level) FROM BuildingInstance b"
+                    + " WHERE b.territory.owner.id = :userId AND b.buildingType.name = 'BARRACKS' AND b.isDestroyed = false")
+    Optional<Integer> findMaxBarracksLevelByOwnerId(@Param("userId") Long userId);
+
+    /** 유저 소유 영토의 활성 CASTLE 레벨 목록 반환 */
+    @Query(
+            "SELECT b.level FROM BuildingInstance b"
+                    + " WHERE b.territory.owner.id = :userId AND b.buildingType.name = 'CASTLE' AND b.isDestroyed = false")
+    List<Integer> findActiveCastleLevelsByOwnerId(@Param("userId") Long userId);
+
+    /** 유저 소유 영토의 활성 RESIDENCE 유닛 슬롯 합산 (level × unitCapacityPerLevel) */
+    @Query(
+            "SELECT COALESCE(SUM(b.level * b.buildingType.unitCapacityPerLevel), 0) FROM BuildingInstance b"
+                    + " WHERE b.territory.owner.id = :userId AND b.buildingType.name = 'RESIDENCE' AND b.isDestroyed = false")
+    Integer sumResidenceCapacityByOwnerId(@Param("userId") Long userId);
+
+    /** 농경지 식량 생산량을 소유자별로 합산 — FarmlandScheduler 전용 */
+    @Query(
+            "SELECT b.territory.owner.id, SUM(b.level * b.buildingType.foodProductionRate)"
+                    + " FROM BuildingInstance b"
+                    + " WHERE b.buildingType.name = 'FARMLAND' AND b.isDestroyed = false AND b.territory IS NOT NULL"
+                    + " GROUP BY b.territory.owner.id")
+    List<Object[]> sumFarmlandFoodProductionGroupedByOwner();
 }

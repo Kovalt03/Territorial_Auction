@@ -26,7 +26,11 @@ public class UnitType {
     private Integer costGp;
 
     @Column(nullable = false)
-    private Integer foodCostPerHour;
+    private Integer foodCost;
+
+    /** 생산에 필요한 최소 병영 레벨 */
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 1")
+    private Integer level = 1;
 
     @Builder
     public UnitType(
@@ -34,11 +38,13 @@ public class UnitType {
             Integer attackPower,
             Integer defensePower,
             Integer costGp,
-            Integer foodCostPerHour) {
+            Integer foodCost,
+            Integer level) {
         this.name = name;
         this.attackPower = attackPower;
         this.defensePower = defensePower;
         this.costGp = costGp;
-        this.foodCostPerHour = foodCostPerHour;
+        this.foodCost = foodCost;
+        this.level = level != null ? level : 1;
     }
 }

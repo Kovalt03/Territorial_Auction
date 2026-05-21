@@ -84,7 +84,10 @@ public enum ErrorCode {
     // Military
     INSUFFICIENT_TROOPS(HttpStatus.BAD_REQUEST, "병력이 부족합니다."),
     NO_BARRACKS(HttpStatus.BAD_REQUEST, "병영이 없습니다."),
+    BARRACKS_LEVEL_INSUFFICIENT(HttpStatus.BAD_REQUEST, "병영 레벨이 부족합니다."),
     INSUFFICIENT_UNITS(HttpStatus.BAD_REQUEST, "보유 유닛이 부족합니다."),
+    UNIT_CAPACITY_EXCEEDED(HttpStatus.BAD_REQUEST, "유닛 수용 한도를 초과했습니다."),
+    FOOD_INSUFFICIENT(HttpStatus.BAD_REQUEST, "식량이 부족합니다."),
     NO_ATTACK_TOKEN(HttpStatus.BAD_REQUEST, "공격권이 없습니다."),
     ZONE_NOT_CLEARED(HttpStatus.BAD_REQUEST, "이전 Zone을 클리어해야 합니다."),
     TERRITORY_PROTECTED(HttpStatus.BAD_REQUEST, "보호 기간 중인 영토입니다."),

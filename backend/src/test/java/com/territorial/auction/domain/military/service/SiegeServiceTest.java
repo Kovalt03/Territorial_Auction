@@ -86,7 +86,8 @@ class SiegeServiceTest {
                         .attackPower(attackPower)
                         .defensePower(defensePower)
                         .costGp(100)
-                        .foodCostPerHour(1)
+                        .foodCost(1)
+                        .level(1)
                         .build();
         return UnitInstance.builder().user(attacker).unitType(unitType).quantity(quantity).build();
     }

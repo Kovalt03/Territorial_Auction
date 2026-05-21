@@ -24,4 +24,7 @@ public interface UnitInstanceRepository extends JpaRepository<UnitInstance, Long
                     + " WHERE u.deployedTerritory.id IN :territoryIds"
                     + " GROUP BY u.deployedTerritory.id")
     List<Object[]> sumQuantityGroupByTerritoryIds(@Param("territoryIds") List<Long> territoryIds);
+
+    @Query("SELECT COALESCE(SUM(u.quantity), 0) FROM UnitInstance u WHERE u.user.id = :userId")
+    Integer sumQuantityByUserId(@Param("userId") Long userId);
 }

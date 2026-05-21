@@ -115,12 +115,14 @@ class MilitaryServiceTest {
                         .attackPower(10)
                         .defensePower(8)
                         .costGp(100)
-                        .foodCostPerHour(2)
+                        .foodCost(2)
+                        .level(1)
                         .build();
         ReflectionTestUtils.setField(unitType, "id", 1L);
 
         wallet = Wallet.builder().user(attacker).build();
         ReflectionTestUtils.setField(wallet, "availableGp", 5000);
+        ReflectionTestUtils.setField(wallet, "availableFood", 500);
 
         attackToken = AttackToken.builder().user(attacker).build();
         ReflectionTestUtils.setField(attackToken, "normalCount", 3);
@@ -225,13 +227,19 @@ class MilitaryServiceTest {
     class ProduceUnit {
 
         @Test
-        @DisplayName("병영 있음 + GP 충분 + idle 없음 → 새 인스턴스 save + GP 차감 + 응답 반환")
+        @DisplayName("병영 있음 + GP/식량 충분 + idle 없음 → 새 인스턴스 save + GP/식량 차감 + 응답 반환")
         void produceUnit_success_newInstance() {
             // given
             ProduceUnitRequest req = new ProduceUnitRequest(1L, 10);
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
             given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
+                    .willReturn(Optional.of(1));
+            given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
+            given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
+                    .willReturn(List.of(2)); // 10 slots
+            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(wallet));
             given(
                             unitInstanceRepository
                                     .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
@@ -249,14 +257,20 @@ class MilitaryServiceTest {
         }
 
         @Test
-        @DisplayName("병영 있음 + GP 충분 + idle 이미 존재 → addQuantity 호출, save 미호출")
+        @DisplayName("병영 있음 + GP/식량 충분 + idle 이미 존재 → addQuantity 호출, save 미호출")
         void produceUnit_success_existingInstance() {
             // given
             ProduceUnitRequest req = new ProduceUnitRequest(1L, 5);
             UnitInstance existing = idleInstance(20);
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
             given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
+                    .willReturn(Optional.of(1));
+            given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
+            given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
+                    .willReturn(List.of(1)); // 5 slots
+            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(wallet));
             given(
                             unitInstanceRepository
                                     .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
@@ -286,19 +300,104 @@ class MilitaryServiceTest {
         }
 
         @Test
-        @DisplayName("GP 부족 → INSUFFICIENT_GP")
-        void produceUnit_insufficientGp() {
-            // given
-            ProduceUnitRequest req = new ProduceUnitRequest(1L, 100); // 100 * 100 = 10000 > 5000
+        @DisplayName("병영 레벨 부족 → BARRACKS_LEVEL_INSUFFICIENT")
+        void produceUnit_barracksLevelInsufficient() {
+            // given — unitType.level=1 이지만 병영 최고 레벨=0 (또는 없음)
+            UnitType highLevelUnit =
+                    UnitType.builder()
+                            .name("KNIGHT")
+                            .attackPower(30)
+                            .defensePower(20)
+                            .costGp(300)
+                            .foodCost(10)
+                            .level(3)
+                            .build();
+            ReflectionTestUtils.setField(highLevelUnit, "id", 3L);
+
+            ProduceUnitRequest req = new ProduceUnitRequest(3L, 1);
+            given(unitTypeRepository.findById(3L)).willReturn(Optional.of(highLevelUnit));
+            given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
+            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
+                    .willReturn(Optional.of(2)); // 레벨 2 병영, 레벨 3 유닛 생산 불가
+
+            // when / then
+            assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BARRACKS_LEVEL_INSUFFICIENT);
+        }
+
+        @Test
+        @DisplayName("유닛 상한 초과 → UNIT_CAPACITY_EXCEEDED")
+        void produceUnit_unitCapacityExceeded() {
+            // given — 현재 5마리, 상한 5, 추가 1 → 초과
+            ProduceUnitRequest req = new ProduceUnitRequest(1L, 1);
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
             given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
+                    .willReturn(Optional.of(1));
+            given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(5); // 현재 5마리
+            given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
+                    .willReturn(List.of(1)); // 5 slots
+            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
+
+            // when / then
+            assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.UNIT_CAPACITY_EXCEEDED);
+        }
+
+        @Test
+        @DisplayName("GP 부족 → INSUFFICIENT_GP")
+        void produceUnit_insufficientGp() {
+            // given — qty=10, GP cost=1000 > 500 (wallet GP를 500으로 조정)
+            ProduceUnitRequest req = new ProduceUnitRequest(1L, 10);
+            Wallet poorWallet = Wallet.builder().user(attacker).build();
+            ReflectionTestUtils.setField(poorWallet, "availableGp", 500);
+            ReflectionTestUtils.setField(poorWallet, "availableFood", 500);
+
+            given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
+            given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
+            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
+                    .willReturn(Optional.of(1));
+            given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
+            given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
+                    .willReturn(List.of(2)); // 10 slots
+            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(poorWallet));
 
             // when / then
             assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INSUFFICIENT_GP);
+        }
+
+        @Test
+        @DisplayName("식량 부족 → FOOD_INSUFFICIENT")
+        void produceUnit_foodInsufficient() {
+            // given — qty=5, food cost=10, wallet food=5
+            ProduceUnitRequest req = new ProduceUnitRequest(1L, 5);
+            Wallet hungryWallet = Wallet.builder().user(attacker).build();
+            ReflectionTestUtils.setField(hungryWallet, "availableGp", 5000);
+            ReflectionTestUtils.setField(hungryWallet, "availableFood", 5); // 5 < 10(=2*5)
+
+            given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
+            given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
+            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
+                    .willReturn(Optional.of(1));
+            given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
+            given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
+                    .willReturn(List.of(1)); // 5 slots
+            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(hungryWallet));
+
+            // when / then
+            assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.FOOD_INSUFFICIENT);
         }
     }
 
@@ -726,26 +825,28 @@ class MilitaryServiceTest {
     class GetUnitList {
 
         @Test
-        @DisplayName("유닛 없음 → 빈 리스트 + totalFoodCostPerHour=0")
+        @DisplayName("유닛 없음 → 빈 리스트 + availableFood 반환")
         void getUnitList_empty() {
             // given
             given(unitInstanceRepository.findByUserId(1L)).willReturn(Collections.emptyList());
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
 
             // when
             UnitListResponse response = militaryService.getUnitList(1L);
 
             // then
             assertThat(response.units()).isEmpty();
-            assertThat(response.totalFoodCostPerHour()).isEqualTo(0);
+            assertThat(response.availableFood()).isEqualTo(500);
         }
 
         @Test
-        @DisplayName("idle/deployed 혼재 → deployedCount, idleCount 정확히 계산")
+        @DisplayName("idle/deployed 혼재 → deployedCount/idleCount 정확히 계산, foodCost 단가 반환")
         void getUnitList_mixedInstances() {
             // given
             UnitInstance idle = idleInstance(30);
             UnitInstance deployed = deployedInstance(20);
             given(unitInstanceRepository.findByUserId(1L)).willReturn(List.of(idle, deployed));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
 
             // when
             UnitListResponse response = militaryService.getUnitList(1L);
@@ -756,8 +857,8 @@ class MilitaryServiceTest {
             assertThat(dto.quantity()).isEqualTo(50); // 30 + 20
             assertThat(dto.deployedCount()).isEqualTo(20);
             assertThat(dto.idleCount()).isEqualTo(30);
-            assertThat(dto.foodCostPerHour()).isEqualTo(100); // 2 * 50
-            assertThat(response.totalFoodCostPerHour()).isEqualTo(100);
+            assertThat(dto.foodCost()).isEqualTo(2); // 유닛 타입 단가
+            assertThat(response.availableFood()).isEqualTo(500);
         }
     }
 
