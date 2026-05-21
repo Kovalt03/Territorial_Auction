@@ -37,6 +37,8 @@ public class BuildingType {
 
     @Column private Integer unitCapacityPerLevel; // NULL 허용 — RESIDENCE만 값 있음
 
+    @Column private Integer gpProductionRate; // NULL 허용 — WORKSHOP만 값 있음
+
     @Builder
     public BuildingType(
             String name,
@@ -47,7 +49,8 @@ public class BuildingType {
             Integer zoneRestriction,
             Integer defensePower,
             Integer foodProductionRate,
-            Integer unitCapacityPerLevel) {
+            Integer unitCapacityPerLevel,
+            Integer gpProductionRate) {
         this.name = name;
         this.width = width;
         this.height = height;
@@ -57,5 +60,6 @@ public class BuildingType {
         this.defensePower = defensePower;
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
+        this.gpProductionRate = gpProductionRate;
     }
 }

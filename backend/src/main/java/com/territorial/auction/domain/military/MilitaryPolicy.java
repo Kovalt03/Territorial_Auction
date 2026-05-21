@@ -16,6 +16,9 @@ public final class MilitaryPolicy {
     /** 건물 HP가 이 비율 이하일 때 Zone 클리어 판정 */
     public static final double ZONE_CLEAR_THRESHOLD = 0.5;
 
+    /** WORKSHOP 파괴 후 생산 중단 시간 (시간 단위) */
+    public static final int WORKSHOP_DEBUFF_HOURS = 12;
+
     /** CASTLE이 없을 때 기본 유닛 슬롯 */
     public static final int DEFAULT_UNIT_SLOTS = 5;
 
