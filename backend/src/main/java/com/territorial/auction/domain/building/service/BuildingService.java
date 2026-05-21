@@ -275,7 +275,7 @@ public class BuildingService {
         BuildingInstance building = findBuildingOrThrow(buildingId);
         validateBuildingOwner(building, userId);
 
-        if ("CASTLE".equals(building.getBuildingType().getName())) {
+        if (building.getBuildingType().isCastle()) {
             throw new CustomException(ErrorCode.CASTLE_CANNOT_BE_STORED);
         }
 

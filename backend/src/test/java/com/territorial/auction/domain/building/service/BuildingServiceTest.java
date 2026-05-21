@@ -433,6 +433,25 @@ class BuildingServiceTest {
         }
 
         @Test
+        @DisplayName("레벨2 건물 수리 성공 → hp = baseMaxHp × 2")
+        void success_level2() {
+            User user = sampleUser(1L);
+            Territory territory = territoryOwnedBy(user, gradeA());
+            BuildingType bt = storage(); // maxHp=60
+            BuildingInstance bi = placedInstance(bt, territory, 0, 0);
+            ReflectionTestUtils.setField(bi, "level", 2);
+            ReflectionTestUtils.setField(bi, "isDestroyed", true);
+            Wallet wallet = walletWithGp(user, 2000);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            RepairBuildingResponse response = buildingService.repair(1L, 100L);
+
+            assertThat(response.hp()).isEqualTo(bt.getMaxHp() * 2); // 60 × 2 = 120
+        }
+
+        @Test
         @DisplayName("파괴되지 않은 건물 수리 시도 → INVALID_INPUT")
         void not_destroyed() {
             User user = sampleUser(1L);
