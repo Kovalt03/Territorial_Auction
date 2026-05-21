@@ -1,0 +1,15 @@
+# 시즌 패스 레벨 보상 설정
+# 현재 활성 시즌에 적용됩니다. 레벨과 rewardName을 자유롭게 편집하세요.
+rewards:
+  - level: 5
+    rewardName: "병력 증강제 x1"
+  - level: 10
+    rewardName: "공격권 x2"
+  - level: 15
+    rewardName: "병력 증강제 x3"
+  - level: 20
+    rewardName: "전설 영토 스킨"
+  - level: 25
+    rewardName: "무적 방어막 x1"
+  - level: 30
+    rewardName: "시즌 챔피언 칭호"
