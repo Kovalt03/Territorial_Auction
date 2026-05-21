@@ -54,9 +54,10 @@ INSERT INTO notification_settings (user_id)
 SELECT id FROM users WHERE username = 'testuser'
 ON CONFLICT (user_id) DO NOTHING;
 
--- 아이템 (3종)
-INSERT INTO items (name, item_type, description, cost_ap, daily_limit, gp_reward) VALUES
-('무적권',     'INVINCIBILITY', '영토에 1시간 동안 무적 상태를 부여합니다.',    50,  3,    NULL),
-('일반 공격권', 'ATTACK_NORMAL', '대상 영토에 공성전을 선언합니다. 랜덤 건물에 피해.',  100, 5,    NULL),
-('GP 구매권',  'GP_PURCHASE',   'AP 200으로 GP 1,000을 즉시 구매합니다.',        200, NULL, 1000)
+-- 아이템 (4종)
+INSERT INTO items (name, item_type, description, cost_ap, cost_gp, daily_limit, gp_reward) VALUES
+('무적 시간 추가권', 'INVINCIBILITY',   '영토 보호 시간 +4시간',       200, NULL, NULL, NULL),
+('일반 공격권',     'ATTACK_NORMAL',   'Zone 단계별 공격 허용',        100,  500, NULL, NULL),
+('정밀 공격권',     'ATTACK_PRECISION','목표 건물 직접 지정 공격',     300, NULL, NULL, NULL),
+('GP 구매권',       'GP_PURCHASE',     'GP 1,000 즉시 획득',            50, NULL,    5, 1000)
 ON CONFLICT DO NOTHING;

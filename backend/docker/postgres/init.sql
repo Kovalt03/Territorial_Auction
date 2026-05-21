@@ -222,6 +222,7 @@ CREATE TABLE IF NOT EXISTS user_season_passes (
 CREATE TABLE IF NOT EXISTS home_islands (
     id         BIGSERIAL   PRIMARY KEY,
     user_id    BIGINT      UNIQUE NOT NULL REFERENCES users(id),
+    level      INTEGER     NOT NULL DEFAULT 1,
     grid_size  INTEGER     NOT NULL DEFAULT 10,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -243,17 +244,19 @@ CREATE TABLE IF NOT EXISTS building_types (
 
 -- building_instances
 CREATE TABLE IF NOT EXISTS building_instances (
-    id               BIGSERIAL PRIMARY KEY,
-    territory_id     BIGINT    REFERENCES territories(id),
-    island_id        BIGINT    REFERENCES home_islands(id),
-    building_type_id BIGINT    NOT NULL REFERENCES building_types(id),
-    user_id          BIGINT    REFERENCES users(id),  -- 보관함 소유자 (territory/island 없을 때)
-    pos_x            INTEGER   NOT NULL,
-    pos_y            INTEGER   NOT NULL,
-    hp               INTEGER   NOT NULL,
-    level            INTEGER   NOT NULL DEFAULT 1,
-    zone             INTEGER   NOT NULL,
-    is_destroyed     BOOLEAN   NOT NULL DEFAULT false
+    id                    BIGSERIAL   PRIMARY KEY,
+    territory_id          BIGINT      REFERENCES territories(id),
+    island_id             BIGINT      REFERENCES home_islands(id),
+    building_type_id      BIGINT      NOT NULL REFERENCES building_types(id),
+    user_id               BIGINT      REFERENCES users(id),
+    pos_x                 INTEGER     NOT NULL,
+    pos_y                 INTEGER     NOT NULL,
+    hp                    INTEGER     NOT NULL,
+    level                 INTEGER     NOT NULL DEFAULT 1,
+    zone                  INTEGER     NOT NULL,
+    is_destroyed          BOOLEAN     NOT NULL DEFAULT false,
+    stored_gp             INTEGER     NOT NULL DEFAULT 0,
+    workshop_debuff_until TIMESTAMPTZ
 );
 
 -- global_vaults
