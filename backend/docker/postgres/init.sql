@@ -228,13 +228,17 @@ CREATE TABLE IF NOT EXISTS home_islands (
 
 -- building_types
 CREATE TABLE IF NOT EXISTS building_types (
-    id               BIGSERIAL   PRIMARY KEY,
-    name             VARCHAR(30) NOT NULL,
-    width            INTEGER     NOT NULL,
-    height           INTEGER     NOT NULL,
-    max_hp           INTEGER     NOT NULL,
-    base_cost_gp     INTEGER     NOT NULL,
-    zone_restriction INTEGER
+    id                     BIGSERIAL   PRIMARY KEY,
+    name                   VARCHAR(30) NOT NULL,
+    width                  INTEGER     NOT NULL,
+    height                 INTEGER     NOT NULL,
+    max_hp                 INTEGER     NOT NULL,
+    base_cost_gp           INTEGER     NOT NULL,
+    zone_restriction       INTEGER,
+    defense_power          INTEGER,
+    food_production_rate   INTEGER,
+    unit_capacity_per_level INTEGER,
+    gp_production_rate     INTEGER
 );
 
 -- building_instances

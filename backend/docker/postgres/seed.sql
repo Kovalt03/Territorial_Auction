@@ -20,6 +20,19 @@ INSERT INTO season_pass_level_rewards (season_id, level, reward_name) VALUES
 (1, 25, 'GP 1000'),
 (1, 30, '무적권 x2');
 
+-- 건물 타입 (8종)
+INSERT INTO building_types (name, width, height, max_hp, base_cost_gp, zone_restriction, defense_power, food_production_rate, unit_capacity_per_level, gp_production_rate)
+VALUES
+  ('CASTLE',    2, 2, 200,    0,  1, NULL, NULL, NULL, NULL),
+  ('STORAGE',   2, 2, 100, 2000,  NULL, NULL, NULL, NULL, NULL),
+  ('WORKSHOP',  2, 1,  80, 4000,  NULL, NULL, NULL, NULL,   30),
+  ('BARRACKS',  2, 2, 100, 3000,  NULL, NULL, NULL, NULL, NULL),
+  ('WALL',      1, 1,  60,  500,  NULL,   20, NULL, NULL, NULL),
+  ('TOWER',     1, 1,  80, 1500,  NULL,   50, NULL, NULL, NULL),
+  ('FARMLAND',  2, 2,  80, 2000,    -2, NULL,   10, NULL, NULL),
+  ('RESIDENCE', 2, 2,  80, 2500,  NULL, NULL, NULL,    5, NULL)
+ON CONFLICT DO NOTHING;
+
 -- 테스트 유저 (password: password1!)
 INSERT INTO users (username, email, password_hash, nickname)
 VALUES (

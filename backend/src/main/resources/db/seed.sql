@@ -79,7 +79,27 @@ BEGIN
   END IF;
 END $$;
 
--- 4. 아이템 상점
+-- 4. 건물 타입
+DO $$
+BEGIN
+  IF (SELECT COUNT(*) FROM building_types) = 0 THEN
+    INSERT INTO building_types (name, width, height, max_hp, base_cost_gp, zone_restriction, defense_power, food_production_rate, unit_capacity_per_level, gp_production_rate)
+    VALUES
+      ('CASTLE',    2, 2, 200,    0,  1, NULL, NULL, NULL, NULL),
+      ('STORAGE',   2, 2, 100, 2000,  NULL, NULL, NULL, NULL, NULL),
+      ('WORKSHOP',  2, 1,  80, 4000,  NULL, NULL, NULL, NULL,   30),
+      ('BARRACKS',  2, 2, 100, 3000,  NULL, NULL, NULL, NULL, NULL),
+      ('WALL',      1, 1,  60,  500,  NULL,   20, NULL, NULL, NULL),
+      ('TOWER',     1, 1,  80, 1500,  NULL,   50, NULL, NULL, NULL),
+      ('FARMLAND',  2, 2,  80, 2000,    -2, NULL,   10, NULL, NULL),
+      ('RESIDENCE', 2, 2,  80, 2500,  NULL, NULL, NULL,    5, NULL);
+    RAISE NOTICE 'building_types 시드 완료 (8건)';
+  ELSE
+    RAISE NOTICE 'building_types 이미 존재 — 건너뜀';
+  END IF;
+END $$;
+
+-- 5. 아이템 상점
 DO $$
 BEGIN
   IF (SELECT COUNT(*) FROM items) = 0 THEN
