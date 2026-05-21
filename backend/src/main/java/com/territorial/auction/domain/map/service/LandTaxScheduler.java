@@ -12,7 +12,6 @@ public class LandTaxScheduler {
 
     @Scheduled(cron = "0 0 4 * * *")
     public void collectDailyLandTax() {
-        // TODO - 세금 관련 처리 정책 및 로직 고민 필요.
         landTaxService.processAllUsersTax();
     }
 }
