@@ -1,7 +1,9 @@
 package com.territorial.auction.domain.map.service;
 
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
+import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.map.TerritoryIncomePolicy;
 import com.territorial.auction.domain.map.dto.GridMapResponse;
 import com.territorial.auction.domain.map.dto.TerritoryDetailResponse;
 import com.territorial.auction.domain.map.entity.ColorHistory;
@@ -14,6 +16,7 @@ import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -31,6 +34,7 @@ public class MapService {
     private final AuctionRepository auctionRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final ColorHistoryRepository colorHistoryRepository;
+    private final TerritoryIncomeService territoryIncomeService;
 
     @Cacheable(value = "territory-grid", key = "#continentId ?: 'all'")
     public GridMapResponse getGridMap(Long continentId) {
@@ -102,6 +106,23 @@ public class MapService {
                                                 a.getId(), a.getCurrentPrice(), a.getEndAt()))
                         .orElse(null);
 
+        Optional<BuildingInstance> storageOpt =
+                (territory.getStatus() == TerritoryStatus.OCCUPIED)
+                        ? buildingInstanceRepository.findActiveStorageByTerritoryId(territoryId)
+                        : Optional.empty();
+
+        Integer productionRatePerMin =
+                storageOpt
+                        .map(s -> territoryIncomeService.calculateEffectiveRate(territory))
+                        .orElse(null);
+        LocalDateTime lastProducedAt =
+                storageOpt.isPresent() ? territory.getLastProducedAt() : null;
+        Integer storedGp = storageOpt.map(BuildingInstance::getStoredGp).orElse(null);
+        Integer storageCapacity =
+                storageOpt
+                        .map(s -> s.getLevel() * TerritoryIncomePolicy.STORAGE_CAPACITY_PER_LEVEL)
+                        .orElse(null);
+
         return new TerritoryDetailResponse(
                 territory.getId(),
                 territory.getCoordX(),
@@ -115,7 +136,11 @@ public class MapService {
                 territory.getBaseProductionRate(),
                 false, // TODO: Redis invincible:{territoryId} 키 존재 여부로 교체
                 buildingInfos,
-                auction);
+                auction,
+                productionRatePerMin,
+                lastProducedAt,
+                storedGp,
+                storageCapacity);
     }
 
     @Transactional

@@ -73,4 +73,18 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
     @Query("SELECT t FROM Territory t WHERE t.owner.id = :userId AND t.status = :status")
     List<Territory> findAllOccupiedByOwnerId(
             @Param("userId") Long userId, @Param("status") Territory.TerritoryStatus status);
+
+    @Query(
+            "SELECT COUNT(t) FROM Territory t"
+                    + " WHERE t.status = :status"
+                    + " AND t.owner.id = :ownerId"
+                    + " AND t.id <> :excludeId"
+                    + " AND ((t.coordX = :x AND (t.coordY = :y - 1 OR t.coordY = :y + 1))"
+                    + "   OR (t.coordY = :y AND (t.coordX = :x - 1 OR t.coordX = :x + 1)))")
+    int countAdjacentOccupiedByOwner(
+            @Param("x") int x,
+            @Param("y") int y,
+            @Param("ownerId") Long ownerId,
+            @Param("excludeId") Long excludeId,
+            @Param("status") Territory.TerritoryStatus status);
 }

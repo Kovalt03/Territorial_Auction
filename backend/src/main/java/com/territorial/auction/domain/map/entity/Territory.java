@@ -71,6 +71,7 @@ public class Territory {
         this.status = TerritoryStatus.OCCUPIED;
         this.occupiedUntil = until;
         this.nextAuctionAt = null;
+        this.lastProducedAt = LocalDateTime.now();
     }
 
     public void release(LocalDateTime nextAuctionAt) {
@@ -78,6 +79,11 @@ public class Territory {
         this.owner = null;
         this.occupiedUntil = null;
         this.nextAuctionAt = nextAuctionAt;
+        this.lastProducedAt = null;
+    }
+
+    public void updateLastProducedAt(LocalDateTime now) {
+        this.lastProducedAt = now;
     }
 
     public enum TerritoryStatus {
