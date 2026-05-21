@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.building.service;
 
+import com.territorial.auction.domain.building.BuildingPolicy;
 import com.territorial.auction.domain.building.dto.InventoryResponse;
 import com.territorial.auction.domain.building.dto.InventoryResponse.InventoryItem;
 import com.territorial.auction.domain.building.dto.IslandResponse;
@@ -102,16 +103,26 @@ public class BuildingService {
     public UpgradeBuildingResponse upgrade(Long userId, Long buildingId) {
         BuildingInstance building = findBuildingOrThrow(buildingId);
         validateBuildingOwner(building, userId);
+        validateNotMaxLevel(building);
 
-        int upgradeCost = building.getBuildingType().getBaseCostGp() * building.getLevel();
+        int cost =
+                BuildingPolicy.upgradeCost(
+                        building.getBuildingType().getBaseCostGp(), building.getLevel());
         Wallet wallet = findWalletOrThrow(userId);
-        validateGp(wallet, upgradeCost);
+        validateGp(wallet, cost);
 
-        wallet.spendGp(upgradeCost);
+        wallet.spendGp(cost);
         building.upgrade();
 
+        Integer nextLevel =
+                building.getLevel() < BuildingPolicy.MAX_LEVEL ? building.getLevel() + 1 : null;
         return new UpgradeBuildingResponse(
-                building.getId(), building.getLevel(), wallet.getAvailableGp());
+                building.getId(),
+                building.getLevel(),
+                nextLevel,
+                BuildingPolicy.MAX_LEVEL,
+                cost,
+                wallet.getAvailableGp());
     }
 
     @Transactional
@@ -332,6 +343,12 @@ public class BuildingService {
         Long ownerId = building.ownerId();
         if (ownerId == null || !ownerId.equals(userId)) {
             throw new CustomException(ErrorCode.NOT_TERRITORY_OWNER);
+        }
+    }
+
+    private void validateNotMaxLevel(BuildingInstance building) {
+        if (building.getLevel() >= BuildingPolicy.MAX_LEVEL) {
+            throw new CustomException(ErrorCode.BUILDING_MAX_LEVEL);
         }
     }
 
