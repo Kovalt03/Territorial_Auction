@@ -153,12 +153,26 @@
 | ✅ | 공성전 선언 | `POST /api/v1/siege` | |
 | ✅ | 공성전 목록 조회 | `GET /api/v1/siege` | |
 | ✅ | 공성전 상세 조회 | `GET /api/v1/siege/{siegeId}` | |
-| ✅ | 유닛 생산 | `POST /api/v1/military/units` | |
-| ✅ | 유닛 목록 조회 | `GET /api/v1/military/units` | |
+| ✅ | 유닛 생산 | `POST /api/v1/military/units` | 병영 레벨 게이팅 + 유닛 상한 + 식량 소모 (be-29) |
+| ✅ | 유닛 목록 조회 | `GET /api/v1/military/units` | availableFood 포함 (be-29) |
 | ✅ | 유닛 배치 | `POST /api/v1/military/units/{unitId}/deploy` | |
 | ✅ | 공격권 조회 | `GET /api/v1/military/attack-tokens` | |
 | ✅ | 전투 결과 처리 스케줄러 | — | 1분 주기, SiegeScheduler |
 | ✅ | 공성전 알림 WebSocket | — | `/sub/user/{userId}/siege-alert` (선언·결과 양측 발송) |
+
+---
+
+### Building — 식량·유닛 수용 (be-29)
+| 상태 | 기능 | 비고 |
+|---|---|---|
+| ✅ | Wallet.availableFood 추가 | DEFAULT 100 |
+| ✅ | UnitType.foodCost (1회 소모) | 기존 foodCostPerHour 대체 |
+| ✅ | UnitType.level (병영 레벨 요구치) | DEFAULT 1 |
+| ✅ | BuildingType.foodProductionRate | FARMLAND 전용 |
+| ✅ | BuildingType.unitCapacityPerLevel | RESIDENCE 전용 |
+| ✅ | FarmlandScheduler | 1시간 주기 식량 생산 적립 |
+| ✅ | CASTLE 레벨별 기본 유닛 슬롯 | MilitaryPolicy (1→5, 2→10, 3→15) |
+| ⬜ | FARMLAND·RESIDENCE 시드 데이터 | building_types INSERT 필요 |
 
 ---
 
