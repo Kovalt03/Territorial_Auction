@@ -29,6 +29,9 @@ public class Wallet {
     @Column(nullable = false)
     private Integer availableGp = 0;
 
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 100")
+    private Integer availableFood = 100;
+
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
@@ -66,5 +69,13 @@ public class Wallet {
 
     public void spendGp(int amount) {
         this.availableGp -= amount;
+    }
+
+    public void addFood(int amount) {
+        this.availableFood += amount;
+    }
+
+    public void spendFood(int amount) {
+        this.availableFood -= amount;
     }
 }
