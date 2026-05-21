@@ -21,6 +21,7 @@ import com.territorial.auction.domain.military.repository.UnitInstanceRepository
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.WalletRepository;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -211,10 +212,37 @@ class SiegeServiceTest {
             // then
             assertThat(workshop.getHp()).isEqualTo(100);
             assertThat(workshop.isDestroyed()).isFalse();
+            assertThat(workshop.getWorkshopDebuffUntil()).isNull(); // 파괴 안 됐으면 디버프 없음
 
             ArgumentCaptor<SiegeResult> captor = ArgumentCaptor.forClass(SiegeResult.class);
             then(siegeResultRepository).should().save(captor.capture());
             assertThat(captor.getValue().getResultType()).isEqualTo(SiegeResult.ResultType.DEBUFF);
+        }
+
+        @Test
+        @DisplayName("Zone 2 공격 성공, WORKSHOP HP 0 → isDestroyed=true, workshopDebuffUntil 설정")
+        void resolveOneSiege_zone2_workshopDestroyed_debuffApplied() {
+            // given
+            given(event.getAttackZone()).willReturn(2);
+
+            UnitInstance attackerUnit = makeUnit(100, 0, 10); // ATK = 1000
+            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
+                    .willReturn(List.of(attackerUnit));
+            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
+                    .willReturn(List.of());
+
+            // Workshop maxHp=100, HP=50 → 데미지 50 → HP 0 → isDestroyed=true
+            BuildingInstance workshop = makeBuilding("WORKSHOP", 100, 50, null, 0, 2);
+            given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 2))
+                    .willReturn(List.of(workshop));
+
+            // when
+            siegeService.resolveOneSiege(event);
+
+            // then
+            assertThat(workshop.isDestroyed()).isTrue();
+            assertThat(workshop.getWorkshopDebuffUntil()).isNotNull();
+            assertThat(workshop.getWorkshopDebuffUntil()).isAfter(LocalDateTime.now());
         }
 
         @Test

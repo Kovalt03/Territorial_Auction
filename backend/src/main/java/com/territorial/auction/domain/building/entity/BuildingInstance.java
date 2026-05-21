@@ -55,6 +55,9 @@ public class BuildingInstance {
     @Column(nullable = false)
     private Integer storedGp = 0;
 
+    // WORKSHOP 파괴 후 일정 시간 생산 중단 — null이면 디버프 없음
+    @Column private LocalDateTime workshopDebuffUntil;
+
     @Builder
     public BuildingInstance(
             Territory territory,
@@ -133,6 +136,14 @@ public class BuildingInstance {
             return owner.getId();
         }
         return null;
+    }
+
+    public void applyWorkshopDebuff(LocalDateTime until) {
+        this.workshopDebuffUntil = until;
+    }
+
+    public boolean isWorkshopDebuffActive(LocalDateTime now) {
+        return workshopDebuffUntil != null && workshopDebuffUntil.isAfter(now);
     }
 
     public void takeDamage(int damage) {

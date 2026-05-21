@@ -224,11 +224,18 @@ public class SiegeService {
     }
 
     private void applyDebuff(SiegeEvent event) {
-        // Zone 2 클리어 시 방어자 건물에 데미지 적용
         List<BuildingInstance> buildings =
                 buildingInstanceRepository.findActiveByTerritoryIdAndZone(
                         event.getTargetTerritory().getId(), 2);
-        buildings.forEach(b -> b.takeDamage(b.getBuildingType().getMaxHp() / 2));
+        LocalDateTime debuffUntil =
+                LocalDateTime.now().plusHours(MilitaryPolicy.WORKSHOP_DEBUFF_HOURS);
+        buildings.forEach(
+                b -> {
+                    b.takeDamage(b.getBuildingType().getMaxHp() / 2);
+                    if (b.isDestroyed() && "WORKSHOP".equals(b.getBuildingType().getName())) {
+                        b.applyWorkshopDebuff(debuffUntil);
+                    }
+                });
     }
 
     private void applyCastleDamage(SiegeEvent event) {
