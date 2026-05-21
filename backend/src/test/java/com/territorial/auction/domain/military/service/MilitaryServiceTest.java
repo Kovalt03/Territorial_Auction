@@ -239,7 +239,7 @@ class MilitaryServiceTest {
             given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
                     .willReturn(List.of(2)); // 10 slots
             given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(wallet));
             given(
                             unitInstanceRepository
                                     .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
@@ -270,7 +270,7 @@ class MilitaryServiceTest {
             given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
                     .willReturn(List.of(1)); // 5 slots
             given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(wallet));
             given(
                             unitInstanceRepository
                                     .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
@@ -365,7 +365,7 @@ class MilitaryServiceTest {
             given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
                     .willReturn(List.of(2)); // 10 slots
             given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
-            given(walletRepository.findById(1L)).willReturn(Optional.of(poorWallet));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(poorWallet));
 
             // when / then
             assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
@@ -391,7 +391,7 @@ class MilitaryServiceTest {
             given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
                     .willReturn(List.of(1)); // 5 slots
             given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
-            given(walletRepository.findById(1L)).willReturn(Optional.of(hungryWallet));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(hungryWallet));
 
             // when / then
             assertThatThrownBy(() -> militaryService.produceUnit(1L, req))

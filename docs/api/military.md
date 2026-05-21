@@ -266,27 +266,25 @@
       {
         "unitTypeId": 1,
         "name": "INFANTRY",
-        "typeName": "보병",
         "quantity": 50,
         "deployedCount": 20,
         "idleCount": 30,
         "attackPower": 10,
         "defensePower": 8,
-        "foodCostPerHour": 1
+        "foodCost": 1
       },
       {
         "unitTypeId": 2,
         "name": "ARCHER",
-        "typeName": "궁수",
         "quantity": 30,
         "deployedCount": 0,
         "idleCount": 30,
         "attackPower": 15,
         "defensePower": 5,
-        "foodCostPerHour": 2
+        "foodCost": 2
       }
     ],
-    "totalFoodCostPerHour": 110
+    "availableFood": 480
   }
 }
 ```
@@ -295,18 +293,16 @@
 |---|---|
 | `deployedCount` | `deployed_territory_id`가 NOT NULL인 유닛 수 |
 | `idleCount` | 대기 중인 유닛 수 |
-| `totalFoodCostPerHour` | 전체 유닛 시간당 식량 소모 합산 |
+| `foodCost` | 유닛 타입 1회 생산 식량 비용 (시간당 소모 아님) |
+| `availableFood` | 현재 wallet 식량 잔액 |
 
-출처: `unit_instances` JOIN `unit_types`
+출처: `unit_instances` JOIN `unit_types` JOIN `wallets`
 
 ### 에러
 
 | HTTP | 에러 코드 | 설명 |
 |---|---|---|
 | 401 | UNAUTHORIZED | 인증 실패 |
-
-### 남은작업
-- 서비스 구현
 
 ---
 

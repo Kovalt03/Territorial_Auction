@@ -69,7 +69,7 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
     @Query(
             "SELECT COALESCE(SUM(b.level * b.buildingType.unitCapacityPerLevel), 0) FROM BuildingInstance b"
                     + " WHERE b.territory.owner.id = :userId AND b.buildingType.name = 'RESIDENCE' AND b.isDestroyed = false")
-    int sumResidenceCapacityByOwnerId(@Param("userId") Long userId);
+    Integer sumResidenceCapacityByOwnerId(@Param("userId") Long userId);
 
     /** 농경지 식량 생산량을 소유자별로 합산 — FarmlandScheduler 전용 */
     @Query(

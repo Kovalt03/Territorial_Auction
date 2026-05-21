@@ -60,7 +60,7 @@ public class MilitaryService {
         validateBarracksLevel(userId, unitType.getLevel());
         validateUnitCapacity(userId, request.quantity());
 
-        Wallet wallet = findWalletOrThrow(userId);
+        Wallet wallet = findWalletWithLockOrThrow(userId);
         int gpCost = unitType.getCostGp() * request.quantity();
         int foodCost = unitType.getFoodCost() * request.quantity();
         validateGp(wallet, gpCost);
@@ -217,7 +217,7 @@ public class MilitaryService {
     }
 
     private void validateUnitCapacity(Long userId, int quantity) {
-        int current = unitInstanceRepository.sumQuantityByUserId(userId);
+        int current = nullSafe(unitInstanceRepository.sumQuantityByUserId(userId));
         int capacity = calculateTotalUnitCapacity(userId);
         if (current + quantity > capacity) {
             throw new CustomException(ErrorCode.UNIT_CAPACITY_EXCEEDED);
@@ -225,13 +225,17 @@ public class MilitaryService {
     }
 
     private int calculateTotalUnitCapacity(Long userId) {
-        int castleSlots =
-                buildingInstanceRepository.findActiveCastleLevelsByOwnerId(userId).stream()
-                        .mapToInt(MilitaryPolicy::castleUnitSlots)
-                        .sum();
-        int residenceSlots = buildingInstanceRepository.sumResidenceCapacityByOwnerId(userId);
-        return (castleSlots == 0 ? MilitaryPolicy.DEFAULT_UNIT_SLOTS : castleSlots)
+        List<Integer> castleLevels =
+                buildingInstanceRepository.findActiveCastleLevelsByOwnerId(userId);
+        int castleSlots = castleLevels.stream().mapToInt(MilitaryPolicy::castleUnitSlots).sum();
+        int residenceSlots =
+                nullSafe(buildingInstanceRepository.sumResidenceCapacityByOwnerId(userId));
+        return (castleLevels.isEmpty() ? MilitaryPolicy.DEFAULT_UNIT_SLOTS : castleSlots)
                 + residenceSlots;
+    }
+
+    private int nullSafe(Integer value) {
+        return value != null ? value : 0;
     }
 
     private void validateFood(Wallet wallet, int cost) {
@@ -243,6 +247,12 @@ public class MilitaryService {
     private Wallet findWalletOrThrow(Long userId) {
         return walletRepository
                 .findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private Wallet findWalletWithLockOrThrow(Long userId) {
+        return walletRepository
+                .findByIdWithLock(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
