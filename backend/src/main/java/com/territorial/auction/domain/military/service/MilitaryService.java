@@ -57,11 +57,16 @@ public class MilitaryService {
     public ProduceUnitResponse produceUnit(Long userId, ProduceUnitRequest request) {
         UnitType unitType = findUnitTypeOrThrow(request.unitTypeId());
         validateBarracksExists(userId);
+        validateBarracksLevel(userId, unitType.getLevel());
+        validateUnitCapacity(userId, request.quantity());
 
         Wallet wallet = findWalletOrThrow(userId);
-        int totalCost = unitType.getCostGp() * request.quantity();
-        validateGp(wallet, totalCost);
-        wallet.spendGp(totalCost);
+        int gpCost = unitType.getCostGp() * request.quantity();
+        int foodCost = unitType.getFoodCost() * request.quantity();
+        validateGp(wallet, gpCost);
+        validateFood(wallet, foodCost);
+        wallet.spendGp(gpCost);
+        wallet.spendFood(foodCost);
 
         addIdleUnits(userId, unitType, request.quantity());
         log.info(
@@ -170,7 +175,8 @@ public class MilitaryService {
 
     public UnitListResponse getUnitList(Long userId) {
         List<UnitInstance> instances = unitInstanceRepository.findByUserId(userId);
-        return buildUnitListResponse(instances);
+        Wallet wallet = findWalletOrThrow(userId);
+        return buildUnitListResponse(instances, wallet.getAvailableFood());
     }
 
     public SiegeEventListResponse getSiegeEvents(String statusParam, Pageable pageable) {
@@ -200,6 +206,37 @@ public class MilitaryService {
     private void validateBarracksExists(Long userId) {
         if (!buildingInstanceRepository.existsActiveBarracksByOwnerId(userId)) {
             throw new CustomException(ErrorCode.NO_BARRACKS);
+        }
+    }
+
+    private void validateBarracksLevel(Long userId, int requiredLevel) {
+        int maxLevel = buildingInstanceRepository.findMaxBarracksLevelByOwnerId(userId).orElse(0);
+        if (maxLevel < requiredLevel) {
+            throw new CustomException(ErrorCode.BARRACKS_LEVEL_INSUFFICIENT);
+        }
+    }
+
+    private void validateUnitCapacity(Long userId, int quantity) {
+        int current = unitInstanceRepository.sumQuantityByUserId(userId);
+        int capacity = calculateTotalUnitCapacity(userId);
+        if (current + quantity > capacity) {
+            throw new CustomException(ErrorCode.UNIT_CAPACITY_EXCEEDED);
+        }
+    }
+
+    private int calculateTotalUnitCapacity(Long userId) {
+        int castleSlots =
+                buildingInstanceRepository.findActiveCastleLevelsByOwnerId(userId).stream()
+                        .mapToInt(MilitaryPolicy::castleUnitSlots)
+                        .sum();
+        int residenceSlots = buildingInstanceRepository.sumResidenceCapacityByOwnerId(userId);
+        return (castleSlots == 0 ? MilitaryPolicy.DEFAULT_UNIT_SLOTS : castleSlots)
+                + residenceSlots;
+    }
+
+    private void validateFood(Wallet wallet, int cost) {
+        if (wallet.getAvailableFood() < cost) {
+            throw new CustomException(ErrorCode.FOOD_INSUFFICIENT);
         }
     }
 
@@ -420,14 +457,14 @@ public class MilitaryService {
         }
     }
 
-    private UnitListResponse buildUnitListResponse(List<UnitInstance> instances) {
+    private UnitListResponse buildUnitListResponse(
+            List<UnitInstance> instances, int availableFood) {
         Map<Long, List<UnitInstance>> grouped = new LinkedHashMap<>();
         for (UnitInstance inst : instances) {
             grouped.computeIfAbsent(inst.getUnitType().getId(), k -> new ArrayList<>()).add(inst);
         }
 
         List<UnitListResponse.UnitDto> dtos = new ArrayList<>();
-        int totalFood = 0;
 
         for (Map.Entry<Long, List<UnitInstance>> entry : grouped.entrySet()) {
             UnitType unitType = entry.getValue().get(0).getUnitType();
@@ -437,8 +474,6 @@ public class MilitaryService {
                             .filter(i -> i.getDeployedTerritory() != null)
                             .mapToInt(UnitInstance::getQuantity)
                             .sum();
-            int foodCost = unitType.getFoodCostPerHour() * total;
-            totalFood += foodCost;
             dtos.add(
                     new UnitListResponse.UnitDto(
                             unitType.getId(),
@@ -448,9 +483,9 @@ public class MilitaryService {
                             total - deployed,
                             unitType.getAttackPower(),
                             unitType.getDefensePower(),
-                            foodCost));
+                            unitType.getFoodCost()));
         }
-        return new UnitListResponse(dtos, totalFood);
+        return new UnitListResponse(dtos, availableFood);
     }
 
     private SiegeEvent.SiegeStatus parseSiegeStatus(String statusParam) {
