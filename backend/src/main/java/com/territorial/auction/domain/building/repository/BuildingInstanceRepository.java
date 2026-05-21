@@ -2,6 +2,7 @@ package com.territorial.auction.domain.building.repository;
 
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import jakarta.persistence.LockModeType;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -78,4 +79,13 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " WHERE b.buildingType.name = 'FARMLAND' AND b.isDestroyed = false AND b.territory IS NOT NULL"
                     + " GROUP BY b.territory.owner.id")
     List<Object[]> sumFarmlandFoodProductionGroupedByOwner();
+
+    /** 생산 중인 WORKSHOP GP 생산량을 소유자별로 합산 — WorkshopScheduler 전용 파괴된 건물과 디버프 중인 건물은 제외 */
+    @Query(
+            "SELECT b.territory.owner.id, SUM(b.level * b.buildingType.gpProductionRate)"
+                    + " FROM BuildingInstance b"
+                    + " WHERE b.buildingType.name = 'WORKSHOP' AND b.isDestroyed = false AND b.territory IS NOT NULL"
+                    + " AND (b.workshopDebuffUntil IS NULL OR b.workshopDebuffUntil < :now)"
+                    + " GROUP BY b.territory.owner.id")
+    List<Object[]> sumWorkshopGpProductionGroupedByOwner(@Param("now") LocalDateTime now);
 }
