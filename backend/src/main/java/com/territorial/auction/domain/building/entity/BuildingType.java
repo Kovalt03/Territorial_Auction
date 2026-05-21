@@ -29,7 +29,9 @@ public class BuildingType {
     @Column(nullable = false)
     private Integer baseCostGp;
 
-    private Integer zoneRestriction; // 1 = Zone1에만 배치 가능
+    // 양수: 해당 Zone에만 배치 가능 (예: 1 = Zone1 전용 — CASTLE)
+    // 음수: |값| 이상 Zone에만 배치 가능 (예: -2 = Zone2/3 전용 — FARMLAND)
+    private Integer zoneRestriction;
 
     @Column private Integer defensePower; // NULL 허용 — 방어 건물(WALL, TOWER)만 값 있음
 
