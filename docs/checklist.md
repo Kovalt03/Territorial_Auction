@@ -1,6 +1,6 @@
 # 구현 체크리스트
 
-> 마지막 갱신: 2026-05-22  
+> 마지막 갱신: 2026-05-22 (be-32 머지 반영)  
 > 기준 브랜치: `dev`
 
 범례: ✅ 완료 · 🔄 일부 완료 · ⬜ 미구현
@@ -55,7 +55,7 @@
 |---|---|---|---|
 | ✅ | 경매 목록 조회 | `GET /api/v1/auctions` | |
 | ✅ | 경매 상세 조회 | `GET /api/v1/auctions/{auctionId}` | ⬜ Redis 캐시 미구현 |
-| ✅ | 입찰하기 | `POST /api/v1/auctions/{auctionId}/bids` | ⬜ Redis 분산락 미구현 |
+| ✅ | 입찰하기 | `POST /api/v1/auctions/{auctionId}/bids` | Redis 분산락 완료 (be-18) |
 | ✅ | 가격 변동 그래프 데이터 | `GET /api/v1/auctions/{auctionId}/bids` | |
 | ✅ | 내 입찰 내역 조회 | `GET /api/v1/auctions/my-bids` | |
 | ✅ | 영토 경매 이력 조회 | `GET /api/v1/auctions/territories/{territoryId}` | |
@@ -112,12 +112,12 @@
 | 상태 | 기능 | 엔드포인트 | 비고 |
 |---|---|---|---|
 | ✅ | 내 시즌 패스 상태 조회 | `GET /api/v1/season-pass/me` | Redis 캐시 완료 |
-| 🔄 | 시즌 패스 현황 조회 | `GET /api/v1/season-pass` | ⬜ XP 적립 로직 미연동, ⬜ 시드 데이터 미삽입 |
+| ✅ | 시즌 패스 현황 조회 | `GET /api/v1/season-pass` | XP 연동 + 시드 데이터 완료 (be-32) |
 | ✅ | 시즌 패스 구매 | `POST /api/v1/season-pass/purchase` | Redis 캐시 완료 |
 | ✅ | 만료 알림 스케줄러 | — | 만료 3일 전·당일 알림 발송 (SeasonPassScheduler, be-25) |
-| ⬜ | XP 적립 — 경매 낙찰 | — | `AuctionSettledEvent` 구독, +100 XP (be-32) |
-| ⬜ | XP 적립 — 공성전 승리 | — | `SiegeVictoryEvent` 신규 이벤트, +50 XP (be-32) |
-| ⬜ | DB 시드 데이터 | — | `season_pass_level_rewards` 6개 레벨 보상 삽입 (be-32) |
+| ✅ | XP 적립 — 경매 낙찰 | — | `AuctionSettledEvent` 구독, +100 XP (be-32) |
+| ✅ | XP 적립 — 공성전 승리 | — | `SiegeVictoryEvent` 신규 이벤트, +50 XP (be-32) |
+| ✅ | DB 시드 데이터 | — | `season_pass_level_rewards` 6개 레벨 보상 삽입 (be-32) |
 
 ---
 
