@@ -119,6 +119,11 @@
 
 **Authorization**: Bearer `{{accessToken}}` (필수)
 
+### 비즈니스 규칙
+- 최대 레벨: 3
+- 업그레이드 비용: `baseCostGp × 현재 레벨` (레벨 1→2: `baseCostGp×1`, 레벨 2→3: `baseCostGp×2`)
+- 업그레이드 즉시 적용, HP는 새 최대치(`baseMaxHp × 새 레벨`)로 복원
+
 ### Response (200 OK)
 
 ```json
@@ -128,10 +133,22 @@
   "data": {
     "buildingId": 1,
     "newLevel": 2,
+    "maxLevel": 3,
+    "upgradeCost": 1000,
+    "nextLevel": 3,
     "gpRemaining": 9000
   }
 }
 ```
+
+| field | 타입 | 설명 |
+|---|---|---|
+| `buildingId` | Long | 업그레이드된 건물 ID |
+| `newLevel` | Integer | 업그레이드 후 레벨 |
+| `maxLevel` | Integer | 최대 레벨 (항상 3) |
+| `upgradeCost` | Integer | 이번 업그레이드에 소모된 GP |
+| `nextLevel` | Integer | 다음 레벨 (최대 레벨 도달 시 `null`) |
+| `gpRemaining` | Integer | 업그레이드 후 잔여 GP |
 
 ### 에러
 
@@ -139,6 +156,7 @@
 |---|---|---|
 | 404 | BUILDING_NOT_FOUND | 존재하지 않는 건물 |
 | 403 | NOT_TERRITORY_OWNER | 점유자 아님 |
+| 400 | BUILDING_MAX_LEVEL | 이미 최대 레벨(3)에 도달한 건물 |
 | 400 | INSUFFICIENT_GP | GP 부족 |
 
 ---
