@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.season.entity;
 
+import com.territorial.auction.domain.season.SeasonPassPolicy;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,5 +37,17 @@ public class SeasonPassProgress {
         this.season = season;
         this.level = 1;
         this.xp = 0;
+    }
+
+    public void addXp(int amount, int xpPerLevel) {
+        if (this.level >= SeasonPassPolicy.MAX_LEVEL) return;
+        this.xp += amount;
+        while (xpPerLevel > 0 && this.xp >= xpPerLevel && this.level < SeasonPassPolicy.MAX_LEVEL) {
+            this.level++;
+            this.xp -= xpPerLevel;
+        }
+        if (this.level >= SeasonPassPolicy.MAX_LEVEL) {
+            this.xp = 0;
+        }
     }
 }

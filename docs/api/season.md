@@ -129,11 +129,54 @@
 | 401 | `UNAUTHORIZED` | 인증 실패 |
 | 404 | `SEASON_NOT_FOUND` | 진행 중인 시즌 없음 |
 
+### XP 적립 규칙
+
+레벨당 `XP_PER_LEVEL = 1,000` XP 필요. 최대 레벨 제한 없음 (MVP).  
+XP 적립 후 Redis `season_pass:progress:{userId}` 캐시를 무효화한다.
+
+#### XP 트리거 및 적립량
+
+| 이벤트 | XP | 이벤트 클래스 | 처리 방식 |
+|---|---|---|---|
+| 경매 낙찰 | +100 | `AuctionSettledEvent` (기존) | `@TransactionalEventListener(AFTER_COMMIT)` + `@Transactional(REQUIRES_NEW)` |
+| 공성전 승리 | +50 | `SiegeVictoryEvent` (신규) | `@TransactionalEventListener(AFTER_COMMIT)` + `@Transactional(REQUIRES_NEW)` |
+
+#### 레벨업 정책
+
+- XP 누적이 `1,000` 이상이 되면 `SeasonPassProgress.addXp(int amount, int xpPerLevel)` 도메인 메서드가 자동 레벨업 처리
+- 레벨업 후 잔여 XP는 이월됨 (예: 레벨 N에서 XP 950 보유 중 +100 적립 → 레벨 N+1, XP 50)
+
+#### 정책 상수 (`SeasonPassPolicy`)
+
+| 상수 | 값 | 설명 |
+|---|---|---|
+| `XP_AUCTION_WIN` | 100 | 경매 낙찰 시 획득 XP |
+| `XP_SIEGE_VICTORY` | 50 | 공성전 승리 시 획득 XP |
+| `XP_PER_LEVEL` | 1,000 | 레벨업에 필요한 XP |
+
+### 시드 데이터 (`season-pass-rewards.yml`)
+
+활성 시즌에 `season_pass_level_rewards` 레코드가 없으면 `SeasonPassLevelRewardSeeder`가 YAML에서 삽입한다.
+
+| 레벨 | 보상 이름 |
+|---|---|
+| 5 | 병력 증강제 x1 |
+| 10 | 공격권 x2 |
+| 15 | 병력 증강제 x3 |
+| 20 | 전설 영토 스킨 |
+| 25 | 무적 방어막 x1 |
+| 30 | 시즌 챔피언 칭호 |
+
 ### 남은 작업
 - ✅ `SeasonPassService.getProgress()` 구현
 - ✅ Redis `season_pass:progress:{userId}` 캐시 (TTL 30분)
-- ⬜ XP 적립 로직 연동 (경매 낙찰, 영토 점유 등 게임 이벤트 트리거)
-- ⬜ `season_pass_level_rewards` DB 시드 데이터 삽입
+- ⬜ `SeasonPassPolicy` 정책 상수 클래스 생성 (`XP_AUCTION_WIN=100`, `XP_SIEGE_VICTORY=50`, `XP_PER_LEVEL=1000`)
+- ⬜ `SeasonPassProgress.addXp(int amount, int xpPerLevel)` 도메인 메서드 추가
+- ⬜ `SeasonXpService`: `AuctionSettledEvent` 구독 → XP +100 적립 (`@TransactionalEventListener(AFTER_COMMIT)` + `@Transactional(REQUIRES_NEW)`)
+- ⬜ `SiegeVictoryEvent` 신규 이벤트 클래스 생성 (필드: `userId`, `seasonId`)
+- ⬜ `SeasonXpService`: `SiegeVictoryEvent` 구독 → XP +50 적립
+- ⬜ XP 적립 후 Redis `season_pass:progress:{userId}` 캐시 무효화
+- ⬜ `SeasonPassLevelRewardSeeder`: 활성 시즌에 레코드 없으면 `season-pass-rewards.yml`에서 삽입
 
 ---
 

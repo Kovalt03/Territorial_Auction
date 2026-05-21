@@ -8,8 +8,11 @@ import com.territorial.auction.domain.military.entity.SiegeEvent;
 import com.territorial.auction.domain.military.entity.SiegeResult;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.event.CastleDestroyedEvent;
+import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
+import com.territorial.auction.domain.season.entity.Season;
+import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +35,7 @@ public class SiegeService {
     private final UnitInstanceRepository unitInstanceRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final WalletRepository walletRepository;
+    private final SeasonRepository seasonRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -40,13 +44,10 @@ public class SiegeService {
         Long attackerId = event.getAttacker().getId();
         Long defenderId = event.getDefender().getId();
         Long territoryId = event.getTargetTerritory().getId();
-        final String finalAttackerNickname = event.getAttacker().getNickname();
-        final String finalDefenderNickname = event.getDefender().getNickname();
-        final int finalCoordX = event.getTargetTerritory().getCoordX();
-        final int finalCoordY = event.getTargetTerritory().getCoordY();
-        final int finalAttackZone = event.getAttackZone();
-        final LocalDateTime finalResolveAt = event.getResolveAt();
-        final Long finalSiegeId = event.getId();
+        String attackerNickname = event.getAttacker().getNickname();
+        String defenderNickname = event.getDefender().getNickname();
+        int coordX = event.getTargetTerritory().getCoordX();
+        int coordY = event.getTargetTerritory().getCoordY();
 
         List<UnitInstance> attackerUnits =
                 unitInstanceRepository.findByUserIdAndDeployedTerritoryId(attackerId, territoryId);
@@ -61,8 +62,28 @@ public class SiegeService {
         SiegeResult.ResultType resultType = applyResultEffect(event, isAttackerWin);
         int lootedGp = resultType == SiegeResult.ResultType.LOOT ? applyLoot(event) : 0;
 
+        if (isAttackerWin) {
+            publishSiegeVictoryIfSeasonActive(attackerId);
+        }
+
         saveSiegeResult(
                 event, isAttackerWin, totalAttackerUnits, totalDefenderUnits, lootedGp, resultType);
+
+        SiegeAlert alert =
+                new SiegeAlert(
+                        event.getId(),
+                        "RESOLVED",
+                        territoryId,
+                        coordX,
+                        coordY,
+                        event.getAttackZone(),
+                        attackerId,
+                        attackerNickname,
+                        defenderId,
+                        defenderNickname,
+                        event.getResolveAt(),
+                        isAttackerWin,
+                        resultType != null ? resultType.name() : null);
         event.resolve();
         log.info(
                 "공성전 처리 완료. siegeId={}, territoryId={}, attackerWin={}, resultType={}",
@@ -71,34 +92,28 @@ public class SiegeService {
                 isAttackerWin,
                 resultType);
 
-        final boolean finalIsAttackerWin = isAttackerWin;
-        final String finalResultType = resultType != null ? resultType.name() : null;
-        final Long finalAttackerId = attackerId;
-        final Long finalDefenderId = defenderId;
+        scheduleAlertAfterCommit(attackerId, defenderId, alert);
+    }
 
+    private void publishSiegeVictoryIfSeasonActive(Long attackerId) {
+        seasonRepository
+                .findActiveSeason(LocalDateTime.now())
+                .map(Season::getId)
+                .ifPresent(
+                        seasonId ->
+                                eventPublisher.publishEvent(
+                                        new SiegeVictoryEvent(attackerId, seasonId)));
+    }
+
+    private void scheduleAlertAfterCommit(Long attackerId, Long defenderId, SiegeAlert alert) {
         TransactionSynchronizationManager.registerSynchronization(
                 new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        SiegeAlert alert =
-                                new SiegeAlert(
-                                        finalSiegeId,
-                                        "RESOLVED",
-                                        territoryId,
-                                        finalCoordX,
-                                        finalCoordY,
-                                        finalAttackZone,
-                                        finalAttackerId,
-                                        finalAttackerNickname,
-                                        finalDefenderId,
-                                        finalDefenderNickname,
-                                        finalResolveAt,
-                                        finalIsAttackerWin,
-                                        finalResultType);
                         messagingTemplate.convertAndSend(
-                                "/sub/user/" + finalAttackerId + "/siege-alert", alert);
+                                "/sub/user/" + attackerId + "/siege-alert", alert);
                         messagingTemplate.convertAndSend(
-                                "/sub/user/" + finalDefenderId + "/siege-alert", alert);
+                                "/sub/user/" + defenderId + "/siege-alert", alert);
                     }
                 });
     }

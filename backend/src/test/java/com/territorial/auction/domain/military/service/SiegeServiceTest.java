@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
@@ -16,8 +17,11 @@ import com.territorial.auction.domain.military.entity.SiegeResult;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
 import com.territorial.auction.domain.military.event.CastleDestroyedEvent;
+import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
+import com.territorial.auction.domain.season.entity.Season;
+import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.WalletRepository;
@@ -48,6 +52,7 @@ class SiegeServiceTest {
     @Mock private UnitInstanceRepository unitInstanceRepository;
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private WalletRepository walletRepository;
+    @Mock private SeasonRepository seasonRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private SimpMessagingTemplate messagingTemplate;
 
@@ -59,6 +64,11 @@ class SiegeServiceTest {
     @BeforeEach
     void setUp() {
         TransactionSynchronizationManager.initSynchronization();
+        // 공격자 패배 케이스에서 findActiveSeason이 호출되지 않으므로 UnnecessaryStubbingException 방지
+        lenient()
+                .when(seasonRepository.findActiveSeason(any(LocalDateTime.class)))
+                .thenReturn(Optional.empty());
+
         attacker = mock(User.class);
         given(attacker.getId()).willReturn(1L);
 
@@ -503,6 +513,36 @@ class SiegeServiceTest {
             then(siegeResultRepository).should().save(captor.capture());
             assertThat(captor.getValue().getIsAttackerWin()).isTrue();
             then(walletRepository).should(never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("공격자 승리 + 활성 시즌 존재 → SiegeVictoryEvent 발행 (attackerId, seasonId 포함)")
+        void resolveOneSiege_attackerWins_activeSeason_publishesSiegeVictoryEvent() {
+            // given
+            given(event.getAttackZone()).willReturn(3);
+
+            Season season = mock(Season.class);
+            given(season.getId()).willReturn(99L);
+            given(seasonRepository.findActiveSeason(any(LocalDateTime.class)))
+                    .willReturn(Optional.of(season));
+
+            UnitInstance attackerUnit = makeUnit(100, 0, 10); // ATK=1000, DEF=0 → 공격자 승
+            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
+                    .willReturn(List.of(attackerUnit));
+            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
+                    .willReturn(List.of());
+            given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 3))
+                    .willReturn(List.of());
+
+            // when
+            siegeService.resolveOneSiege(event);
+
+            // then
+            ArgumentCaptor<SiegeVictoryEvent> captor =
+                    ArgumentCaptor.forClass(SiegeVictoryEvent.class);
+            then(eventPublisher).should().publishEvent(captor.capture());
+            assertThat(captor.getValue().attackerId()).isEqualTo(1L);
+            assertThat(captor.getValue().seasonId()).isEqualTo(99L);
         }
     }
 }

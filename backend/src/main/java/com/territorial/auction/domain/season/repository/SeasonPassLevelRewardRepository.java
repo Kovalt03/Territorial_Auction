@@ -8,4 +8,6 @@ public interface SeasonPassLevelRewardRepository
         extends JpaRepository<SeasonPassLevelReward, Long> {
 
     List<SeasonPassLevelReward> findBySeason_IdOrderByLevelAsc(Long seasonId);
+
+    boolean existsBySeason_Id(Long seasonId);
 }
