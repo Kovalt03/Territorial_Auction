@@ -51,11 +51,13 @@
 
 | 항목 | 내용 |
 |---|---|
-| **기능** | 분당 GP 생산. `BuildingEffect.production_rate` 기준. |
+| **기능** | 시간당 GP 생산. `BuildingType.gpProductionRate × level` |
 | **배치 제약** | 없음 |
-| **파괴 효과** | HP 0 → 일정 시간(T) 동안 생산 중단 (`result_type = DEBUFF`) |
-| **레벨업 효과** | 생산량 증가 |
-| **생산 공식** | `base_rate × 인접보너스배율 × 보너스칸배율` |
+| **파괴 효과** | HP 0 → `WORKSHOP_DEBUFF_HOURS`(12시간) 동안 GP 생산 중단. 수리 후에도 디버프 시간이 남아있으면 생산 재개 불가. |
+| **레벨업 효과** | 시간당 GP 생산량 증가 |
+| **생산 공식** | `gpProductionRate × level` (시간당) |
+| **스케줄러** | 1시간 주기로 소유 생산소 합산 생산량을 wallet에 적립 |
+| **디버프 조건** | Zone 2 클리어 시 WORKSHOP HP가 0이 되면 `building_instances.workshop_debuff_until` 설정 |
 
 ---
 

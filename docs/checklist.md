@@ -172,7 +172,16 @@
 | ✅ | BuildingType.unitCapacityPerLevel | RESIDENCE 전용 |
 | ✅ | FarmlandScheduler | 1시간 주기 식량 생산 적립 |
 | ✅ | CASTLE 레벨별 기본 유닛 슬롯 | MilitaryPolicy (1→5, 2→10, 3→15) |
-| ⬜ | FARMLAND·RESIDENCE 시드 데이터 | building_types INSERT 필요 |
+| ⬜ | FARMLAND·RESIDENCE·WORKSHOP 시드 데이터 | building_types INSERT 필요 |
+
+### Building — WORKSHOP GP 생산 (be-30)
+| 상태 | 기능 | 비고 |
+|---|---|---|
+| ✅ | BuildingType.gpProductionRate | WORKSHOP 전용 |
+| ✅ | BuildingInstance.workshopDebuffUntil | WORKSHOP 파괴 디버프 타임스탬프 |
+| ✅ | WorkshopScheduler | 1시간 주기 GP 생산 적립 (디버프 중 제외) |
+| ✅ | MilitaryPolicy.WORKSHOP_DEBUFF_HOURS | 기본 12시간 |
+| ✅ | SiegeService — WORKSHOP 파괴 시 디버프 적용 | Zone 2 클리어, HP 0 → workshopDebuffUntil 설정 |
 
 ---
 
