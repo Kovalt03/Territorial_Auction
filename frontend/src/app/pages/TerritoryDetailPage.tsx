@@ -1,11 +1,13 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 
 import { useApp } from '../context/AppContext';
 import { placeBidApi } from '../api/auction';
 import { fetchMyWallet } from '../api/user';
+import { fetchChatHistory } from '../api/chat';
 import { useTerritoryDetail } from '../hooks/useTerritoryDetail';
 import { useMyBids } from '../hooks/useMyBids';
+import { useStompSubscribe, useStompPublish } from '../hooks/useStompClient';
 import { GNB } from '../components/GNB';
 import type { MyBidEntry } from '../types/auction';
 
@@ -49,16 +51,29 @@ const RANGE_MS: Record<ChartRange, number> = {
   '90일': 90 * 86400_000,
 };
 
-const INIT_CHAT = [
-  { user: 'CyberWolf', text: '이 지역 S급 영토 노리는 사람 있어요?', time: '14:22', mine: false },
-  { user: 'NeonKing', text: '저도 입찰 중인데 경쟁 치열하네요', time: '14:23', mine: false },
-  { user: 'StarHunter', text: '현재 가격 많이 올라갔던데', time: '14:25', mine: false },
-];
+interface ChatMsg { user: string; text: string; time: string; mine: boolean; }
+
+interface AuctionWsMessage {
+  auctionId: number;
+  currentPrice: number;
+  bidderId: number;
+  bidderNickname: string;
+  bidAt: string;
+  endAt?: string;
+}
+
+interface ChatWsMessage {
+  messageId: number;
+  senderId: number;
+  senderNickname: string;
+  content: string;
+  sentAt: string;
+}
 
 export function TerritoryDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { ap, syncAP, userId, username } = useApp();
+  const { ap, syncAP, userId, username, isLoggedIn } = useApp();
 
   const territoryId = Number(id);
   const { territory, bids, isLoading, error, refreshBids } = useTerritoryDetail(territoryId);
@@ -81,10 +96,44 @@ export function TerritoryDetailPage() {
   const [bidError, setBidError] = useState<string | null>(null);
   const [bidDone, setBidDone] = useState(false);
   const [chartRange, setChartRange] = useState<ChartRange>('7일');
-  const [chatMessages, setChatMessages] = useState(INIT_CHAT);
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [localWishlist, setLocalWishlist] = useState<Set<number>>(new Set());
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const stompPublish = useStompPublish();
+
+  const chatRoomId = `room_territory_${territoryId}`;
+  const auctionWsDest = auctionId ? `/sub/auction/${auctionId}` : null;
+
+  // Real-time auction updates
+  const handleAuctionMessage = useCallback((msg: AuctionWsMessage) => {
+    if (msg.auctionId === auctionId) {
+      refreshBids(auctionId);
+    }
+  }, [auctionId, refreshBids]);
+  useStompSubscribe<AuctionWsMessage>(auctionWsDest, handleAuctionMessage);
+
+  // Real-time chat
+  const handleChatMessage = useCallback((msg: ChatWsMessage) => {
+    const now = new Date(msg.sentAt);
+    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    setChatMessages(prev => [...prev, { user: msg.senderNickname, text: msg.content, time, mine: msg.senderId === userId }]);
+  }, [userId]);
+  useStompSubscribe<ChatWsMessage>(`/sub/chat/${chatRoomId}`, handleChatMessage);
+
+  // Load chat history on mount
+  useEffect(() => {
+    fetchChatHistory(chatRoomId, { size: 30 })
+      .then(res => {
+        const msgs = res.messages.map(m => {
+          const d = new Date(m.sentAt);
+          const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+          return { user: m.senderNickname, text: m.content, time, mine: m.senderId === userId };
+        });
+        setChatMessages(msgs);
+      })
+      .catch(() => {});
+  }, [chatRoomId, userId]);
 
   useEffect(() => { setBidAmount(currentBid + 100); }, [currentBid]);
 
@@ -120,10 +169,8 @@ export function TerritoryDetailPage() {
 
   const sendChat = () => {
     const text = chatInput.trim();
-    if (!text) return;
-    const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    setChatMessages(prev => [...prev, { user: username ?? '나', text, time, mine: true }]);
+    if (!text || !isLoggedIn) return;
+    stompPublish(`/pub/chat/${chatRoomId}`, { content: text });
     setChatInput('');
   };
 

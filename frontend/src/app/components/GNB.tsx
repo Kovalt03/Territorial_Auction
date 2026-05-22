@@ -1,9 +1,11 @@
+import { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useApp } from '../context/AppContext';
+import { useStompSubscribe } from '../hooks/useStompClient';
 
 const navItems = [
-  { icon: '🔔', label: '알림', path: '/app/mypage' },
-  { icon: '🛒', label: '장바구니', path: '/app/territory/15-22' },
+  { icon: '🔔', label: '알림', path: '/app/notifications' },
+  { icon: '⚔️', label: '길드', path: '/app/guild' },
   { icon: '🛍', label: '아이템샵', path: '/app/item-shop' },
   { icon: '⭐', label: '시즌패스', path: '/app/season-pass' },
   { icon: '🏆', label: '랭킹', path: '/app/ranking' },
@@ -14,7 +16,13 @@ const navItems = [
 export function GNB() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { ap, gp, hasPass, passEndDate, notifications, isLoggedIn } = useApp();
+  const { ap, gp, hasPass, passEndDate, notifications, isLoggedIn, userId, incrementNotification } = useApp();
+
+  // Subscribe to personal notifications via WebSocket
+  const handleWsNotification = useCallback(() => {
+    incrementNotification();
+  }, [incrementNotification]);
+  useStompSubscribe(userId ? `/sub/user/${userId}/notification` : null, handleWsNotification);
 
   const passDays = passEndDate
     ? Math.max(0, Math.ceil((passEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))

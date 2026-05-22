@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 
 import { fetchMyProfile, fetchMyWallet } from '../api/user';
 import { fetchMySeasonPass } from '../api/season';
+import { fetchNotifications } from '../api/notification';
+import { disconnectStomp } from '../hooks/useStompClient';
 
 export interface Territory {
   id: string;
@@ -61,6 +63,8 @@ interface AppContextType extends AppState {
   placeBid: (id: string, amount: number) => void;
   sendMessage: (text: string) => void;
   activatePass: () => void;
+  decrementNotification: () => void;
+  incrementNotification: () => void;
 }
 
 const defaultMessages: ChatMessage[] = [
@@ -90,8 +94,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
-    Promise.all([fetchMyProfile(), fetchMyWallet(), fetchMySeasonPass()])
-      .then(([profile, wallet, pass]) => {
+    Promise.all([fetchMyProfile(), fetchMyWallet(), fetchMySeasonPass(), fetchNotifications(0, 1)])
+      .then(([profile, wallet, pass, notifs]) => {
         setState(prev => ({
           ...prev,
           isLoggedIn: true,
@@ -101,6 +105,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           gp: wallet.availableGP,
           hasPass: pass.hasSeasonPass,
           passEndDate: pass.seasonPass?.expiresAt ? new Date(pass.seasonPass.expiresAt) : null,
+          notifications: notifs.unreadCount,
         }));
       })
       .catch(() => {
@@ -122,7 +127,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('accessToken');
-    setState(prev => ({ ...prev, isLoggedIn: false, username: '', userId: null }));
+    disconnectStomp();
+    setState(prev => ({ ...prev, isLoggedIn: false, username: '', userId: null, notifications: 0 }));
+  };
+
+  const decrementNotification = () => {
+    setState(prev => ({ ...prev, notifications: Math.max(0, prev.notifications - 1) }));
+  };
+
+  const incrementNotification = () => {
+    setState(prev => ({ ...prev, notifications: prev.notifications + 1 }));
   };
 
   const addAP = (amount: number) => {
@@ -205,7 +219,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ ...state, login, logout, addAP, syncAP, syncGP, syncPass, useAP, useGP, toggleWishlist, placeBid, sendMessage, activatePass }}>
+    <AppContext.Provider value={{ ...state, login, logout, addAP, syncAP, syncGP, syncPass, useAP, useGP, toggleWishlist, placeBid, sendMessage, activatePass, decrementNotification, incrementNotification }}>
       {children}
     </AppContext.Provider>
   );
