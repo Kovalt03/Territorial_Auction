@@ -87,6 +87,7 @@
 | `season_number` | `INTEGER` | NOT NULL, UNIQUE | |
 | `started_at` | `TIMESTAMPTZ` | NOT NULL | |
 | `ended_at` | `TIMESTAMPTZ` | NULL | NULL이면 진행 중 |
+| `processed_at` | `TIMESTAMPTZ` | NULL | 시즌 종료 배치 완료 시각. NULL이면 미처리 |
 
 #### season_passes
 
@@ -119,6 +120,7 @@
 | `score` | `INTEGER` | NOT NULL, DEFAULT 0 | 현재 트로피 |
 | `league` | `VARCHAR(10)` | NOT NULL, DEFAULT 'BRONZE' | BRONZE / SILVER / GOLD / DIAMOND / CHAMPION |
 | `season_id` | `BIGINT` | FK | 현재 시즌 |
+| `last_reset_season_id` | `BIGINT` | FK, NULL | 마지막 리셋이 적용된 시즌 ID (멱등성 체크용) |
 | `updated_at` | `TIMESTAMPTZ` | NOT NULL | |
 
 #### trophy_logs

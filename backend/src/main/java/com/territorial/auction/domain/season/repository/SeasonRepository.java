@@ -9,6 +9,11 @@ import org.springframework.data.repository.query.Param;
 
 public interface SeasonRepository extends JpaRepository<Season, Long> {
 
-    @Query("SELECT s FROM Season s WHERE :now BETWEEN s.startedAt AND s.endedAt")
+    @Query(
+            "SELECT s FROM Season s WHERE s.startedAt <= :now AND (s.endedAt IS NULL OR s.endedAt >= :now)")
     Optional<Season> findActiveSeason(@Param("now") LocalDateTime now);
+
+    @Query(
+            "SELECT s FROM Season s WHERE s.endedAt IS NOT NULL AND s.endedAt < :now AND s.processedAt IS NULL ORDER BY s.endedAt ASC LIMIT 1")
+    Optional<Season> findFirstUnprocessedEndedSeason(@Param("now") LocalDateTime now);
 }

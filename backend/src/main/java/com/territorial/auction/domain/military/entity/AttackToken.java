@@ -32,8 +32,16 @@ public class AttackToken {
         this.normalCount++;
     }
 
+    public void addNormal(int count) {
+        this.normalCount += count;
+    }
+
     public void addPrecision() {
         this.precisionCount++;
+    }
+
+    public void addPrecision(int count) {
+        this.precisionCount += count;
     }
 
     public void consumeNormal() {

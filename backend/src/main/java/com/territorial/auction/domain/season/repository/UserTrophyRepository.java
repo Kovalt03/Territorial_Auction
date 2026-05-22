@@ -14,4 +14,6 @@ public interface UserTrophyRepository extends JpaRepository<UserTrophy, Long> {
     @Query(
             "SELECT ut.user.id, COALESCE(SUM(ut.score), 0L) FROM UserTrophy ut WHERE ut.user.id IN :userIds GROUP BY ut.user.id")
     List<Object[]> sumScoreGroupByUserIds(@Param("userIds") List<Long> userIds);
+
+    List<UserTrophy> findAllBySeasonId(Long seasonId);
 }

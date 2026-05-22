@@ -249,7 +249,7 @@
 | ✅ | 전투 결과 처리 스케줄러 | 1분 주기, `SiegeScheduler` |
 | ✅ | 시즌 패스 만료 알림 스케줄러 | 만료 3일 전·당일 (SeasonPassScheduler, be-25) |
 | ⬜ | 일 정산 배치 (선택) | 미수령 생산량 settle + `territory_production_logs` 기록. 구현 여부 미확정 |
-| ⬜ | 시즌 종료 배치 | 리그별 보상 지급 + 트로피 50% 리셋. 관리자가 `seasons.ended_at` 설정 시 자동 트리거 |
+| ✅ | 시즌 종료 배치 | 리그별 보상 지급(GP·토큰) + 서브티어 단위 트로피 소프트 리셋. `SeasonEndBatchService` + `SeasonEndScheduler` (be-34) |
 
 ---
 
