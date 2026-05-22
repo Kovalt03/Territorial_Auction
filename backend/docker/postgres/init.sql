@@ -322,7 +322,8 @@ CREATE TABLE IF NOT EXISTS seasons (
     id            BIGSERIAL   PRIMARY KEY,
     season_number INTEGER     NOT NULL UNIQUE,
     started_at    TIMESTAMPTZ NOT NULL,
-    ended_at      TIMESTAMPTZ
+    ended_at      TIMESTAMPTZ,
+    processed_at  TIMESTAMPTZ
 );
 
 -- season_pass_progress
@@ -353,11 +354,12 @@ CREATE TABLE IF NOT EXISTS season_pass_reward_claims (
 
 -- user_trophies
 CREATE TABLE IF NOT EXISTS user_trophies (
-    user_id    BIGINT      PRIMARY KEY REFERENCES users(id),
-    score      INTEGER     NOT NULL DEFAULT 0,
-    league     VARCHAR(10) NOT NULL DEFAULT 'BRONZE',
-    season_id  BIGINT      NOT NULL REFERENCES seasons(id),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    user_id               BIGINT      PRIMARY KEY REFERENCES users(id),
+    score                 INTEGER     NOT NULL DEFAULT 0,
+    league                VARCHAR(10) NOT NULL DEFAULT 'BRONZE',
+    season_id             BIGINT      NOT NULL REFERENCES seasons(id),
+    last_reset_season_id  BIGINT      REFERENCES seasons(id),
+    updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- trophy_logs
