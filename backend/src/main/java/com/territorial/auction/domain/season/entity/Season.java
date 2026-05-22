@@ -20,13 +20,18 @@ public class Season {
     @Column(nullable = false)
     private LocalDateTime startedAt;
 
-    @Column(nullable = false)
-    private LocalDateTime endedAt;
+    @Column private LocalDateTime endedAt;
+
+    @Column private LocalDateTime processedAt;
 
     @Builder
     public Season(Integer seasonNumber, LocalDateTime startedAt, LocalDateTime endedAt) {
         this.seasonNumber = seasonNumber;
         this.startedAt = startedAt;
         this.endedAt = endedAt;
+    }
+
+    public void markProcessed() {
+        this.processedAt = LocalDateTime.now();
     }
 }

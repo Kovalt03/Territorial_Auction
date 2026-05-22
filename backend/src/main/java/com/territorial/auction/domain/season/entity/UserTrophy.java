@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.season.entity;
 
+import com.territorial.auction.domain.season.TierPolicy;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -40,6 +41,8 @@ public class UserTrophy {
     @JoinColumn(name = "season_id", nullable = false)
     private Season season;
 
+    @Column private Long lastResetSeasonId;
+
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
@@ -48,5 +51,13 @@ public class UserTrophy {
     public UserTrophy(User user, Season season) {
         this.user = user;
         this.season = season;
+    }
+
+    // Demotes score by one sub-tier; idempotent within the same season
+    public void applySeasonReset(Long seasonId) {
+        if (seasonId.equals(this.lastResetSeasonId)) return;
+        this.score = TierPolicy.calculateResetScore(this.score);
+        this.league = TierPolicy.calculateLeague(this.score);
+        this.lastResetSeasonId = seasonId;
     }
 }
