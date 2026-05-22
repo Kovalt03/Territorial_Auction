@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.building.entity;
 
+import com.territorial.auction.domain.building.BuildingPolicy;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
@@ -80,11 +81,11 @@ public class BuildingInstance {
 
     public void upgrade() {
         this.level++;
-        this.hp = this.buildingType.getMaxHp();
+        this.hp = BuildingPolicy.scaledMaxHp(this.buildingType.getMaxHp(), this.level);
     }
 
     public void repair() {
-        this.hp = this.buildingType.getMaxHp();
+        this.hp = BuildingPolicy.scaledMaxHp(this.buildingType.getMaxHp(), this.level);
         this.isDestroyed = false;
     }
 

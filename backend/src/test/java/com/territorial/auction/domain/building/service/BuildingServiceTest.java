@@ -305,7 +305,7 @@ class BuildingServiceTest {
     class Upgrade {
 
         @Test
-        @DisplayName("건물 업그레이드 성공")
+        @DisplayName("레벨 1 → 2 업그레이드 성공 → newLevel=2, nextLevel=3, upgradeCost=500")
         void success() {
             User user = sampleUser(1L);
             Territory territory = territoryOwnedBy(user, gradeA());
@@ -319,6 +319,47 @@ class BuildingServiceTest {
             UpgradeBuildingResponse response = buildingService.upgrade(1L, 100L);
 
             assertThat(response.newLevel()).isEqualTo(2);
+            assertThat(response.nextLevel()).isEqualTo(3);
+            assertThat(response.maxLevel()).isEqualTo(3);
+            assertThat(response.upgradeCost()).isEqualTo(500); // baseCostGp(500) × level(1)
+            assertThat(bi.getHp()).isEqualTo(120); // maxHp(60) × newLevel(2)
+        }
+
+        @Test
+        @DisplayName("레벨 2 → 3 업그레이드 성공 → nextLevel=null (최대 레벨)")
+        void success_toMaxLevel() {
+            User user = sampleUser(1L);
+            Territory territory = territoryOwnedBy(user, gradeA());
+            BuildingType bt = storage(); // baseCostGp=500
+            BuildingInstance bi = placedInstance(bt, territory, 0, 0);
+            ReflectionTestUtils.setField(bi, "level", 2);
+            Wallet wallet = walletWithGp(user, 2000);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            UpgradeBuildingResponse response = buildingService.upgrade(1L, 100L);
+
+            assertThat(response.newLevel()).isEqualTo(3);
+            assertThat(response.nextLevel()).isNull();
+            assertThat(response.upgradeCost()).isEqualTo(1000); // baseCostGp(500) × level(2)
+        }
+
+        @Test
+        @DisplayName("최대 레벨(3) 도달 → BUILDING_MAX_LEVEL")
+        void max_level_reached() {
+            User user = sampleUser(1L);
+            Territory territory = territoryOwnedBy(user, gradeA());
+            BuildingType bt = storage();
+            BuildingInstance bi = placedInstance(bt, territory, 0, 0);
+            ReflectionTestUtils.setField(bi, "level", 3);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
+
+            assertThatThrownBy(() -> buildingService.upgrade(1L, 100L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BUILDING_MAX_LEVEL);
         }
 
         @Test
@@ -389,6 +430,25 @@ class BuildingServiceTest {
             RepairBuildingResponse response = buildingService.repair(1L, 100L);
 
             assertThat(response.hp()).isEqualTo(bt.getMaxHp());
+        }
+
+        @Test
+        @DisplayName("레벨2 건물 수리 성공 → hp = baseMaxHp × 2")
+        void success_level2() {
+            User user = sampleUser(1L);
+            Territory territory = territoryOwnedBy(user, gradeA());
+            BuildingType bt = storage(); // maxHp=60
+            BuildingInstance bi = placedInstance(bt, territory, 0, 0);
+            ReflectionTestUtils.setField(bi, "level", 2);
+            ReflectionTestUtils.setField(bi, "isDestroyed", true);
+            Wallet wallet = walletWithGp(user, 2000);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            RepairBuildingResponse response = buildingService.repair(1L, 100L);
+
+            assertThat(response.hp()).isEqualTo(bt.getMaxHp() * 2); // 60 × 2 = 120
         }
 
         @Test

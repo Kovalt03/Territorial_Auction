@@ -39,6 +39,10 @@ public class BuildingType {
 
     @Column private Integer gpProductionRate; // NULL 허용 — WORKSHOP만 값 있음
 
+    public boolean isCastle() {
+        return "CASTLE".equals(this.name);
+    }
+
     @Builder
     public BuildingType(
             String name,
