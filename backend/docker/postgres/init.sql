@@ -222,34 +222,41 @@ CREATE TABLE IF NOT EXISTS user_season_passes (
 CREATE TABLE IF NOT EXISTS home_islands (
     id         BIGSERIAL   PRIMARY KEY,
     user_id    BIGINT      UNIQUE NOT NULL REFERENCES users(id),
+    level      INTEGER     NOT NULL DEFAULT 1,
     grid_size  INTEGER     NOT NULL DEFAULT 10,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- building_types
 CREATE TABLE IF NOT EXISTS building_types (
-    id               BIGSERIAL   PRIMARY KEY,
-    name             VARCHAR(30) NOT NULL,
-    width            INTEGER     NOT NULL,
-    height           INTEGER     NOT NULL,
-    max_hp           INTEGER     NOT NULL,
-    base_cost_gp     INTEGER     NOT NULL,
-    zone_restriction INTEGER
+    id                     BIGSERIAL   PRIMARY KEY,
+    name                   VARCHAR(30) NOT NULL,
+    width                  INTEGER     NOT NULL,
+    height                 INTEGER     NOT NULL,
+    max_hp                 INTEGER     NOT NULL,
+    base_cost_gp           INTEGER     NOT NULL,
+    zone_restriction       INTEGER,
+    defense_power          INTEGER,
+    food_production_rate   INTEGER,
+    unit_capacity_per_level INTEGER,
+    gp_production_rate     INTEGER
 );
 
 -- building_instances
 CREATE TABLE IF NOT EXISTS building_instances (
-    id               BIGSERIAL PRIMARY KEY,
-    territory_id     BIGINT    REFERENCES territories(id),
-    island_id        BIGINT    REFERENCES home_islands(id),
-    building_type_id BIGINT    NOT NULL REFERENCES building_types(id),
-    user_id          BIGINT    REFERENCES users(id),  -- 보관함 소유자 (territory/island 없을 때)
-    pos_x            INTEGER   NOT NULL,
-    pos_y            INTEGER   NOT NULL,
-    hp               INTEGER   NOT NULL,
-    level            INTEGER   NOT NULL DEFAULT 1,
-    zone             INTEGER   NOT NULL,
-    is_destroyed     BOOLEAN   NOT NULL DEFAULT false
+    id                    BIGSERIAL   PRIMARY KEY,
+    territory_id          BIGINT      REFERENCES territories(id),
+    island_id             BIGINT      REFERENCES home_islands(id),
+    building_type_id      BIGINT      NOT NULL REFERENCES building_types(id),
+    user_id               BIGINT      REFERENCES users(id),
+    pos_x                 INTEGER     NOT NULL,
+    pos_y                 INTEGER     NOT NULL,
+    hp                    INTEGER     NOT NULL,
+    level                 INTEGER     NOT NULL DEFAULT 1,
+    zone                  INTEGER     NOT NULL,
+    is_destroyed          BOOLEAN     NOT NULL DEFAULT false,
+    stored_gp             INTEGER     NOT NULL DEFAULT 0,
+    workshop_debuff_until TIMESTAMPTZ
 );
 
 -- global_vaults

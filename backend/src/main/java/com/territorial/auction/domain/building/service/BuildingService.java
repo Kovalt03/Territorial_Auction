@@ -368,8 +368,14 @@ public class BuildingService {
     }
 
     private void validateZoneRestriction(BuildingType buildingType, int zone) {
-        if (buildingType.getZoneRestriction() != null
-                && buildingType.getZoneRestriction() != zone) {
+        Integer restriction = buildingType.getZoneRestriction();
+        if (restriction == null) return;
+        // 양수: 정확히 해당 Zone이어야 함 (CASTLE = 1)
+        if (restriction > 0 && zone != restriction) {
+            throw new CustomException(ErrorCode.ZONE_RESTRICTION_VIOLATED);
+        }
+        // 음수: |값| 이상의 Zone이어야 함 (FARMLAND = -2 → Zone2/3만 허용)
+        if (restriction < 0 && zone < -restriction) {
             throw new CustomException(ErrorCode.ZONE_RESTRICTION_VIOLATED);
         }
     }

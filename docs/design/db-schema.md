@@ -369,13 +369,16 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | column | 자료형 | 설명 |
 |---|---|---|
 | `id` | `BIGSERIAL` PK | |
-| `name` | `VARCHAR(30)` | CASTLE / STORAGE / WORKSHOP / BARRACKS / WALL / TOWER |
+| `name` | `VARCHAR(30)` | CASTLE / STORAGE / WORKSHOP / BARRACKS / WALL / TOWER / FARMLAND / RESIDENCE |
 | `width` | `INTEGER` | config 대응 |
 | `height` | `INTEGER` | config 대응 |
 | `max_hp` | `INTEGER` | |
 | `base_cost_gp` | `INTEGER` | |
-| `zone_restriction` | `INTEGER` NULL | 1 = Zone1에만 배치 가능 |
-| `defense_power` | `INTEGER` | NULL 허용. 방어 건물(WALL, TOWER, CASTLE)만 0 이상 값 보유. 전투 계산 시 DEF에 합산 |
+| `zone_restriction` | `INTEGER` NULL | 양수: 해당 Zone 전용 (1 = Zone1 전용 — CASTLE). 음수: \|값\| 이상 Zone만 허용 (-2 = Zone2/3 전용 — FARMLAND) |
+| `defense_power` | `INTEGER` NULL | NULL 허용. 방어 건물(WALL, TOWER)만 값 보유. 전투 계산 시 DEF에 합산 |
+| `food_production_rate` | `INTEGER` NULL | NULL 허용. FARMLAND만 값 보유. 시간당 식량 생산량 (level 배율 곱함) |
+| `unit_capacity_per_level` | `INTEGER` NULL | NULL 허용. RESIDENCE만 값 보유. 레벨당 유닛 슬롯 추가 수 |
+| `gp_production_rate` | `INTEGER` NULL | NULL 허용. WORKSHOP만 값 보유. 시간당 GP 생산량 (level 배율 곱함) |
 
 #### building_instances
 
