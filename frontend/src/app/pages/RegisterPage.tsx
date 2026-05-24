@@ -69,105 +69,97 @@ export function RegisterPage() {
 
       <div className="relative bg-[#1a1f35] border-[1.5px] border-[#00f5ff] rounded-2xl w-[400px] overflow-hidden shadow-2xl shadow-[#00f5ff]/10">
         <div className="pt-5 pb-3 flex flex-col items-center">
-          <span className="text-[#00f5ff] font-bold" style={{ fontSize: 14 }}>⬡ PIXEL WAR</span>
+          <span className="text-[#00f5ff] font-bold text-sm">⬡ PIXEL WAR</span>
         </div>
 
         <div className="px-7 pb-7">
-          <h2 className="text-[#e0e8ff] font-bold mb-3" style={{ fontSize: 22 }}>회원가입</h2>
+          <h2 className="text-[#e0e8ff] font-bold mb-3 text-[22px]">회원가입</h2>
 
           <div className="bg-[#2a3050] border border-[#ffd700] rounded-lg px-4 py-2.5 mb-4">
-            <span className="text-[#ffd700]" style={{ fontSize: 12, fontWeight: 500 }}>
+            <span className="text-[#ffd700] text-xs font-medium">
               🎁  가입 완료 시 1,000 AP 즉시 지급
             </span>
           </div>
 
           {/* 아이디 */}
-          <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>아이디</label>
+          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">아이디</label>
           <div className="flex gap-2 mb-1">
             <input
               value={form.username}
               onChange={e => handleChange('username', e.target.value)}
               placeholder="영문, 숫자 4~20자"
-              className="flex-1 bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors"
-              style={{ fontSize: 12 }}
+              className="flex-1 bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors text-xs"
             />
             <button
               onClick={handleCheckUsername}
-              className="bg-[#2a3050] border border-[#00f5ff] rounded-md px-3 h-[38px] text-[#00f5ff] hover:bg-[#354064] transition-colors flex-shrink-0"
-              style={{ fontSize: 12 }}
+              className="bg-[#2a3050] border border-[#00f5ff] rounded-md px-3 h-[38px] text-[#00f5ff] hover:bg-[#354064] transition-colors flex-shrink-0 text-xs"
             >
               중복확인
             </button>
           </div>
           {usernameChecked && (
-            <p className={`mb-3 ${usernameAvailable ? 'text-[#00ff88]' : 'text-[#ff3333]'}`} style={{ fontSize: 11 }}>
+            <p className={`mb-3 text-[11px] ${usernameAvailable ? 'text-[#00ff88]' : 'text-[#ff3333]'}`}>
               {usernameAvailable ? '✓ 사용 가능한 아이디입니다' : '✗ 이미 사용 중인 아이디입니다'}
             </p>
           )}
           {!usernameChecked && <div className="mb-3" />}
 
           {/* 이메일 */}
-          <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>이메일</label>
+          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">이메일</label>
           <input
             type="email"
             value={form.email}
             onChange={e => handleChange('email', e.target.value)}
             placeholder="example@email.com"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4"
-            style={{ fontSize: 12 }}
+            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4 text-xs"
           />
 
           {/* 비밀번호 */}
-          <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>비밀번호</label>
+          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">비밀번호</label>
           <input
             type="password"
             value={form.password}
             onChange={e => handleChange('password', e.target.value)}
             placeholder="8자 이상, 영문+숫자 조합"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4"
-            style={{ fontSize: 12 }}
+            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4 text-xs"
           />
 
           {/* 비밀번호 확인 */}
-          <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>비밀번호 확인</label>
+          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">비밀번호 확인</label>
           <input
             type="password"
             value={form.pwConfirm}
             onChange={e => handleChange('pwConfirm', e.target.value)}
             placeholder="비밀번호를 다시 입력"
-            className={`w-full bg-[#2a3050] border rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none transition-colors mb-4 ${
+            className={`w-full bg-[#2a3050] border rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none transition-colors mb-4 text-xs ${
               pwMatch === null ? 'border-[#354064]' : pwMatch ? 'border-[#00ff88]' : 'border-[#ff3333]'
             }`}
-            style={{ fontSize: 12 }}
           />
 
           {/* 닉네임 */}
-          <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>닉네임</label>
+          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">닉네임</label>
           <input
             value={form.nickname}
             onChange={e => handleChange('nickname', e.target.value)}
             placeholder="다른 유저에게 보이는 이름"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4"
-            style={{ fontSize: 12 }}
+            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4 text-xs"
           />
 
           {error && (
-            <p className="text-[#ff3333] mb-3" style={{ fontSize: 12 }}>⚠ {error}</p>
+            <p className="text-[#ff3333] mb-3 text-xs">⚠ {error}</p>
           )}
 
           <button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="w-full h-12 bg-[#00f5ff] rounded-lg text-[#0a0e1a] font-bold hover:brightness-110 transition-all active:scale-[0.98] mb-3 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ fontSize: 15 }}
+            className="w-full h-12 bg-[#00f5ff] rounded-lg text-[#0a0e1a] font-bold hover:brightness-110 transition-all active:scale-[0.98] mb-3 disabled:opacity-50 disabled:cursor-not-allowed text-[15px]"
           >
             {isLoading ? '가입 중...' : '가입하기'}
           </button>
 
           <button
             onClick={() => navigate('/login')}
-            className="w-full h-[46px] bg-[#2a3050] border border-[#354064] rounded-lg text-[#8892b0] hover:bg-[#354064] transition-colors"
-            style={{ fontSize: 14 }}
+            className="w-full h-[46px] bg-[#2a3050] border border-[#354064] rounded-lg text-[#8892b0] hover:bg-[#354064] transition-colors text-sm"
           >
             ← 로그인으로 돌아가기
           </button>
@@ -179,15 +171,14 @@ export function RegisterPage() {
           <div className="bg-[#1a1f35] border-2 border-[#ffd700] rounded-2xl p-8 text-center max-w-sm mx-4 shadow-2xl shadow-[#ffd700]/20">
             <div className="text-5xl mb-4">🎁</div>
             <h3 className="text-[#ffd700] font-bold text-xl mb-2">가입을 축하합니다!</h3>
-            <p className="text-[#8892b0] mb-3" style={{ fontSize: 14 }}>웰컴 보너스가 지급되었습니다</p>
+            <p className="text-[#8892b0] mb-3 text-sm">웰컴 보너스가 지급되었습니다</p>
             <div className="bg-[#2a3050] rounded-xl py-4 px-6 mb-5">
-              <p className="text-[#00f5ff] font-bold" style={{ fontSize: 28 }}>+1,000 AP</p>
+              <p className="text-[#00f5ff] font-bold text-[28px]">+1,000 AP</p>
               <p className="text-[#8892b0] text-sm mt-1">즉시 사용 가능</p>
             </div>
             <button
               onClick={() => { setShowWelcome(false); navigate('/app/map'); }}
-              className="w-full h-12 bg-[#00f5ff] rounded-lg text-[#0a0e1a] font-bold hover:brightness-110 transition-all"
-              style={{ fontSize: 15 }}
+              className="w-full h-12 bg-[#00f5ff] rounded-lg text-[#0a0e1a] font-bold hover:brightness-110 transition-all text-[15px]"
             >
               게임 시작! 🚀
             </button>

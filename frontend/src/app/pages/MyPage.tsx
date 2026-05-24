@@ -33,7 +33,7 @@ export function MyPage() {
   const tabItems: { id: ActivityTab; label: string; count: number }[] = [
     { id: 'active', label: '경매 진행', count: activeBids.length },
     { id: 'mine', label: '내 영토', count: territories.length },
-    { id: 'history', label: '거래 내역', count: 12 },
+    { id: 'history', label: '거래 내역', count: 0 },
     { id: 'bids', label: '입찰 현황', count: allBids.length },
   ];
 
@@ -42,21 +42,20 @@ export function MyPage() {
       <GNB />
 
       <div className="flex-1 overflow-y-auto p-5">
-        <h1 className="text-[#e0e8ff] font-bold mb-5" style={{ fontSize: 26 }}>👤  마이페이지</h1>
+        <h1 className="text-[#e0e8ff] font-bold mb-5 text-[26px]">👤  마이페이지</h1>
 
         <div className="grid grid-cols-3 gap-4 mb-5">
           {/* Profile card */}
           <div className="bg-[#1a1f35] border border-[#354064] rounded-xl p-5">
             <div className="flex items-center gap-4 mb-4">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-2xl flex-shrink-0"
-                style={{ background: '#00f5ff20', border: '2px solid #00f5ff', color: '#00f5ff' }}
+                className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-2xl flex-shrink-0 bg-[#00f5ff20] border-2 border-[#00f5ff] text-[#00f5ff]"
               >
                 {(username || '게스트').charAt(0).toUpperCase()}
               </div>
               <div>
-                <p className="text-[#e0e8ff] font-bold" style={{ fontSize: 18 }}>{username || '게스트'}</p>
-                <p className="text-[#7788a5]" style={{ fontSize: 12 }}>플레이어</p>
+                <p className="text-[#e0e8ff] font-bold text-lg">{username || '게스트'}</p>
+                <p className="text-[#7788a5] text-xs">플레이어</p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -66,8 +65,8 @@ export function MyPage() {
                 { label: '경매중', val: activeBids.length, color: '#ff8c00' },
               ].map(s => (
                 <div key={s.label} className="bg-[#2a3050] rounded-xl p-2 text-center">
-                  <p className="font-bold" style={{ fontSize: 14, color: s.color }}>{s.val}</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 10 }}>{s.label}</p>
+                  <p className="font-bold text-sm" style={{ color: s.color }}>{s.val}</p>
+                  <p className="text-[#7788a5] text-[10px]">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -75,9 +74,9 @@ export function MyPage() {
 
           {/* Assets donut chart */}
           <div className="bg-[#1a1f35] border border-[#354064] rounded-xl p-5">
-            <p className="text-[#7788a5] font-semibold mb-3" style={{ fontSize: 13 }}>자산 현황</p>
+            <p className="text-[#7788a5] font-semibold mb-3 text-[13px]">자산 현황</p>
             <div className="flex items-center gap-3">
-              <div style={{ width: 120, height: 120 }}>
+              <div className="w-[120px] h-[120px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={donutData} cx="50%" cy="50%" innerRadius={35} outerRadius={55} dataKey="value" strokeWidth={0}>
@@ -91,17 +90,17 @@ export function MyPage() {
               </div>
               <div className="space-y-2">
                 <div>
-                  <p className="text-[#ff0066] font-bold" style={{ fontSize: 16 }}>{ap.toLocaleString()} AP</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 10 }}>{totalAssets > 0 ? Math.round((ap / totalAssets) * 100) : 0}%</p>
+                  <p className="text-[#ff0066] font-bold text-base">{ap.toLocaleString()} AP</p>
+                  <p className="text-[#7788a5] text-[10px]">{totalAssets > 0 ? Math.round((ap / totalAssets) * 100) : 0}%</p>
                 </div>
                 <div>
-                  <p className="text-[#00ff88] font-bold" style={{ fontSize: 16 }}>{gp.toLocaleString()} GP</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 10 }}>{totalAssets > 0 ? Math.round((gp / totalAssets) * 100) : 0}%</p>
+                  <p className="text-[#00ff88] font-bold text-base">{gp.toLocaleString()} GP</p>
+                  <p className="text-[#7788a5] text-[10px]">{totalAssets > 0 ? Math.round((gp / totalAssets) * 100) : 0}%</p>
                 </div>
                 <div className="h-px bg-[#354064]" />
                 <div>
-                  <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>합계</p>
-                  <p className="text-[#ffd700]" style={{ fontSize: 12 }}>{totalAssets.toLocaleString()}</p>
+                  <p className="text-[#e0e8ff] font-semibold text-[13px]">합계</p>
+                  <p className="text-[#ffd700] text-xs">{totalAssets.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -115,13 +114,13 @@ export function MyPage() {
               onClick={() => navigate('/app/season-pass')}
             >
               <div className="flex items-center gap-3">
-                <span style={{ fontSize: 24 }}>⭐</span>
+                <span className="text-[24px]">⭐</span>
                 <div>
-                  <p className="text-[#ffd700] font-bold" style={{ fontSize: 14 }}>시즌 패스</p>
+                  <p className="text-[#ffd700] font-bold text-sm">시즌 패스</p>
                   {hasPass ? (
-                    <p className="text-[#7788a5]" style={{ fontSize: 11 }}>D-{passDays}일 남음</p>
+                    <p className="text-[#7788a5] text-[11px]">D-{passDays}일 남음</p>
                   ) : (
-                    <p className="text-[#7788a5]" style={{ fontSize: 11 }}>미구매 · 1,000 AP</p>
+                    <p className="text-[#7788a5] text-[11px]">미구매 · 1,000 AP</p>
                   )}
                 </div>
                 <span className="ml-auto text-[#7788a5]">→</span>
@@ -132,10 +131,10 @@ export function MyPage() {
               onClick={() => navigate('/app/vault')}
             >
               <div className="flex items-center gap-3">
-                <span style={{ fontSize: 24 }}>💰</span>
+                <span className="text-[24px]">💰</span>
                 <div>
-                  <p className="text-[#00ff88] font-bold" style={{ fontSize: 14 }}>글로벌 금고</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>보유 영토 {territories.length}개</p>
+                  <p className="text-[#00ff88] font-bold text-sm">글로벌 금고</p>
+                  <p className="text-[#7788a5] text-[11px]">보유 영토 {territories.length}개</p>
                 </div>
                 <span className="ml-auto text-[#7788a5]">→</span>
               </div>
@@ -145,10 +144,10 @@ export function MyPage() {
               onClick={() => navigate('/app/my-island')}
             >
               <div className="flex items-center gap-3">
-                <span style={{ fontSize: 24 }}>🏝</span>
+                <span className="text-[24px]">🏝</span>
                 <div>
-                  <p className="text-[#44aaff] font-bold" style={{ fontSize: 14 }}>나의 섬</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>건물 관리</p>
+                  <p className="text-[#00f5ff] font-bold text-sm">나의 섬</p>
+                  <p className="text-[#7788a5] text-[11px]">건물 관리</p>
                 </div>
                 <span className="ml-auto text-[#7788a5]">→</span>
               </div>
@@ -163,9 +162,8 @@ export function MyPage() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className="flex-1 py-3 font-semibold transition-colors relative"
+                className="flex-1 py-3 font-semibold text-[13px] transition-colors relative"
                 style={{
-                  fontSize: 13,
                   color: tab === t.id ? '#00f5ff' : '#7788a5',
                   background: tab === t.id ? '#00f5ff10' : 'transparent',
                 }}
@@ -173,8 +171,8 @@ export function MyPage() {
                 {t.label}
                 {t.count > 0 && (
                   <span
-                    className="ml-1.5 px-1.5 py-0.5 rounded-full"
-                    style={{ fontSize: 10, background: tab === t.id ? '#00f5ff' : '#354064', color: tab === t.id ? '#0a0e1a' : '#7788a5' }}
+                    className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px]"
+                    style={{ background: tab === t.id ? '#00f5ff' : '#354064', color: tab === t.id ? '#0a0e1a' : '#7788a5' }}
                   >
                     {t.count}
                   </span>
@@ -186,32 +184,17 @@ export function MyPage() {
 
           {tab === 'history' ? (
             <div className="p-4">
-              <div className="grid text-[#7788a5] px-2 py-2 border-b border-[#354064]" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', fontSize: 11 }}>
-                <span>날짜</span><span>영토</span><span>유형</span><span>금액</span>
+              <div className="text-center py-8">
+                <p className="text-[#4a5a7a] text-sm">서비스 준비 중입니다</p>
               </div>
-              {[
-                { date: '04-08', name: '네온 하이웨이', type: '입찰', amount: -2400, color: '#ff3333' },
-                { date: '04-07', name: '사이버 협곡', type: '점유 해제', amount: +1200, color: '#00ff88' },
-                { date: '04-06', name: '크롬 평야', type: '입찰', amount: -1800, color: '#ff3333' },
-                { date: '04-05', name: '데이터 봉우리', type: 'AP 충전', amount: +30000, color: '#00f5ff' },
-              ].map((row, i) => (
-                <div key={i} className="grid px-2 py-3 border-b border-[#1e2a3d] items-center hover:bg-[#12192c] transition-colors" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
-                  <span className="text-[#7788a5]" style={{ fontSize: 12 }}>{row.date}</span>
-                  <span className="text-[#e0e8ff]" style={{ fontSize: 12 }}>{row.name}</span>
-                  <span className="text-[#7788a5]" style={{ fontSize: 12 }}>{row.type}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: row.color }}>
-                    {row.amount > 0 ? '+' : ''}{row.amount.toLocaleString()} AP
-                  </span>
-                </div>
-              ))}
             </div>
           ) : tab === 'mine' ? (
             <div className="p-4">
               {territoriesLoading ? (
-                <div className="text-center py-8 text-[#4a5a7a]" style={{ fontSize: 14 }}>불러오는 중...</div>
+                <div className="text-center py-8 text-[#4a5a7a] text-sm">불러오는 중...</div>
               ) : territories.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-[#4a5a7a]" style={{ fontSize: 14 }}>보유한 영토가 없습니다</p>
+                  <p className="text-[#4a5a7a] text-sm">보유한 영토가 없습니다</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -219,20 +202,19 @@ export function MyPage() {
                     <button
                       key={t.territoryId}
                       onClick={() => navigate(`/app/territory/${t.territoryId}`)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[#12192c] transition-colors text-left"
-                      style={{ border: '1px solid #1e2a3d' }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-[#354064] hover:bg-[#12192c] transition-colors text-left"
                     >
                       <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center font-bold flex-shrink-0"
-                        style={{ background: (GRADE_COLOR[t.grade] ?? '#8892b0') + '30', border: `1px solid ${(GRADE_COLOR[t.grade] ?? '#8892b0')}60`, color: GRADE_COLOR[t.grade] ?? '#8892b0', fontSize: 14 }}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0"
+                        style={{ background: (GRADE_COLOR[t.grade] ?? '#8892b0') + '30', border: `1px solid ${(GRADE_COLOR[t.grade] ?? '#8892b0')}60`, color: GRADE_COLOR[t.grade] ?? '#8892b0' }}
                       >
                         {t.grade}
                       </div>
                       <div className="flex-1">
-                        <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>영토 #{t.territoryId}</p>
-                        <p className="text-[#7788a5]" style={{ fontSize: 11 }}>({t.position.x}, {t.position.y}) · {t.continentName}</p>
+                        <p className="text-[#e0e8ff] font-semibold text-[13px]">영토 #{t.territoryId}</p>
+                        <p className="text-[#7788a5] text-[11px]">({t.position.x}, {t.position.y}) · {t.continentName}</p>
                       </div>
-                      <span className="text-[#7788a5]" style={{ fontSize: 11 }}>→</span>
+                      <span className="text-[#7788a5] text-[11px]">→</span>
                     </button>
                   ))}
                 </div>
@@ -241,10 +223,10 @@ export function MyPage() {
           ) : (
             <div className="p-4">
               {bidsLoading ? (
-                <div className="text-center py-8 text-[#4a5a7a]" style={{ fontSize: 14 }}>불러오는 중...</div>
+                <div className="text-center py-8 text-[#4a5a7a] text-sm">불러오는 중...</div>
               ) : (tab === 'active' ? activeBids : allBids).length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-[#4a5a7a]" style={{ fontSize: 14 }}>데이터가 없습니다</p>
+                  <p className="text-[#4a5a7a] text-sm">데이터가 없습니다</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -252,33 +234,31 @@ export function MyPage() {
                     <button
                       key={b.auctionId}
                       onClick={() => navigate(`/app/territory/${b.territoryId}`)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[#12192c] transition-colors text-left"
-                      style={{ border: '1px solid #1e2a3d' }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-[#354064] hover:bg-[#12192c] transition-colors text-left"
                     >
                       <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center font-bold flex-shrink-0"
+                        className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[11px] flex-shrink-0"
                         style={{
                           background: b.isHighestBidder ? '#00ff8820' : '#ff333320',
                           border: `1px solid ${b.isHighestBidder ? '#00ff8860' : '#ff333360'}`,
                           color: b.isHighestBidder ? '#00ff88' : '#ff3333',
-                          fontSize: 11,
                         }}
                       >
                         {b.isHighestBidder ? '↑' : '↓'}
                       </div>
                       <div className="flex-1">
-                        <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>
+                        <p className="text-[#e0e8ff] font-semibold text-[13px]">
                           ({b.coordX}, {b.coordY})
                         </p>
-                        <p className="text-[#7788a5]" style={{ fontSize: 11 }}>
+                        <p className="text-[#7788a5] text-[11px]">
                           내 입찰 {b.myBidAmount.toLocaleString()} AP · {b.isHighestBidder ? '최고가 유지' : '상회 입찰됨'}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[#ffd700] font-bold" style={{ fontSize: 13 }}>
+                        <p className="text-[#ffd700] font-bold text-[13px]">
                           {b.currentPrice.toLocaleString()} AP
                         </p>
-                        <p className="text-[#7788a5]" style={{ fontSize: 10 }}>현재가</p>
+                        <p className="text-[#7788a5] text-[10px]">현재가</p>
                       </div>
                     </button>
                   ))}

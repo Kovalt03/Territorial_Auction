@@ -53,26 +53,26 @@ export function ItemShopPage() {
 
       <div className="flex-1 overflow-y-auto p-5">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-[#e0e8ff] font-bold" style={{ fontSize: 26 }}>🛍  아이템 샵</h1>
+          <h1 className="text-[#e0e8ff] font-bold text-[26px]">🛍  아이템 샵</h1>
           <div className="flex gap-3">
             <div className="bg-[#2a3050] border border-[#ff0066] rounded-lg px-4 py-2 flex items-center gap-2">
-              <span className="text-[#ff0066] font-semibold" style={{ fontSize: 14 }}>⚡ {ap.toLocaleString()} AP</span>
+              <span className="text-[#ff0066] font-semibold text-sm">⚡ {ap.toLocaleString()} AP</span>
             </div>
             <div className="bg-[#2a3050] border border-[#00ff88] rounded-lg px-4 py-2 flex items-center gap-2">
-              <span className="text-[#00ff88] font-semibold" style={{ fontSize: 14 }}>💎 {gp.toLocaleString()} GP</span>
+              <span className="text-[#00ff88] font-semibold text-sm">💎 {gp.toLocaleString()} GP</span>
             </div>
           </div>
         </div>
 
         {(error || purchaseError) && (
           <div className="bg-[#ffd70010] border border-[#ffd70040] rounded-xl px-4 py-2.5 mb-4">
-            <span className="text-[#ffd700]" style={{ fontSize: 12 }}>⚠ {purchaseError ?? error}</span>
+            <span className="text-[#ffd700] text-xs">⚠ {purchaseError ?? error}</span>
           </div>
         )}
 
         {successMsg && (
           <div className="bg-[#00ff8820] border border-[#00ff88] rounded-xl px-4 py-3 mb-4">
-            <span className="text-[#00ff88]" style={{ fontSize: 13 }}>✓ {successMsg}</span>
+            <span className="text-[#00ff88] text-[13px]">✓ {successMsg}</span>
           </div>
         )}
 
@@ -102,14 +102,14 @@ export function ItemShopPage() {
                   <div className="p-5 flex items-start gap-4">
                     <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
                       style={{ background: meta.color + '20', border: `1px solid ${meta.color}` }}>
-                      <span style={{ fontSize: 28 }}>{meta.icon}</span>
+                      <span className="text-[28px]">{meta.icon}</span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-[#e0e8ff] font-bold mb-1" style={{ fontSize: 16 }}>{item.name}</h3>
-                      <p className="text-[#7788a5] mb-2" style={{ fontSize: 13 }}>{item.description}</p>
+                      <h3 className="text-[#e0e8ff] font-bold mb-1 text-base">{item.name}</h3>
+                      <p className="text-[#7788a5] mb-2 text-[13px]">{item.description}</p>
                       {item.dailyLimit != null && (
                         <div className="bg-[#2a3050] border border-[#354064] rounded px-2 py-1 inline-block mb-2">
-                          <span className="text-[#ffd700]" style={{ fontSize: 11 }}>
+                          <span className="text-[#ffd700] text-[11px]">
                             일 {item.dailyLimit}회 한도 (오늘 {item.myInventory}/{item.dailyLimit}회)
                           </span>
                         </div>
@@ -118,15 +118,15 @@ export function ItemShopPage() {
                         {item.costAP != null && (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
                             style={{ background: meta.color + '20', border: `1px solid ${meta.color}` }}>
-                            <span className="font-bold" style={{ fontSize: 16, color: meta.color }}>{item.costAP} AP</span>
+                            <span className="font-bold text-base" style={{ color: meta.color }}>{item.costAP} AP</span>
                           </div>
                         )}
                         {item.costGP != null && (
                           <>
-                            {item.costAP != null && <span className="text-[#7788a5]" style={{ fontSize: 12 }}>또는</span>}
+                            {item.costAP != null && <span className="text-[#7788a5] text-xs">또는</span>}
                             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
                               style={{ background: '#00f5ff20', border: '1px solid #00f5ff' }}>
-                              <span className="font-bold text-[#00f5ff]" style={{ fontSize: 16 }}>{item.costGP} GP</span>
+                              <span className="font-bold text-[#00f5ff] text-base">{item.costGP} GP</span>
                             </div>
                           </>
                         )}
@@ -135,8 +135,8 @@ export function ItemShopPage() {
                     <button
                       onClick={() => setConfirmItem(item)}
                       disabled={isExhausted || isPurchasing}
-                      className="h-10 px-5 rounded-xl font-bold transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ background: meta.color, color: '#0a0e1a', fontSize: 14 }}>
+                      className="h-10 px-5 rounded-xl font-bold text-sm text-[#0a0e1a] transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ background: meta.color }}>
                       구매
                     </button>
                   </div>
@@ -158,15 +158,15 @@ export function ItemShopPage() {
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
           <div className="bg-[#1a1f35] rounded-2xl p-8 max-w-sm mx-4 text-center"
             style={{ border: `2px solid ${itemMeta(confirmItem.itemType).color}` }}>
-            <span style={{ fontSize: 40 }}>{itemMeta(confirmItem.itemType).icon}</span>
+            <span className="text-[40px]">{itemMeta(confirmItem.itemType).icon}</span>
             <h3 className="text-[#e0e8ff] font-bold text-xl mt-3 mb-2">{confirmItem.name}</h3>
-            <p className="text-[#7788a5] mb-5" style={{ fontSize: 13 }}>{confirmItem.description}</p>
+            <p className="text-[#7788a5] mb-5 text-[13px]">{confirmItem.description}</p>
             <div className="bg-[#2a3050] rounded-xl py-4 mb-6">
-              <p className="text-[#7788a5]" style={{ fontSize: 12 }}>차감 금액</p>
-              <p className="font-bold" style={{ fontSize: 24, color: itemMeta(confirmItem.itemType).color }}>
+              <p className="text-[#7788a5] text-xs">차감 금액</p>
+              <p className="font-bold text-[24px]" style={{ color: itemMeta(confirmItem.itemType).color }}>
                 {confirmItem.costAP != null ? `${confirmItem.costAP} AP` : `${confirmItem.costGP} GP`}
               </p>
-              <p className="text-[#7788a5]" style={{ fontSize: 11 }}>
+              <p className="text-[#7788a5] text-[11px]">
                 잔여: {confirmItem.costAP != null
                   ? `${ap.toLocaleString()} → ${(ap - (confirmItem.costAP ?? 0)).toLocaleString()} AP`
                   : `${gp.toLocaleString()} → ${(gp - (confirmItem.costGP ?? 0)).toLocaleString()} GP`}
@@ -174,12 +174,11 @@ export function ItemShopPage() {
             </div>
             <div className="flex gap-3">
               <button onClick={() => setConfirmItem(null)}
-                className="flex-1 h-11 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5]"
-                style={{ fontSize: 14 }}>취소</button>
+                className="flex-1 h-11 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-sm">취소</button>
               <button onClick={() => void handlePurchase(confirmItem)}
                 disabled={isPurchasing}
-                className="flex-1 h-11 rounded-xl text-[#0a0e1a] font-bold disabled:opacity-50"
-                style={{ background: itemMeta(confirmItem.itemType).color, fontSize: 14 }}>
+                className="flex-1 h-11 rounded-xl text-[#0a0e1a] font-bold text-sm disabled:opacity-50"
+                style={{ background: itemMeta(confirmItem.itemType).color }}>
                 {isPurchasing ? '처리중...' : '구매하기'}
               </button>
             </div>

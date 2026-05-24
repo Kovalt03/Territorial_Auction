@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router';
 import { useGridMap } from '../hooks/useGridMap';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
+import { fetchTerritoryDetail } from '../api/map';
+import { placeBidApi } from '../api/auction';
 import { CONTINENTS } from './WorldMapPage';
 import type { GridTerritoryDto } from '../types/map';
 
@@ -95,6 +97,8 @@ export function ContinentPage() {
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
   const [bidInput, setBidInput] = useState('');
   const [bidSuccess, setBidSuccess] = useState(false);
+  const [selectedAuctionId, setSelectedAuctionId] = useState<number | null>(null);
+  const [isBidding, setIsBidding] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -123,7 +127,7 @@ export function ContinentPage() {
   }, [getFitView, cols]);
 
   useEffect(() => {
-    setSelected(null); setBidInput(''); setBidSuccess(false);
+    setSelected(null); setBidInput(''); setBidSuccess(false); setSelectedAuctionId(null);
   }, [id]);
 
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -255,7 +259,16 @@ export function ContinentPage() {
                       style={{ width: CELL, height: CELL, background: '#040810' }}
                     >
                       <div
-                        onClick={() => { if (shown && cell.status !== 'idle') { setSelected(cell); setBidInput(String(cell.currentBid + 100)); setBidSuccess(false); } }}
+                        onClick={() => {
+                          if (shown && cell.status !== 'idle') {
+                            setSelected(cell); setBidInput(String(cell.currentBid + 100)); setBidSuccess(false); setSelectedAuctionId(null);
+                            if (cell.status === 'auction' && cell.id) {
+                              fetchTerritoryDetail(cell.id).then(d => {
+                                if (d.auction) { setSelectedAuctionId(d.auction.auctionId); setBidInput(String(d.auction.currentPrice + 100)); }
+                              }).catch(() => {});
+                            }
+                          }
+                        }}
                         onMouseEnter={() => setHoverCell({ x, y })}
                         onMouseLeave={() => setHoverCell(null)}
                         className="relative flex items-center justify-center"
@@ -320,11 +333,26 @@ export function ContinentPage() {
                             placeholder={`${(selected.currentBid + 100).toLocaleString()}`}
                             className="flex-1 h-8 bg-[#060a14] border border-[#354064] rounded-lg px-2 text-[#e0e8ff] outline-none focus:border-[#ffd700]"
                             style={{ fontSize: 11 }} />
-                          <button onClick={() => { const amt = parseInt(bidInput); if (amt > selected.currentBid && amt <= ap) { useAP(amt); setBidInput(''); setBidSuccess(true); setTimeout(() => setBidSuccess(false), 2500); } }}
-                            disabled={!bidInput || parseInt(bidInput) <= selected.currentBid || parseInt(bidInput) > ap}
+                          <button onClick={async () => {
+                              const amt = parseInt(bidInput);
+                              if (!amt || !selectedAuctionId || isBidding) return;
+                              setIsBidding(true);
+                              try {
+                                await placeBidApi(selectedAuctionId, amt);
+                                useAP(amt);
+                                setBidInput('');
+                                setBidSuccess(true);
+                                setTimeout(() => setBidSuccess(false), 2500);
+                              } catch {
+                                // keep current state on bid error
+                              } finally {
+                                setIsBidding(false);
+                              }
+                            }}
+                            disabled={!bidInput || !selectedAuctionId || isBidding || parseInt(bidInput) <= selected.currentBid || parseInt(bidInput) > ap}
                             className="h-8 px-3 rounded-lg font-bold transition-all hover:brightness-110 disabled:opacity-40"
                             style={{ background: '#ffd700', color: '#060a14', fontSize: 11 }}>
-                            입찰
+                            {isBidding ? '...' : '입찰'}
                           </button>
                         </div>
                         <p className="text-[#4a5a7a]" style={{ fontSize: 9 }}>보유 AP {ap.toLocaleString()}</p>
