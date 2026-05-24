@@ -1,11 +1,13 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 
 import { useApp } from '../context/AppContext';
 import { placeBidApi } from '../api/auction';
 import { fetchMyWallet } from '../api/user';
+import { fetchChatHistory } from '../api/chat';
 import { useTerritoryDetail } from '../hooks/useTerritoryDetail';
 import { useMyBids } from '../hooks/useMyBids';
+import { useStompSubscribe, useStompPublish } from '../hooks/useStompClient';
 import { GNB } from '../components/GNB';
 import type { MyBidEntry } from '../types/auction';
 
@@ -49,16 +51,43 @@ const RANGE_MS: Record<ChartRange, number> = {
   '90일': 90 * 86400_000,
 };
 
-const INIT_CHAT = [
-  { user: 'CyberWolf', text: '이 지역 S급 영토 노리는 사람 있어요?', time: '14:22', mine: false },
-  { user: 'NeonKing', text: '저도 입찰 중인데 경쟁 치열하네요', time: '14:23', mine: false },
-  { user: 'StarHunter', text: '현재 가격 많이 올라갔던데', time: '14:25', mine: false },
-];
+interface ChatMsg { user: string; text: string; time: string; mine: boolean; }
+
+interface AuctionWsMessage {
+  auctionId: number;
+  currentPrice: number;
+  bidderId: number;
+  bidderNickname: string;
+  bidAt: string;
+  endAt?: string;
+}
+
+interface ChatWsMessage {
+  messageId: number;
+  senderId: number;
+  senderNickname: string;
+  content: string;
+  sentAt: string;
+}
+
+function getStatusLabel(status: string | undefined, isMyTerritory: boolean): string {
+  if (!status) return '미점령';
+  if (isMyTerritory) return '✓ 내 영토';
+  if (status === 'BIDDING') return '⚡ 경매 중';
+  if (status === 'OCCUPIED') return '점령됨';
+  return '미점령';
+}
+
+function getStatusColor(status: string | undefined, isMyTerritory: boolean): string {
+  if (isMyTerritory) return '#00ff88';
+  if (status === 'BIDDING') return '#ffd700';
+  return '#7788a5';
+}
 
 export function TerritoryDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { ap, syncAP, userId, username } = useApp();
+  const { ap, syncAP, userId, username, isLoggedIn } = useApp();
 
   const territoryId = Number(id);
   const { territory, bids, isLoading, error, refreshBids } = useTerritoryDetail(territoryId);
@@ -81,10 +110,44 @@ export function TerritoryDetailPage() {
   const [bidError, setBidError] = useState<string | null>(null);
   const [bidDone, setBidDone] = useState(false);
   const [chartRange, setChartRange] = useState<ChartRange>('7일');
-  const [chatMessages, setChatMessages] = useState(INIT_CHAT);
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [localWishlist, setLocalWishlist] = useState<Set<number>>(new Set());
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const stompPublish = useStompPublish();
+
+  const chatRoomId = `room_territory_${territoryId}`;
+  const auctionWsDest = auctionId ? `/sub/auction/${auctionId}` : null;
+
+  // Real-time auction updates
+  const handleAuctionMessage = useCallback((msg: AuctionWsMessage) => {
+    if (msg.auctionId === auctionId) {
+      refreshBids(auctionId);
+    }
+  }, [auctionId, refreshBids]);
+  useStompSubscribe<AuctionWsMessage>(auctionWsDest, handleAuctionMessage);
+
+  // Real-time chat
+  const handleChatMessage = useCallback((msg: ChatWsMessage) => {
+    const now = new Date(msg.sentAt);
+    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    setChatMessages(prev => [...prev, { user: msg.senderNickname, text: msg.content, time, mine: msg.senderId === userId }]);
+  }, [userId]);
+  useStompSubscribe<ChatWsMessage>(`/sub/chat/${chatRoomId}`, handleChatMessage);
+
+  // Load chat history on mount
+  useEffect(() => {
+    fetchChatHistory(chatRoomId, { size: 30 })
+      .then(res => {
+        const msgs = res.messages.map(m => {
+          const d = new Date(m.sentAt);
+          const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+          return { user: m.senderNickname, text: m.content, time, mine: m.senderId === userId };
+        });
+        setChatMessages(msgs);
+      })
+      .catch(() => {});
+  }, [chatRoomId, userId]);
 
   useEffect(() => { setBidAmount(currentBid + 100); }, [currentBid]);
 
@@ -118,31 +181,15 @@ export function TerritoryDetailPage() {
     }
   };
 
-  const sendChat = () => {
+  const handleSendChat = () => {
     const text = chatInput.trim();
-    if (!text) return;
-    const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    setChatMessages(prev => [...prev, { user: username ?? '나', text, time, mine: true }]);
+    if (!text || !isLoggedIn) return;
+    stompPublish(`/pub/chat/${chatRoomId}`, { content: text });
     setChatInput('');
   };
 
   const activeBids = myBids.filter(b => b.status === 'BIDDING');
   const wishlistBids = myBids.filter(b => localWishlist.has(b.territoryId));
-
-  const statusLabel = () => {
-    if (!territory) return '미점령';
-    if (isMyTerritory) return '✓ 내 영토';
-    if (territory.status === 'BIDDING') return '⚡ 경매 중';
-    if (territory.status === 'OCCUPIED') return '점령됨';
-    return '미점령';
-  };
-
-  const statusColor = () => {
-    if (isMyTerritory) return '#00ff88';
-    if (territory?.status === 'BIDDING') return '#ffd700';
-    return '#7788a5';
-  };
 
   return (
     <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
@@ -464,7 +511,7 @@ export function TerritoryDetailPage() {
                         </div>
                         <div className="flex-1 overflow-y-auto divide-y divide-[#1e2a3d]">
                           {bids.slice().reverse().slice(0, 8).map((bid, i) => (
-                            <div key={i} className="flex items-center justify-between px-3 py-2">
+                            <div key={`${bid.bidAt}-${bid.bidderNickname ?? i}`} className="flex items-center justify-between px-3 py-2">
                               <div className="flex items-center gap-1.5">
                                 {i === 0 && <div className="w-1.5 h-1.5 bg-[#00ff88] rounded-full flex-shrink-0" />}
                                 <span className="text-[#e0e8ff]" style={{ fontSize: 11 }}>{bid.bidderNickname ?? '시작가'}</span>
@@ -492,7 +539,7 @@ export function TerritoryDetailPage() {
                           { label: 'GP 생산', val: `+${territory.baseProductionRate}/분`, color: '#00ff88' },
                           { label: '무적 여부', val: territory.isInvincible ? '무적 상태' : '일반', color: territory.isInvincible ? '#ffd700' : '#7788a5' },
                           { label: '현재 소유자', val: territory.owner?.nickname ?? '없음', color: '#7788a5' },
-                          { label: '상태', val: statusLabel(), color: statusColor() },
+                          { label: '상태', val: getStatusLabel(territory.status, isMyTerritory), color: getStatusColor(territory.status, isMyTerritory) },
                         ].map(s => (
                           <div key={s.label} className="flex flex-col gap-0.5">
                             <span className="text-[#4a5a7a]" style={{ fontSize: 10 }}>{s.label}</span>
@@ -547,13 +594,13 @@ export function TerritoryDetailPage() {
                         <input
                           value={chatInput}
                           onChange={e => setChatInput(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && sendChat()}
+                          onKeyDown={e => e.key === 'Enter' && handleSendChat()}
                           placeholder={`${territory.continentName} 채팅 입력...`}
                           className="flex-1 h-8 bg-[#1a2438] border border-[#354064] rounded-lg px-3 text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors"
                           style={{ fontSize: 12 }}
                         />
                         <button
-                          onClick={sendChat}
+                          onClick={handleSendChat}
                           disabled={!chatInput.trim()}
                           className="h-8 px-3 rounded-lg font-semibold transition-all hover:brightness-110 disabled:opacity-40"
                           style={{ fontSize: 12, background: '#00f5ff', color: '#060a14' }}
