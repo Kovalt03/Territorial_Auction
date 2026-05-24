@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
 import { declareSiege } from '../api/siege';
+import { fetchTerritoryDetail } from '../api/map';
+import type { TerritoryDetailResponse } from '../types/territory';
 
 type AttackType = 'normal' | 'precision';
 
@@ -35,16 +37,45 @@ export function SiegePage() {
   const [units, setUnits] = useState({ infantry: 10, archer: 5, knight: 2 });
   const [showConfirm, setShowConfirm] = useState(false);
   const [siegeStarted, setSiegeStarted] = useState(false);
+  const [siegeError, setSiegeError] = useState<string | null>(null);
+
+  const [targetInput, setTargetInput] = useState('');
+  const [targetTerritory, setTargetTerritory] = useState<TerritoryDetailResponse | null>(null);
+  const [targetError, setTargetError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const targetId = parseInt(targetInput, 10);
+
+  const handleSearchTarget = async () => {
+    if (!targetId) return;
+    setIsSearching(true);
+    setTargetError(null);
+    setTargetTerritory(null);
+    try {
+      const detail = await fetchTerritoryDetail(targetId);
+      if (!detail.owner) {
+        setTargetError('점령자가 없는 영토는 공격할 수 없습니다.');
+      } else {
+        setTargetTerritory(detail);
+      }
+    } catch {
+      setTargetError('영토를 찾을 수 없습니다. ID를 확인해주세요.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const zone = zones.find(z => z.id === selectedZone)!;
   const totalUnits = units.infantry + units.archer + units.knight;
   const attackPower = units.infantry * 25 + units.archer * 30 + units.knight * 80;
 
   const handleStart = async () => {
+    if (!targetTerritory) { setSiegeError('대상 영토를 먼저 검색해주세요.'); return; }
     setShowConfirm(false);
+    setSiegeError(null);
     try {
       await declareSiege({
-        targetTerritoryId: 0,
+        targetTerritoryId: targetTerritory.territoryId,
         attackZone: selectedZone,
         attackType: attackType === 'normal' ? 'NORMAL' : 'PRECISION',
         units: [
@@ -53,10 +84,10 @@ export function SiegePage() {
           { unitTypeId: 3, quantity: units.knight },
         ],
       });
+      setSiegeStarted(true);
     } catch {
-      // proceed to show siege started even if API unavailable
+      setSiegeError('공성전 선언에 실패했습니다. 조건을 확인하고 다시 시도해주세요.');
     }
-    setSiegeStarted(true);
   };
 
   return (
@@ -67,8 +98,35 @@ export function SiegePage() {
         {/* Left - Attack Setup */}
         <div className="w-[360px] bg-[#0a0e1a] border-r border-[#354064] flex flex-col">
           <div className="p-4 border-b border-[#354064]">
-            <h2 className="text-[#ff3333] font-bold mb-1 text-lg">⚔ 공성전 준비</h2>
-            <p className="text-[#7788a5] text-xs">네온 하이웨이 (23, 17) · 강남부자 점령</p>
+            <h2 className="text-[#ff3333] font-bold mb-3 text-lg">⚔ 공성전 준비</h2>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={targetInput}
+                onChange={e => { setTargetInput(e.target.value); setTargetTerritory(null); setTargetError(null); }}
+                onKeyDown={e => e.key === 'Enter' && void handleSearchTarget()}
+                placeholder="영토 ID 입력"
+                className="flex-1 bg-[#2a3050] border border-[#354064] rounded-lg px-3 h-9 text-[#e0e8ff] text-xs outline-none focus:border-[#ff3333] transition-colors"
+              />
+              <button
+                onClick={() => void handleSearchTarget()}
+                disabled={!targetInput || isSearching}
+                className="h-9 px-4 bg-[#ff3333] rounded-lg text-white text-xs font-semibold disabled:opacity-50"
+              >
+                {isSearching ? '검색 중...' : '검색'}
+              </button>
+            </div>
+            {targetError && <p className="text-[#ff3333] text-[11px] mt-1.5">⚠ {targetError}</p>}
+            {targetTerritory && (
+              <div className="mt-2 bg-[#2a0a0a] border border-[#ff333360] rounded-lg px-3 py-2">
+                <p className="text-[#ff3333] text-xs font-semibold">
+                  ({targetTerritory.coordX}, {targetTerritory.coordY}) · {targetTerritory.continentName}
+                </p>
+                <p className="text-[#7788a5] text-[11px]">
+                  {targetTerritory.grade}급 · {targetTerritory.owner?.nickname ?? '미점령'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Zone Selection */}
@@ -159,13 +217,16 @@ export function SiegePage() {
             </div>
           </div>
 
-          <div className="p-4">
+          <div className="p-4 space-y-2">
+            {siegeError && (
+              <p className="text-[#ff3333] text-xs text-center">⚠ {siegeError}</p>
+            )}
             <button
               onClick={() => setShowConfirm(true)}
-              disabled={totalUnits === 0}
+              disabled={totalUnits === 0 || !targetTerritory}
               className="w-full h-12 bg-[#ff3333] rounded-xl text-white font-bold text-[15px] hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ⚔ 공성전 시작
+              {!targetTerritory ? '대상 영토를 선택하세요' : '⚔ 공성전 시작'}
             </button>
           </div>
         </div>
@@ -179,8 +240,21 @@ export function SiegePage() {
             <div className="card p-4 mb-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-[#e0e8ff] font-bold text-base">네온 하이웨이 (23, 17)</p>
-                  <p className="text-[#7788a5] text-xs">방어자: 강남부자 · S급 영토</p>
+                  {targetTerritory ? (
+                    <>
+                      <p className="text-[#e0e8ff] font-bold text-base">
+                        ({targetTerritory.coordX}, {targetTerritory.coordY}) · {targetTerritory.continentName}
+                      </p>
+                      <p className="text-[#7788a5] text-xs">
+                        방어자: {targetTerritory.owner?.nickname ?? '미점령'} · {targetTerritory.grade}급 영토
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[#354064] font-bold text-base">대상 영토 미선택</p>
+                      <p className="text-[#7788a5] text-xs">왼쪽에서 영토 ID를 검색하세요</p>
+                    </>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-[#ffd700] font-bold text-lg">
@@ -265,7 +339,10 @@ export function SiegePage() {
               공격력: {attackPower}
             </p>
             <div className="bg-[#2a0a0a] border border-[#ff3333] rounded-xl py-3 px-4 mb-5 text-left space-y-1">
-              <p className="text-[#7788a5] text-xs">대상: 네온 하이웨이 (23, 17)</p>
+              <p className="text-[#7788a5] text-xs">
+                대상: ({targetTerritory?.coordX}, {targetTerritory?.coordY}) · {targetTerritory?.continentName}
+              </p>
+              <p className="text-[#7788a5] text-xs">방어자: {targetTerritory?.owner?.nickname}</p>
               <p className="text-[#7788a5] text-xs">공격 구역: {zone.name}</p>
               <p className="text-[#7788a5] text-xs">총 유닛: {totalUnits}명 · 공격력: {attackPower}</p>
             </div>

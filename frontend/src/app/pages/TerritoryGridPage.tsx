@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { GNB } from '../components/GNB';
 import { HealthBar } from '../components/HealthBar';
 import { EmptyState } from '../components/EmptyState';
 import { useApp } from '../context/AppContext';
+import { fetchTerritoryDetail } from '../api/map';
+import type { TerritoryDetailResponse } from '../types/territory';
 
 type BuildingType = 'castle' | 'workshop' | 'barracks' | 'storage' | 'wall' | 'tower' | 'empty';
 
@@ -65,8 +67,15 @@ const GRID_DATA = generateGrid();
 export function TerritoryGridPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { territories, ap, gp, useGP } = useApp();
-  const territory = territories.find(t => t.id === id) || territories[0];
+  const { ap, gp, useGP } = useApp();
+  const [territoryDetail, setTerritoryDetail] = useState<TerritoryDetailResponse | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    fetchTerritoryDetail(Number(id))
+      .then(setTerritoryDetail)
+      .catch(() => {});
+  }, [id]);
 
   const [grid, setGrid] = useState(GRID_DATA);
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
@@ -196,19 +205,22 @@ export function TerritoryGridPage() {
       <div className="bg-[#1a1f35] border-b border-[#354064] px-5 py-3 flex items-center gap-4 flex-shrink-0">
         <div className="flex items-center gap-3 flex-1">
           <span className="text-[#e0e8ff] font-bold text-lg">
-            영토 ({territory?.x}, {territory?.y}) · {territory?.name}
+            {territoryDetail
+              ? `영토 (${territoryDetail.coordX}, ${territoryDetail.coordY}) · ${territoryDetail.continentName}`
+              : `영토 #${id} 로딩 중...`}
           </span>
           <div className="h-6 px-2 rounded bg-[#8b50ff] flex items-center">
-            <span className="text-white font-bold text-[11px]">{territory?.grade}급</span>
+            <span className="text-white font-bold text-[11px]">{territoryDetail?.grade ?? '-'}급</span>
           </div>
-          <div className="flex items-center gap-1 bg-[#2a3050] border border-[#00ff88] rounded px-2 py-1">
-            <span className="text-[#00ff88] text-[11px]">🛡 보호 잔여 8:22:14</span>
-          </div>
+          {territoryDetail?.isInvincible && (
+            <div className="flex items-center gap-1 bg-[#2a3050] border border-[#00ff88] rounded px-2 py-1">
+              <span className="text-[#00ff88] text-[11px]">🛡 무적 보호 중</span>
+            </div>
+          )}
         </div>
-        <span className="text-[#e0e8ff] text-sm">방어력 740 / 1000</span>
-        <button className="h-8 px-4 bg-[#2a3050] border border-[#354064] rounded-lg text-[#e0e8ff] hover:border-[#00f5ff] text-xs">
-          내부 관리
-        </button>
+        <span className="text-[#7788a5] text-sm">
+          {territoryDetail?.owner ? `소유자: ${territoryDetail.owner.nickname}` : '미점령'}
+        </span>
         <button onClick={() => navigate('/app/map')} className="text-[#7788a5] hover:text-[#e0e8ff] text-xl">✕</button>
       </div>
 
@@ -546,7 +558,6 @@ export function TerritoryGridPage() {
                 <div className="space-y-2">
                   {inventory.map((item, idx) => {
                     const color = buildingColors[item.type];
-                    const hpPct = item.maxHp > 0 ? item.hp / item.maxHp : 0;
                     return (
                       <div key={idx} className="rounded-xl p-3 flex items-center gap-3" style={{ background: '#2a3050', border: `1px solid ${color}50` }}>
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color + '25', border: `1px solid ${color}60` }}>

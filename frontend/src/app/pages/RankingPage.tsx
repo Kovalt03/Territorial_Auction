@@ -74,7 +74,7 @@ function LoadingRows() {
   return (
     <>
       {Array.from({ length: 6 }, (_, i) => (
-        <div key={i} className="grid px-4 py-3 border-b border-[#1e2a3d] items-center animate-pulse"
+        <div key={i} className="grid px-4 py-3 border-b border-[#354064] items-center animate-pulse"
           style={{ gridTemplateColumns: '80px 1fr 1fr 1fr 1fr' }}>
           <div className="h-4 bg-[#2a3050] rounded w-12" />
           <div className="h-4 bg-[#2a3050] rounded w-24" />
@@ -140,7 +140,7 @@ export function RankingPage() {
 
         {!isApiCategory ? (
           <div className="flex items-center justify-center h-48 card">
-            <p className="text-[#4a5a7a] text-sm">준비 중입니다</p>
+            <p className="text-[#7788a5] text-sm">준비 중입니다</p>
           </div>
         ) : (
           <>
@@ -155,7 +155,7 @@ export function RankingPage() {
               </div>
             ) : top3.length === 0 ? (
               <div className="flex items-center justify-center h-48 card mb-6">
-                <p className="text-[#4a5a7a] text-sm">랭킹 데이터가 없습니다</p>
+                <p className="text-[#7788a5] text-sm">랭킹 데이터가 없습니다</p>
               </div>
             ) : (
               <div className="flex items-end justify-center gap-4 mb-6 relative" style={{ height: 280 }}>
@@ -183,7 +183,7 @@ export function RankingPage() {
               {isLoading ? (
                 <LoadingRows />
               ) : rest.length === 0 ? (
-                <div className="px-4 py-6 text-center text-[#4a5a7a] text-xs">데이터가 없습니다</div>
+                <div className="px-4 py-6 text-center text-[#7788a5] text-xs">데이터가 없습니다</div>
               ) : (
                 rest.map((r, i) => (
                   <div key={r.rank}
@@ -201,6 +201,24 @@ export function RankingPage() {
                 ))
               )}
             </div>
+
+            {(() => {
+              const myRank = category === 'territory' ? holdData?.myRank : spendData?.myRank;
+              const myScore = category === 'territory' ? holdData?.myScore : spendData?.myScore;
+              if (!myRank) return null;
+              const myValueLabel = category === 'territory'
+                ? `${myScore ?? 0}개`
+                : `${(myScore ?? 0).toLocaleString()} AP`;
+              return (
+                <div className="mt-3 card px-4 py-3 flex items-center justify-between border-[#00f5ff]">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#00f5ff] font-bold text-sm">내 순위</span>
+                    <span className="text-[#e0e8ff] font-bold text-lg">{myRank}위</span>
+                  </div>
+                  <span className="text-[#ffd700] font-semibold text-sm">{myValueLabel}</span>
+                </div>
+              );
+            })()}
           </>
         )}
       </div>
