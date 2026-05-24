@@ -192,7 +192,7 @@ export function TerritoryDetailPage() {
   const wishlistBids = myBids.filter(b => localWishlist.has(b.territoryId));
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
       <div className="flex flex-1 overflow-hidden">
@@ -355,7 +355,7 @@ export function TerritoryDetailPage() {
                 <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
                   {/* Left column — mini-map */}
                   <div>
-                    <div className="bg-[#1a1f35] border border-[#354064] rounded-xl p-4">
+                    <div className="card p-4">
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-[#7788a5]" style={{ fontSize: 12 }}>영토 미리보기</p>
                         <span className="font-bold" style={{ fontSize: 11, color: gradeColor }}>{gridSize}×{gridSize} ({territory.grade}급)</span>
@@ -378,7 +378,7 @@ export function TerritoryDetailPage() {
                   {/* Right column */}
                   <div className="flex flex-col gap-4 min-h-0">
                     {/* Price chart */}
-                    <div className="bg-[#1a1f35] border border-[#354064] rounded-xl p-4">
+                    <div className="card p-4">
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-[#7788a5]" style={{ fontSize: 12 }}>가격 추이</p>
                         <div className="flex gap-1">
@@ -505,7 +505,7 @@ export function TerritoryDetailPage() {
                       </div>
 
                       {/* Bid history */}
-                      <div className="flex-1 bg-[#1a1f35] border border-[#354064] rounded-xl overflow-hidden flex flex-col">
+                      <div className="flex-1 card overflow-hidden flex flex-col">
                         <div className="bg-[#2a3050] px-3 py-2 border-b border-[#354064]">
                           <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 12 }}>입찰 이력</span>
                         </div>
@@ -532,7 +532,7 @@ export function TerritoryDetailPage() {
                     </div>
 
                     {/* Stats */}
-                    <div className="bg-[#1a1f35] border border-[#354064] rounded-xl p-4">
+                    <div className="card p-4">
                       <p className="text-[#7788a5] font-semibold mb-3" style={{ fontSize: 12 }}>영토 스탯</p>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                         {[
@@ -618,7 +618,7 @@ export function TerritoryDetailPage() {
       </div>
 
       {showConfirm && territory && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
+        <div className="modal-overlay">
           <div className="bg-[#1a1f35] border-2 rounded-2xl p-8 max-w-sm mx-4 text-center" style={{ borderColor: isOutbid ? '#ff4444' : gradeColor }}>
             <span style={{ fontSize: 40 }}>{isOutbid ? '🔺' : '⚡'}</span>
             <h3 className="font-bold text-xl mt-3 mb-2" style={{ color: isOutbid ? '#ff5555' : gradeColor }}>

@@ -51,10 +51,10 @@ export function VaultPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="page-body">
         <h1 className="text-[#e0e8ff] font-bold mb-5 text-[26px]">💰  글로벌 금고</h1>
 
         {error && (
@@ -84,7 +84,7 @@ export function VaultPage() {
             </p>
           </div>
 
-          <div className="bg-[#1a1f35] border border-[#354064] rounded-xl p-5 text-center">
+          <div className="card p-5 text-center">
             <p className="text-[#7788a5] mb-2 text-xs">보유 영토 수</p>
             {isLoading ? (
               <div className="h-10 bg-[#2a3050] rounded animate-pulse mx-auto w-16" />
@@ -94,7 +94,7 @@ export function VaultPage() {
             <p className="text-[#7788a5] mt-3 text-[11px]">이전 가능한 영토</p>
           </div>
 
-          <div className="bg-[#1a1f35] border border-[#354064] rounded-xl p-5">
+          <div className="card p-5">
             <p className="text-[#7788a5] mb-2 text-xs">금고 상태</p>
             {isCooldown && vault?.nextTransferAvailableAt ? (
               <div className="flex items-center gap-2 mt-2">
@@ -116,7 +116,7 @@ export function VaultPage() {
           </div>
         </div>
 
-        <div className="bg-[#1a1f35] border border-[#354064] rounded-xl overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="bg-[#2a3050] px-4 py-2.5 border-b-2 border-[#00ff88]">
             <span className="text-[#e0e8ff] font-semibold text-[13px]">보유 영토 목록</span>
           </div>
@@ -190,7 +190,7 @@ export function VaultPage() {
       </div>
 
       {transferModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
+        <div className="modal-overlay">
           <div className="bg-[#1a1f35] border border-[#00ff88] rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
             <span className="text-[40px]">💰</span>
             <h3 className="text-[#e0e8ff] font-bold text-xl mt-3 mb-5">GP 이전 확인</h3>
@@ -237,7 +237,7 @@ export function VaultPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setTransferModal(null)}
-                className="flex-1 h-11 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-sm"
+                className="btn-cancel"
               >
                 취소
               </button>

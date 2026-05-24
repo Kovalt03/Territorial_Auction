@@ -194,7 +194,7 @@ export function GuildDetailPage() {
           {tab === 'members' && (
             <div className="flex flex-col gap-2">
               {guild.members.map(m => (
-                <div key={m.userId} className="bg-[#1a1f35] border border-[#354064] rounded-xl px-4 py-3 flex items-center gap-3">
+                <div key={m.userId} className="card px-4 py-3 flex items-center gap-3">
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center font-bold flex-shrink-0 text-sm"
                     style={{ background: m.role === 'MASTER' ? '#ffd70020' : '#2a3050', color: m.role === 'MASTER' ? '#ffd700' : '#8892b0' }}
@@ -236,7 +236,7 @@ export function GuildDetailPage() {
                 <div className="text-center text-[#4a5a7a] py-12 text-sm">신청 내역이 없습니다.</div>
               )}
               {applications.map(a => (
-                <div key={a.applicationId} className="bg-[#1a1f35] border border-[#354064] rounded-xl px-4 py-3 flex items-center gap-3">
+                <div key={a.applicationId} className="card px-4 py-3 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-[#2a3050] flex items-center justify-center font-bold text-[#8892b0] flex-shrink-0 text-sm">
                     {a.nickname.charAt(0).toUpperCase()}
                   </div>

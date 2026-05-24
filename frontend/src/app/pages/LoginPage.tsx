@@ -68,7 +68,7 @@ export function LoginPage() {
             </div>
           )}
 
-          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">이메일</label>
+          <label className="form-label">이메일</label>
           <input
             type="email"
             value={email}
@@ -78,7 +78,7 @@ export function LoginPage() {
             className="w-full bg-[#2a3050] border border-[#354064] rounded-lg px-4 h-11 text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4 text-sm"
           />
 
-          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">비밀번호</label>
+          <label className="form-label">비밀번호</label>
           <input
             type="password"
             value={pw}

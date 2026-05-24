@@ -38,15 +38,15 @@ export function MyPage() {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="page-body">
         <h1 className="text-[#e0e8ff] font-bold mb-5 text-[26px]">👤  마이페이지</h1>
 
         <div className="grid grid-cols-3 gap-4 mb-5">
           {/* Profile card */}
-          <div className="bg-[#1a1f35] border border-[#354064] rounded-xl p-5">
+          <div className="card p-5">
             <div className="flex items-center gap-4 mb-4">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-2xl flex-shrink-0 bg-[#00f5ff20] border-2 border-[#00f5ff] text-[#00f5ff]"
@@ -73,7 +73,7 @@ export function MyPage() {
           </div>
 
           {/* Assets donut chart */}
-          <div className="bg-[#1a1f35] border border-[#354064] rounded-xl p-5">
+          <div className="card p-5">
             <p className="text-[#7788a5] font-semibold mb-3 text-[13px]">자산 현황</p>
             <div className="flex items-center gap-3">
               <div className="w-[120px] h-[120px]">
@@ -127,7 +127,7 @@ export function MyPage() {
               </div>
             </div>
             <div
-              className="bg-[#1a1f35] border border-[#354064] rounded-xl p-4 cursor-pointer hover:brightness-110 transition-all"
+              className="card p-4 cursor-pointer hover:brightness-110 transition-all"
               onClick={() => navigate('/app/vault')}
             >
               <div className="flex items-center gap-3">
@@ -140,7 +140,7 @@ export function MyPage() {
               </div>
             </div>
             <div
-              className="bg-[#1a1f35] border border-[#354064] rounded-xl p-4 cursor-pointer hover:brightness-110 transition-all"
+              className="card p-4 cursor-pointer hover:brightness-110 transition-all"
               onClick={() => navigate('/app/my-island')}
             >
               <div className="flex items-center gap-3">
@@ -156,7 +156,7 @@ export function MyPage() {
         </div>
 
         {/* Activity Tabs */}
-        <div className="bg-[#1a1f35] border border-[#354064] rounded-xl overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="flex border-b border-[#354064]">
             {tabItems.map(t => (
               <button

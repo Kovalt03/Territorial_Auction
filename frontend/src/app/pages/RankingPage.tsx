@@ -113,10 +113,10 @@ export function RankingPage() {
   const podiumMedals = ['🥈', '🥇', '🥉'];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="page-body">
         <h1 className="text-[#e0e8ff] font-bold mb-4 text-[26px]">🏆  랭킹 리더보드</h1>
 
         <div className="bg-[#2a3050] border border-[#354064] rounded-xl p-1 flex gap-1 mb-4 w-fit">
@@ -139,7 +139,7 @@ export function RankingPage() {
         </div>
 
         {!isApiCategory ? (
-          <div className="flex items-center justify-center h-48 bg-[#1a1f35] border border-[#354064] rounded-xl">
+          <div className="flex items-center justify-center h-48 card">
             <p className="text-[#4a5a7a] text-sm">준비 중입니다</p>
           </div>
         ) : (
@@ -154,7 +154,7 @@ export function RankingPage() {
                 ))}
               </div>
             ) : top3.length === 0 ? (
-              <div className="flex items-center justify-center h-48 bg-[#1a1f35] border border-[#354064] rounded-xl mb-6">
+              <div className="flex items-center justify-center h-48 card mb-6">
                 <p className="text-[#4a5a7a] text-sm">랭킹 데이터가 없습니다</p>
               </div>
             ) : (
@@ -170,7 +170,7 @@ export function RankingPage() {
               </div>
             )}
 
-            <div className="bg-[#1a1f35] border border-[#354064] rounded-xl overflow-hidden">
+            <div className="card overflow-hidden">
               <div className="bg-[#2a3050] px-4 py-2.5 border-b-2 border-[#00f5ff] flex items-center justify-between">
                 <span className="text-[#e0e8ff] font-semibold text-[13px]">4위 이하 순위</span>
               </div>

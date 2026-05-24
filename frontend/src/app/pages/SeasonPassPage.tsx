@@ -40,10 +40,10 @@ export function SeasonPassPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="page-body">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8">
             <div className="text-5xl mb-3">⭐</div>
@@ -137,7 +137,7 @@ export function SeasonPassPage() {
       </div>
 
       {showConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
+        <div className="modal-overlay">
           <div className="bg-[#1a1f35] border-2 border-[#ffd700] rounded-2xl p-8 max-w-sm mx-4 text-center">
             <span className="text-5xl">⭐</span>
             <h3 className="text-[#ffd700] font-bold text-xl mt-3 mb-2">
@@ -163,7 +163,7 @@ export function SeasonPassPage() {
             )}
             <div className="flex gap-3">
               <button onClick={() => setShowConfirm(false)}
-                className="flex-1 h-11 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-sm">취소</button>
+                className="btn-cancel">취소</button>
               <button
                 onClick={() => void handleActivate()}
                 disabled={ap < 1000 || isProcessing}

@@ -160,7 +160,7 @@ export function GuildListPage() {
                 return (
                   <div
                     key={g.guildId}
-                    className="bg-[#1a1f35] border border-[#354064] rounded-xl p-4 flex items-center gap-4 hover:border-[#4a5a7a] transition-colors cursor-pointer"
+                    className="card p-4 flex items-center gap-4 hover:border-[#4a5a7a] transition-colors cursor-pointer"
                     onClick={() => navigate(`/app/guild/${g.guildId}`)}
                   >
                     <div

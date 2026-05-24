@@ -278,7 +278,7 @@ export function PersonalIslandPage() {
   const CELL_SIZE = 36;
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
       <div className="bg-[#0a0e1a] border-b border-[#00ff8840] px-5 py-3 flex items-center gap-4 flex-shrink-0">
@@ -577,7 +577,7 @@ export function PersonalIslandPage() {
                   : <p className="text-[#7788a5] text-xs">빈 셀을 클릭하여 위치를 선택하세요 · 보유 GP: {gp.toLocaleString()}</p>
                 }
               </div>
-              <button onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} className="text-[#7788a5] hover:text-[#e0e8ff] text-2xl">✕</button>
+              <button onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} className="btn-close">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {[
@@ -660,7 +660,7 @@ export function PersonalIslandPage() {
                   위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData.zone} · Lv.{selectedCellData.level}
                 </p>
               </div>
-              <button onClick={() => setShowBuildingAction(false)} className="text-[#7788a5] hover:text-[#e0e8ff] text-2xl">✕</button>
+              <button onClick={() => setShowBuildingAction(false)} className="btn-close">✕</button>
             </div>
 
             <div className="px-5 py-3 border-b border-[#354064]">
@@ -725,7 +725,7 @@ export function PersonalIslandPage() {
                 <h3 className="text-[#8b50ff] font-bold text-xl">📦 보관함</h3>
                 <p className="text-[#7788a5] text-xs">건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>
               </div>
-              <button onClick={() => setShowInventory(false)} className="text-[#7788a5] hover:text-[#e0e8ff] text-2xl">✕</button>
+              <button onClick={() => setShowInventory(false)} className="btn-close">✕</button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">

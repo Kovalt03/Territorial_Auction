@@ -48,10 +48,10 @@ export function ItemShopPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="page-body">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-[#e0e8ff] font-bold text-[26px]">🛍  아이템 샵</h1>
           <div className="flex gap-3">
@@ -155,7 +155,7 @@ export function ItemShopPage() {
       </div>
 
       {confirmItem && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
+        <div className="modal-overlay">
           <div className="bg-[#1a1f35] rounded-2xl p-8 max-w-sm mx-4 text-center"
             style={{ border: `2px solid ${itemMeta(confirmItem.itemType).color}` }}>
             <span className="text-[40px]">{itemMeta(confirmItem.itemType).icon}</span>
@@ -174,7 +174,7 @@ export function ItemShopPage() {
             </div>
             <div className="flex gap-3">
               <button onClick={() => setConfirmItem(null)}
-                className="flex-1 h-11 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-sm">취소</button>
+                className="btn-cancel">취소</button>
               <button onClick={() => void handlePurchase(confirmItem)}
                 disabled={isPurchasing}
                 className="flex-1 h-11 rounded-xl text-[#0a0e1a] font-bold text-sm disabled:opacity-50"

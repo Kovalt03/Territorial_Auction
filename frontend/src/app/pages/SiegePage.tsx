@@ -60,7 +60,7 @@ export function SiegePage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
       <div className="flex-1 flex overflow-hidden">
@@ -176,7 +176,7 @@ export function SiegePage() {
             <h2 className="text-[#e0e8ff] font-bold mb-4 text-xl">공성전 현황</h2>
 
             {/* Target territory */}
-            <div className="bg-[#1a1f35] border border-[#354064] rounded-xl p-4 mb-4">
+            <div className="card p-4 mb-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-[#e0e8ff] font-bold text-base">네온 하이웨이 (23, 17)</p>
@@ -256,7 +256,7 @@ export function SiegePage() {
       </div>
 
       {showConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
+        <div className="modal-overlay">
           <div className="bg-[#1a1f35] border-2 border-[#ff3333] rounded-2xl p-8 max-w-sm mx-4 text-center">
             <span className="text-5xl">⚔</span>
             <h3 className="text-[#ff3333] font-bold text-xl mt-3 mb-2">공성전 선언</h3>
@@ -271,7 +271,7 @@ export function SiegePage() {
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowConfirm(false)}
-                className="flex-1 h-11 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-sm">취소</button>
+                className="btn-cancel">취소</button>
               <button
                 onClick={() => void handleStart()}
                 className="flex-1 h-11 bg-[#ff3333] rounded-xl text-white font-bold text-sm hover:brightness-110"

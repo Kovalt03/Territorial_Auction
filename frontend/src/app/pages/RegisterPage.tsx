@@ -82,7 +82,7 @@ export function RegisterPage() {
           </div>
 
           {/* 아이디 */}
-          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">아이디</label>
+          <label className="form-label">아이디</label>
           <div className="flex gap-2 mb-1">
             <input
               value={form.username}
@@ -105,27 +105,27 @@ export function RegisterPage() {
           {!usernameChecked && <div className="mb-3" />}
 
           {/* 이메일 */}
-          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">이메일</label>
+          <label className="form-label">이메일</label>
           <input
             type="email"
             value={form.email}
             onChange={e => handleChange('email', e.target.value)}
             placeholder="example@email.com"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4 text-xs"
+            className="form-input mb-4"
           />
 
           {/* 비밀번호 */}
-          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">비밀번호</label>
+          <label className="form-label">비밀번호</label>
           <input
             type="password"
             value={form.password}
             onChange={e => handleChange('password', e.target.value)}
             placeholder="8자 이상, 영문+숫자 조합"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4 text-xs"
+            className="form-input mb-4"
           />
 
           {/* 비밀번호 확인 */}
-          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">비밀번호 확인</label>
+          <label className="form-label">비밀번호 확인</label>
           <input
             type="password"
             value={form.pwConfirm}
@@ -137,12 +137,12 @@ export function RegisterPage() {
           />
 
           {/* 닉네임 */}
-          <label className="block text-[#8892b0] mb-1.5 text-[11px] font-medium">닉네임</label>
+          <label className="form-label">닉네임</label>
           <input
             value={form.nickname}
             onChange={e => handleChange('nickname', e.target.value)}
             placeholder="다른 유저에게 보이는 이름"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4 text-xs"
+            className="form-input mb-4"
           />
 
           {error && (

@@ -137,7 +137,7 @@ export function SettingsPage() {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
       <div className="flex flex-1 overflow-hidden">

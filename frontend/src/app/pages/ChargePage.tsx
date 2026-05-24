@@ -49,10 +49,10 @@ export function ChargePage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="page-body">
         <h1 className="text-[#e0e8ff] font-bold mb-1" style={{ fontSize: 24 }}>💎  AP (Auction Point) 충전</h1>
         <p className="text-[#7788a5] mb-6" style={{ fontSize: 14 }}>경매 입찰, 아이템 구매에 사용하는 프리미엄 포인트</p>
 
@@ -100,7 +100,7 @@ export function ChargePage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-[#1a1f35] border border-[#354064] rounded-xl overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="bg-[#2a3050] px-4 py-2.5 border-b-2 border-[#00f5ff]">
               <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>결제 수단 선택</span>
             </div>
@@ -127,7 +127,7 @@ export function ChargePage() {
             </div>
           </div>
 
-          <div className="bg-[#1a1f35] border border-[#354064] rounded-xl overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="bg-[#2a3050] px-4 py-2.5 border-b-2 border-[#00f5ff]">
               <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>결제 요약</span>
             </div>
@@ -172,7 +172,7 @@ export function ChargePage() {
       </div>
 
       {success && chargeResult && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
+        <div className="modal-overlay">
           <div className="bg-[#1a1f35] border-2 border-[#00f5ff] rounded-2xl p-8 text-center max-w-sm mx-4">
             <div className="text-5xl mb-4">💎</div>
             <h3 className="text-[#00f5ff] font-bold text-xl mb-2">충전 완료!</h3>
