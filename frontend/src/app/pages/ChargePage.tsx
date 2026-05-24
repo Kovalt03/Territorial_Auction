@@ -33,7 +33,6 @@ export function ChargePage() {
   const handlePay = async () => {
     setIsProcessing(true);
     setError(null);
-    // orderId는 중복 방지를 위해 고유값 생성, paymentKey는 PG사 연동 시 교체
     const orderId = `order-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const paymentKey = `mock-${selectedPay}-${orderId}`;
     try {
@@ -53,12 +52,12 @@ export function ChargePage() {
       <GNB />
 
       <div className="page-body">
-        <h1 className="text-[#e0e8ff] font-bold mb-1" style={{ fontSize: 24 }}>💎  AP (Auction Point) 충전</h1>
-        <p className="text-[#7788a5] mb-6" style={{ fontSize: 14 }}>경매 입찰, 아이템 구매에 사용하는 프리미엄 포인트</p>
+        <h1 className="text-[#e0e8ff] font-bold mb-1 text-2xl">💎  AP (Auction Point) 충전</h1>
+        <p className="text-[#7788a5] mb-6 text-sm">경매 입찰, 아이템 구매에 사용하는 프리미엄 포인트</p>
 
         {error && (
           <div className="bg-[#ff333310] border border-[#ff333340] rounded-xl px-4 py-2.5 mb-4">
-            <span className="text-[#ff3333]" style={{ fontSize: 13 }}>⚠ {error}</span>
+            <span className="text-[#ff3333] text-[13px]">⚠ {error}</span>
           </div>
         )}
 
@@ -75,22 +74,21 @@ export function ChargePage() {
             >
               {p.label && (
                 <div className="mb-3 h-6 rounded-xl px-3 flex items-center w-fit" style={{ background: p.color }}>
-                  <span className="text-[#0a0e1a] font-bold" style={{ fontSize: 12 }}>{p.label}</span>
+                  <span className="text-[#0a0e1a] font-bold text-xs">{p.label}</span>
                 </div>
               )}
               {!p.label && <div className="h-6 mb-3" />}
-              <p className="font-bold" style={{ fontSize: 26, color: p.color }}>{p.ap.toLocaleString()} AP</p>
+              <p className="font-bold text-[26px]" style={{ color: p.color }}>{p.ap.toLocaleString()} AP</p>
               {p.originalPrice && (
-                <p className="text-[#7788a5] line-through" style={{ fontSize: 13 }}>₩{p.originalPrice.toLocaleString()}</p>
+                <p className="text-[#7788a5] line-through text-[13px]">₩{p.originalPrice.toLocaleString()}</p>
               )}
-              <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 20 }}>₩{p.price.toLocaleString()}</p>
+              <p className="text-[#e0e8ff] font-semibold text-xl">₩{p.price.toLocaleString()}</p>
               <div
-                className="mt-4 h-11 rounded-xl flex items-center justify-center font-semibold"
+                className="mt-4 h-11 rounded-xl flex items-center justify-center font-semibold text-sm"
                 style={{
                   background: selectedPkg === p.id ? p.color : '#2a3050',
                   border: `1px solid ${selectedPkg === p.id ? p.color : '#354064'}`,
                   color: selectedPkg === p.id ? '#0a0e1a' : p.color,
-                  fontSize: 14,
                 }}
               >
                 {selectedPkg === p.id ? '✓ 선택됨' : '선택하기'}
@@ -102,7 +100,7 @@ export function ChargePage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="card overflow-hidden">
             <div className="bg-[#2a3050] px-4 py-2.5 border-b-2 border-[#00f5ff]">
-              <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>결제 수단 선택</span>
+              <span className="text-[#e0e8ff] font-semibold text-[13px]">결제 수단 선택</span>
             </div>
             <div className="p-4 space-y-3">
               {payMethods.map(pm => (
@@ -115,11 +113,11 @@ export function ChargePage() {
                     border: `1px solid ${selectedPay === pm.id ? '#00f5ff' : '#354064'}`,
                   }}
                 >
-                  <span style={{ fontSize: 18 }}>{pm.icon}</span>
-                  <span className="text-[#e0e8ff]" style={{ fontSize: 14 }}>{pm.label}</span>
+                  <span className="text-lg">{pm.icon}</span>
+                  <span className="text-[#e0e8ff] text-sm">{pm.label}</span>
                   {selectedPay === pm.id && (
                     <div className="ml-auto w-6 h-6 bg-[#00f5ff] rounded-xl flex items-center justify-center">
-                      <span className="text-[#0a0e1a] font-bold" style={{ fontSize: 12 }}>✓</span>
+                      <span className="text-[#0a0e1a] font-bold text-xs">✓</span>
                     </div>
                   )}
                 </button>
@@ -129,40 +127,39 @@ export function ChargePage() {
 
           <div className="card overflow-hidden">
             <div className="bg-[#2a3050] px-4 py-2.5 border-b-2 border-[#00f5ff]">
-              <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>결제 요약</span>
+              <span className="text-[#e0e8ff] font-semibold text-[13px]">결제 요약</span>
             </div>
             <div className="p-5">
-              <p className="text-[#7788a5] mb-1" style={{ fontSize: 12 }}>선택한 상품</p>
-              <p className="text-[#e0e8ff] font-bold mb-4" style={{ fontSize: 18 }}>{pkg.ap.toLocaleString()} AP 패키지</p>
+              <p className="text-[#7788a5] mb-1 text-xs">선택한 상품</p>
+              <p className="text-[#e0e8ff] font-bold mb-4 text-lg">{pkg.ap.toLocaleString()} AP 패키지</p>
               <div className="h-px bg-[#354064] mb-4" />
               <div className="space-y-3 mb-4">
                 {pkg.originalPrice && (
                   <div className="flex justify-between">
-                    <span className="text-[#7788a5]" style={{ fontSize: 13 }}>정가</span>
-                    <span className="text-[#e0e8ff]" style={{ fontSize: 13 }}>₩{pkg.originalPrice.toLocaleString()}</span>
+                    <span className="text-[#7788a5] text-[13px]">정가</span>
+                    <span className="text-[#e0e8ff] text-[13px]">₩{pkg.originalPrice.toLocaleString()}</span>
                   </div>
                 )}
                 {pkg.discount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-[#7788a5]" style={{ fontSize: 13 }}>할인</span>
-                    <span className="text-[#e0e8ff]" style={{ fontSize: 13 }}>−₩{(pkg.originalPrice! - pkg.price).toLocaleString()} ({pkg.discount}%)</span>
+                    <span className="text-[#7788a5] text-[13px]">할인</span>
+                    <span className="text-[#e0e8ff] text-[13px]">−₩{(pkg.originalPrice! - pkg.price).toLocaleString()} ({pkg.discount}%)</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-[#7788a5]" style={{ fontSize: 13 }}>최종 결제액</span>
-                  <span className="text-[#ffd700] font-bold" style={{ fontSize: 13 }}>₩{pkg.price.toLocaleString()}</span>
+                  <span className="text-[#7788a5] text-[13px]">최종 결제액</span>
+                  <span className="text-[#ffd700] font-bold text-[13px]">₩{pkg.price.toLocaleString()}</span>
                 </div>
               </div>
               <div className="h-px bg-[#354064] mb-4" />
               <div className="flex justify-between items-center mb-5">
-                <span className="text-[#7788a5]" style={{ fontSize: 11 }}>받게 될 AP</span>
-                <span className="text-[#00f5ff] font-bold" style={{ fontSize: 22 }}>{pkg.ap.toLocaleString()} AP</span>
+                <span className="text-[#7788a5] text-[11px]">받게 될 AP</span>
+                <span className="text-[#00f5ff] font-bold text-[22px]">{pkg.ap.toLocaleString()} AP</span>
               </div>
               <button
                 onClick={handlePay}
                 disabled={isProcessing}
-                className="w-full h-14 bg-[#00f5ff] rounded-xl text-[#0a0e1a] font-bold hover:brightness-110 transition-all disabled:opacity-70"
-                style={{ fontSize: 17 }}
+                className="w-full h-14 bg-[#00f5ff] rounded-xl text-[#0a0e1a] font-bold text-[17px] hover:brightness-110 transition-all disabled:opacity-70"
               >
                 {isProcessing ? '처리 중...' : `₩${pkg.price.toLocaleString()} 결제하기`}
               </button>
@@ -177,17 +174,16 @@ export function ChargePage() {
             <div className="text-5xl mb-4">💎</div>
             <h3 className="text-[#00f5ff] font-bold text-xl mb-2">충전 완료!</h3>
             <div className="bg-[#2a3050] rounded-xl py-4 px-6 mb-3">
-              <p className="text-[#7788a5]" style={{ fontSize: 12 }}>충전 완료</p>
-              <p className="text-[#00f5ff] font-bold" style={{ fontSize: 28 }}>+{chargeResult.chargedAmount.toLocaleString()} AP</p>
+              <p className="text-[#7788a5] text-xs">충전 완료</p>
+              <p className="text-[#00f5ff] font-bold text-[28px]">+{chargeResult.chargedAmount.toLocaleString()} AP</p>
             </div>
             <div className="bg-[#2a3050] rounded-xl py-3 px-6 mb-6">
-              <p className="text-[#7788a5]" style={{ fontSize: 12 }}>현재 보유 AP</p>
-              <p className="text-[#ffd700] font-bold" style={{ fontSize: 22 }}>{chargeResult.availableAP.toLocaleString()} AP</p>
+              <p className="text-[#7788a5] text-xs">현재 보유 AP</p>
+              <p className="text-[#ffd700] font-bold text-[22px]">{chargeResult.availableAP.toLocaleString()} AP</p>
             </div>
             <button
               onClick={() => { setSuccess(false); navigate('/app/map'); }}
-              className="w-full h-12 bg-[#00f5ff] rounded-xl text-[#0a0e1a] font-bold"
-              style={{ fontSize: 15 }}
+              className="w-full h-12 bg-[#00f5ff] rounded-xl text-[#0a0e1a] font-bold text-[15px]"
             >
               확인
             </button>

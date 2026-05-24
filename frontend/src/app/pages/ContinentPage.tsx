@@ -207,7 +207,7 @@ export function ContinentPage() {
 
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center z-20 bg-[#040810b0]">
-              <p className="text-[#00f5ff] font-semibold" style={{ fontSize: 14 }}>지도 불러오는 중...</p>
+              <p className="text-[#00f5ff] font-semibold text-sm">지도 불러오는 중...</p>
             </div>
           )}
 

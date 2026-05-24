@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 import { fetchGlobalVault, fetchMyTerritories } from '../api/vault';
+import { ApiError } from '../api/client';
 import type { GlobalVaultResponse, MyTerritory } from '../types/vault';
 
 export function useVault() {
@@ -19,8 +20,7 @@ export function useVault() {
       setVault(vaultData);
       setTerritories(territoryData.territories);
     } catch (err) {
-      const status = (err as Error & { status?: number }).status;
-      if (status !== 401) setError('금고 데이터를 불러올 수 없습니다.');
+      if (!(err instanceof ApiError && err.status === 401)) setError('금고 데이터를 불러올 수 없습니다.');
     } finally {
       setIsLoading(false);
     }

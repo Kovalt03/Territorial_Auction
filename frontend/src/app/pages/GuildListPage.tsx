@@ -8,6 +8,7 @@ import {
   joinGuild, cancelJoinGuild,
   type GuildSummary, type MyGuild,
 } from '../api/guild';
+import { ApiError } from '../api/client';
 
 const PAGE_SIZE = 20;
 
@@ -62,8 +63,8 @@ export function GuildListPage() {
       setShowCreate(false);
       navigate(`/app/guild/${res.guildId}`);
     } catch (e: unknown) {
-      const err = e as Error & { status?: number };
-      setCreateError(err.status === 409 ? '이미 존재하는 길드명이거나 이미 길드에 소속되어 있습니다.' : '길드 생성에 실패했습니다.');
+      const isConflict = e instanceof ApiError && e.status === 409;
+      setCreateError(isConflict ? '이미 존재하는 길드명이거나 이미 길드에 소속되어 있습니다.' : '길드 생성에 실패했습니다.');
     } finally {
       setIsCreating(false);
     }

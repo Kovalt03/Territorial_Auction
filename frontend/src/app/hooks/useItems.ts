@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { fetchItemList } from '../api/item';
+import { ApiError } from '../api/client';
 import type { ItemInfo } from '../types/item';
 
 const FALLBACK_ITEMS: ItemInfo[] = [
@@ -19,8 +20,7 @@ export function useItems() {
     fetchItemList()
       .then(res => setItems(res.items))
       .catch(err => {
-        const status = (err as Error & { status?: number }).status;
-        if (status !== 401) {
+        if (!(err instanceof ApiError && err.status === 401)) {
           setError('아이템 목록을 불러올 수 없습니다. 기본 데이터를 표시합니다.');
         }
       })

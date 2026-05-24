@@ -1,3 +1,10 @@
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 const BASE = '/api/v1';
 
 let isRefreshing = false;
@@ -29,9 +36,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (res.status !== 401) {
     if (!res.ok) {
-      const error = new Error(res.statusText);
-      (error as Error & { status: number }).status = res.status;
-      throw error;
+      throw new ApiError(res.statusText, res.status);
     }
     const body = await res.json();
     return body.data as T;
@@ -46,9 +51,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         fetch(BASE + path, { ...options, headers: retryHeaders, credentials: 'include' })
           .then(r => {
             if (!r.ok) {
-              const error = new Error(r.statusText);
-              (error as Error & { status: number }).status = r.status;
-              throw error;
+              throw new ApiError(r.statusText, r.status);
             }
             return r.json();
           })

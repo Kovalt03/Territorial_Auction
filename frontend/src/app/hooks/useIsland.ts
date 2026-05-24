@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 import { fetchIsland } from '../api/island';
+import { ApiError } from '../api/client';
 import type { IslandData } from '../types/island';
 
 export function useIsland() {
@@ -14,8 +15,7 @@ export function useIsland() {
       const data = await fetchIsland();
       setIsland(data);
     } catch (err) {
-      const status = (err as Error & { status?: number }).status;
-      if (status !== 401) setError('섬 데이터를 불러올 수 없습니다.');
+      if (!(err instanceof ApiError && err.status === 401)) setError('섬 데이터를 불러올 수 없습니다.');
     } finally {
       setIsLoading(false);
     }
