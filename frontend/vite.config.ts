@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -17,6 +18,18 @@ export default defineConfig({
     proxy: {
       '/api': process.env.API_TARGET ?? 'http://localhost:8080',
       '/ws': { target: process.env.WS_TARGET ?? 'ws://localhost:8080', ws: true },
+    },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include: ['src/app/**/*.{ts,tsx}'],
+      exclude: ['src/app/api/**', 'src/app/routes.tsx', 'src/main.tsx'],
     },
   },
 })
