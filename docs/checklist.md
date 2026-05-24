@@ -279,6 +279,37 @@
 
 ---
 
+---
+
+## 프론트엔드 (FE)
+
+### 공통 인프라
+| 상태 | 항목 | 비고 |
+|---|---|---|
+| ✅ | API 클라이언트 (`client.ts`) | 401 → AccessToken 갱신 → 재시도, pending queue 구현 (fe-01) |
+| ✅ | STOMP 싱글턴 훅 (`useStompClient`) | `useStompSubscribe` / `useStompPublish`, 에러 시 connectPromise 초기화 (fe-01) |
+| ✅ | GNB WebSocket 알림 배지 | `/sub/user/{userId}/notification` 구독 → `incrementNotification` (fe-01) |
+| ✅ | AppContext 알림 카운트 | `incrementNotification` / `decrementNotification` / `resetNotifications` (fe-01) |
+
+### 길드
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 길드 목록 조회·검색·페이지네이션 | `GuildListPage` | (fe-01) |
+| ✅ | 길드 생성 모달 | `GuildListPage` | 409 중복 에러 처리 포함 (fe-01) |
+| ✅ | 가입 신청 / 신청 취소 | `GuildListPage` | (fe-01) |
+| ✅ | 길드 상세 (멤버·신청·설정 탭) | `GuildDetailPage` | (fe-01) |
+| ✅ | 가입 승인·거절, 멤버 추방, 길드장 이전 | `GuildDetailPage` | (fe-01) |
+| ✅ | 길드 정보 수정 (소개글·모집 상태) | `GuildDetailPage` | (fe-01) |
+
+### 알림
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 알림 목록 조회·무한스크롤 | `NotificationPage` | (fe-01) |
+| ✅ | 단건 읽음 처리 | `NotificationPage` | `decrementNotification` 연동 (fe-01) |
+| ✅ | 전체 읽음 처리 | `NotificationPage` | `resetNotifications` 연동 (fe-01) |
+
+---
+
 ## 진행 순서 (권장)
 
 ```
