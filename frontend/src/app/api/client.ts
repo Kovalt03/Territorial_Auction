@@ -1,5 +1,22 @@
 const BASE = '/api/v1';
 
+let isRefreshing = false;
+let pendingQueue: Array<(token: string | null) => void> = [];
+
+function drainQueue(token: string | null) {
+  pendingQueue.forEach(cb => cb(token));
+  pendingQueue = [];
+}
+
+async function tryRefresh(): Promise<string> {
+  const res = await fetch(BASE + '/auth/refresh', { method: 'POST', credentials: 'include' });
+  if (!res.ok) throw new Error('refresh failed');
+  const body = await res.json();
+  const token: string = body.data.accessToken;
+  localStorage.setItem('accessToken', token);
+  return token;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('accessToken');
   const headers: Record<string, string> = {
@@ -7,14 +24,61 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string>),
   };
-  const res = await fetch(BASE + path, { ...options, headers });
-  if (!res.ok) {
-    const error = new Error(res.statusText);
-    (error as Error & { status: number }).status = res.status;
-    throw error;
+
+  const res = await fetch(BASE + path, { ...options, headers, credentials: 'include' });
+
+  if (res.status !== 401) {
+    if (!res.ok) {
+      const error = new Error(res.statusText);
+      (error as Error & { status: number }).status = res.status;
+      throw error;
+    }
+    const body = await res.json();
+    return body.data as T;
   }
-  const body = await res.json();
-  return body.data as T;
+
+  // 401 — attempt token refresh
+  if (isRefreshing) {
+    return new Promise<T>((resolve, reject) => {
+      pendingQueue.push((newToken) => {
+        if (!newToken) { reject(new Error('Session expired')); return; }
+        const retryHeaders = { ...headers, Authorization: `Bearer ${newToken}` };
+        fetch(BASE + path, { ...options, headers: retryHeaders, credentials: 'include' })
+          .then(r => {
+            if (!r.ok) {
+              const error = new Error(r.statusText);
+              (error as Error & { status: number }).status = r.status;
+              throw error;
+            }
+            return r.json();
+          })
+          .then(b => resolve(b.data as T))
+          .catch(reject);
+      });
+    });
+  }
+
+  isRefreshing = true;
+  try {
+    const newToken = await tryRefresh();
+    isRefreshing = false;
+    drainQueue(newToken);
+    const retryHeaders = { ...headers, Authorization: `Bearer ${newToken}` };
+    const retryRes = await fetch(BASE + path, { ...options, headers: retryHeaders, credentials: 'include' });
+    if (!retryRes.ok) {
+      const error = new Error(retryRes.statusText);
+      (error as Error & { status: number }).status = retryRes.status;
+      throw error;
+    }
+    const body = await retryRes.json();
+    return body.data as T;
+  } catch {
+    isRefreshing = false;
+    drainQueue(null);
+    localStorage.removeItem('accessToken');
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
 }
 
 export const apiClient = {
