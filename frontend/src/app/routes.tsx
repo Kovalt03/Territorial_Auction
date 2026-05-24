@@ -28,7 +28,7 @@ export const router = createBrowserRouter([
   { path: '/app/territory/:id', Component: TerritoryDetailPage },
   { path: '/app/ranking', Component: RankingPage },
   { path: '/app/guild', Component: GuildListPage },
-  { path: '/app/guild/:id', Component: GuildDetailPage },
+  { path: '/app/guild/:id', element: <PrivateRoute><GuildDetailPage /></PrivateRoute> },
   { path: '/app/mypage', element: <PrivateRoute><MyPage /></PrivateRoute> },
   { path: '/app/notifications', element: <PrivateRoute><NotificationPage /></PrivateRoute> },
   { path: '/app/charge', element: <PrivateRoute><ChargePage /></PrivateRoute> },
