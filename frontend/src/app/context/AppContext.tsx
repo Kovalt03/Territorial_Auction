@@ -116,7 +116,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isLoggedIn: true,
       username: name,
       userId: opts?.userId ?? null,
-      ap: opts?.ap ?? (prev.ap + 1000),
+      ap: opts?.ap ?? 0,
       gp: opts?.gp ?? prev.gp,
     }));
   };

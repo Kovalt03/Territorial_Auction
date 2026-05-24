@@ -19,13 +19,13 @@ function ensureConnected(): Promise<void> {
   if (client.connected) return Promise.resolve();
   if (connectPromise) return connectPromise;
 
-  connectPromise = new Promise<void>((resolve) => {
+  connectPromise = new Promise<void>((resolve, reject) => {
     const token = localStorage.getItem('accessToken');
     client.connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
     client.onConnect = () => { connectPromise = null; resolve(); };
     client.onDisconnect = () => { connectPromise = null; };
-    client.onStompError = () => { connectPromise = null; };
-    client.onWebSocketError = () => { connectPromise = null; };
+    client.onStompError = (frame) => { connectPromise = null; reject(new Error(frame.headers['message'] ?? 'STOMP error')); };
+    client.onWebSocketError = (err) => { connectPromise = null; reject(err); };
     if (!client.active) client.activate();
   });
   return connectPromise;
