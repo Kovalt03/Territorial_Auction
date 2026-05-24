@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
+import { EmptyState } from '../components/EmptyState';
 import { useApp } from '../context/AppContext';
 import { useMyBids } from '../hooks/useMyBids';
 import { useVault } from '../hooks/useVault';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { GRADE_COLOR } from '../types/grade';
 
 type ActivityTab = 'active' | 'mine' | 'history' | 'bids';
-
-const GRADE_COLOR: Record<string, string> = { S: '#ffd700', A: '#00f5ff', B: '#00ff88', C: '#8892b0' };
 
 export function MyPage() {
   const navigate = useNavigate();
@@ -193,9 +193,7 @@ export function MyPage() {
               {territoriesLoading ? (
                 <div className="text-center py-8 text-[#4a5a7a] text-sm">불러오는 중...</div>
               ) : territories.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-[#4a5a7a] text-sm">보유한 영토가 없습니다</p>
-                </div>
+                <EmptyState message="보유한 영토가 없습니다" />
               ) : (
                 <div className="space-y-2">
                   {territories.map(t => (
@@ -206,7 +204,7 @@ export function MyPage() {
                     >
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0"
-                        style={{ background: (GRADE_COLOR[t.grade] ?? '#8892b0') + '30', border: `1px solid ${(GRADE_COLOR[t.grade] ?? '#8892b0')}60`, color: GRADE_COLOR[t.grade] ?? '#8892b0' }}
+                        style={{ background: (GRADE_COLOR[t.grade as keyof typeof GRADE_COLOR] ?? '#8892b0') + '30', border: `1px solid ${(GRADE_COLOR[t.grade as keyof typeof GRADE_COLOR] ?? '#8892b0')}60`, color: GRADE_COLOR[t.grade as keyof typeof GRADE_COLOR] ?? '#8892b0' }}
                       >
                         {t.grade}
                       </div>
@@ -225,9 +223,7 @@ export function MyPage() {
               {bidsLoading ? (
                 <div className="text-center py-8 text-[#4a5a7a] text-sm">불러오는 중...</div>
               ) : (tab === 'active' ? activeBids : allBids).length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-[#4a5a7a] text-sm">데이터가 없습니다</p>
-                </div>
+                <EmptyState message="데이터가 없습니다" />
               ) : (
                 <div className="space-y-2">
                   {(tab === 'active' ? activeBids : allBids).map(b => (

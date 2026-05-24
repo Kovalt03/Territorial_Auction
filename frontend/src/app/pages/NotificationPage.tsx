@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { GNB } from '../components/GNB';
+import { EmptyState } from '../components/EmptyState';
 import { useApp } from '../context/AppContext';
 import {
   fetchNotificationList, markNotificationRead, markAllNotificationsRead,
@@ -114,7 +115,7 @@ export function NotificationPage() {
           {isLoading ? (
             <div className="text-center text-[#4a5a7a] py-20 text-sm">불러오는 중...</div>
           ) : notifications.length === 0 ? (
-            <div className="text-center text-[#4a5a7a] py-20 text-sm">알림이 없습니다.</div>
+            <EmptyState message="알림이 없습니다." className="py-20" />
           ) : (
             <div className="flex flex-col gap-2">
               {notifications.map(n => (

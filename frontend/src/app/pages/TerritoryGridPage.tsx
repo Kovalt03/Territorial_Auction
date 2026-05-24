@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { GNB } from '../components/GNB';
+import { HealthBar } from '../components/HealthBar';
+import { EmptyState } from '../components/EmptyState';
 import { useApp } from '../context/AppContext';
 
 type BuildingType = 'castle' | 'workshop' | 'barracks' | 'storage' | 'wall' | 'tower' | 'empty';
@@ -270,9 +272,7 @@ export function TerritoryGridPage() {
                         </span>
                         {cell.level && (
                           <div className="w-full mt-0.5">
-                            <div className="h-1 bg-[#1a1f35] rounded-full overflow-hidden">
-                              <div className="h-full rounded-full" style={{ width: `${Math.round((cell.hp! / cell.maxHp!) * 100)}%`, background: buildingColors[cell.type] }} />
-                            </div>
+                            <HealthBar hp={cell.hp!} maxHp={cell.maxHp!} color={buildingColors[cell.type]} height="h-1" />
                             <span className="text-[7px]" style={{ color: buildingColors[cell.type] }}>Lv.{cell.level}</span>
                           </div>
                         )}
@@ -327,9 +327,7 @@ export function TerritoryGridPage() {
                   <span className="text-[11px]" style={{ color: b.color }}>{buildingLabels[b.type]}{b.count > 1 ? ` ×${b.count}` : ''}</span>
                   <span className="text-[#7788a5] text-[10px]">Lv.{b.level}</span>
                 </div>
-                <div className="bg-[#1a1f35] h-1.5 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${b.maxHp > 0 ? Math.round((b.hp / b.maxHp) * 100) : 0}%`, background: b.color }} />
-                </div>
+                <HealthBar hp={b.hp} maxHp={b.maxHp} color={b.color} height="h-1.5" />
                 <span className="text-[#7788a5] text-[9px]">{b.hp}/{b.maxHp}</span>
               </div>
             ))}
@@ -484,15 +482,7 @@ export function TerritoryGridPage() {
                 <span className="text-[#7788a5] text-[11px]">HP</span>
                 <span className="text-[11px]" style={{ color: buildingColors[selectedCellData.type] }}>{selectedCellData.hp} / {selectedCellData.maxHp}</span>
               </div>
-              <div className="h-2 bg-[#0a0e1a] rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${selectedCellData.maxHp ? Math.round((selectedCellData.hp! / selectedCellData.maxHp!) * 100) : 0}%`,
-                    background: buildingColors[selectedCellData.type],
-                  }}
-                />
-              </div>
+              <HealthBar hp={selectedCellData.hp ?? 0} maxHp={selectedCellData.maxHp ?? 0} color={buildingColors[selectedCellData.type]} height="h-2" bg="bg-[#0a0e1a]" />
             </div>
 
             <div className="p-4 flex gap-3">
@@ -546,11 +536,12 @@ export function TerritoryGridPage() {
 
             <div className="flex-1 overflow-y-auto p-4">
               {inventory.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <span className="text-[40px]">📭</span>
-                  <p className="text-[#7788a5] text-sm">보관함이 비어 있습니다</p>
-                  <p className="text-[#354064] text-xs">건물 셀을 클릭한 뒤 "보관함에 담기"를 선택하세요</p>
-                </div>
+                <EmptyState
+                  emoji="📭"
+                  message="보관함이 비어 있습니다"
+                  subMessage='건물 셀을 클릭한 뒤 "보관함에 담기"를 선택하세요'
+                  className="py-16"
+                />
               ) : (
                 <div className="space-y-2">
                   {inventory.map((item, idx) => {
@@ -564,9 +555,7 @@ export function TerritoryGridPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm" style={{ color }}>{buildingNames[item.type]}</p>
                           <p className="text-[#7788a5] text-[11px]">Lv.{item.level}</p>
-                          <div className="mt-1 h-1.5 bg-[#1a1f35] rounded-full overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${hpPct * 100}%`, background: color }} />
-                          </div>
+                          <HealthBar hp={item.hp} maxHp={item.maxHp} color={color} height="h-1.5" className="mt-1" />
                           <span className="text-[#7788a5] text-[9px]">HP {item.hp}/{item.maxHp}</span>
                         </div>
                         <button

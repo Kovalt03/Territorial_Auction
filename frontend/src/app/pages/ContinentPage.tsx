@@ -8,23 +8,23 @@ import { fetchTerritoryDetail } from '../api/map';
 import { placeBidApi } from '../api/auction';
 import { CONTINENTS } from './WorldMapPage';
 import type { GridTerritoryDto } from '../types/map';
+import type { Grade } from '../types/grade';
+import { GRADE_COLOR } from '../types/grade';
 
 type TStatus = 'mine' | 'occupied' | 'auction' | 'idle';
-type TGrade = 'S' | 'A' | 'B' | 'C';
 
 interface DisplayTerritory {
   x: number; y: number; coordX: number; coordY: number;
   status: TStatus; owner: string | null; color: string;
-  grade: TGrade; currentBid: number; gpPerMin: number; defense: number;
+  grade: Grade; currentBid: number; gpPerMin: number; defense: number;
   timeLeft?: number; id: number;
 }
 
 const CELL = 30;
 
-const GRADE_EMOJI: Record<TGrade, string> = { S: '👑', A: '💎', B: '🔷', C: '🔹' };
-const GRADE_COLORS: Record<TGrade, string> = { S: '#ffd700', A: '#00f5ff', B: '#00ff88', C: '#8892b0' };
-const GRADE_CELL: Record<TGrade, number> = { S: 29, A: 24, B: 18, C: 12 };
-const GRADE_FONT: Record<TGrade, number> = { S: 13, A: 11, B: 9, C: 7 };
+const GRADE_EMOJI: Record<Grade, string> = { S: '👑', A: '💎', B: '🔷', C: '🔹' };
+const GRADE_CELL: Record<Grade, number> = { S: 29, A: 24, B: 18, C: 12 };
+const GRADE_FONT: Record<Grade, number> = { S: 13, A: 11, B: 9, C: 7 };
 
 const OWNER_PALETTE = ['#f06070', '#00f5ff', '#8b50ff', '#ffd700', '#ff8c00', '#00ff88', '#ff1493', '#ff6644'];
 
@@ -54,7 +54,7 @@ function buildDisplayGrid(
     const gy = t.coordY - minY;
     if (gx >= 0 && gx < cols && gy >= 0 && gy < rows) {
       const status = mapStatus(t, userId);
-      const grade = (t.grade as TGrade) || 'C';
+      const grade = (t.grade as Grade) || 'C';
       grid[gy][gx] = {
         x: gx, y: gy, coordX: t.coordX, coordY: t.coordY,
         status, owner: t.ownerNickname,
@@ -68,7 +68,7 @@ function buildDisplayGrid(
   return grid.map((row, y) =>
     row.map((cell, x) => cell ?? {
       x, y, coordX: x + minX, coordY: y + minY,
-      status: 'idle' as TStatus, owner: null, color: '#1a2a3a', grade: 'C' as TGrade,
+      status: 'idle' as TStatus, owner: null, color: '#1a2a3a', grade: 'C' as Grade,
       currentBid: 0, gpPerMin: 0, defense: 0, id: 0,
     })
   );
@@ -228,8 +228,8 @@ export function ContinentPage() {
           </div>
 
           <div className="absolute top-3 right-3 z-10 bg-[#080e1c99] border border-[#1a2438] rounded-xl px-3 py-2 flex flex-col gap-1.5">
-            {(['S', 'A', 'B', 'C'] as TGrade[]).map(g => (
-              <div key={g} className="flex items-center gap-1.5"><span style={{ fontSize: 11 }}>{GRADE_EMOJI[g]}</span><span style={{ fontSize: 9, color: GRADE_COLORS[g] }}>{g}급</span></div>
+            {(['S', 'A', 'B', 'C'] as Grade[]).map(g => (
+              <div key={g} className="flex items-center gap-1.5"><span style={{ fontSize: 11 }}>{GRADE_EMOJI[g]}</span><span style={{ fontSize: 9, color: GRADE_COLOR[g] }}>{g}급</span></div>
             ))}
           </div>
 
@@ -296,7 +296,7 @@ export function ContinentPage() {
                     <p className="text-[#c0ccdd] font-bold" style={{ fontSize: 14 }}>영토 ({selected.coordX}, {selected.coordY})</p>
                     <p className="text-[#4a5a7a]" style={{ fontSize: 10 }}>{continent.name}</p>
                   </div>
-                  <div className="px-2 py-0.5 rounded font-bold flex items-center gap-1" style={{ fontSize: 10, color: GRADE_COLORS[selected.grade], background: GRADE_COLORS[selected.grade] + '20' }}>
+                  <div className="px-2 py-0.5 rounded font-bold flex items-center gap-1" style={{ fontSize: 10, color: GRADE_COLOR[selected.grade], background: GRADE_COLOR[selected.grade] + '20' }}>
                     <span>{GRADE_EMOJI[selected.grade]}</span><span>{selected.grade}급</span>
                   </div>
                 </div>
@@ -373,7 +373,7 @@ export function ContinentPage() {
               <div className="px-4 py-4 border-b border-[#1a2438]">
                 <p className="font-bold mb-3" style={{ fontSize: 13, color: continent.color }}>{continent.name}</p>
                 <div className="space-y-2">
-                  {[{ label: '등급', val: continent.grade, color: GRADE_COLORS[continent.grade as TGrade] || '#c0ccdd' }, { label: '경매 중', val: `${auctionCount}개`, color: '#ffd700' }, { label: '내 영토', val: `${myCount}개`, color: '#00ff88' }, { label: '점령됨', val: `${occupiedCount}개`, color: '#8b50ff' }, { label: '미점령', val: `${cols * rows - myCount - auctionCount - occupiedCount}개`, color: '#4a5a7a' }].map(s => (
+                  {[{ label: '등급', val: continent.grade, color: GRADE_COLOR[continent.grade as Grade] || '#c0ccdd' }, { label: '경매 중', val: `${auctionCount}개`, color: '#ffd700' }, { label: '내 영토', val: `${myCount}개`, color: '#00ff88' }, { label: '점령됨', val: `${occupiedCount}개`, color: '#8b50ff' }, { label: '미점령', val: `${cols * rows - myCount - auctionCount - occupiedCount}개`, color: '#4a5a7a' }].map(s => (
                     <div key={s.label} className="flex justify-between"><span className="text-[#4a5a7a]" style={{ fontSize: 11 }}>{s.label}</span><span className="font-semibold" style={{ fontSize: 11, color: s.color }}>{s.val}</span></div>
                   ))}
                 </div>

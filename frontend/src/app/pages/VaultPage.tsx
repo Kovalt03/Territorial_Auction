@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { GNB } from '../components/GNB';
+import { HealthBar } from '../components/HealthBar';
+import { EmptyState } from '../components/EmptyState';
 import { useVault } from '../hooks/useVault';
 import { transferGP } from '../api/vault';
 import { useApp } from '../context/AppContext';
@@ -73,12 +75,14 @@ export function VaultPage() {
                 {(vault?.storedGP ?? 0).toLocaleString()}
               </p>
             )}
-            <div className="bg-[#2a3050] h-2.5 rounded-full overflow-hidden mt-3">
-              <div
-                className="h-full bg-[#00ff88] rounded-full transition-all"
-                style={{ width: vault ? `${Math.min(100, (vault.storedGP / vault.capacity) * 100)}%` : '0%' }}
-              />
-            </div>
+            <HealthBar
+              hp={vault?.storedGP ?? 0}
+              maxHp={vault?.capacity ?? 1}
+              color="#00ff88"
+              height="h-2.5"
+              bg="bg-[#2a3050]"
+              className="mt-3"
+            />
             <p className="text-[#7788a5] mt-1 text-[11px]">
               최대 용량: {(vault?.capacity ?? 0).toLocaleString()} GP
             </p>
@@ -127,7 +131,7 @@ export function VaultPage() {
                 <div key={i} className="bg-[#12192c] border border-[#354064] rounded-xl p-4 h-20 animate-pulse" />
               ))
             ) : territories.length === 0 ? (
-              <p className="text-center text-[#7788a5] py-8 text-sm">보유한 영토가 없습니다.</p>
+              <EmptyState message="보유한 영토가 없습니다." />
             ) : (
               territories.map(t => (
                 <div key={t.territoryId} className="bg-[#12192c] border border-[#354064] rounded-xl p-4">
