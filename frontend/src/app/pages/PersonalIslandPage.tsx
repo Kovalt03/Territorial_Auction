@@ -281,36 +281,36 @@ export function PersonalIslandPage() {
     <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
       <GNB />
 
-      <div className="bg-[#0d1628] border-b border-[#00ff8840] px-5 py-3 flex items-center gap-4 flex-shrink-0">
+      <div className="bg-[#0a0e1a] border-b border-[#00ff8840] px-5 py-3 flex items-center gap-4 flex-shrink-0">
         <button onClick={() => navigate('/app/map')} className="text-[#7788a5] hover:text-[#e0e8ff] mr-1">←</button>
         <div className="w-10 h-10 bg-[#00ff8830] rounded-xl border border-[#00ff88] flex items-center justify-center">
-          <span style={{ fontSize: 20 }}>🏝</span>
+          <span className="text-xl">🏝</span>
         </div>
         <div>
-          <h1 className="text-[#00ff88] font-bold" style={{ fontSize: 20 }}>나의 섬 · {username || '—'}</h1>
-          <p className="text-[#7788a5]" style={{ fontSize: 12 }}>중앙 대륙 · S급 개인 영토 · 20×16 그리드</p>
+          <h1 className="text-[#00ff88] font-bold text-xl">나의 섬 · {username || '—'}</h1>
+          <p className="text-[#7788a5] text-xs">중앙 대륙 · S급 개인 영토 · 20×16 그리드</p>
         </div>
         <div className="flex items-center gap-2 ml-4">
           <div className="h-7 px-3 rounded-lg bg-[#ffd70020] border border-[#ffd700] flex items-center">
-            <span className="text-[#ffd700] font-bold" style={{ fontSize: 11 }}>S급</span>
+            <span className="text-[#ffd700] font-bold text-[11px]">S급</span>
           </div>
           <div className="flex items-center gap-1 bg-[#2a3050] border border-[#00ff88] rounded-lg px-2 py-1">
             <div className="w-2 h-2 bg-[#00ff88] rounded-full animate-pulse" />
-            <span className="text-[#00ff88]" style={{ fontSize: 11 }}>안전 보호 중</span>
+            <span className="text-[#00ff88] text-[11px]">안전 보호 중</span>
           </div>
         </div>
         <div className="flex items-center gap-4 ml-auto">
           <div className="text-right">
-            <p className="text-[#7788a5]" style={{ fontSize: 10 }}>총 GP 보유</p>
-            <p className="text-[#00ff88] font-bold" style={{ fontSize: 16 }}>💎 {gp.toLocaleString()}</p>
+            <p className="text-[#7788a5] text-[10px]">총 GP 보유</p>
+            <p className="text-[#00ff88] font-bold text-base">💎 {gp.toLocaleString()}</p>
           </div>
           <div className="text-right">
-            <p className="text-[#7788a5]" style={{ fontSize: 10 }}>생산 속도</p>
-            <p className="text-[#ffd700] font-bold" style={{ fontSize: 16 }}>+{island?.productionRate ?? 0} GP/분</p>
+            <p className="text-[#7788a5] text-[10px]">생산 속도</p>
+            <p className="text-[#ffd700] font-bold text-base">+{island?.productionRate ?? 0} GP/분</p>
           </div>
           <div className="text-right">
-            <p className="text-[#7788a5]" style={{ fontSize: 10 }}>총 방어력</p>
-            <p className="text-[#ff3333] font-bold" style={{ fontSize: 16 }}>4,820</p>
+            <p className="text-[#7788a5] text-[10px]">총 방어력</p>
+            <p className="text-[#ff3333] font-bold text-base">4,820</p>
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <div
@@ -320,7 +320,7 @@ export function PersonalIslandPage() {
             >
               <div className="absolute top-0.5 w-4 h-4 rounded-full transition-all" style={{ background: showZones ? '#00ff88' : '#7788a5', left: showZones ? 20 : 2 }} />
             </div>
-            <span className="text-[#7788a5]" style={{ fontSize: 11 }}>존 표시</span>
+            <span className="text-[#7788a5] text-[11px]">존 표시</span>
           </label>
         </div>
       </div>
@@ -329,25 +329,25 @@ export function PersonalIslandPage() {
       {moveMode && (
         <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#1a1200', borderBottom: '1px solid #ffd70060' }}>
           <div className="flex items-center gap-2">
-            <span style={{ fontSize: 14 }}>🔄</span>
-            <span className="text-[#ffd700] font-semibold" style={{ fontSize: 13 }}>
+            <span className="text-sm">🔄</span>
+            <span className="text-[#ffd700] font-semibold text-[13px]">
               이동 모드 — 이동할 빈 셀을 클릭하세요
-              {moveSourceCell && <span className="text-[#7788a5] ml-2" style={{ fontSize: 11 }}>출발: ({moveSourceCell.x}, {moveSourceCell.y})</span>}
+              {moveSourceCell && <span className="text-[#7788a5] ml-2 text-[11px]">출발: ({moveSourceCell.x}, {moveSourceCell.y})</span>}
             </span>
           </div>
-          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border transition-colors" style={{ fontSize: 12, color: '#ffd700', borderColor: '#ffd70060' }}>취소</button>
+          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border border-[#ffd70060] text-[#ffd700] text-xs transition-colors">취소</button>
         </div>
       )}
       {deployFromInventoryIdx !== null && inventory[deployFromInventoryIdx] && (
         <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#001a10', borderBottom: '1px solid #00ff8860' }}>
           <div className="flex items-center gap-2">
-            <span style={{ fontSize: 14 }}>📦</span>
-            <span className="text-[#00ff88] font-semibold" style={{ fontSize: 13 }}>
+            <span className="text-sm">📦</span>
+            <span className="text-[#00ff88] font-semibold text-[13px]">
               배치 모드 — 배치할 빈 셀을 클릭하세요
-              <span className="text-[#7788a5] ml-2" style={{ fontSize: 11 }}>({buildingNames[inventory[deployFromInventoryIdx].type]})</span>
+              <span className="text-[#7788a5] ml-2 text-[11px]">({buildingNames[inventory[deployFromInventoryIdx].type]})</span>
             </span>
           </div>
-          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border transition-colors" style={{ fontSize: 12, color: '#00ff88', borderColor: '#00ff8860' }}>취소</button>
+          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border border-[#00ff8860] text-[#00ff88] text-xs transition-colors">취소</button>
         </div>
       )}
 
@@ -359,12 +359,12 @@ export function PersonalIslandPage() {
               {[4, 3, 2, 1].map(z => (
                 <div key={z} className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-sm border" style={{ background: zoneOverlay[z], borderColor: zoneBorder[z] }} />
-                  <span className="text-[#7788a5]" style={{ fontSize: 10 }}>Zone {z}</span>
+                  <span className="text-[#7788a5] text-[10px]">Zone {z}</span>
                 </div>
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#7788a5]" style={{ fontSize: 10 }}>
+              <span className="text-[#7788a5] text-[10px]">
                 {selectedCell ? `선택: (${selectedCell.x}, ${selectedCell.y}) - ${buildingNames[selectedCellData?.type || 'empty']}` : '셀을 클릭하여 선택'}
               </span>
               <button onClick={() => setZoom(z => Math.min(5, z * 1.2))} className="w-6 h-6 bg-[#1a2438] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white text-xs flex items-center justify-center">+</button>
@@ -391,7 +391,7 @@ export function PersonalIslandPage() {
                 const isMoveSource = moveSourceCell?.x === x && moveSourceCell?.y === y;
                 const isActionTarget = (moveMode || deployFromInventoryIdx !== null) && cell.type === 'empty';
                 const zone = cell.zone || 4;
-                const bg = isMoveSource ? buildingColors[cell.type] + '80' : cell.type !== 'empty' ? buildingColors[cell.type] + '50' : showZones ? zoneOverlay[zone] : '#0d1220';
+                const bg = isMoveSource ? buildingColors[cell.type] + '80' : cell.type !== 'empty' ? buildingColors[cell.type] + '50' : showZones ? zoneOverlay[zone] : '#0a0e1a';
                 const hpPct = cell.hp && cell.maxHp ? cell.hp / cell.maxHp : 0;
                 const hpColor = hpPct > 0.7 ? '#00ff88' : hpPct > 0.4 ? '#ffd700' : '#ff3333';
                 return (
@@ -414,20 +414,20 @@ export function PersonalIslandPage() {
                   >
                     {cell.type !== 'empty' ? (
                       <>
-                        <span style={{ fontSize: 14, lineHeight: 1 }}>{buildingLabels[cell.type]}</span>
+                        <span className="text-sm leading-none">{buildingLabels[cell.type]}</span>
                         {cell.level && (
                           <div className="absolute bottom-0.5 left-0.5 right-0.5 h-1 rounded-full overflow-hidden" style={{ background: '#0a0e1a' }}>
                             <div className="h-full rounded-full" style={{ width: `${hpPct * 100}%`, background: hpColor }} />
                           </div>
                         )}
                         {cell.level && (
-                          <div className="absolute top-0 right-0 w-3 h-3 rounded-full flex items-center justify-center" style={{ background: buildingColors[cell.type], fontSize: 6 }}>
+                          <div className="absolute top-0 right-0 w-3 h-3 rounded-full flex items-center justify-center text-[6px]" style={{ background: buildingColors[cell.type] }}>
                             {cell.level}
                           </div>
                         )}
                       </>
                     ) : (
-                      <span style={{ fontSize: 10, color: isActionTarget ? '#00ff8870' : undefined }} className={isActionTarget ? '' : 'text-[#354064] opacity-40'}>
+                      <span className={`text-[10px] ${isActionTarget ? 'text-[#00ff8870]' : 'text-[#354064] opacity-40'}`}>
                         {isActionTarget ? '⊕' : '+'}
                       </span>
                     )}
@@ -440,10 +440,10 @@ export function PersonalIslandPage() {
           </div>
         </div>
 
-        <div className="w-[260px] bg-[#0d1220] border-l border-[#1e2a3d] flex flex-col flex-shrink-0">
-          <div className="flex border-b border-[#1e2a3d]">
+        <div className="w-[260px] bg-[#0a0e1a] border-l border-[#354064] flex flex-col flex-shrink-0">
+          <div className="flex border-b border-[#354064]">
             {(['buildings', 'resources', 'units', 'expand'] as const).map(tabId => (
-              <button key={tabId} onClick={() => setActiveTab(tabId)} className="flex-1 py-2.5 transition-colors" style={{ fontSize: 11, color: activeTab === tabId ? '#00ff88' : '#7788a5', borderBottom: activeTab === tabId ? '2px solid #00ff88' : '2px solid transparent', background: activeTab === tabId ? '#00ff8810' : 'transparent' }}>
+              <button key={tabId} onClick={() => setActiveTab(tabId)} className="flex-1 py-2.5 text-[11px] transition-colors" style={{ color: activeTab === tabId ? '#00ff88' : '#7788a5', borderBottom: activeTab === tabId ? '2px solid #00ff88' : '2px solid transparent', background: activeTab === tabId ? '#00ff8810' : 'transparent' }}>
                 {{ buildings: '건물', resources: '자원', units: '유닛', expand: '확장' }[tabId]}
               </button>
             ))}
@@ -457,14 +457,14 @@ export function PersonalIslandPage() {
                   return (
                     <div key={b.type} className="bg-[#12192c] rounded-xl p-2.5 flex items-center gap-2">
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: b.color + '25', border: `1px solid ${b.color}50` }}>
-                        <span style={{ fontSize: 16 }}>{b.icon}</span>
+                        <span className="text-base">{b.icon}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span style={{ fontSize: 12, color: b.color }}>{buildingNames[b.type]}</span>
-                          <span className="text-[#7788a5]" style={{ fontSize: 10 }}>×{count}</span>
+                          <span className="text-xs" style={{ color: b.color }}>{buildingNames[b.type]}</span>
+                          <span className="text-[#7788a5] text-[10px]">×{count}</span>
                         </div>
-                        <p className="text-[#7788a5]" style={{ fontSize: 10 }}>{b.gp}</p>
+                        <p className="text-[#7788a5] text-[10px]">{b.gp}</p>
                       </div>
                     </div>
                   );
@@ -474,28 +474,28 @@ export function PersonalIslandPage() {
             {activeTab === 'resources' && (
               <div className="p-3 space-y-3">
                 <div className="bg-[#12192c] rounded-xl p-3">
-                  <div className="flex justify-between mb-2"><span className="text-[#ffd700] font-semibold" style={{ fontSize: 12 }}>⚡ AP</span><span className="text-[#ffd700] font-bold" style={{ fontSize: 14 }}>{ap.toLocaleString()}</span></div>
+                  <div className="flex justify-between mb-2"><span className="text-[#ffd700] font-semibold text-xs">⚡ AP</span><span className="text-[#ffd700] font-bold text-sm">{ap.toLocaleString()}</span></div>
                   <div className="bg-[#1a1f35] h-2 rounded-full overflow-hidden"><div className="h-full bg-[#ffd700] rounded-full" style={{ width: '62%' }} /></div>
                 </div>
                 <div className="bg-[#12192c] rounded-xl p-3">
-                  <div className="flex justify-between mb-1"><span className="text-[#00ff88] font-semibold" style={{ fontSize: 12 }}>💎 GP 생산</span><span className="text-[#00ff88] font-bold" style={{ fontSize: 14 }}>+105/분</span></div>
+                  <div className="flex justify-between mb-1"><span className="text-[#00ff88] font-semibold text-xs">💎 GP 생산</span><span className="text-[#00ff88] font-bold text-sm">+105/분</span></div>
                   <div className="space-y-1 mt-2">
                     {[{ src: '생산소 ×4', val: '+48', color: '#00ff88' }, { src: '금고 ×2', val: '+22', color: '#ffaa00' }, { src: '광산 ×4', val: '+35', color: '#cc8844' }].map(r => (
-                      <div key={r.src} className="flex justify-between"><span className="text-[#7788a5]" style={{ fontSize: 10 }}>{r.src}</span><span style={{ fontSize: 10, color: r.color }}>{r.val}/분</span></div>
+                      <div key={r.src} className="flex justify-between"><span className="text-[#7788a5] text-[10px]">{r.src}</span><span className="text-[10px]" style={{ color: r.color }}>{r.val}/분</span></div>
                     ))}
                   </div>
                 </div>
                 <div className="bg-[#12192c] rounded-xl p-3">
-                  <p className="text-[#ff44cc] font-semibold mb-2" style={{ fontSize: 12 }}>🔬 연구 현황</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>방어력 강화 Lv.3</p>
+                  <p className="text-[#ff44cc] font-semibold mb-2 text-xs">🔬 연구 현황</p>
+                  <p className="text-[#7788a5] text-[11px]">방어력 강화 Lv.3</p>
                   <div className="bg-[#1a1f35] h-1.5 rounded-full overflow-hidden mt-1"><div className="h-full bg-[#ff44cc] rounded-full" style={{ width: '45%' }} /></div>
-                  <p className="text-[#7788a5]" style={{ fontSize: 9 }}>완료까지 약 4시간</p>
+                  <p className="text-[#7788a5] text-[9px]">완료까지 약 4시간</p>
                 </div>
               </div>
             )}
             {activeTab === 'units' && (
               <div className="p-3 space-y-2">
-                <p className="text-[#7788a5] font-semibold" style={{ fontSize: 12 }}>주둔 유닛</p>
+                <p className="text-[#7788a5] font-semibold text-xs">주둔 유닛</p>
                 {[
                   { label: '보병', icon: '🗡', owned: 24, max: 40, color: '#e0e8ff', attack: 25 },
                   { label: '궁수', icon: '🏹', owned: 12, max: 30, color: '#00ff88', attack: 30 },
@@ -505,27 +505,27 @@ export function PersonalIslandPage() {
                 ].map(u => (
                   <div key={u.label} className="bg-[#12192c] rounded-xl p-3">
                     <div className="flex items-center gap-2 mb-1">
-                      <span style={{ fontSize: 16 }}>{u.icon}</span>
+                      <span className="text-base">{u.icon}</span>
                       <div className="flex-1">
                         <div className="flex justify-between">
-                          <span style={{ fontSize: 12, color: u.color }}>{u.label}</span>
-                          <span className="text-[#7788a5]" style={{ fontSize: 11 }}>{u.owned}/{u.max}</span>
+                          <span className="text-xs" style={{ color: u.color }}>{u.label}</span>
+                          <span className="text-[#7788a5] text-[11px]">{u.owned}/{u.max}</span>
                         </div>
-                        <p className="text-[#7788a5]" style={{ fontSize: 9 }}>공격력 {u.attack}</p>
+                        <p className="text-[#7788a5] text-[9px]">공격력 {u.attack}</p>
                       </div>
                     </div>
                     <div className="bg-[#1a1f35] h-1.5 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${(u.owned / u.max) * 100}%`, background: u.color }} /></div>
                   </div>
                 ))}
-                <button className="w-full h-9 border border-[#8b50ff] rounded-xl text-[#8b50ff] hover:bg-[#8b50ff20] transition-colors" style={{ fontSize: 12 }}>유닛 훈련하기</button>
+                <button className="w-full h-9 border border-[#8b50ff] rounded-xl text-[#8b50ff] text-xs hover:bg-[#8b50ff20] transition-colors">유닛 훈련하기</button>
               </div>
             )}
             {activeTab === 'expand' && (
               <div className="p-3 space-y-3">
                 <div className="bg-[#00ff8820] border border-[#00ff88] rounded-xl p-3">
-                  <p className="text-[#00ff88] font-semibold" style={{ fontSize: 12 }}>섬 현황</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>현재 크기: {island?.gridSize ?? COLS}×{ROWS} ({(island?.gridSize ?? COLS) * ROWS} 타일)</p>
-                  <p className="text-[#7788a5]" style={{ fontSize: 11 }}>빈 타일: {grid.flat().filter(c => c.type === 'empty').length}개</p>
+                  <p className="text-[#00ff88] font-semibold text-xs">섬 현황</p>
+                  <p className="text-[#7788a5] text-[11px]">현재 크기: {island?.gridSize ?? COLS}×{ROWS} ({(island?.gridSize ?? COLS) * ROWS} 타일)</p>
+                  <p className="text-[#7788a5] text-[11px]">빈 타일: {grid.flat().filter(c => c.type === 'empty').length}개</p>
                 </div>
                 {[
                   { label: '동쪽 확장 (+4열)', cost: '5,000 AP', color: '#00f5ff', desc: '80 타일 추가' },
@@ -535,33 +535,32 @@ export function PersonalIslandPage() {
                 ].map(item => (
                   <div key={item.label} className="bg-[#12192c] rounded-xl p-3">
                     <div className="flex justify-between mb-1">
-                      <span style={{ fontSize: 12, color: item.color }}>{item.label}</span>
-                      <span style={{ fontSize: 12, color: item.color }}>{item.cost}</span>
+                      <span className="text-xs" style={{ color: item.color }}>{item.label}</span>
+                      <span className="text-xs" style={{ color: item.color }}>{item.cost}</span>
                     </div>
-                    <p className="text-[#7788a5]" style={{ fontSize: 10 }}>{item.desc}</p>
-                    <button className="mt-2 w-full h-7 rounded-lg border font-bold" style={{ fontSize: 11, borderColor: item.color, color: item.color }}>확장</button>
+                    <p className="text-[#7788a5] text-[10px]">{item.desc}</p>
+                    <button className="mt-2 w-full h-7 rounded-lg border font-bold text-[11px]" style={{ borderColor: item.color, color: item.color }}>확장</button>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="p-3 border-t border-[#1e2a3d] space-y-2">
-            <button onClick={() => { setSelectedCell(null); setShowBuild(true); }} className="w-full h-9 border border-[#00f5ff] rounded-xl text-[#00f5ff] hover:bg-[#00f5ff20] transition-colors" style={{ fontSize: 12 }}>🏗 건물 건설</button>
+          <div className="p-3 border-t border-[#354064] space-y-2">
+            <button onClick={() => { setSelectedCell(null); setShowBuild(true); }} className="w-full h-9 border border-[#00f5ff] rounded-xl text-[#00f5ff] text-xs hover:bg-[#00f5ff20] transition-colors">🏗 건물 건설</button>
             <button
               onClick={() => setShowInventory(true)}
-              className="relative w-full h-9 border rounded-xl transition-colors hover:bg-[#8b50ff20]"
-              style={{ fontSize: 12, borderColor: '#8b50ff', color: '#8b50ff' }}
+              className="relative w-full h-9 border border-[#8b50ff] text-[#8b50ff] rounded-xl text-xs transition-colors hover:bg-[#8b50ff20]"
             >
               📦 보관함
               {inventory.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#8b50ff] text-white flex items-center justify-center" style={{ fontSize: 10 }}>
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#8b50ff] text-white text-[10px] flex items-center justify-center">
                   {inventory.length}
                 </span>
               )}
             </button>
-            <button className="w-full h-9 bg-[#00ff88] rounded-xl text-[#0a0e1a] font-bold hover:brightness-110 transition-all" style={{ fontSize: 12 }}>💎 GP 금고 이전</button>
-            <button onClick={() => navigate('/app/map')} className="w-full h-9 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5]" style={{ fontSize: 12 }}>🗺 월드맵으로</button>
+            <button className="w-full h-9 bg-[#00ff88] rounded-xl text-[#0a0e1a] font-bold text-xs hover:brightness-110 transition-all">💎 GP 금고 이전</button>
+            <button onClick={() => navigate('/app/map')} className="w-full h-9 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-xs">🗺 월드맵으로</button>
           </div>
         </div>
       </div>
@@ -570,12 +569,12 @@ export function PersonalIslandPage() {
         <div className="fixed inset-0 flex justify-end z-50">
           <div className="absolute inset-0 bg-black/60" onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} />
           <div className="relative bg-[#1a1f35] border-l-2 border-[#00ff88] w-[520px] flex flex-col overflow-hidden">
-            <div className="bg-[#0d1628] px-5 py-4 border-b-2 border-[#00ff88] flex items-center justify-between">
+            <div className="bg-[#0a0e1a] px-5 py-4 border-b-2 border-[#00ff88] flex items-center justify-between">
               <div>
-                <h3 className="text-[#00ff88] font-bold" style={{ fontSize: 18 }}>🏗 건물 건설</h3>
+                <h3 className="text-[#00ff88] font-bold text-lg">🏗 건물 건설</h3>
                 {selectedCell
-                  ? <p className="text-[#7788a5]" style={{ fontSize: 12 }}>위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData?.zone ?? 4} · 보유 GP: {gp.toLocaleString()}</p>
-                  : <p className="text-[#7788a5]" style={{ fontSize: 12 }}>빈 셀을 클릭하여 위치를 선택하세요 · 보유 GP: {gp.toLocaleString()}</p>
+                  ? <p className="text-[#7788a5] text-xs">위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData?.zone ?? 4} · 보유 GP: {gp.toLocaleString()}</p>
+                  : <p className="text-[#7788a5] text-xs">빈 셀을 클릭하여 위치를 선택하세요 · 보유 GP: {gp.toLocaleString()}</p>
                 }
               </div>
               <button onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} className="text-[#7788a5] hover:text-[#e0e8ff] text-2xl">✕</button>
@@ -604,14 +603,14 @@ export function PersonalIslandPage() {
                     }}
                   >
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: buildingColors[b.type] + '25' }}>
-                      <span style={{ fontSize: 22 }}>{buildingLabels[b.type]}</span>
+                      <span className="text-[22px]">{buildingLabels[b.type]}</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>{b.name}</p>
-                      <p className="text-[#7788a5]" style={{ fontSize: 11 }}>{b.desc}</p>
+                      <p className="text-[#e0e8ff] font-semibold text-[13px]">{b.name}</p>
+                      <p className="text-[#7788a5] text-[11px]">{b.desc}</p>
                     </div>
                     <div className="border rounded px-2 py-1" style={{ background: isSelected ? buildingColors[b.type] + '30' : '#1a1f35', borderColor: buildingColors[b.type] }}>
-                      <span style={{ fontSize: 12, color: buildingColors[b.type] }}>{b.cost}</span>
+                      <span className="text-xs" style={{ color: buildingColors[b.type] }}>{b.cost}</span>
                     </div>
                   </div>
                 );
@@ -619,23 +618,21 @@ export function PersonalIslandPage() {
             </div>
             {buildError && (
               <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-[#ff004420] border border-[#ff0044]">
-                <span className="text-[#ff4466]" style={{ fontSize: 12 }}>⚠ {buildError}</span>
+                <span className="text-[#ff3333] text-xs">⚠ {buildError}</span>
               </div>
             )}
             <div className="border-t border-[#354064] p-4 flex gap-3">
               <button
                 onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }}
-                className="flex-1 h-12 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5]"
-                style={{ fontSize: 14 }}
+                className="flex-1 h-12 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-sm"
               >
                 취소
               </button>
               <button
                 onClick={handleBuild}
                 disabled={!selectedBuilding}
-                className="flex-1 h-12 rounded-xl font-bold transition-all"
+                className="flex-1 h-12 rounded-xl font-bold text-sm transition-all"
                 style={{
-                  fontSize: 14,
                   background: selectedBuilding ? '#00ff88' : '#2a3050',
                   color: selectedBuilding ? '#0a0e1a' : '#7788a5',
                   border: selectedBuilding ? 'none' : '1px solid #354064',
@@ -656,10 +653,10 @@ export function PersonalIslandPage() {
           <div className="relative w-full max-w-lg rounded-t-2xl overflow-hidden" style={{ background: '#1a1f35', border: '1px solid #354064', borderBottom: 'none' }}>
             <div className="px-5 py-4 flex items-center justify-between" style={{ background: buildingColors[selectedCellData.type] + '20', borderBottom: `2px solid ${buildingColors[selectedCellData.type]}` }}>
               <div>
-                <h3 className="font-bold" style={{ fontSize: 18, color: buildingColors[selectedCellData.type] }}>
+                <h3 className="font-bold text-lg" style={{ color: buildingColors[selectedCellData.type] }}>
                   {buildingNames[selectedCellData.type]}
                 </h3>
-                <p className="text-[#7788a5]" style={{ fontSize: 12 }}>
+                <p className="text-[#7788a5] text-xs">
                   위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData.zone} · Lv.{selectedCellData.level}
                 </p>
               </div>
@@ -668,10 +665,10 @@ export function PersonalIslandPage() {
 
             <div className="px-5 py-3 border-b border-[#354064]">
               <div className="flex justify-between mb-1">
-                <span className="text-[#7788a5]" style={{ fontSize: 11 }}>HP</span>
-                <span style={{ fontSize: 11, color: buildingColors[selectedCellData.type] }}>{selectedCellData.hp} / {selectedCellData.maxHp}</span>
+                <span className="text-[#7788a5] text-[11px]">HP</span>
+                <span className="text-[11px]" style={{ color: buildingColors[selectedCellData.type] }}>{selectedCellData.hp} / {selectedCellData.maxHp}</span>
               </div>
-              <div className="h-2 bg-[#0d1220] rounded-full overflow-hidden">
+              <div className="h-2 bg-[#0a0e1a] rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -685,17 +682,16 @@ export function PersonalIslandPage() {
             <div className="p-4 flex gap-3">
               <button
                 onClick={handleStartMove}
-                className="flex-1 h-12 rounded-xl font-semibold border transition-all hover:bg-[#ffd70015]"
-                style={{ fontSize: 13, color: '#ffd700', borderColor: '#ffd70060' }}
+                className="flex-1 h-12 rounded-xl font-semibold border transition-all hover:bg-[#ffd70015] text-[13px]"
+                style={{ color: '#ffd700', borderColor: '#ffd70060' }}
               >
                 🔄 이동하기
               </button>
               <button
                 onClick={handleStoreBuilding}
                 disabled={selectedCellData.type === 'castle'}
-                className="flex-1 h-12 rounded-xl font-semibold border transition-all"
+                className="flex-1 h-12 rounded-xl font-semibold border transition-all text-[13px]"
                 style={{
-                  fontSize: 13,
                   color: selectedCellData.type === 'castle' ? '#354064' : '#8b50ff',
                   borderColor: selectedCellData.type === 'castle' ? '#354064' : '#8b50ff60',
                   cursor: selectedCellData.type === 'castle' ? 'not-allowed' : 'pointer',
@@ -707,14 +703,13 @@ export function PersonalIslandPage() {
               </button>
               <button
                 onClick={() => setShowBuildingAction(false)}
-                className="flex-1 h-12 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5]"
-                style={{ fontSize: 13 }}
+                className="flex-1 h-12 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-[13px]"
               >
                 닫기
               </button>
             </div>
             {selectedCellData.type === 'castle' && (
-              <p className="text-center text-[#7788a5] pb-3" style={{ fontSize: 11 }}>성(Castle)은 핵심 건물로 보관함에 담을 수 없습니다</p>
+              <p className="text-center text-[#7788a5] pb-3 text-[11px]">성(Castle)은 핵심 건물로 보관함에 담을 수 없습니다</p>
             )}
           </div>
         </div>
@@ -727,8 +722,8 @@ export function PersonalIslandPage() {
           <div className="relative rounded-2xl overflow-hidden flex flex-col" style={{ width: 480, maxHeight: '70vh', background: '#1a1f35', border: '1.5px solid #8b50ff' }}>
             <div className="px-5 py-4 flex items-center justify-between" style={{ background: '#1a0a35', borderBottom: '2px solid #8b50ff' }}>
               <div>
-                <h3 className="text-[#8b50ff] font-bold" style={{ fontSize: 20 }}>📦 보관함</h3>
-                <p className="text-[#7788a5]" style={{ fontSize: 12 }}>건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>
+                <h3 className="text-[#8b50ff] font-bold text-xl">📦 보관함</h3>
+                <p className="text-[#7788a5] text-xs">건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>
               </div>
               <button onClick={() => setShowInventory(false)} className="text-[#7788a5] hover:text-[#e0e8ff] text-2xl">✕</button>
             </div>
@@ -736,9 +731,9 @@ export function PersonalIslandPage() {
             <div className="flex-1 overflow-y-auto p-4">
               {inventory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <span style={{ fontSize: 40 }}>📭</span>
-                  <p className="text-[#7788a5]" style={{ fontSize: 14 }}>보관함이 비어 있습니다</p>
-                  <p className="text-[#354064]" style={{ fontSize: 12 }}>건물 셀을 클릭한 뒤 "보관함에 담기"를 선택하세요</p>
+                  <span className="text-[40px]">📭</span>
+                  <p className="text-[#7788a5] text-sm">보관함이 비어 있습니다</p>
+                  <p className="text-[#354064] text-xs">건물 셀을 클릭한 뒤 "보관함에 담기"를 선택하세요</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -748,20 +743,20 @@ export function PersonalIslandPage() {
                     return (
                       <div key={idx} className="rounded-xl p-3 flex items-center gap-3" style={{ background: '#2a3050', border: `1px solid ${color}50` }}>
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color + '25', border: `1px solid ${color}60` }}>
-                          <span style={{ fontSize: 22 }}>{buildingLabels[item.type]}</span>
+                          <span className="text-[22px]">{buildingLabels[item.type]}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold" style={{ fontSize: 14, color }}>{buildingNames[item.type]}</p>
-                          <p className="text-[#7788a5]" style={{ fontSize: 11 }}>Lv.{item.level}</p>
+                          <p className="font-semibold text-sm" style={{ color }}>{buildingNames[item.type]}</p>
+                          <p className="text-[#7788a5] text-[11px]">Lv.{item.level}</p>
                           <div className="mt-1 h-1.5 bg-[#1a1f35] rounded-full overflow-hidden">
                             <div className="h-full rounded-full" style={{ width: `${hpPct * 100}%`, background: color }} />
                           </div>
-                          <span className="text-[#7788a5]" style={{ fontSize: 9 }}>HP {item.hp}/{item.maxHp}</span>
+                          <span className="text-[#7788a5] text-[9px]">HP {item.hp}/{item.maxHp}</span>
                         </div>
                         <button
                           onClick={() => { setDeployFromInventoryIdx(idx); setShowInventory(false); }}
-                          className="h-9 px-4 rounded-lg font-semibold transition-all hover:brightness-110"
-                          style={{ fontSize: 12, background: color + '30', color, border: `1px solid ${color}` }}
+                          className="h-9 px-4 rounded-lg font-semibold transition-all hover:brightness-110 text-xs"
+                          style={{ background: color + '30', color, border: `1px solid ${color}` }}
                         >
                           배치하기
                         </button>

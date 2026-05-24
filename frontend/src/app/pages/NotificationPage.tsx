@@ -46,6 +46,7 @@ export function NotificationPage() {
         setNotifications(res.notifications);
         setHasMore(res.notifications.length === PAGE_SIZE);
       })
+      .catch(() => {})
       .finally(() => setIsLoading(false));
   }, []);
 
