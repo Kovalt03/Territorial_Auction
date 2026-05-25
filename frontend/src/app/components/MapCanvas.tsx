@@ -104,7 +104,7 @@ export function MapCanvas() {
       }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawFrame(ctx, s.zoom, s.pan, s.t, s.hoveredId, s.particles, s.paths, CONTINENTS);
+      drawFrame(ctx, s.zoom, s.pan, s.t, s.hoveredId, s.particles, s.paths, CONTINENTS, canvas.width, canvas.height);
 
       canvas.style.cursor = s.isDragging ? 'grabbing' : s.hoveredId ? 'pointer' : 'grab';
 
