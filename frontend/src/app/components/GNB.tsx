@@ -56,14 +56,14 @@ export function GNB() {
           {/* AP Chip */}
           <button
             onClick={() => navigate('/app/charge')}
-            className="flex items-center gap-1.5 px-3 h-8 bg-[#2a1520] border border-[#ff006650] rounded-lg hover:border-ap transition-colors"
+            className="flex items-center gap-1.5 px-3 h-8 bg-ap/10 border border-ap/30 rounded-lg hover:border-ap transition-colors"
           >
             <span className="text-ap font-bold text-xs">⚡</span>
             <span className="text-ap font-semibold text-xs">{ap.toLocaleString()} AP</span>
           </button>
 
           {/* GP Chip */}
-          <div className="flex items-center gap-1.5 px-3 h-8 bg-[#0a2010] border border-[#00ff8850] rounded-lg">
+          <div className="flex items-center gap-1.5 px-3 h-8 bg-gp/10 border border-gp/30 rounded-lg">
             <span className="text-gp font-bold text-xs">💎</span>
             <span className="text-gp font-semibold text-xs">{gp.toLocaleString()} GP</span>
           </div>
@@ -72,7 +72,7 @@ export function GNB() {
           {hasPass && (
             <button
               onClick={() => navigate('/app/season-pass')}
-              className="flex items-center gap-1 px-2.5 h-8 bg-[#1a1500] border border-[#ffd70050] rounded-lg hover:border-gold transition-colors"
+              className="flex items-center gap-1 px-2.5 h-8 bg-gold/10 border border-gold/30 rounded-lg hover:border-gold transition-colors"
             >
               <span className="text-[11px]">⭐</span>
               <span className="text-gold font-semibold text-[11px]">D-{passDays}</span>
@@ -108,8 +108,7 @@ export function GNB() {
           {/* Settings */}
           <button
             onClick={() => navigate('/app/settings')}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-elevated transition-colors"
-            style={{ color: location.pathname === '/app/settings' ? '#00f5ff' : '#7788a5' }}
+            className={`w-9 h-9 flex items-center justify-center rounded-lg hover:bg-elevated transition-colors ${location.pathname === '/app/settings' ? 'text-primary' : 'text-muted'}`}
             title="설정"
           >
             ⚙

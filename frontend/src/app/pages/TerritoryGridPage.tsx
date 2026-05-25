@@ -67,12 +67,13 @@ const GRID_DATA = generateGrid();
 export function TerritoryGridPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { ap, gp, useGP } = useApp();
+  const { ap, gp, spendGP } = useApp();
   const [territoryDetail, setTerritoryDetail] = useState<TerritoryDetailResponse | null>(null);
 
   useEffect(() => {
-    if (!id) return;
-    fetchTerritoryDetail(Number(id))
+    const numId = Number(id);
+    if (!id || isNaN(numId)) return;
+    fetchTerritoryDetail(numId)
       .then(setTerritoryDetail)
       .catch(() => {});
   }, [id]);
@@ -166,7 +167,7 @@ export function TerritoryGridPage() {
     if (!selectedBuilding) { setBuildError('건물을 선택해주세요.'); return; }
     if (!selectedCell) { setBuildError('그리드에서 빈 셀을 선택해주세요.'); return; }
     const cost = buildingCosts[selectedBuilding] ?? 0;
-    if (!useGP(cost)) { setBuildError(`GP가 부족합니다. (필요: ${cost} GP)`); return; }
+    if (!spendGP(cost)) { setBuildError(`GP가 부족합니다. (필요: ${cost} GP)`); return; }
     const maxHpMap: Partial<Record<BuildingType, number>> = { workshop: 200, barracks: 100, storage: 150, wall: 400, tower: 200 };
     const maxHp = maxHpMap[selectedBuilding] ?? 100;
     setGrid(prev => {

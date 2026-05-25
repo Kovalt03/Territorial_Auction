@@ -105,7 +105,7 @@ export function SiegePage() {
                 type="number"
                 value={targetInput}
                 onChange={e => { setTargetInput(e.target.value); setTargetTerritory(null); setTargetError(null); }}
-                onKeyDown={e => e.key === 'Enter' && void handleSearchTarget()}
+                onKeyDown={e => e.key === 'Enter' && !isSearching && void handleSearchTarget()}
                 placeholder="영토 ID 입력"
                 className="flex-1 bg-elevated border border-outline rounded-lg px-3 h-9 text-foreground text-xs outline-none focus:border-danger transition-colors"
               />

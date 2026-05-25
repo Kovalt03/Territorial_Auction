@@ -69,7 +69,7 @@ function buildGridFromIsland(island: IslandData): Cell[][] {
 
 export function PersonalIslandPage() {
   const navigate = useNavigate();
-  const { ap, gp, username, useGP } = useApp();
+  const { ap, gp, username, spendGP } = useApp();
   const { island } = useIsland();
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [showBuild, setShowBuild] = useState(false);
@@ -178,7 +178,7 @@ export function PersonalIslandPage() {
     if (!selectedBuilding) { setBuildError('건물을 선택해주세요.'); return; }
     if (!selectedCell) { setBuildError('그리드에서 빈 셀을 선택해주세요.'); return; }
     const cost = buildingCosts[selectedBuilding] ?? 0;
-    if (!useGP(cost)) { setBuildError(`GP가 부족합니다. (필요: ${cost} GP)`); return; }
+    if (!spendGP(cost)) { setBuildError(`GP가 부족합니다. (필요: ${cost} GP)`); return; }
     const maxHpMap: Partial<Record<BuildingType, number>> = {
       workshop: 200, barracks: 300, storage: 150, wall: 400, tower: 200,
       garden: 200, bank: 800, mine: 800,

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { useApp } from '../context/AppContext';
 import { signupApi, loginApi, checkUsernameApi } from '../api/auth';
 import { fetchMyProfile, fetchMyWallet } from '../api/user';
+import { ApiError } from '../api/client';
 import { GridBackground } from '../components/GridBackground';
 import { Button } from '../components/Button';
 
@@ -52,8 +53,7 @@ export function RegisterPage() {
       login(profile.nickname, { token: tokenData.accessToken, userId: profile.userId, ap: wallet.availableAP, gp: wallet.availableGP });
       setShowWelcome(true);
     } catch (e: unknown) {
-      const status = (e as { status?: number }).status;
-      if (status === 409) setError('이미 사용 중인 아이디 또는 이메일입니다.');
+      if (e instanceof ApiError && e.status === 409) setError('이미 사용 중인 아이디 또는 이메일입니다.');
       else setError('회원가입 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);

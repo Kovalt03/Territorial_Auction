@@ -83,7 +83,7 @@ export function ContinentPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const continent = CONTINENTS.find(c => c.id === id) || CONTINENTS[0];
-  const { ap, userId, useAP } = useApp();
+  const { ap, userId, spendAP } = useApp();
 
   const { territories, cols, rows, minX, minY, isLoading, error } = useGridMap(continent.dbId);
 
@@ -338,7 +338,7 @@ export function ContinentPage() {
                               setIsBidding(true);
                               try {
                                 await placeBidApi(selectedAuctionId, amt);
-                                useAP(amt);
+                                spendAP(amt);
                                 setBidInput('');
                                 setBidSuccess(true);
                                 setTimeout(() => setBidSuccess(false), 2500);

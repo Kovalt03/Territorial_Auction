@@ -19,7 +19,7 @@ interface TransferModal {
 }
 
 export function VaultPage() {
-  const { syncGP } = useApp();
+  const { gp, syncGP } = useApp();
   const { vault, territories, isLoading, error, updateVault } = useVault();
   const [transferModal, setTransferModal] = useState<TransferModal | null>(null);
   const [transferAmount, setTransferAmount] = useState('');
@@ -43,7 +43,8 @@ export function VaultPage() {
     try {
       const result = await transferGP(transferModal.direction, transferModal.territory.territoryId, amount);
       updateVault(result.vaultStoredAfter, result.nextTransferAvailableAt);
-      syncGP(result.vaultStoredAfter);
+      const delta = transferModal.direction === 'TO_VAULT' ? -amount : amount;
+      syncGP(gp + delta);
       setTransferModal(null);
     } catch {
       setTransferError('이전에 실패했습니다. 다시 시도해주세요.');

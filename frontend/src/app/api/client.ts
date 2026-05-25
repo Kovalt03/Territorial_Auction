@@ -36,7 +36,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (res.status !== 401) {
     if (!res.ok) {
-      throw new ApiError(res.statusText, res.status);
+      let message = res.statusText;
+      try { const b = await res.json(); if (b?.message) message = b.message; } catch { /* ignore */ }
+      throw new ApiError(message, res.status);
     }
     const body = await res.json();
     return body.data as T;
@@ -62,26 +64,27 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   isRefreshing = true;
+  let newToken: string;
   try {
-    const newToken = await tryRefresh();
-    isRefreshing = false;
-    drainQueue(newToken);
-    const retryHeaders = { ...headers, Authorization: `Bearer ${newToken}` };
-    const retryRes = await fetch(BASE + path, { ...options, headers: retryHeaders, credentials: 'include' });
-    if (!retryRes.ok) {
-      const error = new Error(retryRes.statusText);
-      (error as Error & { status: number }).status = retryRes.status;
-      throw error;
-    }
-    const body = await retryRes.json();
-    return body.data as T;
+    newToken = await tryRefresh();
   } catch {
     isRefreshing = false;
     drainQueue(null);
     localStorage.removeItem('accessToken');
     window.location.href = '/login';
-    throw new Error('Session expired');
+    throw new ApiError('Session expired', 401);
   }
+  isRefreshing = false;
+  drainQueue(newToken);
+  const retryHeaders = { ...headers, Authorization: `Bearer ${newToken}` };
+  const retryRes = await fetch(BASE + path, { ...options, headers: retryHeaders, credentials: 'include' });
+  if (!retryRes.ok) {
+    let retryMessage = retryRes.statusText;
+    try { const b = await retryRes.json(); if (b?.message) retryMessage = b.message; } catch { /* ignore */ }
+    throw new ApiError(retryMessage, retryRes.status);
+  }
+  const body = await retryRes.json();
+  return body.data as T;
 }
 
 export const apiClient = {

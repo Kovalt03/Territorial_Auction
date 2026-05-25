@@ -58,8 +58,8 @@ interface AppContextType extends AppState {
   syncAP: (amount: number) => void;
   syncGP: (amount: number) => void;
   syncPass: (hasPass: boolean, expiresAt: string | null) => void;
-  useAP: (amount: number) => boolean;
-  useGP: (amount: number) => boolean;
+  spendAP: (amount: number) => boolean;
+  spendGP: (amount: number) => boolean;
   toggleWishlist: (id: string) => void;
   placeBid: (id: string, amount: number) => void;
   sendMessage: (text: string) => void;
@@ -163,24 +163,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const useAP = (amount: number): boolean => {
-    let success = false;
-    setState(prev => {
-      if (prev.ap < amount) return prev;
-      success = true;
-      return { ...prev, ap: prev.ap - amount };
-    });
-    return success;
+  const spendAP = (amount: number): boolean => {
+    if (state.ap < amount) return false;
+    setState(prev => ({ ...prev, ap: prev.ap - amount }));
+    return true;
   };
 
-  const useGP = (amount: number): boolean => {
-    let success = false;
-    setState(prev => {
-      if (prev.gp < amount) return prev;
-      success = true;
-      return { ...prev, gp: prev.gp - amount };
-    });
-    return success;
+  const spendGP = (amount: number): boolean => {
+    if (state.gp < amount) return false;
+    setState(prev => ({ ...prev, gp: prev.gp - amount }));
+    return true;
   };
 
   const toggleWishlist = (id: string) => {
@@ -231,7 +223,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ ...state, login, logout, addAP, syncAP, syncGP, syncPass, useAP, useGP, toggleWishlist, placeBid, sendMessage, activatePass, decrementNotification, incrementNotification, resetNotifications }}>
+    <AppContext.Provider value={{ ...state, login, logout, addAP, syncAP, syncGP, syncPass, spendAP, spendGP, toggleWishlist, placeBid, sendMessage, activatePass, decrementNotification, incrementNotification, resetNotifications }}>
       {children}
     </AppContext.Provider>
   );
