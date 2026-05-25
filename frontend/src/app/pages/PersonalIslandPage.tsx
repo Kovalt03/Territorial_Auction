@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
-import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory } from '../api/island';
+import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland } from '../api/island';
 import type { InventoryItem, IslandData } from '../types/island';
 
 type BuildingType = 'castle' | 'workshop' | 'barracks' | 'storage' | 'wall' | 'tower' | 'garden' | 'bank' | 'lab' | 'port' | 'mine' | 'empty';
@@ -75,7 +75,7 @@ const BUILDING_TYPE_ID: Partial<Record<string, number>> = {
 export function PersonalIslandPage() {
   const navigate = useNavigate();
   const { ap, gp, username, syncGP } = useApp();
-  const { island } = useIsland();
+  const { island, reload: reloadIsland } = useIsland();
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [showBuild, setShowBuild] = useState(false);
   const [grid, setGrid] = useState<Cell[][]>(emptyGrid);
@@ -156,8 +156,11 @@ export function PersonalIslandPage() {
           next[y][x] = { type: itemType, level: 1, hp: 0, maxHp: 0, zone };
           return next;
         });
+        setInventory(prev => prev.filter((_, i) => i !== deployFromInventoryIdx));
         setDeployFromInventoryIdx(null);
-        reloadInventory();
+        placeFromInventoryOnIsland(item.inventoryId, x, y)
+          .then(() => reloadInventory())
+          .catch(() => { reloadInventory(); void reloadIsland(); });
       }
       return;
     }
