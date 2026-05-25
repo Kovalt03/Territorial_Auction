@@ -204,9 +204,10 @@ export function PersonalIslandPage() {
     setMoveMode(false);
     setMoveSourceCell(null);
     setDeployFromInventoryIdx(null);
+    setBuildPending(false);
   };
 
-  const handleCellClick = (x: number, y: number, cell: { type: BuildingType; level?: number; hp?: number; maxHp?: number; zone?: 1 | 2 | 3 }) => {
+  const handleCellClick = (x: number, y: number, cell: { type: BuildingType; level?: number; hp?: number; maxHp?: number; zone?: 1 | 2 | 3 | 4 }) => {
     if (buildPending) {
       if (cell.type === 'empty') {
         setSelectedCell({ x, y });
@@ -517,6 +518,15 @@ export function PersonalIslandPage() {
           <button onClick={cancelModes} className="h-7 px-3 rounded-lg border border-[#ffd70060] text-gold text-xs transition-colors">취소</button>
         </div>
       )}
+      {buildPending && (
+        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#001020', borderBottom: '1px solid #00f5ff60' }}>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">🏗</span>
+            <span className="font-semibold text-[13px]" style={{ color: '#00f5ff' }}>건설 위치 선택 — 빈 셀을 클릭하세요</span>
+          </div>
+          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border text-xs transition-colors" style={{ borderColor: '#00f5ff60', color: '#00f5ff' }}>취소</button>
+        </div>
+      )}
       {deployFromInventoryIdx !== null && inventory[deployFromInventoryIdx] && (
         <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#001a10', borderBottom: '1px solid #00ff8860' }}>
           <div className="flex items-center gap-2">
@@ -569,7 +579,7 @@ export function PersonalIslandPage() {
                 const isSelected = selectedCell?.x === x && selectedCell?.y === y;
                 const isMoveSource = moveSourceCell?.x === x && moveSourceCell?.y === y;
                 const isActionTarget = (moveMode || deployFromInventoryIdx !== null || buildPending) && cell.type === 'empty';
-                const zone = cell.zone || 3;
+                const zone = cell.zone || 4;
                 const bg = isMoveSource ? buildingColors[cell.type] + '80' : cell.type !== 'empty' ? buildingColors[cell.type] + '50' : showZones ? zoneOverlay[zone] : 'var(--color-surface)';
                 const hpPct = cell.hp && cell.maxHp ? cell.hp / cell.maxHp : 0;
                 const hpColor = hpPct > 0.7 ? '#00ff88' : hpPct > 0.4 ? '#ffd700' : '#ff3333';
@@ -726,7 +736,18 @@ export function PersonalIslandPage() {
           </div>
 
           <div className="p-3 border-t border-outline space-y-2">
-            <button onClick={() => { setSelectedCell(null); setShowBuild(true); }} className="w-full h-9 border border-primary rounded-xl text-primary text-xs hover:bg-primary/10 transition-colors">🏗 건물 건설</button>
+            <button
+              onClick={() => {
+                const cell = selectedCell ? grid[selectedCell.y]?.[selectedCell.x] : null;
+                if (cell?.type === 'empty') {
+                  setShowBuild(true);
+                } else {
+                  cancelModes();
+                  setBuildPending(true);
+                }
+              }}
+              className="w-full h-9 border border-primary rounded-xl text-primary text-xs hover:bg-primary/10 transition-colors"
+            >🏗 건물 건설</button>
             <button
               onClick={() => setShowInventory(true)}
               className="relative w-full h-9 border border-secondary text-secondary rounded-xl text-xs transition-colors hover:bg-[#8b50ff20]"
@@ -772,38 +793,47 @@ export function PersonalIslandPage() {
               <button onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} className="btn-close">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {[
-                { type: 'workshop' as BuildingType, name: '생산소 (Workshop)', desc: 'GP 생산 +20/분', cost: '500 GP' },
-                { type: 'barracks' as BuildingType, name: '병영 (Barracks)', desc: '유닛 훈련 및 배치', cost: '800 GP' },
-                { type: 'storage' as BuildingType, name: '저장소 (Storage)', desc: '자원 1,000 GP 보관', cost: '300 GP' },
-                { type: 'wall' as BuildingType, name: '방벽 (Wall)', desc: 'Zone 방어력 +50', cost: '100 GP' },
-                { type: 'tower' as BuildingType, name: '방어탑 (Tower)', desc: '자동 방어 공격', cost: '400 GP' },
-                { type: 'garden' as BuildingType, name: '정원 (Garden)', desc: '행복도 +5, GP 보너스 +3%', cost: '200 GP' },
-                { type: 'bank' as BuildingType, name: '금고 (Bank)', desc: 'GP 이자 +22/분', cost: '2,000 GP' },
-                { type: 'mine' as BuildingType, name: '광산 (Mine)', desc: 'GP 채굴 +35/분', cost: '1,500 GP' },
-              ].map(b => {
+              {([
+                { type: 'workshop' as BuildingType, name: '생산소 (Workshop)', desc: 'GP 생산 +20/분', cost: '500 GP', available: true },
+                { type: 'barracks' as BuildingType, name: '병영 (Barracks)', desc: '유닛 훈련 및 배치', cost: '800 GP', available: true },
+                { type: 'storage' as BuildingType, name: '저장소 (Storage)', desc: '자원 1,000 GP 보관', cost: '300 GP', available: true },
+                { type: 'wall' as BuildingType, name: '방벽 (Wall)', desc: 'Zone 방어력 +50', cost: '100 GP', available: true },
+                { type: 'tower' as BuildingType, name: '방어탑 (Tower)', desc: '자동 방어 공격', cost: '400 GP', available: true },
+                { type: 'garden' as BuildingType, name: '정원 (Garden)', desc: '행복도 +5, GP 보너스 +3%', cost: '200 GP', available: false },
+                { type: 'bank' as BuildingType, name: '금고 (Bank)', desc: 'GP 이자 +22/분', cost: '2,000 GP', available: false },
+                { type: 'mine' as BuildingType, name: '광산 (Mine)', desc: 'GP 채굴 +35/분', cost: '1,500 GP', available: false },
+              ] as const).map(b => {
                 const isSelected = selectedBuilding === b.type;
+                const color = buildingColors[b.type];
                 return (
                   <div
                     key={b.type}
-                    onClick={() => setSelectedBuilding(b.type)}
-                    className="rounded-xl p-3 flex items-center gap-3 border cursor-pointer transition-all"
+                    onClick={() => b.available && setSelectedBuilding(b.type)}
+                    className="rounded-xl p-3 flex items-center gap-3 border transition-all"
                     style={{
-                      background: isSelected ? buildingColors[b.type] + '20' : '#2a3050',
-                      borderColor: isSelected ? buildingColors[b.type] : buildingColors[b.type] + '60',
-                      boxShadow: isSelected ? `0 0 8px ${buildingColors[b.type]}40` : undefined,
+                      background: !b.available ? '#1a1f35' : isSelected ? color + '20' : '#2a3050',
+                      borderColor: !b.available ? '#2a3050' : isSelected ? color : color + '60',
+                      boxShadow: isSelected ? `0 0 8px ${color}40` : undefined,
+                      cursor: b.available ? 'pointer' : 'not-allowed',
+                      opacity: b.available ? 1 : 0.5,
                     }}
                   >
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: buildingColors[b.type] + '25' }}>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color + '25' }}>
                       <span className="text-[22px]">{buildingLabels[b.type]}</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-foreground font-semibold text-[13px]">{b.name}</p>
+                      <p className="font-semibold text-[13px]" style={{ color: b.available ? '#e0e8ff' : '#7788a5' }}>{b.name}</p>
                       <p className="text-muted text-[11px]">{b.desc}</p>
                     </div>
-                    <div className="border rounded px-2 py-1" style={{ background: isSelected ? buildingColors[b.type] + '30' : '#1a1f35', borderColor: buildingColors[b.type] }}>
-                      <span className="text-xs" style={{ color: buildingColors[b.type] }}>{b.cost}</span>
-                    </div>
+                    {b.available ? (
+                      <div className="border rounded px-2 py-1" style={{ background: isSelected ? color + '30' : '#1a1f35', borderColor: color }}>
+                        <span className="text-xs" style={{ color }}>{b.cost}</span>
+                      </div>
+                    ) : (
+                      <div className="border rounded px-2 py-1" style={{ background: '#1a1f35', borderColor: '#354064' }}>
+                        <span className="text-xs text-muted">준비 중</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
