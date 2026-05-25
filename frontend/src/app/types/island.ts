@@ -16,3 +16,20 @@ export interface IslandData {
   productionRate: number;
   buildings: IslandBuilding[];
 }
+
+export interface PlaceIslandBuildingResponse {
+  buildingId: number;
+  type: string;
+  posX: number;
+  posY: number;
+  gpRemaining: number;
+}
+
+export interface InventoryItem {
+  inventoryId: number;
+  buildingTypeId: number;
+  buildingTypeName: string;
+  buildingType: string;
+  quantity: number;
+  acquiredAt: string;
+}

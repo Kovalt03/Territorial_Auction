@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
-import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi } from '../api/island';
-import type { IslandData } from '../types/island';
+import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory } from '../api/island';
+import type { InventoryItem, IslandData } from '../types/island';
 
 type BuildingType = 'castle' | 'workshop' | 'barracks' | 'storage' | 'wall' | 'tower' | 'garden' | 'bank' | 'lab' | 'port' | 'mine' | 'empty';
 
@@ -67,9 +67,14 @@ function buildGridFromIsland(island: IslandData): Cell[][] {
   return grid;
 }
 
+// 백엔드 building_types 시드 순서 기준 ID 매핑 (building-types.yml)
+const BUILDING_TYPE_ID: Partial<Record<string, number>> = {
+  castle: 1, storage: 2, workshop: 3, barracks: 4, wall: 5, tower: 6,
+};
+
 export function PersonalIslandPage() {
   const navigate = useNavigate();
-  const { ap, gp, username, spendGP } = useApp();
+  const { ap, gp, username, syncGP } = useApp();
   const { island } = useIsland();
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [showBuild, setShowBuild] = useState(false);
@@ -90,10 +95,16 @@ export function PersonalIslandPage() {
   const [moveMode, setMoveMode] = useState(false);
   const [moveSourceCell, setMoveSourceCell] = useState<{ x: number; y: number } | null>(null);
 
-  // Inventory
-  const [inventory, setInventory] = useState<{ type: BuildingType; level: number; hp: number; maxHp: number }[]>([]);
+  // Inventory (서버 보관함)
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [showInventory, setShowInventory] = useState(false);
   const [deployFromInventoryIdx, setDeployFromInventoryIdx] = useState<number | null>(null);
+
+  const reloadInventory = useCallback(() => {
+    fetchBuildingInventory().then(setInventory).catch(() => {});
+  }, []);
+
+  useEffect(() => { reloadInventory(); }, [reloadInventory]);
 
   const selectedCellData = selectedCell ? grid[selectedCell.y]?.[selectedCell.x] : null;
 
@@ -125,15 +136,16 @@ export function PersonalIslandPage() {
     if (deployFromInventoryIdx !== null) {
       if (cell.type === 'empty') {
         const item = inventory[deployFromInventoryIdx];
+        const itemType = item.buildingType.toLowerCase() as BuildingType;
         const zone = grid[y][x].zone;
-        if (item.type === 'castle' && zone !== 1) return;
+        if (itemType === 'castle' && zone !== 1) return;
         setGrid(prev => {
           const next = prev.map(row => row.map(c => ({ ...c })));
-          next[y][x] = { type: item.type, level: item.level, hp: item.hp, maxHp: item.maxHp, zone };
+          next[y][x] = { type: itemType, level: 1, hp: 0, maxHp: 0, zone };
           return next;
         });
-        setInventory(prev => prev.filter((_, i) => i !== deployFromInventoryIdx));
         setDeployFromInventoryIdx(null);
+        reloadInventory();
       }
       return;
     }
@@ -157,9 +169,10 @@ export function PersonalIslandPage() {
     const cell = grid[selectedCell.y][selectedCell.x];
     if (cell.type === 'castle') return;
     if (cell.buildingId) {
-      storeBuildingApi(cell.buildingId).catch(() => {});
+      storeBuildingApi(cell.buildingId)
+        .then(() => reloadInventory())
+        .catch(() => {});
     }
-    setInventory(prev => [...prev, { type: cell.type, level: cell.level ?? 1, hp: cell.hp ?? 0, maxHp: cell.maxHp ?? 0 }]);
     setGrid(prev => {
       const next = prev.map(row => row.map(c => ({ ...c })));
       next[selectedCell.y][selectedCell.x] = { type: 'empty', zone: next[selectedCell.y][selectedCell.x].zone };
@@ -168,30 +181,38 @@ export function PersonalIslandPage() {
     setShowBuildingAction(false);
   };
 
-  const buildingCosts: Partial<Record<BuildingType, number>> = {
-    workshop: 500, barracks: 800, storage: 300, wall: 100, tower: 400,
-    garden: 200, bank: 2000, mine: 1500,
-  };
+  const [isBuilding, setIsBuilding] = useState(false);
 
-  const handleBuild = () => {
+  const handleBuild = async () => {
     setBuildError('');
     if (!selectedBuilding) { setBuildError('건물을 선택해주세요.'); return; }
     if (!selectedCell) { setBuildError('그리드에서 빈 셀을 선택해주세요.'); return; }
-    const cost = buildingCosts[selectedBuilding] ?? 0;
-    if (!spendGP(cost)) { setBuildError(`GP가 부족합니다. (필요: ${cost} GP)`); return; }
-    const maxHpMap: Partial<Record<BuildingType, number>> = {
-      workshop: 200, barracks: 300, storage: 150, wall: 400, tower: 200,
-      garden: 200, bank: 800, mine: 800,
-    };
-    const maxHp = maxHpMap[selectedBuilding] ?? 100;
-    const zone = selectedCellData?.zone ?? 4;
-    setGrid(prev => {
-      const next = prev.map(row => row.map(cell => ({ ...cell })));
-      next[selectedCell.y][selectedCell.x] = { type: selectedBuilding, level: 1, hp: maxHp, maxHp, zone };
-      return next;
-    });
-    setSelectedBuilding(null);
-    setShowBuild(false);
+    const typeId = BUILDING_TYPE_ID[selectedBuilding];
+    if (!typeId) { setBuildError('아직 건설할 수 없는 건물입니다.'); return; }
+    setIsBuilding(true);
+    try {
+      const result = await placeIslandBuilding(typeId, selectedCell.x, selectedCell.y);
+      syncGP(result.gpRemaining);
+      const zone = selectedCellData?.zone ?? 4;
+      setGrid(prev => {
+        const next = prev.map(row => row.map(cell => ({ ...cell })));
+        next[selectedCell.y][selectedCell.x] = {
+          type: result.type.toLowerCase() as BuildingType,
+          level: 1,
+          hp: 0,
+          maxHp: 0,
+          buildingId: result.buildingId,
+          zone,
+        };
+        return next;
+      });
+      setSelectedBuilding(null);
+      setShowBuild(false);
+    } catch {
+      setBuildError('건설에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsBuilding(false);
+    }
   };
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -344,7 +365,7 @@ export function PersonalIslandPage() {
             <span className="text-sm">📦</span>
             <span className="text-gp font-semibold text-[13px]">
               배치 모드 — 배치할 빈 셀을 클릭하세요
-              <span className="text-muted ml-2 text-[11px]">({buildingNames[inventory[deployFromInventoryIdx].type]})</span>
+              <span className="text-muted ml-2 text-[11px]">({inventory[deployFromInventoryIdx].buildingTypeName})</span>
             </span>
           </div>
           <button onClick={cancelModes} className="h-7 px-3 rounded-lg border border-[#00ff8860] text-gp text-xs transition-colors">취소</button>
@@ -629,14 +650,14 @@ export function PersonalIslandPage() {
                 취소
               </button>
               <button
-                onClick={handleBuild}
-                disabled={!selectedBuilding}
+                onClick={() => void handleBuild()}
+                disabled={!selectedBuilding || isBuilding}
                 className="flex-1 h-12 rounded-xl font-bold text-sm transition-all"
                 style={{
-                  background: selectedBuilding ? '#00ff88' : '#2a3050',
-                  color: selectedBuilding ? '#0a0e1a' : '#7788a5',
-                  border: selectedBuilding ? 'none' : '1px solid #354064',
-                  cursor: selectedBuilding ? 'pointer' : 'not-allowed',
+                  background: selectedBuilding && !isBuilding ? '#00ff88' : '#2a3050',
+                  color: selectedBuilding && !isBuilding ? '#0a0e1a' : '#7788a5',
+                  border: selectedBuilding && !isBuilding ? 'none' : '1px solid #354064',
+                  cursor: selectedBuilding && !isBuilding ? 'pointer' : 'not-allowed',
                 }}
               >
                 건설하기
@@ -738,20 +759,16 @@ export function PersonalIslandPage() {
               ) : (
                 <div className="space-y-2">
                   {inventory.map((item, idx) => {
-                    const color = buildingColors[item.type];
-                    const hpPct = item.maxHp > 0 ? item.hp / item.maxHp : 0;
+                    const itemType = item.buildingType.toLowerCase() as BuildingType;
+                    const color = buildingColors[itemType] ?? '#8892b0';
                     return (
-                      <div key={idx} className="rounded-xl p-3 flex items-center gap-3" style={{ background: '#2a3050', border: `1px solid ${color}50` }}>
+                      <div key={item.inventoryId} className="rounded-xl p-3 flex items-center gap-3" style={{ background: '#2a3050', border: `1px solid ${color}50` }}>
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color + '25', border: `1px solid ${color}60` }}>
-                          <span className="text-[22px]">{buildingLabels[item.type]}</span>
+                          <span className="text-[22px]">{buildingLabels[itemType] ?? '🏗'}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm" style={{ color }}>{buildingNames[item.type]}</p>
-                          <p className="text-muted text-[11px]">Lv.{item.level}</p>
-                          <div className="mt-1 h-1.5 bg-panel rounded-full overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${hpPct * 100}%`, background: color }} />
-                          </div>
-                          <span className="text-muted text-[9px]">HP {item.hp}/{item.maxHp}</span>
+                          <p className="font-semibold text-sm" style={{ color }}>{item.buildingTypeName}</p>
+                          <p className="text-muted text-[11px]">수량: {item.quantity}개</p>
                         </div>
                         <button
                           onClick={() => { setDeployFromInventoryIdx(idx); setShowInventory(false); }}
