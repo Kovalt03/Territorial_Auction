@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { loginApi } from '../api/auth';
 import { fetchMyProfile, fetchMyWallet } from '../api/user';
 import { GridBackground } from '../components/GridBackground';
+import { Button } from '../components/Button';
 import { useApp } from '../context/AppContext';
 
 export function LoginPage() {
@@ -42,29 +43,29 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] relative flex items-center justify-center overflow-hidden">
+    <div className="min-h-screen bg-surface relative flex items-center justify-center overflow-hidden">
       <GridBackground />
 
-      <div className="absolute w-[500px] h-[600px] bg-[#00f5ff] opacity-[0.04] rounded-full blur-3xl" />
+      <div className="absolute w-[500px] h-[600px] bg-primary opacity-[0.04] rounded-full blur-3xl" />
 
-      <div className="relative bg-[#1a1f35] border-[1.5px] border-[#00f5ff] rounded-2xl w-[380px] overflow-hidden shadow-2xl" style={{ boxShadow: '0 0 40px #00f5ff15' }}>
+      <div className="relative bg-panel border-[1.5px] border-primary rounded-2xl w-full max-w-[380px] mx-4 overflow-hidden shadow-2xl" style={{ boxShadow: '0 0 40px #00f5ff15' }}>
         <div className="pt-8 pb-4 flex flex-col items-center">
-          <div className="w-16 h-16 bg-[#00f5ff15] border-2 border-[#00f5ff] rounded-2xl flex items-center justify-center mb-3">
+          <div className="w-16 h-16 bg-[#00f5ff15] border-2 border-primary rounded-2xl flex items-center justify-center mb-3">
             <span className="text-[32px]">⬡</span>
           </div>
-          <h1 className="text-[#00f5ff] font-bold text-[22px]">픽셀 경매</h1>
-          <p className="text-[#7788a5] text-xs">PIXEL AUCTION · 사이버 영토 전쟁</p>
+          <h1 className="text-primary font-bold text-[22px]">픽셀 경매</h1>
+          <p className="text-muted text-xs">PIXEL AUCTION · 사이버 영토 전쟁</p>
         </div>
 
         <div className="px-8 pb-8">
           <div className="bg-[#2a1500] border border-[#ffd70060] rounded-xl px-4 py-2.5 mb-5 flex items-center gap-2">
             <span className="text-base">🎁</span>
-            <span className="text-[#ffd700] text-xs">신규 가입 시 1,000 AP 즉시 지급!</span>
+            <span className="text-gold text-xs">신규 가입 시 1,000 AP 즉시 지급!</span>
           </div>
 
           {error && (
-            <div className="bg-[#ff333320] border border-[#ff3333] rounded-lg px-3 py-2 mb-3">
-              <span className="text-[#ff3333] text-xs">{error}</span>
+            <div className="bg-danger/10 border border-danger rounded-lg px-3 py-2 mb-3">
+              <span className="text-danger text-xs">{error}</span>
             </div>
           )}
 
@@ -75,7 +76,7 @@ export function LoginPage() {
             onChange={e => setEmail(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
             placeholder="이메일을 입력하세요"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-lg px-4 h-11 text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4 text-sm"
+            className="w-full bg-elevated border border-outline rounded-lg px-4 h-11 text-foreground outline-none focus:border-primary transition-colors mb-4 text-sm"
           />
 
           <label className="form-label">비밀번호</label>
@@ -85,27 +86,32 @@ export function LoginPage() {
             onChange={e => setPw(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
             placeholder="비밀번호를 입력하세요"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-lg px-4 h-11 text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-5 text-sm"
+            className="w-full bg-elevated border border-outline rounded-lg px-4 h-11 text-foreground outline-none focus:border-primary transition-colors mb-5 text-sm"
           />
 
-          <button
+          <Button
             onClick={handleLogin}
             disabled={isSubmitting}
-            className="w-full h-12 bg-[#00f5ff] rounded-xl text-[#0a0e1a] font-bold hover:brightness-110 transition-all active:scale-[0.98] mb-3 disabled:opacity-60 text-base"
+            size="lg"
+            fullWidth
+            className="mb-3"
           >
             {isSubmitting ? '로그인 중...' : '로그인'}
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
             onClick={() => navigate('/register')}
-            className="w-full h-11 bg-[#2a3050] border border-[#354064] rounded-xl text-[#e0e8ff] hover:bg-[#354064] transition-colors mb-3 text-sm"
+            size="md"
+            fullWidth
+            className="mb-3"
           >
             회원가입
-          </button>
+          </Button>
 
           <button
             onClick={handleGuest}
-            className="w-full text-center text-[#7788a5] hover:text-[#e0e8ff] transition-colors text-xs"
+            className="w-full text-center text-muted hover:text-foreground transition-colors text-xs"
           >
             게스트로 둘러보기 →
           </button>

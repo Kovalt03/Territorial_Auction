@@ -53,39 +53,39 @@ export function ItemShopPage() {
 
       <div className="page-body">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-[#e0e8ff] font-bold text-[26px]">🛍  아이템 샵</h1>
+          <h1 className="text-foreground font-bold text-[26px]">🛍  아이템 샵</h1>
           <div className="flex gap-3">
-            <div className="bg-[#2a3050] border border-[#ff0066] rounded-lg px-4 py-2 flex items-center gap-2">
-              <span className="text-[#ff0066] font-semibold text-sm">⚡ {ap.toLocaleString()} AP</span>
+            <div className="bg-elevated border border-ap rounded-lg px-4 py-2 flex items-center gap-2">
+              <span className="text-ap font-semibold text-sm">⚡ {ap.toLocaleString()} AP</span>
             </div>
-            <div className="bg-[#2a3050] border border-[#00ff88] rounded-lg px-4 py-2 flex items-center gap-2">
-              <span className="text-[#00ff88] font-semibold text-sm">💎 {gp.toLocaleString()} GP</span>
+            <div className="bg-elevated border border-gp rounded-lg px-4 py-2 flex items-center gap-2">
+              <span className="text-gp font-semibold text-sm">💎 {gp.toLocaleString()} GP</span>
             </div>
           </div>
         </div>
 
         {(error || purchaseError) && (
-          <div className="bg-[#ffd70010] border border-[#ffd70040] rounded-xl px-4 py-2.5 mb-4">
-            <span className="text-[#ffd700] text-xs">⚠ {purchaseError ?? error}</span>
+          <div className="bg-gold/10 border border-gold/25 rounded-xl px-4 py-2.5 mb-4">
+            <span className="text-gold text-xs">⚠ {purchaseError ?? error}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="bg-[#00ff8820] border border-[#00ff88] rounded-xl px-4 py-3 mb-4">
-            <span className="text-[#00ff88] text-[13px]">✓ {successMsg}</span>
+          <div className="bg-gp/10 border border-gp rounded-xl px-4 py-3 mb-4">
+            <span className="text-gp text-[13px]">✓ {successMsg}</span>
           </div>
         )}
 
         {isLoading ? (
           <div className="grid grid-cols-2 gap-4">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-[#1a1f35] border border-[#354064] rounded-2xl p-5 h-36 animate-pulse">
+              <div key={i} className="bg-panel border border-outline rounded-2xl p-5 h-36 animate-pulse">
                 <div className="flex gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-[#2a3050]" />
+                  <div className="w-16 h-16 rounded-2xl bg-elevated" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-[#2a3050] rounded w-32" />
-                    <div className="h-3 bg-[#2a3050] rounded w-24" />
-                    <div className="h-6 bg-[#2a3050] rounded w-20" />
+                    <div className="h-4 bg-elevated rounded w-32" />
+                    <div className="h-3 bg-elevated rounded w-24" />
+                    <div className="h-6 bg-elevated rounded w-20" />
                   </div>
                 </div>
               </div>
@@ -97,7 +97,7 @@ export function ItemShopPage() {
               const meta = itemMeta(item.itemType);
               const isExhausted = item.dailyLimit != null && item.myInventory >= item.dailyLimit;
               return (
-                <div key={item.itemId} className="bg-[#1a1f35] border rounded-2xl overflow-hidden"
+                <div key={item.itemId} className="bg-panel border rounded-2xl overflow-hidden"
                   style={{ borderColor: meta.color + '80' }}>
                   <div className="p-5 flex items-start gap-4">
                     <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
@@ -105,11 +105,11 @@ export function ItemShopPage() {
                       <span className="text-[28px]">{meta.icon}</span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-[#e0e8ff] font-bold mb-1 text-base">{item.name}</h3>
-                      <p className="text-[#7788a5] mb-2 text-[13px]">{item.description}</p>
+                      <h3 className="text-foreground font-bold mb-1 text-base">{item.name}</h3>
+                      <p className="text-muted mb-2 text-[13px]">{item.description}</p>
                       {item.dailyLimit != null && (
-                        <div className="bg-[#2a3050] border border-[#354064] rounded px-2 py-1 inline-block mb-2">
-                          <span className="text-[#ffd700] text-[11px]">
+                        <div className="bg-elevated border border-outline rounded px-2 py-1 inline-block mb-2">
+                          <span className="text-gold text-[11px]">
                             일 {item.dailyLimit}회 한도 (오늘 {item.myInventory}/{item.dailyLimit}회)
                           </span>
                         </div>
@@ -123,10 +123,10 @@ export function ItemShopPage() {
                         )}
                         {item.costGP != null && (
                           <>
-                            {item.costAP != null && <span className="text-[#7788a5] text-xs">또는</span>}
+                            {item.costAP != null && <span className="text-muted text-xs">또는</span>}
                             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
                               style={{ background: '#00f5ff20', border: '1px solid #00f5ff' }}>
-                              <span className="font-bold text-[#00f5ff] text-base">{item.costGP} GP</span>
+                              <span className="font-bold text-primary text-base">{item.costGP} GP</span>
                             </div>
                           </>
                         )}
@@ -135,7 +135,7 @@ export function ItemShopPage() {
                     <button
                       onClick={() => setConfirmItem(item)}
                       disabled={isExhausted || isPurchasing}
-                      className="h-10 px-5 rounded-xl font-bold text-sm text-[#0a0e1a] transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-10 px-5 rounded-xl font-bold text-sm text-surface transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ background: meta.color }}>
                       구매
                     </button>
@@ -146,8 +146,8 @@ export function ItemShopPage() {
           </div>
         )}
 
-        <div className="mt-6 bg-[#2a3050] border border-[#354064] rounded-xl p-4">
-          <p className="text-[#7788a5]" style={{ fontSize: 12 }}>
+        <div className="mt-6 bg-elevated border border-outline rounded-xl p-4">
+          <p className="text-muted" style={{ fontSize: 12 }}>
             💡 구매한 아이템은 마이페이지 &gt; 아이템 탭에서 확인하실 수 있습니다.
             GP 구매권은 매일 자정에 횟수가 초기화됩니다.
           </p>
@@ -156,17 +156,17 @@ export function ItemShopPage() {
 
       {confirmItem && (
         <div className="modal-overlay">
-          <div className="bg-[#1a1f35] rounded-2xl p-8 max-w-sm mx-4 text-center"
+          <div className="bg-panel rounded-2xl p-8 max-w-sm mx-4 text-center"
             style={{ border: `2px solid ${itemMeta(confirmItem.itemType).color}` }}>
             <span className="text-[40px]">{itemMeta(confirmItem.itemType).icon}</span>
-            <h3 className="text-[#e0e8ff] font-bold text-xl mt-3 mb-2">{confirmItem.name}</h3>
-            <p className="text-[#7788a5] mb-5 text-[13px]">{confirmItem.description}</p>
-            <div className="bg-[#2a3050] rounded-xl py-4 mb-6">
-              <p className="text-[#7788a5] text-xs">차감 금액</p>
+            <h3 className="text-foreground font-bold text-xl mt-3 mb-2">{confirmItem.name}</h3>
+            <p className="text-muted mb-5 text-[13px]">{confirmItem.description}</p>
+            <div className="bg-elevated rounded-xl py-4 mb-6">
+              <p className="text-muted text-xs">차감 금액</p>
               <p className="font-bold text-[24px]" style={{ color: itemMeta(confirmItem.itemType).color }}>
                 {confirmItem.costAP != null ? `${confirmItem.costAP} AP` : `${confirmItem.costGP} GP`}
               </p>
-              <p className="text-[#7788a5] text-[11px]">
+              <p className="text-muted text-[11px]">
                 잔여: {confirmItem.costAP != null
                   ? `${ap.toLocaleString()} → ${(ap - (confirmItem.costAP ?? 0)).toLocaleString()} AP`
                   : `${gp.toLocaleString()} → ${(gp - (confirmItem.costGP ?? 0)).toLocaleString()} GP`}
@@ -177,7 +177,7 @@ export function ItemShopPage() {
                 className="btn-cancel">취소</button>
               <button onClick={() => void handlePurchase(confirmItem)}
                 disabled={isPurchasing}
-                className="flex-1 h-11 rounded-xl text-[#0a0e1a] font-bold text-sm disabled:opacity-50"
+                className="flex-1 h-11 rounded-xl text-surface font-bold text-sm disabled:opacity-50"
                 style={{ background: itemMeta(confirmItem.itemType).color }}>
                 {isPurchasing ? '처리중...' : '구매하기'}
               </button>

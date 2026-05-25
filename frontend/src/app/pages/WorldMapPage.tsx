@@ -240,7 +240,7 @@ export function WorldMapPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#060a14] overflow-hidden">
+    <div className="flex flex-col h-screen bg-surface overflow-hidden">
       <GNB />
 
       <div className="flex flex-1 overflow-hidden">
@@ -261,31 +261,28 @@ export function WorldMapPage() {
           {/* Zoom controls */}
           <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5">
             <button onClick={() => setZoom(z => Math.min(4, z * 1.2))}
-              className="w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white hover:border-[#00f5ff] transition-colors flex items-center justify-center"
-              style={{ fontSize: 14 }}>+</button>
+              className="w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-muted hover:text-white hover:border-primary transition-colors flex items-center justify-center text-sm">+</button>
             <button onClick={() => setZoom(z => Math.max(0.4, z / 1.2))}
-              className="w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white hover:border-[#00f5ff] transition-colors flex items-center justify-center"
-              style={{ fontSize: 14 }}>−</button>
+              className="w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-muted hover:text-white hover:border-primary transition-colors flex items-center justify-center text-sm">−</button>
             <button onClick={() => { const { z, x, y } = getFitView(); setZoom(z); setPan({ x, y }); }}
-              className="w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white hover:border-[#00f5ff] transition-colors flex items-center justify-center"
-              style={{ fontSize: 12 }}>⊡</button>
+              className="w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-muted hover:text-white hover:border-primary transition-colors flex items-center justify-center text-xs">⊡</button>
             <div className="bg-[#10192e] border border-[#2a3a5a] rounded px-2 h-7 flex items-center">
-              <span className="text-[#4a5a7a]" style={{ fontSize: 10 }}>{Math.round(zoom * 100)}%</span>
+              <span className="text-muted text-[10px]">{Math.round(zoom * 100)}%</span>
             </div>
           </div>
 
           {/* Hint */}
-          <div className="absolute bottom-3 left-3 z-10 text-[#2a3a5a]" style={{ fontSize: 10 }}>
+          <div className="absolute bottom-3 left-3 z-10 text-[#2a3a5a] text-[10px]">
             스크롤로 줌 · 드래그로 이동 · 대륙 클릭으로 진입
           </div>
 
           {/* Chat FAB */}
           <button
             onClick={() => setShowChat(v => !v)}
-            className="absolute bottom-4 right-4 z-20 w-12 h-12 bg-[#00f5ff] rounded-full flex items-center justify-center shadow-lg hover:brightness-110 transition-all"
+            className="absolute bottom-4 right-4 z-20 w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg hover:brightness-110 transition-all text-xl"
             style={{ boxShadow: '0 0 20px #00f5ff40' }}
           >
-            <span style={{ fontSize: 20 }}>💬</span>
+            💬
           </button>
 
           {/* Map SVG */}
@@ -419,14 +416,14 @@ export function WorldMapPage() {
         {showChat && (
           <div className="flex-shrink-0 w-[280px] bg-[#080d1a] border-l border-[#1a2438] flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a2438]">
-              <span className="text-[#c0ccdd] font-semibold" style={{ fontSize: 14 }}>💬 채팅</span>
-              <button onClick={() => setShowChat(false)} className="text-[#4a5a7a] hover:text-[#c0ccdd]">✕</button>
+              <span className="text-[#c0ccdd] font-semibold text-sm">💬 채팅</span>
+              <button onClick={() => setShowChat(false)} className="text-muted hover:text-[#c0ccdd]">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {messages.map(msg => (
                 <div key={msg.id} className="text-xs">
                   <span style={{ color: msg.user === '시스템' ? '#ffd700' : '#00f5ff', fontWeight: 600 }}>{msg.user}</span>
-                  <span className="text-[#4a5a7a]"> {msg.time}</span>
+                  <span className="text-muted"> {msg.time}</span>
                   <p className="text-[#c0ccdd] mt-0.5">{msg.message}</p>
                 </div>
               ))}
@@ -437,12 +434,11 @@ export function WorldMapPage() {
                 onChange={e => setChatInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && sendChat()}
                 placeholder="메시지 입력..."
-                className="flex-1 h-8 bg-[#12192c] border border-[#1e2a3d] rounded-lg px-3 text-[#c0ccdd] outline-none focus:border-[#00f5ff] transition-colors"
-                style={{ fontSize: 12 }}
+                className="flex-1 h-8 bg-[#12192c] border border-[#1e2a3d] rounded-lg px-3 text-[#c0ccdd] outline-none focus:border-primary transition-colors text-xs"
               />
               <button
                 onClick={sendChat}
-                className="w-8 h-8 bg-[#00f5ff] rounded-lg text-[#060a14] font-bold flex items-center justify-center"
+                className="w-8 h-8 bg-primary rounded-lg text-[#060a14] font-bold flex items-center justify-center"
               >
                 →
               </button>

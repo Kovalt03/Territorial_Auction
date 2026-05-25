@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import { logoutApi } from '../api/auth';
 import { fetchSettings, updateSettings, changePassword, deleteAccount } from '../api/user';
 import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
 
 type Section = 'notifications' | 'security' | 'account';
 
@@ -142,8 +143,8 @@ export function SettingsPage() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-[220px] flex-shrink-0 flex flex-col py-6 px-3 gap-1 bg-[#0a0e1a] border-r border-[#354064]">
-          <p className="text-[#7788a5] font-semibold px-3 mb-3 text-[11px] tracking-[0.08em]">
+        <aside className="w-[220px] flex-shrink-0 flex flex-col py-6 px-3 gap-1 bg-surface border-r border-outline">
+          <p className="text-muted font-semibold px-3 mb-3 text-[11px] tracking-[0.08em]">
             설정
           </p>
           {sidebarItems.map(item => (
@@ -152,8 +153,8 @@ export function SettingsPage() {
               onClick={() => setActiveSection(item.id)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left w-full text-[13px] border ${
                 activeSection === item.id
-                  ? 'bg-[#00f5ff15] text-[#00f5ff] border-[#00f5ff30] font-semibold'
-                  : 'text-[#7788a5] border-transparent'
+                  ? 'bg-primary/10 text-primary border-primary/20 font-semibold'
+                  : 'text-muted border-transparent'
               }`}
             >
               <span className="text-base">{item.icon}</span>
@@ -166,7 +167,7 @@ export function SettingsPage() {
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left w-full text-[#ff3333] border border-transparent text-[13px] hover:bg-[#ff333315] disabled:opacity-50"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left w-full text-danger border border-transparent text-[13px] hover:bg-danger/10 disabled:opacity-50"
           >
             <span className="text-base">🚪</span>
             {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
@@ -180,12 +181,12 @@ export function SettingsPage() {
             {/* 알림 설정 */}
             {activeSection === 'notifications' && (
               <div>
-                <h2 className="text-[#e0e8ff] font-bold mb-1 text-xl">알림 설정</h2>
-                <p className="text-[#7788a5] mb-6 text-[13px]">
+                <h2 className="text-foreground font-bold mb-1 text-xl">알림 설정</h2>
+                <p className="text-muted mb-6 text-[13px]">
                   수신할 알림 항목을 개별로 ON/OFF 할 수 있습니다.
                 </p>
 
-                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #354064' }}>
+                <div className="rounded-xl overflow-hidden border border-outline">
                   {[
                     {
                       key: 'isOutbidEnabled' as keyof NotificationSettings,
@@ -217,14 +218,14 @@ export function SettingsPage() {
                       <div className="flex items-start gap-3">
                         <span className="text-xl mt-px">{item.icon}</span>
                         <div>
-                          <p className="text-[#e0e8ff] font-semibold text-sm">{item.label}</p>
-                          <p className="text-[#7788a5] text-xs">{item.desc}</p>
+                          <p className="text-foreground font-semibold text-sm">{item.label}</p>
+                          <p className="text-muted text-xs">{item.desc}</p>
                         </div>
                       </div>
                       {/* Toggle */}
                       <button
                         onClick={() => handleToggle(item.key)}
-                        className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${notifications[item.key] ? 'bg-[#00f5ff]' : 'bg-[#354064]'}`}
+                        className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${notifications[item.key] ? 'bg-primary' : 'bg-outline'}`}
                       >
                         <span
                           className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 ${notifications[item.key] ? 'left-6' : 'left-1'}`}
@@ -234,26 +235,27 @@ export function SettingsPage() {
                   ))}
                 </div>
 
-                <button
+                <Button
+                  variant={notifSaved ? 'ghost' : 'ghost'}
                   onClick={handleSaveNotifications}
                   disabled={notifSaving}
-                  className={`mt-5 px-6 py-2.5 rounded-lg font-semibold transition-all text-sm border ${notifSaved ? 'bg-[#00ff8820] text-[#00ff88] border-[#00ff88]' : 'bg-[#00f5ff20] text-[#00f5ff] border-[#00f5ff]'} ${notifSaving ? 'opacity-60' : ''}`}
+                  className={`mt-5 ${notifSaved ? 'text-gp border-gp bg-[#00ff8820]' : ''}`}
                 >
                   {notifSaving ? '저장 중...' : notifSaved ? '✓ 저장됨' : '변경사항 저장'}
-                </button>
+                </Button>
               </div>
             )}
 
             {/* 보안 */}
             {activeSection === 'security' && (
               <div>
-                <h2 className="text-[#e0e8ff] font-bold mb-1 text-xl">보안</h2>
-                <p className="text-[#7788a5] mb-6 text-[13px]">
+                <h2 className="text-foreground font-bold mb-1 text-xl">보안</h2>
+                <p className="text-muted mb-6 text-[13px]">
                   계정 비밀번호를 변경합니다.
                 </p>
 
-                <div className="rounded-xl p-6 bg-[#1a1f35] border border-[#354064]">
-                  <p className="text-[#e0e8ff] font-semibold mb-4 text-[15px]">비밀번호 변경</p>
+                <div className="rounded-xl p-6 bg-panel border border-outline">
+                  <p className="text-foreground font-semibold mb-4 text-[15px]">비밀번호 변경</p>
 
                   <div className="space-y-3">
                     {[
@@ -262,32 +264,33 @@ export function SettingsPage() {
                       { label: '새 비밀번호 확인', value: confirmPassword, setter: setConfirmPassword, placeholder: '새 비밀번호를 다시 입력' },
                     ].map(field => (
                       <div key={field.label}>
-                        <label className="block text-[#7788a5] mb-1.5 text-xs">{field.label}</label>
+                        <label className="block text-muted mb-1.5 text-xs">{field.label}</label>
                         <input
                           type="password"
                           value={field.value}
                           onChange={e => field.setter(e.target.value)}
                           placeholder={field.placeholder}
-                          className="w-full h-10 bg-[#0a0e1a] border border-[#354064] rounded-lg px-3 text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors text-[13px]"
+                          className="w-full h-10 bg-surface border border-outline rounded-lg px-3 text-foreground outline-none focus:border-primary transition-colors text-[13px]"
                         />
                       </div>
                     ))}
                   </div>
 
                   {pwError && (
-                    <p className="mt-3 text-[#ff3333] text-xs">⚠ {pwError}</p>
+                    <p className="mt-3 text-danger text-xs">⚠ {pwError}</p>
                   )}
                   {pwSuccess && (
-                    <p className="mt-3 text-[#00ff88] text-xs">✓ 비밀번호가 성공적으로 변경되었습니다.</p>
+                    <p className="mt-3 text-gp text-xs">✓ 비밀번호가 성공적으로 변경되었습니다.</p>
                   )}
 
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={handleChangePassword}
                     disabled={pwLoading}
-                    className={`mt-5 px-6 py-2.5 rounded-lg font-semibold transition-all text-sm bg-[#00f5ff20] text-[#00f5ff] border border-[#00f5ff] ${pwLoading ? 'opacity-60' : ''}`}
+                    className="mt-5"
                   >
                     {pwLoading ? '변경 중...' : '비밀번호 변경'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -295,15 +298,15 @@ export function SettingsPage() {
             {/* 계정 관리 */}
             {activeSection === 'account' && (
               <div>
-                <h2 className="text-[#e0e8ff] font-bold mb-1 text-xl">계정 관리</h2>
-                <p className="text-[#7788a5] mb-6 text-[13px]">
+                <h2 className="text-foreground font-bold mb-1 text-xl">계정 관리</h2>
+                <p className="text-muted mb-6 text-[13px]">
                   계정을 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.
                 </p>
 
-                <div className="rounded-xl p-6 bg-[#1a0a10] border border-[#ff333340]">
+                <div className="rounded-xl p-6 bg-[#1a0a10] border border-danger/25">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-lg">⚠</span>
-                    <p className="text-[#ff3333] font-bold text-[15px]">회원 탈퇴 (위험 영역)</p>
+                    <p className="text-danger font-bold text-[15px]">회원 탈퇴 (위험 영역)</p>
                   </div>
 
                   <div className="rounded-lg p-4 mb-5 bg-[#ff333315] border border-[#ff333330]">
@@ -335,34 +338,35 @@ export function SettingsPage() {
                         value={deletePassword}
                         onChange={e => setDeletePassword(e.target.value)}
                         placeholder="본인 확인을 위해 비밀번호를 입력하세요"
-                        className="w-full h-10 bg-[#0a0e1a] border border-[#ff333340] rounded-lg px-3 text-[#e0e8ff] outline-none text-[13px]"
+                        className="w-full h-10 bg-surface border border-danger/25 rounded-lg px-3 text-foreground outline-none text-[13px]"
                       />
                     </div>
                     <div>
                       <label className="block text-[#ff8899] mb-1.5 text-xs">
-                        확인 문구 입력 — <span className="text-[#ff3333] font-bold">탈퇴합니다</span> 를 그대로 입력하세요
+                        확인 문구 입력 — <span className="text-danger font-bold">탈퇴합니다</span> 를 그대로 입력하세요
                       </label>
                       <input
                         type="text"
                         value={deleteConfirmText}
                         onChange={e => setDeleteConfirmText(e.target.value)}
                         placeholder="탈퇴합니다"
-                        className="w-full h-10 bg-[#0a0e1a] border border-[#ff333340] rounded-lg px-3 text-[#e0e8ff] outline-none text-[13px]"
+                        className="w-full h-10 bg-surface border border-danger/25 rounded-lg px-3 text-foreground outline-none text-[13px]"
                       />
                     </div>
                   </div>
 
                   {deleteError && (
-                    <p className="mt-3 text-[#ff3333] text-xs">⚠ {deleteError}</p>
+                    <p className="mt-3 text-danger text-xs">⚠ {deleteError}</p>
                   )}
 
-                  <button
+                  <Button
+                    variant="danger"
                     onClick={handleDeleteAccount}
                     disabled={deleteLoading || deleteConfirmText !== '탈퇴합니다' || !deletePassword}
-                    className="mt-5 px-6 py-2.5 rounded-lg font-semibold transition-all text-sm bg-[#ff333320] text-[#ff3333] border border-[#ff3333] disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="mt-5"
                   >
                     {deleteLoading ? '처리 중...' : '계정 영구 삭제'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

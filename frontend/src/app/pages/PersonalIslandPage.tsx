@@ -281,36 +281,36 @@ export function PersonalIslandPage() {
     <div className="page-root">
       <GNB />
 
-      <div className="bg-[#0a0e1a] border-b border-[#00ff8840] px-5 py-3 flex items-center gap-4 flex-shrink-0">
-        <button onClick={() => navigate('/app/map')} className="text-[#7788a5] hover:text-[#e0e8ff] mr-1">←</button>
-        <div className="w-10 h-10 bg-[#00ff8830] rounded-xl border border-[#00ff88] flex items-center justify-center">
+      <div className="bg-surface border-b border-[#00ff8840] px-5 py-3 flex items-center gap-4 flex-shrink-0">
+        <button onClick={() => navigate('/app/map')} className="text-muted hover:text-foreground mr-1">←</button>
+        <div className="w-10 h-10 bg-[#00ff8830] rounded-xl border border-gp flex items-center justify-center">
           <span className="text-xl">🏝</span>
         </div>
         <div>
-          <h1 className="text-[#00ff88] font-bold text-xl">나의 섬 · {username || '—'}</h1>
-          <p className="text-[#7788a5] text-xs">중앙 대륙 · S급 개인 영토 · 20×16 그리드</p>
+          <h1 className="text-gp font-bold text-xl">나의 섬 · {username || '—'}</h1>
+          <p className="text-muted text-xs">중앙 대륙 · S급 개인 영토 · 20×16 그리드</p>
         </div>
         <div className="flex items-center gap-2 ml-4">
-          <div className="h-7 px-3 rounded-lg bg-[#ffd70020] border border-[#ffd700] flex items-center">
-            <span className="text-[#ffd700] font-bold text-[11px]">S급</span>
+          <div className="h-7 px-3 rounded-lg bg-[#ffd70020] border border-gold flex items-center">
+            <span className="text-gold font-bold text-[11px]">S급</span>
           </div>
-          <div className="flex items-center gap-1 bg-[#2a3050] border border-[#00ff88] rounded-lg px-2 py-1">
-            <div className="w-2 h-2 bg-[#00ff88] rounded-full animate-pulse" />
-            <span className="text-[#00ff88] text-[11px]">안전 보호 중</span>
+          <div className="flex items-center gap-1 bg-elevated border border-gp rounded-lg px-2 py-1">
+            <div className="w-2 h-2 bg-gp rounded-full animate-pulse" />
+            <span className="text-gp text-[11px]">안전 보호 중</span>
           </div>
         </div>
         <div className="flex items-center gap-4 ml-auto">
           <div className="text-right">
-            <p className="text-[#7788a5] text-[10px]">총 GP 보유</p>
-            <p className="text-[#00ff88] font-bold text-base">💎 {gp.toLocaleString()}</p>
+            <p className="text-muted text-[10px]">총 GP 보유</p>
+            <p className="text-gp font-bold text-base">💎 {gp.toLocaleString()}</p>
           </div>
           <div className="text-right">
-            <p className="text-[#7788a5] text-[10px]">생산 속도</p>
-            <p className="text-[#ffd700] font-bold text-base">+{island?.productionRate ?? 0} GP/분</p>
+            <p className="text-muted text-[10px]">생산 속도</p>
+            <p className="text-gold font-bold text-base">+{island?.productionRate ?? 0} GP/분</p>
           </div>
           <div className="text-right">
-            <p className="text-[#7788a5] text-[10px]">총 방어력</p>
-            <p className="text-[#ff3333] font-bold text-base">4,820</p>
+            <p className="text-muted text-[10px]">총 방어력</p>
+            <p className="text-danger font-bold text-base">4,820</p>
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <div
@@ -320,7 +320,7 @@ export function PersonalIslandPage() {
             >
               <div className="absolute top-0.5 w-4 h-4 rounded-full transition-all" style={{ background: showZones ? '#00ff88' : '#7788a5', left: showZones ? 20 : 2 }} />
             </div>
-            <span className="text-[#7788a5] text-[11px]">존 표시</span>
+            <span className="text-muted text-[11px]">존 표시</span>
           </label>
         </div>
       </div>
@@ -330,24 +330,24 @@ export function PersonalIslandPage() {
         <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#1a1200', borderBottom: '1px solid #ffd70060' }}>
           <div className="flex items-center gap-2">
             <span className="text-sm">🔄</span>
-            <span className="text-[#ffd700] font-semibold text-[13px]">
+            <span className="text-gold font-semibold text-[13px]">
               이동 모드 — 이동할 빈 셀을 클릭하세요
-              {moveSourceCell && <span className="text-[#7788a5] ml-2 text-[11px]">출발: ({moveSourceCell.x}, {moveSourceCell.y})</span>}
+              {moveSourceCell && <span className="text-muted ml-2 text-[11px]">출발: ({moveSourceCell.x}, {moveSourceCell.y})</span>}
             </span>
           </div>
-          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border border-[#ffd70060] text-[#ffd700] text-xs transition-colors">취소</button>
+          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border border-[#ffd70060] text-gold text-xs transition-colors">취소</button>
         </div>
       )}
       {deployFromInventoryIdx !== null && inventory[deployFromInventoryIdx] && (
         <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#001a10', borderBottom: '1px solid #00ff8860' }}>
           <div className="flex items-center gap-2">
             <span className="text-sm">📦</span>
-            <span className="text-[#00ff88] font-semibold text-[13px]">
+            <span className="text-gp font-semibold text-[13px]">
               배치 모드 — 배치할 빈 셀을 클릭하세요
-              <span className="text-[#7788a5] ml-2 text-[11px]">({buildingNames[inventory[deployFromInventoryIdx].type]})</span>
+              <span className="text-muted ml-2 text-[11px]">({buildingNames[inventory[deployFromInventoryIdx].type]})</span>
             </span>
           </div>
-          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border border-[#00ff8860] text-[#00ff88] text-xs transition-colors">취소</button>
+          <button onClick={cancelModes} className="h-7 px-3 rounded-lg border border-[#00ff8860] text-gp text-xs transition-colors">취소</button>
         </div>
       )}
 
@@ -359,17 +359,17 @@ export function PersonalIslandPage() {
               {[4, 3, 2, 1].map(z => (
                 <div key={z} className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-sm border" style={{ background: zoneOverlay[z], borderColor: zoneBorder[z] }} />
-                  <span className="text-[#7788a5] text-[10px]">Zone {z}</span>
+                  <span className="text-muted text-[10px]">Zone {z}</span>
                 </div>
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#7788a5] text-[10px]">
+              <span className="text-muted text-[10px]">
                 {selectedCell ? `선택: (${selectedCell.x}, ${selectedCell.y}) - ${buildingNames[selectedCellData?.type || 'empty']}` : '셀을 클릭하여 선택'}
               </span>
-              <button onClick={() => setZoom(z => Math.min(5, z * 1.2))} className="w-6 h-6 bg-[#1a2438] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white text-xs flex items-center justify-center">+</button>
-              <button onClick={() => setZoom(z => Math.max(0.3, z / 1.2))} className="w-6 h-6 bg-[#1a2438] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white text-xs flex items-center justify-center">−</button>
-              <button onClick={() => { const { z, x, y } = getFitView(); setZoom(z); setPan({ x, y }); }} className="w-6 h-6 bg-[#1a2438] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white text-xs flex items-center justify-center">⊡</button>
+              <button onClick={() => setZoom(z => Math.min(5, z * 1.2))} className="w-6 h-6 bg-[#1a2438] border border-[#2a3a5a] rounded text-muted hover:text-white text-xs flex items-center justify-center">+</button>
+              <button onClick={() => setZoom(z => Math.max(0.3, z / 1.2))} className="w-6 h-6 bg-[#1a2438] border border-[#2a3a5a] rounded text-muted hover:text-white text-xs flex items-center justify-center">−</button>
+              <button onClick={() => { const { z, x, y } = getFitView(); setZoom(z); setPan({ x, y }); }} className="w-6 h-6 bg-[#1a2438] border border-[#2a3a5a] rounded text-muted hover:text-white text-xs flex items-center justify-center">⊡</button>
             </div>
           </div>
 
@@ -391,7 +391,7 @@ export function PersonalIslandPage() {
                 const isMoveSource = moveSourceCell?.x === x && moveSourceCell?.y === y;
                 const isActionTarget = (moveMode || deployFromInventoryIdx !== null) && cell.type === 'empty';
                 const zone = cell.zone || 4;
-                const bg = isMoveSource ? buildingColors[cell.type] + '80' : cell.type !== 'empty' ? buildingColors[cell.type] + '50' : showZones ? zoneOverlay[zone] : '#0a0e1a';
+                const bg = isMoveSource ? buildingColors[cell.type] + '80' : cell.type !== 'empty' ? buildingColors[cell.type] + '50' : showZones ? zoneOverlay[zone] : 'var(--color-surface)';
                 const hpPct = cell.hp && cell.maxHp ? cell.hp / cell.maxHp : 0;
                 const hpColor = hpPct > 0.7 ? '#00ff88' : hpPct > 0.4 ? '#ffd700' : '#ff3333';
                 return (
@@ -427,7 +427,7 @@ export function PersonalIslandPage() {
                         )}
                       </>
                     ) : (
-                      <span className={`text-[10px] ${isActionTarget ? 'text-[#00ff8870]' : 'text-[#354064] opacity-40'}`}>
+                      <span className={`text-[10px] ${isActionTarget ? 'text-[#00ff8870]' : 'text-outline opacity-40'}`}>
                         {isActionTarget ? '⊕' : '+'}
                       </span>
                     )}
@@ -440,8 +440,8 @@ export function PersonalIslandPage() {
           </div>
         </div>
 
-        <div className="w-[260px] bg-[#0a0e1a] border-l border-[#354064] flex flex-col flex-shrink-0">
-          <div className="flex border-b border-[#354064]">
+        <div className="w-[260px] bg-surface border-l border-outline flex flex-col flex-shrink-0">
+          <div className="flex border-b border-outline">
             {(['buildings', 'resources', 'units', 'expand'] as const).map(tabId => (
               <button key={tabId} onClick={() => setActiveTab(tabId)} className="flex-1 py-2.5 text-[11px] transition-colors" style={{ color: activeTab === tabId ? '#00ff88' : '#7788a5', borderBottom: activeTab === tabId ? '2px solid #00ff88' : '2px solid transparent', background: activeTab === tabId ? '#00ff8810' : 'transparent' }}>
                 {{ buildings: '건물', resources: '자원', units: '유닛', expand: '확장' }[tabId]}
@@ -462,9 +462,9 @@ export function PersonalIslandPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="text-xs" style={{ color: b.color }}>{buildingNames[b.type]}</span>
-                          <span className="text-[#7788a5] text-[10px]">×{count}</span>
+                          <span className="text-muted text-[10px]">×{count}</span>
                         </div>
-                        <p className="text-[#7788a5] text-[10px]">{b.gp}</p>
+                        <p className="text-muted text-[10px]">{b.gp}</p>
                       </div>
                     </div>
                   );
@@ -474,28 +474,28 @@ export function PersonalIslandPage() {
             {activeTab === 'resources' && (
               <div className="p-3 space-y-3">
                 <div className="bg-[#12192c] rounded-xl p-3">
-                  <div className="flex justify-between mb-2"><span className="text-[#ffd700] font-semibold text-xs">⚡ AP</span><span className="text-[#ffd700] font-bold text-sm">{ap.toLocaleString()}</span></div>
-                  <div className="bg-[#1a1f35] h-2 rounded-full overflow-hidden"><div className="h-full bg-[#ffd700] rounded-full" style={{ width: '62%' }} /></div>
+                  <div className="flex justify-between mb-2"><span className="text-gold font-semibold text-xs">⚡ AP</span><span className="text-gold font-bold text-sm">{ap.toLocaleString()}</span></div>
+                  <div className="bg-panel h-2 rounded-full overflow-hidden"><div className="h-full bg-gold rounded-full" style={{ width: '62%' }} /></div>
                 </div>
                 <div className="bg-[#12192c] rounded-xl p-3">
-                  <div className="flex justify-between mb-1"><span className="text-[#00ff88] font-semibold text-xs">💎 GP 생산</span><span className="text-[#00ff88] font-bold text-sm">+105/분</span></div>
+                  <div className="flex justify-between mb-1"><span className="text-gp font-semibold text-xs">💎 GP 생산</span><span className="text-gp font-bold text-sm">+105/분</span></div>
                   <div className="space-y-1 mt-2">
                     {[{ src: '생산소 ×4', val: '+48', color: '#00ff88' }, { src: '금고 ×2', val: '+22', color: '#ffaa00' }, { src: '광산 ×4', val: '+35', color: '#cc8844' }].map(r => (
-                      <div key={r.src} className="flex justify-between"><span className="text-[#7788a5] text-[10px]">{r.src}</span><span className="text-[10px]" style={{ color: r.color }}>{r.val}/분</span></div>
+                      <div key={r.src} className="flex justify-between"><span className="text-muted text-[10px]">{r.src}</span><span className="text-[10px]" style={{ color: r.color }}>{r.val}/분</span></div>
                     ))}
                   </div>
                 </div>
                 <div className="bg-[#12192c] rounded-xl p-3">
                   <p className="text-[#ff44cc] font-semibold mb-2 text-xs">🔬 연구 현황</p>
                   <p className="text-[#7788a5] text-[11px]">방어력 강화 Lv.3</p>
-                  <div className="bg-[#1a1f35] h-1.5 rounded-full overflow-hidden mt-1"><div className="h-full bg-[#ff44cc] rounded-full" style={{ width: '45%' }} /></div>
-                  <p className="text-[#7788a5] text-[9px]">완료까지 약 4시간</p>
+                  <div className="bg-panel h-1.5 rounded-full overflow-hidden mt-1"><div className="h-full bg-[#ff44cc] rounded-full" style={{ width: '45%' }} /></div>
+                  <p className="text-muted text-[9px]">완료까지 약 4시간</p>
                 </div>
               </div>
             )}
             {activeTab === 'units' && (
               <div className="p-3 space-y-2">
-                <p className="text-[#7788a5] font-semibold text-xs">주둔 유닛</p>
+                <p className="text-muted font-semibold text-xs">주둔 유닛</p>
                 {[
                   { label: '보병', icon: '🗡', owned: 24, max: 40, color: '#e0e8ff', attack: 25 },
                   { label: '궁수', icon: '🏹', owned: 12, max: 30, color: '#00ff88', attack: 30 },
@@ -509,23 +509,23 @@ export function PersonalIslandPage() {
                       <div className="flex-1">
                         <div className="flex justify-between">
                           <span className="text-xs" style={{ color: u.color }}>{u.label}</span>
-                          <span className="text-[#7788a5] text-[11px]">{u.owned}/{u.max}</span>
+                          <span className="text-muted text-[11px]">{u.owned}/{u.max}</span>
                         </div>
-                        <p className="text-[#7788a5] text-[9px]">공격력 {u.attack}</p>
+                        <p className="text-muted text-[9px]">공격력 {u.attack}</p>
                       </div>
                     </div>
-                    <div className="bg-[#1a1f35] h-1.5 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${(u.owned / u.max) * 100}%`, background: u.color }} /></div>
+                    <div className="bg-panel h-1.5 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${(u.owned / u.max) * 100}%`, background: u.color }} /></div>
                   </div>
                 ))}
-                <button className="w-full h-9 border border-[#8b50ff] rounded-xl text-[#8b50ff] text-xs hover:bg-[#8b50ff20] transition-colors">유닛 훈련하기</button>
+                <button className="w-full h-9 border border-secondary rounded-xl text-secondary text-xs hover:bg-[#8b50ff20] transition-colors">유닛 훈련하기</button>
               </div>
             )}
             {activeTab === 'expand' && (
               <div className="p-3 space-y-3">
-                <div className="bg-[#00ff8820] border border-[#00ff88] rounded-xl p-3">
-                  <p className="text-[#00ff88] font-semibold text-xs">섬 현황</p>
-                  <p className="text-[#7788a5] text-[11px]">현재 크기: {island?.gridSize ?? COLS}×{ROWS} ({(island?.gridSize ?? COLS) * ROWS} 타일)</p>
-                  <p className="text-[#7788a5] text-[11px]">빈 타일: {grid.flat().filter(c => c.type === 'empty').length}개</p>
+                <div className="bg-[#00ff8820] border border-gp rounded-xl p-3">
+                  <p className="text-gp font-semibold text-xs">섬 현황</p>
+                  <p className="text-muted text-[11px]">현재 크기: {island?.gridSize ?? COLS}×{ROWS} ({(island?.gridSize ?? COLS) * ROWS} 타일)</p>
+                  <p className="text-muted text-[11px]">빈 타일: {grid.flat().filter(c => c.type === 'empty').length}개</p>
                 </div>
                 {[
                   { label: '동쪽 확장 (+4열)', cost: '5,000 AP', color: '#00f5ff', desc: '80 타일 추가' },
@@ -538,7 +538,7 @@ export function PersonalIslandPage() {
                       <span className="text-xs" style={{ color: item.color }}>{item.label}</span>
                       <span className="text-xs" style={{ color: item.color }}>{item.cost}</span>
                     </div>
-                    <p className="text-[#7788a5] text-[10px]">{item.desc}</p>
+                    <p className="text-muted text-[10px]">{item.desc}</p>
                     <button className="mt-2 w-full h-7 rounded-lg border font-bold text-[11px]" style={{ borderColor: item.color, color: item.color }}>확장</button>
                   </div>
                 ))}
@@ -546,21 +546,21 @@ export function PersonalIslandPage() {
             )}
           </div>
 
-          <div className="p-3 border-t border-[#354064] space-y-2">
-            <button onClick={() => { setSelectedCell(null); setShowBuild(true); }} className="w-full h-9 border border-[#00f5ff] rounded-xl text-[#00f5ff] text-xs hover:bg-[#00f5ff20] transition-colors">🏗 건물 건설</button>
+          <div className="p-3 border-t border-outline space-y-2">
+            <button onClick={() => { setSelectedCell(null); setShowBuild(true); }} className="w-full h-9 border border-primary rounded-xl text-primary text-xs hover:bg-primary/10 transition-colors">🏗 건물 건설</button>
             <button
               onClick={() => setShowInventory(true)}
-              className="relative w-full h-9 border border-[#8b50ff] text-[#8b50ff] rounded-xl text-xs transition-colors hover:bg-[#8b50ff20]"
+              className="relative w-full h-9 border border-secondary text-secondary rounded-xl text-xs transition-colors hover:bg-[#8b50ff20]"
             >
               📦 보관함
               {inventory.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#8b50ff] text-white text-[10px] flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-secondary text-white text-[10px] flex items-center justify-center">
                   {inventory.length}
                 </span>
               )}
             </button>
-            <button className="w-full h-9 bg-[#00ff88] rounded-xl text-[#0a0e1a] font-bold text-xs hover:brightness-110 transition-all">💎 GP 금고 이전</button>
-            <button onClick={() => navigate('/app/map')} className="w-full h-9 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-xs">🗺 월드맵으로</button>
+            <button className="w-full h-9 bg-gp rounded-xl text-surface font-bold text-xs hover:brightness-110 transition-all">💎 GP 금고 이전</button>
+            <button onClick={() => navigate('/app/map')} className="w-full h-9 bg-elevated border border-outline rounded-xl text-muted text-xs">🗺 월드맵으로</button>
           </div>
         </div>
       </div>
@@ -568,13 +568,13 @@ export function PersonalIslandPage() {
       {showBuild && (
         <div className="fixed inset-0 flex justify-end z-50">
           <div className="absolute inset-0 bg-black/60" onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} />
-          <div className="relative bg-[#1a1f35] border-l-2 border-[#00ff88] w-[520px] flex flex-col overflow-hidden">
-            <div className="bg-[#0a0e1a] px-5 py-4 border-b-2 border-[#00ff88] flex items-center justify-between">
+          <div className="relative bg-panel border-l-2 border-gp w-[520px] flex flex-col overflow-hidden">
+            <div className="bg-surface px-5 py-4 border-b-2 border-gp flex items-center justify-between">
               <div>
-                <h3 className="text-[#00ff88] font-bold text-lg">🏗 건물 건설</h3>
+                <h3 className="text-gp font-bold text-lg">🏗 건물 건설</h3>
                 {selectedCell
-                  ? <p className="text-[#7788a5] text-xs">위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData?.zone ?? 4} · 보유 GP: {gp.toLocaleString()}</p>
-                  : <p className="text-[#7788a5] text-xs">빈 셀을 클릭하여 위치를 선택하세요 · 보유 GP: {gp.toLocaleString()}</p>
+                  ? <p className="text-muted text-xs">위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData?.zone ?? 4} · 보유 GP: {gp.toLocaleString()}</p>
+                  : <p className="text-muted text-xs">빈 셀을 클릭하여 위치를 선택하세요 · 보유 GP: {gp.toLocaleString()}</p>
                 }
               </div>
               <button onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} className="btn-close">✕</button>
@@ -606,8 +606,8 @@ export function PersonalIslandPage() {
                       <span className="text-[22px]">{buildingLabels[b.type]}</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-[#e0e8ff] font-semibold text-[13px]">{b.name}</p>
-                      <p className="text-[#7788a5] text-[11px]">{b.desc}</p>
+                      <p className="text-foreground font-semibold text-[13px]">{b.name}</p>
+                      <p className="text-muted text-[11px]">{b.desc}</p>
                     </div>
                     <div className="border rounded px-2 py-1" style={{ background: isSelected ? buildingColors[b.type] + '30' : '#1a1f35', borderColor: buildingColors[b.type] }}>
                       <span className="text-xs" style={{ color: buildingColors[b.type] }}>{b.cost}</span>
@@ -621,10 +621,10 @@ export function PersonalIslandPage() {
                 <span className="text-[#ff3333] text-xs">⚠ {buildError}</span>
               </div>
             )}
-            <div className="border-t border-[#354064] p-4 flex gap-3">
+            <div className="border-t border-outline p-4 flex gap-3">
               <button
                 onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }}
-                className="flex-1 h-12 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-sm"
+                className="flex-1 h-12 bg-elevated border border-outline rounded-xl text-muted text-sm"
               >
                 취소
               </button>
@@ -663,9 +663,9 @@ export function PersonalIslandPage() {
               <button onClick={() => setShowBuildingAction(false)} className="btn-close">✕</button>
             </div>
 
-            <div className="px-5 py-3 border-b border-[#354064]">
+            <div className="px-5 py-3 border-b border-outline">
               <div className="flex justify-between mb-1">
-                <span className="text-[#7788a5] text-[11px]">HP</span>
+                <span className="text-muted text-[11px]">HP</span>
                 <span className="text-[11px]" style={{ color: buildingColors[selectedCellData.type] }}>{selectedCellData.hp} / {selectedCellData.maxHp}</span>
               </div>
               <div className="h-2 bg-[#0a0e1a] rounded-full overflow-hidden">
@@ -703,13 +703,13 @@ export function PersonalIslandPage() {
               </button>
               <button
                 onClick={() => setShowBuildingAction(false)}
-                className="flex-1 h-12 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-[13px]"
+                className="flex-1 h-12 bg-elevated border border-outline rounded-xl text-muted text-[13px]"
               >
                 닫기
               </button>
             </div>
             {selectedCellData.type === 'castle' && (
-              <p className="text-center text-[#7788a5] pb-3 text-[11px]">성(Castle)은 핵심 건물로 보관함에 담을 수 없습니다</p>
+              <p className="text-center text-muted pb-3 text-[11px]">성(Castle)은 핵심 건물로 보관함에 담을 수 없습니다</p>
             )}
           </div>
         </div>
@@ -722,8 +722,8 @@ export function PersonalIslandPage() {
           <div className="relative rounded-2xl overflow-hidden flex flex-col" style={{ width: 480, maxHeight: '70vh', background: '#1a1f35', border: '1.5px solid #8b50ff' }}>
             <div className="px-5 py-4 flex items-center justify-between" style={{ background: '#1a0a35', borderBottom: '2px solid #8b50ff' }}>
               <div>
-                <h3 className="text-[#8b50ff] font-bold text-xl">📦 보관함</h3>
-                <p className="text-[#7788a5] text-xs">건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>
+                <h3 className="text-secondary font-bold text-xl">📦 보관함</h3>
+                <p className="text-muted text-xs">건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>
               </div>
               <button onClick={() => setShowInventory(false)} className="btn-close">✕</button>
             </div>
@@ -732,8 +732,8 @@ export function PersonalIslandPage() {
               {inventory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <span className="text-[40px]">📭</span>
-                  <p className="text-[#7788a5] text-sm">보관함이 비어 있습니다</p>
-                  <p className="text-[#354064] text-xs">건물 셀을 클릭한 뒤 "보관함에 담기"를 선택하세요</p>
+                  <p className="text-muted text-sm">보관함이 비어 있습니다</p>
+                  <p className="text-outline text-xs">건물 셀을 클릭한 뒤 "보관함에 담기"를 선택하세요</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -747,11 +747,11 @@ export function PersonalIslandPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm" style={{ color }}>{buildingNames[item.type]}</p>
-                          <p className="text-[#7788a5] text-[11px]">Lv.{item.level}</p>
-                          <div className="mt-1 h-1.5 bg-[#1a1f35] rounded-full overflow-hidden">
+                          <p className="text-muted text-[11px]">Lv.{item.level}</p>
+                          <div className="mt-1 h-1.5 bg-panel rounded-full overflow-hidden">
                             <div className="h-full rounded-full" style={{ width: `${hpPct * 100}%`, background: color }} />
                           </div>
-                          <span className="text-[#7788a5] text-[9px]">HP {item.hp}/{item.maxHp}</span>
+                          <span className="text-muted text-[9px]">HP {item.hp}/{item.maxHp}</span>
                         </div>
                         <button
                           onClick={() => { setDeployFromInventoryIdx(idx); setShowInventory(false); }}

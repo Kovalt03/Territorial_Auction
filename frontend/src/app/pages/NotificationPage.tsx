@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
 import { EmptyState } from '../components/EmptyState';
 import { useApp } from '../context/AppContext';
 import {
@@ -89,31 +90,32 @@ export function NotificationPage() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a]">
+    <div className="flex flex-col h-screen bg-surface">
       <GNB />
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto">
 
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h1 className="text-[#e0e8ff] font-bold text-[22px]">알림</h1>
+              <h1 className="text-foreground font-bold text-[22px]">알림</h1>
               {unreadCount > 0 && (
-                <p className="text-[#7788a5] text-[13px]">읽지 않은 알림 {unreadCount}개</p>
+                <p className="text-muted text-[13px]">읽지 않은 알림 {unreadCount}개</p>
               )}
             </div>
             {unreadCount > 0 && (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={handleMarkAll}
                 disabled={isMarkingAll}
-                className="px-3 py-1.5 rounded-lg border border-[#354064] text-[#8892b0] hover:border-[#4a5a7a] hover:text-[#e0e8ff] transition-colors text-xs"
               >
                 {isMarkingAll ? '처리 중...' : '전체 읽음'}
-              </button>
+              </Button>
             )}
           </div>
 
           {isLoading ? (
-            <div className="text-center text-[#4a5a7a] py-20 text-sm">불러오는 중...</div>
+            <div className="text-center text-muted py-20 text-sm">불러오는 중...</div>
           ) : notifications.length === 0 ? (
             <EmptyState message="알림이 없습니다." className="py-20" />
           ) : (
@@ -122,7 +124,7 @@ export function NotificationPage() {
                 <div
                   key={n.notificationId}
                   onClick={() => handleMarkRead(n)}
-                  className="bg-[#1a1f35] border rounded-xl px-4 py-3 flex items-start gap-3 cursor-pointer transition-all"
+                  className="bg-panel border rounded-xl px-4 py-3 flex items-start gap-3 cursor-pointer transition-all"
                   style={{ borderColor: n.isRead ? '#354064' : TYPE_COLOR[n.type] ?? '#354064', opacity: n.isRead ? 0.7 : 1 }}
                 >
                   <div
@@ -132,8 +134,8 @@ export function NotificationPage() {
                     {TYPE_ICON[n.type] ?? '🔔'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[#e0e8ff] text-sm">{n.message}</p>
-                    <p className="text-[#4a5a7a] mt-0.5 text-[11px]">
+                    <p className="text-foreground text-sm">{n.message}</p>
+                    <p className="text-muted mt-0.5 text-[11px]">
                       {new Date(n.createdAt).toLocaleString('ko-KR')}
                     </p>
                   </div>
@@ -147,7 +149,7 @@ export function NotificationPage() {
                 <button
                   onClick={loadMore}
                   disabled={isLoadingMore}
-                  className="w-full py-3 mt-2 rounded-xl border border-[#354064] text-[#7788a5] hover:border-[#4a5a7a] hover:text-[#e0e8ff] disabled:opacity-50 transition-colors text-[13px]"
+                  className="w-full py-3 mt-2 rounded-xl border border-outline text-muted hover:border-muted hover:text-foreground disabled:opacity-50 transition-colors text-[13px]"
                 >
                   {isLoadingMore ? '불러오는 중...' : '더 보기'}
                 </button>

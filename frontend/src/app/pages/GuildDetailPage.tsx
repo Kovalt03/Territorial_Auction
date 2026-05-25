@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 
 import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
+import { Badge } from '../components/Badge';
 import { useApp } from '../context/AppContext';
 import {
   fetchGuildDetail, fetchMyGuild, fetchGuildApplications,
@@ -98,9 +100,9 @@ export function GuildDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-screen bg-[#0a0e1a]">
+      <div className="flex flex-col h-screen bg-surface">
         <GNB />
-        <div className="flex-1 flex items-center justify-center text-[#4a5a7a] text-sm">불러오는 중...</div>
+        <div className="flex-1 flex items-center justify-center text-muted text-sm">불러오는 중...</div>
       </div>
     );
   }
@@ -118,18 +120,18 @@ export function GuildDetailPage() {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a]">
+    <div className="flex flex-col h-screen bg-surface">
       <GNB />
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-3xl mx-auto">
 
           {/* Back */}
-          <button onClick={() => navigate('/app/guild')} className="text-[#7788a5] hover:text-[#e0e8ff] mb-4 flex items-center gap-1 text-[13px]">
+          <button onClick={() => navigate('/app/guild')} className="text-muted hover:text-foreground mb-4 flex items-center gap-1 text-[13px]">
             ← 길드 목록
           </button>
 
           {/* Guild header */}
-          <div className="bg-[#1a1f35] border border-[#354064] rounded-2xl p-6 mb-4">
+          <div className="bg-panel border border-outline rounded-2xl p-6 mb-4">
             <div className="flex items-start gap-5">
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-3xl flex-shrink-0"
@@ -138,12 +140,12 @@ export function GuildDetailPage() {
                 {guild.name.charAt(0)}
               </div>
               <div className="flex-1">
-                <h1 className="text-[#e0e8ff] font-bold mb-1 text-[22px]">{guild.name}</h1>
+                <h1 className="text-foreground font-bold mb-1 text-[22px]">{guild.name}</h1>
                 {guild.description && (
-                  <p className="text-[#8892b0] mb-3 text-[13px]">{guild.description}</p>
+                  <p className="text-dim mb-3 text-[13px]">{guild.description}</p>
                 )}
-                <div className="flex flex-wrap gap-4 text-[#7788a5] text-[13px]">
-                  <span>길드장: <span className="text-[#00f5ff]">{guild.master.nickname}</span></span>
+                <div className="flex flex-wrap gap-4 text-muted text-[13px]">
+                  <span>길드장: <span className="text-primary">{guild.master.nickname}</span></span>
                   <span>멤버 {guild.memberCount}명</span>
                   <span>영토 {guild.totalTerritoryCount}개</span>
                   <span>생성일: {new Date(guild.createdAt).toLocaleDateString('ko-KR')}</span>
@@ -151,26 +153,28 @@ export function GuildDetailPage() {
               </div>
               <div className="flex flex-col gap-2 flex-shrink-0">
                 {isLoggedIn && !myGuild && (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => executeAction(() => joinGuild(guildId))}
                     disabled={isActing}
-                    className="px-4 py-2 rounded-lg bg-[#00f5ff20] border border-[#00f5ff] text-[#00f5ff] hover:bg-[#00f5ff30] transition-colors text-[13px]"
                   >
                     가입 신청
-                  </button>
+                  </Button>
                 )}
                 {isMember && !isMaster && (
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => { if (confirm('길드에서 탈퇴하시겠습니까?')) executeAction(() => leaveGuild(guildId), '탈퇴했습니다.'); }}
                     disabled={isActing}
-                    className="px-4 py-2 rounded-lg border border-[#354064] text-[#8892b0] hover:border-[#ff3333] hover:text-[#ff3333] transition-colors text-[13px]"
                   >
                     탈퇴
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
-            {actionError && <p className="text-[#ff3333] mt-3 text-xs">{actionError}</p>}
+            {actionError && <p className="text-danger mt-3 text-xs">{actionError}</p>}
           </div>
 
           {/* Tabs */}
@@ -203,22 +207,22 @@ export function GuildDetailPage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[#e0e8ff] text-sm">{m.nickname}</span>
-                      {m.role === 'MASTER' && <span className="text-[#ffd700] text-xs">👑 길드장</span>}
+                      <span className="text-foreground text-sm">{m.nickname}</span>
+                      {m.role === 'MASTER' && <span className="text-gold text-xs">👑 길드장</span>}
                     </div>
-                    <span className="text-[#7788a5] text-xs">영토 {m.territoryCount}개 · 가입일 {new Date(m.joinedAt).toLocaleDateString('ko-KR')}</span>
+                    <span className="text-muted text-xs">영토 {m.territoryCount}개 · 가입일 {new Date(m.joinedAt).toLocaleDateString('ko-KR')}</span>
                   </div>
                   {isMaster && m.userId !== userId && (
                     <div className="flex gap-1">
                       <button
                         onClick={() => { if (confirm(`${m.nickname}에게 길드장을 이전하시겠습니까?`)) executeAction(() => transferMaster(guildId, m.userId)); }}
-                        className="px-2 py-1 rounded text-xs border border-[#354064] text-[#8892b0] hover:border-[#ffd700] hover:text-[#ffd700] transition-colors"
+                        className="px-2 py-1 rounded text-xs border border-outline text-dim hover:border-gold hover:text-gold transition-colors"
                       >
                         이전
                       </button>
                       <button
                         onClick={() => { if (confirm(`${m.nickname}을 추방하시겠습니까?`)) executeAction(() => kickMember(guildId, m.userId)); }}
-                        className="px-2 py-1 rounded text-xs border border-[#354064] text-[#8892b0] hover:border-[#ff3333] hover:text-[#ff3333] transition-colors"
+                        className="px-2 py-1 rounded text-xs border border-outline text-dim hover:border-danger hover:text-danger transition-colors"
                       >
                         추방
                       </button>
@@ -233,43 +237,45 @@ export function GuildDetailPage() {
           {tab === 'applications' && isMaster && (
             <div className="flex flex-col gap-2">
               {applications.length === 0 && (
-                <div className="text-center text-[#4a5a7a] py-12 text-sm">신청 내역이 없습니다.</div>
+                <div className="text-center text-muted py-12 text-sm">신청 내역이 없습니다.</div>
               )}
               {applications.map(a => (
                 <div key={a.applicationId} className="card px-4 py-3 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#2a3050] flex items-center justify-center font-bold text-[#8892b0] flex-shrink-0 text-sm">
+                  <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center font-bold text-dim flex-shrink-0 text-sm">
                     {a.nickname.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-[#e0e8ff] text-sm">{a.nickname}</p>
-                      <span className="text-[#7788a5] text-xs">🏆 {a.trophyPoints.toLocaleString()}</span>
+                      <p className="text-foreground text-sm">{a.nickname}</p>
+                      <span className="text-muted text-xs">🏆 {a.trophyPoints.toLocaleString()}</span>
                     </div>
-                    <p className="text-[#4a5a7a] text-xs">{new Date(a.appliedAt).toLocaleString('ko-KR')}</p>
+                    <p className="text-muted text-xs">{new Date(a.appliedAt).toLocaleString('ko-KR')}</p>
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => executeAction(async () => {
                         await approveApplication(guildId, a.userId);
                         const res = await fetchGuildApplications(guildId);
                         setApplications(res.applications);
                       })}
                       disabled={isActing}
-                      className="px-3 py-1.5 rounded-lg bg-[#00f5ff20] border border-[#00f5ff] text-[#00f5ff] text-xs hover:bg-[#00f5ff30] transition-colors"
                     >
                       승인
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => executeAction(async () => {
                         await rejectApplication(guildId, a.userId);
                         const res = await fetchGuildApplications(guildId);
                         setApplications(res.applications);
                       })}
                       disabled={isActing}
-                      className="px-3 py-1.5 rounded-lg border border-[#354064] text-[#8892b0] text-xs hover:border-[#ff3333] hover:text-[#ff3333] transition-colors"
                     >
                       거절
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -278,19 +284,19 @@ export function GuildDetailPage() {
 
           {/* Settings tab */}
           {tab === 'settings' && isMaster && (
-            <div className="bg-[#1a1f35] border border-[#354064] rounded-2xl p-5 flex flex-col gap-4">
+            <div className="bg-panel border border-outline rounded-2xl p-5 flex flex-col gap-4">
               <div>
-                <label className="text-[#7788a5] block mb-1 text-xs">소개글</label>
+                <label className="text-muted block mb-1 text-xs">소개글</label>
                 <textarea
                   value={editDesc}
                   onChange={e => setEditDesc(e.target.value)}
                   maxLength={200}
                   rows={4}
-                  className="w-full bg-[#2a3050] border border-[#354064] rounded-lg px-3 py-2 text-[#e0e8ff] outline-none focus:border-[#00f5ff] resize-none text-sm"
+                  className="w-full bg-elevated border border-outline rounded-lg px-3 py-2 text-foreground outline-none focus:border-primary resize-none text-sm"
                 />
               </div>
               <div>
-                <label className="text-[#7788a5] block mb-2 text-xs">모집 상태</label>
+                <label className="text-muted block mb-2 text-xs">모집 상태</label>
                 <div className="flex gap-2">
                   {(['OPEN', 'CLOSED'] as const).map(s => (
                     <button
@@ -307,13 +313,13 @@ export function GuildDetailPage() {
                   ))}
                 </div>
               </div>
-              <button
+              <Button
                 onClick={handleSaveSettings}
                 disabled={isSaving}
-                className="py-2 rounded-lg bg-[#00f5ff] text-[#0a0e1a] font-semibold hover:bg-[#00d4e0] disabled:opacity-50 transition-colors text-sm"
+                fullWidth
               >
                 {isSaving ? '저장 중...' : '저장'}
-              </button>
+              </Button>
             </div>
           )}
 

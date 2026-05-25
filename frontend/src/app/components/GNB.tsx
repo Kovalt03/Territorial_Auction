@@ -28,16 +28,16 @@ export function GNB() {
     : 0;
 
   return (
-    <header className="flex items-center px-4 gap-3 flex-shrink-0 z-40 h-[76px] bg-[#0a0e1a] border-b border-[#354064]">
+    <header className="flex items-center px-4 gap-3 flex-shrink-0 z-40 h-[76px] bg-surface border-b border-outline">
       {/* Logo */}
       <button
         onClick={() => navigate('/app/map')}
         className="flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity"
       >
-        <span className="text-[#00f5ff] font-bold text-xl">⬡</span>
+        <span className="text-primary font-bold text-xl">⬡</span>
         <div>
-          <p className="text-[#00f5ff] font-bold leading-none text-sm">픽셀경매</p>
-          <p className="text-[#7788a5] leading-none text-[9px]">PIXEL AUCTION</p>
+          <p className="text-primary font-bold leading-none text-sm">픽셀경매</p>
+          <p className="text-muted leading-none text-[9px]">PIXEL AUCTION</p>
         </div>
       </button>
 
@@ -45,7 +45,7 @@ export function GNB() {
       <div className="flex-1 max-w-xs mx-2">
         <input
           placeholder="영토 검색..."
-          className="w-full h-8 bg-[#1a1f35] border border-[#354064] rounded-lg px-3 text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors text-xs"
+          className="w-full h-8 bg-panel border border-outline rounded-lg px-3 text-foreground outline-none focus:border-primary transition-colors text-xs"
         />
       </div>
 
@@ -56,26 +56,26 @@ export function GNB() {
           {/* AP Chip */}
           <button
             onClick={() => navigate('/app/charge')}
-            className="flex items-center gap-1.5 px-3 h-8 bg-[#2a1520] border border-[#ff006650] rounded-lg hover:border-[#ff0066] transition-colors"
+            className="flex items-center gap-1.5 px-3 h-8 bg-[#2a1520] border border-[#ff006650] rounded-lg hover:border-ap transition-colors"
           >
-            <span className="text-[#ff0066] font-bold text-xs">⚡</span>
-            <span className="text-[#ff0066] font-semibold text-xs">{ap.toLocaleString()} AP</span>
+            <span className="text-ap font-bold text-xs">⚡</span>
+            <span className="text-ap font-semibold text-xs">{ap.toLocaleString()} AP</span>
           </button>
 
           {/* GP Chip */}
           <div className="flex items-center gap-1.5 px-3 h-8 bg-[#0a2010] border border-[#00ff8850] rounded-lg">
-            <span className="text-[#00ff88] font-bold text-xs">💎</span>
-            <span className="text-[#00ff88] font-semibold text-xs">{gp.toLocaleString()} GP</span>
+            <span className="text-gp font-bold text-xs">💎</span>
+            <span className="text-gp font-semibold text-xs">{gp.toLocaleString()} GP</span>
           </div>
 
           {/* Pass chip */}
           {hasPass && (
             <button
               onClick={() => navigate('/app/season-pass')}
-              className="flex items-center gap-1 px-2.5 h-8 bg-[#1a1500] border border-[#ffd70050] rounded-lg hover:border-[#ffd700] transition-colors"
+              className="flex items-center gap-1 px-2.5 h-8 bg-[#1a1500] border border-[#ffd70050] rounded-lg hover:border-gold transition-colors"
             >
               <span className="text-[11px]">⭐</span>
-              <span className="text-[#ffd700] font-semibold text-[11px]">D-{passDays}</span>
+              <span className="text-gold font-semibold text-[11px]">D-{passDays}</span>
             </button>
           )}
 
@@ -87,19 +87,19 @@ export function GNB() {
                 <button
                   key={item.label}
                   onClick={() => navigate(item.path)}
-                  className="relative flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg hover:bg-[#2a3050] transition-colors min-w-[52px] h-14"
+                  className="relative flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg hover:bg-elevated transition-colors min-w-[52px] h-14"
                   title={item.label}
                 >
                   <span className="text-lg">{item.icon}</span>
-                  <span className={`text-[10px] leading-none ${isActive ? 'font-semibold text-[#00f5ff]' : 'font-normal text-[#7788a5]'}`}>
+                  <span className={`text-[10px] leading-none ${isActive ? 'font-semibold text-primary' : 'font-normal text-muted'}`}>
                     {item.label}
                   </span>
                   {item.label === '알림' && notifications > 0 && (
-                    <div className="absolute top-1 right-1 w-4 h-4 bg-[#ff0066] rounded-full flex items-center justify-center">
+                    <div className="absolute top-1 right-1 w-4 h-4 bg-ap rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-[9px]">{notifications}</span>
                     </div>
                   )}
-                  {isActive && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#00f5ff] rounded-full" />}
+                  {isActive && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />}
                 </button>
               );
             })}
@@ -108,7 +108,7 @@ export function GNB() {
           {/* Settings */}
           <button
             onClick={() => navigate('/app/settings')}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[#2a3050] transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-elevated transition-colors"
             style={{ color: location.pathname === '/app/settings' ? '#00f5ff' : '#7788a5' }}
             title="설정"
           >
@@ -118,7 +118,7 @@ export function GNB() {
       ) : (
         <button
           onClick={() => navigate('/login')}
-          className="px-5 h-8 rounded-lg font-semibold transition-opacity hover:opacity-80 bg-[#00f5ff] text-[#0a0e1a] text-[13px]"
+          className="px-5 h-8 rounded-lg font-semibold transition-opacity hover:opacity-80 bg-primary text-surface text-[13px]"
         >
           로그인
         </button>

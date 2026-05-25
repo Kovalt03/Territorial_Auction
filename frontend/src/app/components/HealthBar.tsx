@@ -7,7 +7,7 @@ interface Props {
   className?: string;
 }
 
-export function HealthBar({ hp, maxHp, color, height = 'h-2', bg = 'bg-[#1a1f35]', className }: Props) {
+export function HealthBar({ hp, maxHp, color, height = 'h-2', bg = 'bg-panel', className }: Props) {
   const pct = maxHp > 0 ? Math.min(100, (hp / maxHp) * 100) : 0;
   return (
     <div className={`${bg} ${height} rounded-full overflow-hidden${className ? ` ${className}` : ''}`}>

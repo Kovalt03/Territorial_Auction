@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import { signupApi, loginApi, checkUsernameApi } from '../api/auth';
 import { fetchMyProfile, fetchMyWallet } from '../api/user';
 import { GridBackground } from '../components/GridBackground';
+import { Button } from '../components/Button';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -62,21 +63,21 @@ export function RegisterPage() {
   const pwMatch = form.password && form.pwConfirm ? form.password === form.pwConfirm : null;
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] relative flex items-center justify-center overflow-hidden">
+    <div className="min-h-screen bg-surface relative flex items-center justify-center overflow-hidden">
       <GridBackground />
 
-      <div className="absolute w-[428px] h-[720px] bg-[#00f5ff] opacity-[0.06] rounded-3xl" />
+      <div className="absolute w-[428px] h-[720px] bg-primary opacity-[0.06] rounded-3xl" />
 
-      <div className="relative bg-[#1a1f35] border-[1.5px] border-[#00f5ff] rounded-2xl w-[400px] overflow-hidden shadow-2xl shadow-[#00f5ff]/10">
+      <div className="relative bg-panel border-[1.5px] border-primary rounded-2xl w-full max-w-[400px] mx-4 overflow-hidden shadow-2xl shadow-[#00f5ff]/10">
         <div className="pt-5 pb-3 flex flex-col items-center">
-          <span className="text-[#00f5ff] font-bold text-sm">⬡ PIXEL WAR</span>
+          <span className="text-primary font-bold text-sm">⬡ PIXEL WAR</span>
         </div>
 
         <div className="px-7 pb-7">
-          <h2 className="text-[#e0e8ff] font-bold mb-3 text-[22px]">회원가입</h2>
+          <h2 className="text-foreground font-bold mb-3 text-[22px]">회원가입</h2>
 
-          <div className="bg-[#2a3050] border border-[#ffd700] rounded-lg px-4 py-2.5 mb-4">
-            <span className="text-[#ffd700] text-xs font-medium">
+          <div className="bg-elevated border border-gold rounded-lg px-4 py-2.5 mb-4">
+            <span className="text-gold text-xs font-medium">
               🎁  가입 완료 시 1,000 AP 즉시 지급
             </span>
           </div>
@@ -88,17 +89,18 @@ export function RegisterPage() {
               value={form.username}
               onChange={e => handleChange('username', e.target.value)}
               placeholder="영문, 숫자 4~20자"
-              className="flex-1 bg-[#2a3050] border border-[#354064] rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors text-xs"
+              className="flex-1 bg-elevated border border-outline rounded-md px-3 h-[38px] text-foreground outline-none focus:border-primary transition-colors text-xs"
             />
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleCheckUsername}
-              className="bg-[#2a3050] border border-[#00f5ff] rounded-md px-3 h-[38px] text-[#00f5ff] hover:bg-[#354064] transition-colors flex-shrink-0 text-xs"
             >
               중복확인
-            </button>
+            </Button>
           </div>
           {usernameChecked && (
-            <p className={`mb-3 text-[11px] ${usernameAvailable ? 'text-[#00ff88]' : 'text-[#ff3333]'}`}>
+            <p className={`mb-3 text-[11px] ${usernameAvailable ? 'text-gp' : 'text-danger'}`}>
               {usernameAvailable ? '✓ 사용 가능한 아이디입니다' : '✗ 이미 사용 중인 아이디입니다'}
             </p>
           )}
@@ -131,8 +133,8 @@ export function RegisterPage() {
             value={form.pwConfirm}
             onChange={e => handleChange('pwConfirm', e.target.value)}
             placeholder="비밀번호를 다시 입력"
-            className={`w-full bg-[#2a3050] border rounded-md px-3 h-[38px] text-[#e0e8ff] outline-none transition-colors mb-4 text-xs ${
-              pwMatch === null ? 'border-[#354064]' : pwMatch ? 'border-[#00ff88]' : 'border-[#ff3333]'
+            className={`w-full bg-elevated border rounded-md px-3 h-[38px] text-foreground outline-none transition-colors mb-4 text-xs ${
+              pwMatch === null ? 'border-outline' : pwMatch ? 'border-gp' : 'border-danger'
             }`}
           />
 
@@ -146,42 +148,47 @@ export function RegisterPage() {
           />
 
           {error && (
-            <p className="text-[#ff3333] mb-3 text-xs">⚠ {error}</p>
+            <p className="text-danger mb-3 text-xs">⚠ {error}</p>
           )}
 
-          <button
+          <Button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="w-full h-12 bg-[#00f5ff] rounded-lg text-[#0a0e1a] font-bold hover:brightness-110 transition-all active:scale-[0.98] mb-3 disabled:opacity-50 disabled:cursor-not-allowed text-[15px]"
+            size="lg"
+            fullWidth
+            className="mb-3"
           >
             {isLoading ? '가입 중...' : '가입하기'}
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
             onClick={() => navigate('/login')}
-            className="w-full h-[46px] bg-[#2a3050] border border-[#354064] rounded-lg text-[#8892b0] hover:bg-[#354064] transition-colors text-sm"
+            size="md"
+            fullWidth
           >
             ← 로그인으로 돌아가기
-          </button>
+          </Button>
         </div>
       </div>
 
       {showWelcome && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/60">
-          <div className="bg-[#1a1f35] border-2 border-[#ffd700] rounded-2xl p-8 text-center max-w-sm mx-4 shadow-2xl shadow-[#ffd700]/20">
+          <div className="bg-panel border-2 border-gold rounded-2xl p-8 text-center max-w-sm mx-4 shadow-2xl shadow-[#ffd700]/20">
             <div className="text-5xl mb-4">🎁</div>
-            <h3 className="text-[#ffd700] font-bold text-xl mb-2">가입을 축하합니다!</h3>
-            <p className="text-[#8892b0] mb-3 text-sm">웰컴 보너스가 지급되었습니다</p>
-            <div className="bg-[#2a3050] rounded-xl py-4 px-6 mb-5">
-              <p className="text-[#00f5ff] font-bold text-[28px]">+1,000 AP</p>
-              <p className="text-[#8892b0] text-sm mt-1">즉시 사용 가능</p>
+            <h3 className="text-gold font-bold text-xl mb-2">가입을 축하합니다!</h3>
+            <p className="text-dim mb-3 text-sm">웰컴 보너스가 지급되었습니다</p>
+            <div className="bg-elevated rounded-xl py-4 px-6 mb-5">
+              <p className="text-primary font-bold text-[28px]">+1,000 AP</p>
+              <p className="text-dim text-sm mt-1">즉시 사용 가능</p>
             </div>
-            <button
+            <Button
               onClick={() => { setShowWelcome(false); navigate('/app/map'); }}
-              className="w-full h-12 bg-[#00f5ff] rounded-lg text-[#0a0e1a] font-bold hover:brightness-110 transition-all text-[15px]"
+              size="lg"
+              fullWidth
             >
               게임 시작! 🚀
-            </button>
+            </Button>
           </div>
         </div>
       )}

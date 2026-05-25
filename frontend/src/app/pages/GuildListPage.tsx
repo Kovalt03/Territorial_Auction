@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 
 import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
+import { Badge } from '../components/Badge';
 import { useApp } from '../context/AppContext';
 import {
   fetchGuildList, fetchMyGuild, createGuild,
@@ -98,7 +100,7 @@ export function GuildListPage() {
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a]">
+    <div className="flex flex-col h-screen bg-surface">
       <GNB />
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-4xl mx-auto">
@@ -106,24 +108,21 @@ export function GuildListPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-[#e0e8ff] font-bold text-2xl">길드</h1>
-              <p className="text-[#7788a5] text-[13px]">총 {totalCount}개 길드</p>
+              <h1 className="text-foreground font-bold text-2xl">길드</h1>
+              <p className="text-muted text-[13px]">총 {totalCount}개 길드</p>
             </div>
             {isLoggedIn && !myGuild && (
-              <button
-                onClick={() => setShowCreate(true)}
-                className="px-4 py-2 rounded-lg font-semibold text-[#0a0e1a] bg-[#00f5ff] hover:bg-[#00d4e0] transition-colors text-sm"
-              >
+              <Button onClick={() => setShowCreate(true)}>
                 + 길드 생성
-              </button>
+              </Button>
             )}
             {isLoggedIn && myGuild && (
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => navigate(`/app/guild/${myGuild.guildId}`)}
-                className="px-4 py-2 rounded-lg border border-[#00f5ff] text-[#00f5ff] hover:bg-[#00f5ff15] transition-colors text-sm"
               >
                 내 길드 보기
-              </button>
+              </Button>
             )}
           </div>
 
@@ -134,25 +133,22 @@ export function GuildListPage() {
               onChange={e => setSearchInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder="길드명 검색..."
-              className="flex-1 h-10 bg-[#1a1f35] border border-[#354064] rounded-lg px-4 text-[#e0e8ff] outline-none focus:border-[#00f5ff] placeholder-[#4a5a7a] text-sm"
+              className="flex-1 h-10 bg-panel border border-outline rounded-lg px-4 text-foreground outline-none focus:border-primary placeholder-muted text-sm"
             />
-            <button
-              onClick={handleSearch}
-              className="px-5 h-10 bg-[#2a3050] border border-[#354064] text-[#8892b0] hover:text-[#e0e8ff] rounded-lg transition-colors text-sm"
-            >
+            <Button variant="secondary" onClick={handleSearch}>
               검색
-            </button>
+            </Button>
           </div>
 
           {actionError && (
-            <p className="text-[#ff3333] mb-3 text-[13px]">{actionError}</p>
+            <p className="text-danger mb-3 text-[13px]">{actionError}</p>
           )}
 
           {/* List */}
           {isLoading ? (
-            <div className="text-center text-[#4a5a7a] py-20 text-sm">불러오는 중...</div>
+            <div className="text-center text-muted py-20 text-sm">불러오는 중...</div>
           ) : guilds.length === 0 ? (
-            <div className="text-center text-[#4a5a7a] py-20 text-sm">검색 결과가 없습니다.</div>
+            <div className="text-center text-muted py-20 text-sm">검색 결과가 없습니다.</div>
           ) : (
             <div className="flex flex-col gap-3">
               {guilds.map(g => {
@@ -161,7 +157,7 @@ export function GuildListPage() {
                 return (
                   <div
                     key={g.guildId}
-                    className="card p-4 flex items-center gap-4 hover:border-[#4a5a7a] transition-colors cursor-pointer"
+                    className="card p-4 flex items-center gap-4 hover:border-muted transition-colors cursor-pointer"
                     onClick={() => navigate(`/app/guild/${g.guildId}`)}
                   >
                     <div
@@ -172,15 +168,12 @@ export function GuildListPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[#e0e8ff] font-semibold truncate text-[15px]">{g.guildName}</span>
-                        <span
-                          className="px-2 py-0.5 rounded flex-shrink-0 text-[11px]"
-                          style={{ background: g.recruitingStatus === 'OPEN' ? '#00ff8820' : '#ff333320', color: g.recruitingStatus === 'OPEN' ? '#00ff88' : '#ff3333' }}
-                        >
+                        <span className="text-foreground font-semibold truncate text-[15px]">{g.guildName}</span>
+                        <Badge variant={g.recruitingStatus === 'OPEN' ? 'success' : 'danger'} className="flex-shrink-0">
                           {g.recruitingStatus === 'OPEN' ? '모집 중' : '모집 마감'}
-                        </span>
+                        </Badge>
                       </div>
-                      <div className="flex gap-4 text-[#7788a5] text-xs">
+                      <div className="flex gap-4 text-muted text-xs">
                         <span>길드장: {g.masterNickname}</span>
                         <span>멤버 {g.memberCount}/{g.maxMembers}</span>
                         <span>영토 {g.totalTerritories}개</span>
@@ -201,7 +194,7 @@ export function GuildListPage() {
                       </button>
                     )}
                     {isMine && (
-                      <span className="text-xs text-[#00f5ff] flex-shrink-0">내 길드</span>
+                      <span className="text-xs text-primary flex-shrink-0">내 길드</span>
                     )}
                   </div>
                 );
@@ -233,36 +226,36 @@ export function GuildListPage() {
       {/* Create modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowCreate(false)}>
-          <div className="bg-[#1a1f35] border border-[#354064] rounded-2xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
-            <h2 className="text-[#e0e8ff] font-bold mb-4 text-lg">길드 생성</h2>
+          <div className="bg-panel border border-outline rounded-2xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+            <h2 className="text-foreground font-bold mb-4 text-lg">길드 생성</h2>
             <div className="flex flex-col gap-3">
               <div>
-                <label className="text-[#7788a5] mb-1 block text-xs">길드명 *</label>
+                <label className="text-muted mb-1 block text-xs">길드명 *</label>
                 <input
                   value={createName}
                   onChange={e => setCreateName(e.target.value)}
                   maxLength={20}
                   placeholder="2~20자"
-                  className="w-full bg-[#2a3050] border border-[#354064] rounded-lg px-3 py-2 text-[#e0e8ff] outline-none focus:border-[#00f5ff] text-sm"
+                  className="w-full bg-elevated border border-outline rounded-lg px-3 py-2 text-foreground outline-none focus:border-primary text-sm"
                 />
               </div>
               <div>
-                <label className="text-[#7788a5] mb-1 block text-xs">소개글</label>
+                <label className="text-muted mb-1 block text-xs">소개글</label>
                 <textarea
                   value={createDesc}
                   onChange={e => setCreateDesc(e.target.value)}
                   maxLength={200}
                   rows={3}
                   placeholder="길드를 소개해주세요 (선택)"
-                  className="w-full bg-[#2a3050] border border-[#354064] rounded-lg px-3 py-2 text-[#e0e8ff] outline-none focus:border-[#00f5ff] resize-none text-sm"
+                  className="w-full bg-elevated border border-outline rounded-lg px-3 py-2 text-foreground outline-none focus:border-primary resize-none text-sm"
                 />
               </div>
-              {createError && <p className="text-[#ff3333] text-xs">{createError}</p>}
+              {createError && <p className="text-danger text-xs">{createError}</p>}
               <div className="flex gap-2 mt-2">
-                <button onClick={() => setShowCreate(false)} className="flex-1 py-2 rounded-lg border border-[#354064] text-[#8892b0] hover:border-[#4a5a7a] text-sm">취소</button>
-                <button onClick={handleCreate} disabled={isCreating} className="flex-1 py-2 rounded-lg bg-[#00f5ff] text-[#0a0e1a] font-semibold hover:bg-[#00d4e0] disabled:opacity-50 transition-colors text-sm">
+                <Button variant="secondary" onClick={() => setShowCreate(false)} className="flex-1">취소</Button>
+                <Button onClick={handleCreate} disabled={isCreating} className="flex-1">
                   {isCreating ? '생성 중...' : '생성'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

@@ -202,26 +202,26 @@ export function TerritoryGridPage() {
     <div className="page-root">
       <GNB />
 
-      <div className="bg-[#1a1f35] border-b border-[#354064] px-5 py-3 flex items-center gap-4 flex-shrink-0">
+      <div className="bg-panel border-b border-outline px-5 py-3 flex items-center gap-4 flex-shrink-0">
         <div className="flex items-center gap-3 flex-1">
-          <span className="text-[#e0e8ff] font-bold text-lg">
+          <span className="text-foreground font-bold text-lg">
             {territoryDetail
               ? `영토 (${territoryDetail.coordX}, ${territoryDetail.coordY}) · ${territoryDetail.continentName}`
               : `영토 #${id} 로딩 중...`}
           </span>
-          <div className="h-6 px-2 rounded bg-[#8b50ff] flex items-center">
+          <div className="h-6 px-2 rounded bg-secondary flex items-center">
             <span className="text-white font-bold text-[11px]">{territoryDetail?.grade ?? '-'}급</span>
           </div>
           {territoryDetail?.isInvincible && (
-            <div className="flex items-center gap-1 bg-[#2a3050] border border-[#00ff88] rounded px-2 py-1">
-              <span className="text-[#00ff88] text-[11px]">🛡 무적 보호 중</span>
+            <div className="flex items-center gap-1 bg-elevated border border-gp rounded px-2 py-1">
+              <span className="text-gp text-[11px]">🛡 무적 보호 중</span>
             </div>
           )}
         </div>
-        <span className="text-[#7788a5] text-sm">
+        <span className="text-muted text-sm">
           {territoryDetail?.owner ? `소유자: ${territoryDetail.owner.nickname}` : '미점령'}
         </span>
-        <button onClick={() => navigate('/app/map')} className="text-[#7788a5] hover:text-[#e0e8ff] text-xl">✕</button>
+        <button onClick={() => navigate('/app/map')} className="text-muted hover:text-foreground text-xl">✕</button>
       </div>
 
       {/* Mode indicator banners */}
@@ -229,9 +229,9 @@ export function TerritoryGridPage() {
         <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#1a1200', borderBottom: '1px solid #ffd70060' }}>
           <div className="flex items-center gap-2">
             <span className="text-sm">🔄</span>
-            <span className="text-[#ffd700] font-semibold text-[13px]">
+            <span className="text-gold font-semibold text-[13px]">
               이동 모드 — 이동할 빈 셀을 클릭하세요
-              {moveSourceCell && <span className="text-[#7788a5] ml-2 text-[11px]">출발: ({moveSourceCell.x}, {moveSourceCell.y})</span>}
+              {moveSourceCell && <span className="text-muted ml-2 text-[11px]">출발: ({moveSourceCell.x}, {moveSourceCell.y})</span>}
             </span>
           </div>
           <button onClick={cancelModes} className="h-7 px-3 rounded-lg border transition-colors text-xs" style={{ color: '#ffd700', borderColor: '#ffd70060' }}>취소</button>
@@ -241,9 +241,9 @@ export function TerritoryGridPage() {
         <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#001a10', borderBottom: '1px solid #00ff8860' }}>
           <div className="flex items-center gap-2">
             <span className="text-sm">📦</span>
-            <span className="text-[#00ff88] font-semibold text-[13px]">
+            <span className="text-gp font-semibold text-[13px]">
               배치 모드 — 배치할 빈 셀을 클릭하세요
-              <span className="text-[#7788a5] ml-2 text-[11px]">({buildingNames[inventory[deployFromInventoryIdx].type]})</span>
+              <span className="text-muted ml-2 text-[11px]">({buildingNames[inventory[deployFromInventoryIdx].type]})</span>
             </span>
           </div>
           <button onClick={cancelModes} className="h-7 px-3 rounded-lg border transition-colors text-xs" style={{ color: '#00ff88', borderColor: '#00ff8860' }}>취소</button>
@@ -259,7 +259,7 @@ export function TerritoryGridPage() {
                 const isSelected = selectedCell?.x === x && selectedCell?.y === y;
                 const isMoveSource = moveSourceCell?.x === x && moveSourceCell?.y === y;
                 const isActionTarget = (moveMode || deployFromInventoryIdx !== null) && cell.type === 'empty';
-                const bg = isMoveSource ? buildingColors[cell.type] + '80' : cell.type !== 'empty' ? buildingColors[cell.type] + '60' : '#0a0e1a';
+                const bg = isMoveSource ? buildingColors[cell.type] + '80' : cell.type !== 'empty' ? buildingColors[cell.type] + '60' : 'var(--color-surface)';
                 return (
                   <div
                     key={`${x}-${y}`}
@@ -307,40 +307,40 @@ export function TerritoryGridPage() {
             {[3, 2, 1].map(z => (
               <div key={z} className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded-sm border" style={{ background: zoneColor[z as 1|2|3], borderColor: zoneBorder[z as 1|2|3] }} />
-                <span className="text-[#7788a5] text-[11px]">Zone {z}</span>
+                <span className="text-muted text-[11px]">Zone {z}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="w-[240px] bg-[#0a0e1a] border-l border-[#354064] flex flex-col">
-          <div className="p-4 space-y-3 border-b border-[#354064]">
-            <p className="text-[#7788a5] font-semibold text-xs">자원 현황</p>
+        <div className="w-[240px] bg-surface border-l border-outline flex flex-col">
+          <div className="p-4 space-y-3 border-b border-outline">
+            <p className="text-muted font-semibold text-xs">자원 현황</p>
             {[
               { label: 'AP', val: ap.toLocaleString(), color: '#ff0066' },
               { label: 'GP', val: gp.toLocaleString(), color: '#00ff88' },
               { label: '금고', val: '8,200', color: '#ffd700' },
             ].map(item => (
               <div key={item.label} className="bg-[#12192c] rounded-lg p-3 flex items-center justify-between">
-                <span className="text-[#7788a5] text-[11px]">{item.label}</span>
+                <span className="text-muted text-[11px]">{item.label}</span>
                 <p className="font-bold text-base" style={{ color: item.color }}>{item.val}</p>
               </div>
             ))}
           </div>
 
-          <div className="p-4 space-y-2 border-b border-[#354064] flex-1 overflow-y-auto">
-            <p className="text-[#7788a5] font-semibold text-xs">건물 현황</p>
+          <div className="p-4 space-y-2 border-b border-outline flex-1 overflow-y-auto">
+            <p className="text-muted font-semibold text-xs">건물 현황</p>
             {activeBuildingStats.length === 0 ? (
-              <p className="text-[#354064] text-[11px]">배치된 건물 없음</p>
+              <p className="text-outline text-[11px]">배치된 건물 없음</p>
             ) : activeBuildingStats.map(b => (
               <div key={b.type}>
                 <div className="flex justify-between mb-0.5">
                   <span className="text-[11px]" style={{ color: b.color }}>{buildingLabels[b.type]}{b.count > 1 ? ` ×${b.count}` : ''}</span>
-                  <span className="text-[#7788a5] text-[10px]">Lv.{b.level}</span>
+                  <span className="text-muted text-[10px]">Lv.{b.level}</span>
                 </div>
                 <HealthBar hp={b.hp} maxHp={b.maxHp} color={b.color} height="h-1.5" />
-                <span className="text-[#7788a5] text-[9px]">{b.hp}/{b.maxHp}</span>
+                <span className="text-muted text-[9px]">{b.hp}/{b.maxHp}</span>
               </div>
             ))}
           </div>
@@ -348,26 +348,25 @@ export function TerritoryGridPage() {
           <div className="p-3 space-y-2">
             <button
               onClick={() => { setSelectedCell(null); setShowBuild(true); }}
-              className="w-full h-9 border border-[#00f5ff] rounded-lg text-[#00f5ff] hover:bg-[#00f5ff20] transition-colors text-xs"
+              className="w-full h-9 border border-primary rounded-lg text-primary hover:bg-primary/10 transition-colors text-xs"
             >
               건물 추가
             </button>
             <button
               onClick={() => setShowInventory(true)}
-              className="relative w-full h-9 border rounded-lg transition-colors hover:bg-[#8b50ff20] text-xs"
-              style={{ borderColor: '#8b50ff', color: '#8b50ff' }}
+              className="relative w-full h-9 border border-secondary rounded-lg text-secondary transition-colors hover:bg-[#8b50ff20] text-xs"
             >
               📦 보관함
               {inventory.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#8b50ff] text-white flex items-center justify-center text-[10px]">
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-secondary text-white flex items-center justify-center text-[10px]">
                   {inventory.length}
                 </span>
               )}
             </button>
-            <button className="w-full h-9 border border-[#8b50ff] rounded-lg text-[#8b50ff] hover:bg-[#8b50ff20] transition-colors text-xs">
+            <button className="w-full h-9 border border-secondary rounded-lg text-secondary hover:bg-[#8b50ff20] transition-colors text-xs">
               유닛 배치
             </button>
-            <button className="w-full h-9 bg-[#ffd700] rounded-lg text-[#0a0e1a] font-bold hover:brightness-110 transition-all text-xs">
+            <button className="w-full h-9 bg-gold rounded-lg text-surface font-bold hover:brightness-110 transition-all text-xs">
               금고로 이전
             </button>
           </div>
@@ -378,11 +377,11 @@ export function TerritoryGridPage() {
       {showBuild && (
         <div className="fixed inset-0 flex justify-end z-50">
           <div className="absolute inset-0 bg-black/60" onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} />
-          <div className="relative bg-[#1a1f35] border-[1.5px] border-[#00f5ff] w-[540px] flex flex-col overflow-hidden">
-            <div className="bg-[#2a3050] px-5 py-4 border-b-2 border-[#00f5ff] flex items-center justify-between">
+          <div className="relative bg-panel border-[1.5px] border-primary w-[540px] flex flex-col overflow-hidden">
+            <div className="bg-elevated px-5 py-4 border-b-2 border-primary flex items-center justify-between">
               <div>
-                <h3 className="text-[#e0e8ff] font-bold text-xl">🏗  건물 건설</h3>
-                <p className="text-[#7788a5] text-xs">
+                <h3 className="text-foreground font-bold text-xl">🏗  건물 건설</h3>
+                <p className="text-muted text-xs">
                   {selectedCell
                     ? `위치: (${selectedCell.x}, ${selectedCell.y}) · Zone ${selectedCellData?.zone ?? '-'} · `
                     : '빈 셀을 클릭하여 위치를 선택하세요 · '}
@@ -392,8 +391,8 @@ export function TerritoryGridPage() {
               <button onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} className="btn-close">✕</button>
             </div>
 
-            <div className="bg-[#2a3050] border border-[#ffd700] rounded-xl mx-4 mt-4 px-4 py-2.5">
-              <span className="text-[#ffd700] text-[11px]">ℹ  성(Castle)은 Zone 1 핵심 구역에만 배치 가능합니다</span>
+            <div className="bg-elevated border border-gold rounded-xl mx-4 mt-4 px-4 py-2.5">
+              <span className="text-gold text-[11px]">ℹ  성(Castle)은 Zone 1 핵심 구역에만 배치 가능합니다</span>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 pb-4 mt-4 space-y-2">
@@ -423,16 +422,16 @@ export function TerritoryGridPage() {
                       <span className="text-[22px]" style={{ color: buildingColors[b.type] }}>{buildingLabels[b.type]}</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-[#e0e8ff] font-semibold text-sm">{b.name}</p>
-                      <p className="text-[#7788a5] text-[11px]">{b.desc}</p>
-                      <p className="text-[#7788a5] text-[10px]">크기: {b.size}  ·  Zone: {b.zone}</p>
+                      <p className="text-foreground font-semibold text-sm">{b.name}</p>
+                      <p className="text-muted text-[11px]">{b.desc}</p>
+                      <p className="text-muted text-[10px]">크기: {b.size}  ·  Zone: {b.zone}</p>
                     </div>
                     {b.zoneRestricted ? (
-                      <div className="bg-[#ff333330] border border-[#ff3333] rounded px-2 py-1">
-                        <span className="text-[#ff3333] text-[10px]">Zone 제한</span>
+                      <div className="bg-danger/10 border border-danger/25 rounded px-2 py-1">
+                        <span className="text-danger text-[10px]">Zone 제한</span>
                       </div>
                     ) : b.cost && (
-                      <div className="border rounded px-2 py-1" style={{ background: isSel ? buildingColors[b.type] + '30' : '#1a1f35', borderColor: buildingColors[b.type] }}>
+                      <div className="border rounded px-2 py-1" style={{ background: isSel ? buildingColors[b.type] + '30' : 'var(--color-panel)', borderColor: buildingColors[b.type] }}>
                         <span className="text-xs" style={{ color: buildingColors[b.type] }}>{b.cost}</span>
                       </div>
                     )}
@@ -443,14 +442,14 @@ export function TerritoryGridPage() {
 
             {buildError && (
               <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-[#ff004420] border border-[#ff0044]">
-                <span className="text-[#ff3333] text-xs">⚠ {buildError}</span>
+                <span className="text-danger text-xs">⚠ {buildError}</span>
               </div>
             )}
 
-            <div className="border-t border-[#354064] p-4 flex gap-3">
+            <div className="border-t border-outline p-4 flex gap-3">
               <button
                 onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }}
-                className="flex-1 h-14 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-sm"
+                className="flex-1 h-14 bg-elevated border border-outline rounded-xl text-muted text-sm"
               >
                 취소
               </button>
@@ -482,19 +481,19 @@ export function TerritoryGridPage() {
                 <h3 className="font-bold text-lg" style={{ color: buildingColors[selectedCellData.type] }}>
                   {buildingNames[selectedCellData.type]}
                 </h3>
-                <p className="text-[#7788a5] text-xs">
+                <p className="text-muted text-xs">
                   위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData.zone} · Lv.{selectedCellData.level}
                 </p>
               </div>
               <button onClick={() => setShowBuildingAction(false)} className="btn-close">✕</button>
             </div>
 
-            <div className="px-5 py-3 border-b border-[#354064]">
+            <div className="px-5 py-3 border-b border-outline">
               <div className="flex justify-between mb-1">
-                <span className="text-[#7788a5] text-[11px]">HP</span>
+                <span className="text-muted text-[11px]">HP</span>
                 <span className="text-[11px]" style={{ color: buildingColors[selectedCellData.type] }}>{selectedCellData.hp} / {selectedCellData.maxHp}</span>
               </div>
-              <HealthBar hp={selectedCellData.hp ?? 0} maxHp={selectedCellData.maxHp ?? 0} color={buildingColors[selectedCellData.type]} height="h-2" bg="bg-[#0a0e1a]" />
+              <HealthBar hp={selectedCellData.hp ?? 0} maxHp={selectedCellData.maxHp ?? 0} color={buildingColors[selectedCellData.type]} height="h-2" bg="bg-surface" />
             </div>
 
             <div className="p-4 flex gap-3">
@@ -521,13 +520,13 @@ export function TerritoryGridPage() {
               </button>
               <button
                 onClick={() => setShowBuildingAction(false)}
-                className="flex-1 h-12 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5] text-[13px]"
+                className="flex-1 h-12 bg-elevated border border-outline rounded-xl text-muted text-[13px]"
               >
                 닫기
               </button>
             </div>
             {selectedCellData.type === 'castle' && (
-              <p className="text-center text-[#7788a5] pb-3 text-[11px]">성(Castle)은 영토의 핵심 건물로 보관함에 담을 수 없습니다</p>
+              <p className="text-center text-muted pb-3 text-[11px]">성(Castle)은 영토의 핵심 건물로 보관함에 담을 수 없습니다</p>
             )}
           </div>
         </div>
@@ -540,8 +539,8 @@ export function TerritoryGridPage() {
           <div className="relative rounded-2xl overflow-hidden flex flex-col" style={{ width: 480, maxHeight: '70vh', background: '#1a1f35', border: '1.5px solid #8b50ff' }}>
             <div className="px-5 py-4 flex items-center justify-between" style={{ background: '#1a0a35', borderBottom: '2px solid #8b50ff' }}>
               <div>
-                <h3 className="text-[#8b50ff] font-bold text-xl">📦 보관함</h3>
-                <p className="text-[#7788a5] text-xs">건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>
+                <h3 className="text-secondary font-bold text-xl">📦 보관함</h3>
+                <p className="text-muted text-xs">건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>
               </div>
               <button onClick={() => setShowInventory(false)} className="btn-close">✕</button>
             </div>
@@ -565,9 +564,9 @@ export function TerritoryGridPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm" style={{ color }}>{buildingNames[item.type]}</p>
-                          <p className="text-[#7788a5] text-[11px]">Lv.{item.level}</p>
+                          <p className="text-muted text-[11px]">Lv.{item.level}</p>
                           <HealthBar hp={item.hp} maxHp={item.maxHp} color={color} height="h-1.5" className="mt-1" />
-                          <span className="text-[#7788a5] text-[9px]">HP {item.hp}/{item.maxHp}</span>
+                          <span className="text-muted text-[9px]">HP {item.hp}/{item.maxHp}</span>
                         </div>
                         <button
                           onClick={() => { setDeployFromInventoryIdx(idx); setShowInventory(false); }}

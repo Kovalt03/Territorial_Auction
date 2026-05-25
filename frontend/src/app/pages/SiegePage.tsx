@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
 import { declareSiege } from '../api/siege';
 import { fetchTerritoryDetail } from '../api/map';
 import type { TerritoryDetailResponse } from '../types/territory';
@@ -96,9 +97,9 @@ export function SiegePage() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left - Attack Setup */}
-        <div className="w-[360px] bg-[#0a0e1a] border-r border-[#354064] flex flex-col">
-          <div className="p-4 border-b border-[#354064]">
-            <h2 className="text-[#ff3333] font-bold mb-3 text-lg">⚔ 공성전 준비</h2>
+        <div className="w-[360px] bg-surface border-r border-outline flex flex-col">
+          <div className="p-4 border-b border-outline">
+            <h2 className="text-danger font-bold mb-3 text-lg">⚔ 공성전 준비</h2>
             <div className="flex gap-2">
               <input
                 type="number"
@@ -106,23 +107,24 @@ export function SiegePage() {
                 onChange={e => { setTargetInput(e.target.value); setTargetTerritory(null); setTargetError(null); }}
                 onKeyDown={e => e.key === 'Enter' && void handleSearchTarget()}
                 placeholder="영토 ID 입력"
-                className="flex-1 bg-[#2a3050] border border-[#354064] rounded-lg px-3 h-9 text-[#e0e8ff] text-xs outline-none focus:border-[#ff3333] transition-colors"
+                className="flex-1 bg-elevated border border-outline rounded-lg px-3 h-9 text-foreground text-xs outline-none focus:border-danger transition-colors"
               />
-              <button
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={() => void handleSearchTarget()}
                 disabled={!targetInput || isSearching}
-                className="h-9 px-4 bg-[#ff3333] rounded-lg text-white text-xs font-semibold disabled:opacity-50"
               >
                 {isSearching ? '검색 중...' : '검색'}
-              </button>
+              </Button>
             </div>
-            {targetError && <p className="text-[#ff3333] text-[11px] mt-1.5">⚠ {targetError}</p>}
+            {targetError && <p className="text-danger text-[11px] mt-1.5">⚠ {targetError}</p>}
             {targetTerritory && (
               <div className="mt-2 bg-[#2a0a0a] border border-[#ff333360] rounded-lg px-3 py-2">
-                <p className="text-[#ff3333] text-xs font-semibold">
+                <p className="text-danger text-xs font-semibold">
                   ({targetTerritory.coordX}, {targetTerritory.coordY}) · {targetTerritory.continentName}
                 </p>
-                <p className="text-[#7788a5] text-[11px]">
+                <p className="text-muted text-[11px]">
                   {targetTerritory.grade}급 · {targetTerritory.owner?.nickname ?? '미점령'}
                 </p>
               </div>
@@ -130,8 +132,8 @@ export function SiegePage() {
           </div>
 
           {/* Zone Selection */}
-          <div className="p-4 border-b border-[#354064]">
-            <p className="text-[#7788a5] font-semibold mb-3 text-xs">공격 구역 선택</p>
+          <div className="p-4 border-b border-outline">
+            <p className="text-muted font-semibold mb-3 text-xs">공격 구역 선택</p>
             {zones.map(z => (
               <button
                 key={z.id}
@@ -144,9 +146,9 @@ export function SiegePage() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[13px] font-semibold" style={{ color: z.color }}>{z.name}</span>
-                  {selectedZone === z.id && <span className="text-[#00f5ff] text-[11px]">선택됨</span>}
+                  {selectedZone === z.id && <span className="text-primary text-[11px]">선택됨</span>}
                 </div>
-                <div className="bg-[#1a1f35] h-2 rounded-full overflow-hidden">
+                <div className="bg-panel h-2 rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all" style={{ width: `${(z.hp / z.maxHp) * 100}%`, background: z.color }} />
                 </div>
                 <p className="mt-1 text-[10px]" style={{ color: z.color }}>{z.hp} / {z.maxHp} HP</p>
@@ -155,8 +157,8 @@ export function SiegePage() {
           </div>
 
           {/* Attack Type */}
-          <div className="p-4 border-b border-[#354064]">
-            <p className="text-[#7788a5] font-semibold mb-3 text-xs">공격 토큰</p>
+          <div className="p-4 border-b border-outline">
+            <p className="text-muted font-semibold mb-3 text-xs">공격 토큰</p>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { id: 'normal' as AttackType, icon: '⚔', label: '일반 공격권', desc: 'GP 500 또는 AP 100', color: '#ff8c00' },
@@ -173,15 +175,15 @@ export function SiegePage() {
                 >
                   <span className="text-xl">{t.icon}</span>
                   <p className="mt-1 text-xs font-semibold" style={{ color: t.color }}>{t.label}</p>
-                  <p className="text-[#7788a5] text-[10px]">{t.desc}</p>
+                  <p className="text-muted text-[10px]">{t.desc}</p>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Unit Deployment */}
-          <div className="p-4 border-b border-[#354064] flex-1">
-            <p className="text-[#7788a5] font-semibold mb-3 text-xs">유닛 배치</p>
+          <div className="p-4 border-b border-outline flex-1">
+            <p className="text-muted font-semibold mb-3 text-xs">유닛 배치</p>
             {[
               { key: 'infantry' as keyof typeof units, label: '보병', icon: '🗡', max: 30, atk: 25, color: '#e0e8ff' },
               { key: 'archer' as keyof typeof units, label: '궁수', icon: '🏹', max: 20, atk: 30, color: '#00ff88' },
@@ -192,7 +194,7 @@ export function SiegePage() {
                 <div className="flex-1">
                   <div className="flex justify-between mb-1">
                     <span className="text-xs" style={{ color: u.color }}>{u.label}</span>
-                    <span className="text-[#7788a5] text-[10px]">공격력 {u.atk} · 최대 {u.max}</span>
+                    <span className="text-muted text-[10px]">공격력 {u.atk} · 최대 {u.max}</span>
                   </div>
                   <input
                     type="range"
@@ -204,37 +206,39 @@ export function SiegePage() {
                     style={{ accentColor: u.color }}
                   />
                 </div>
-                <div className="w-10 h-8 bg-[#12192c] border border-[#354064] rounded-lg flex items-center justify-center">
+                <div className="w-10 h-8 bg-[#12192c] border border-outline rounded-lg flex items-center justify-center">
                   <span className="text-[13px]" style={{ color: u.color }}>{units[u.key]}</span>
                 </div>
               </div>
             ))}
             <div className="bg-[#12192c] rounded-xl p-3 mt-2">
               <div className="flex justify-between">
-                <span className="text-[#7788a5] text-xs">총 유닛: {totalUnits}명</span>
-                <span className="text-[#ff3333] font-bold text-xs">총 공격력: {attackPower}</span>
+                <span className="text-muted text-xs">총 유닛: {totalUnits}명</span>
+                <span className="text-danger font-bold text-xs">총 공격력: {attackPower}</span>
               </div>
             </div>
           </div>
 
           <div className="p-4 space-y-2">
             {siegeError && (
-              <p className="text-[#ff3333] text-xs text-center">⚠ {siegeError}</p>
+              <p className="text-danger text-xs text-center">⚠ {siegeError}</p>
             )}
-            <button
+            <Button
+              variant="danger"
+              size="lg"
+              fullWidth
               onClick={() => setShowConfirm(true)}
               disabled={totalUnits === 0 || !targetTerritory}
-              className="w-full h-12 bg-[#ff3333] rounded-xl text-white font-bold text-[15px] hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {!targetTerritory ? '대상 영토를 선택하세요' : '⚔ 공성전 시작'}
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Right - Siege Map + Progress */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1 p-5 flex flex-col">
-            <h2 className="text-[#e0e8ff] font-bold mb-4 text-xl">공성전 현황</h2>
+            <h2 className="text-foreground font-bold mb-4 text-xl">공성전 현황</h2>
 
             {/* Target territory */}
             <div className="card p-4 mb-4">
@@ -242,25 +246,25 @@ export function SiegePage() {
                 <div>
                   {targetTerritory ? (
                     <>
-                      <p className="text-[#e0e8ff] font-bold text-base">
+                      <p className="text-foreground font-bold text-base">
                         ({targetTerritory.coordX}, {targetTerritory.coordY}) · {targetTerritory.continentName}
                       </p>
-                      <p className="text-[#7788a5] text-xs">
+                      <p className="text-muted text-xs">
                         방어자: {targetTerritory.owner?.nickname ?? '미점령'} · {targetTerritory.grade}급 영토
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="text-[#354064] font-bold text-base">대상 영토 미선택</p>
-                      <p className="text-[#7788a5] text-xs">왼쪽에서 영토 ID를 검색하세요</p>
+                      <p className="text-outline font-bold text-base">대상 영토 미선택</p>
+                      <p className="text-muted text-xs">왼쪽에서 영토 ID를 검색하세요</p>
                     </>
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="text-[#ffd700] font-bold text-lg">
+                  <p className="text-gold font-bold text-lg">
                     <Countdown seconds={7200} />
                   </p>
-                  <p className="text-[#7788a5] text-[11px]">공성 제한 시간</p>
+                  <p className="text-muted text-[11px]">공성 제한 시간</p>
                 </div>
               </div>
 
@@ -270,7 +274,7 @@ export function SiegePage() {
                     <span className="text-xs" style={{ color: z.color }}>{z.name}</span>
                     <span className="text-[11px]" style={{ color: z.color }}>{z.hp} / {z.maxHp}</span>
                   </div>
-                  <div className="bg-[#0a0e1a] h-3 rounded-full overflow-hidden">
+                  <div className="bg-surface h-3 rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all" style={{ width: `${(z.hp / z.maxHp) * 100}%`, background: z.color }} />
                   </div>
                 </div>
@@ -278,8 +282,8 @@ export function SiegePage() {
             </div>
 
             {/* Siege preview grid (10x10) */}
-            <div className="bg-[#0a0e1a] border border-[#354064] rounded-xl p-4 flex-1">
-              <p className="text-[#7788a5] mb-3 text-xs">영토 내부 구조</p>
+            <div className="bg-surface border border-outline rounded-xl p-4 flex-1">
+              <p className="text-muted mb-3 text-xs">영토 내부 구조</p>
               <div
                 className="grid gap-1"
                 style={{ gridTemplateColumns: 'repeat(10, 1fr)', maxWidth: 340, margin: '0 auto' }}
@@ -303,7 +307,7 @@ export function SiegePage() {
                 {zones.map(z => (
                   <div key={z.id} className="flex items-center gap-1">
                     <div className="w-3 h-3 rounded-sm border" style={{ background: z.color + '30', borderColor: z.color + '60' }} />
-                    <span className="text-[#7788a5] text-[10px]">Zone {z.id}</span>
+                    <span className="text-muted text-[10px]">Zone {z.id}</span>
                   </div>
                 ))}
               </div>
@@ -311,18 +315,18 @@ export function SiegePage() {
           </div>
 
           {siegeStarted && (
-            <div className="bg-[#2a0a0a] border-t-2 border-[#ff3333] p-4">
+            <div className="bg-[#2a0a0a] border-t-2 border-danger p-4">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-[#ff3333] rounded-full animate-pulse" />
-                <span className="text-[#ff3333] font-bold text-sm">공성전 진행 중 — {zone.name} 공격 중</span>
+                <div className="w-3 h-3 bg-danger rounded-full animate-pulse" />
+                <span className="text-danger font-bold text-sm">공성전 진행 중 — {zone.name} 공격 중</span>
                 <div className="ml-auto flex gap-2">
-                  <button onClick={() => setSiegeStarted(false)} className="h-8 px-4 bg-[#2a3050] border border-[#354064] rounded-lg text-[#7788a5] text-xs">
+                  <button onClick={() => setSiegeStarted(false)} className="h-8 px-4 bg-elevated border border-outline rounded-lg text-muted text-xs">
                     철수
                   </button>
                 </div>
               </div>
               <div className="mt-2 bg-[#1a0505] h-3 rounded-full overflow-hidden">
-                <div className="h-full bg-[#ff3333] rounded-full animate-pulse" style={{ width: '35%' }} />
+                <div className="h-full bg-danger rounded-full animate-pulse" style={{ width: '35%' }} />
               </div>
             </div>
           )}
@@ -331,30 +335,31 @@ export function SiegePage() {
 
       {showConfirm && (
         <div className="modal-overlay">
-          <div className="bg-[#1a1f35] border-2 border-[#ff3333] rounded-2xl p-8 max-w-sm mx-4 text-center">
+          <div className="bg-panel border-2 border-danger rounded-2xl p-8 max-w-sm mx-4 text-center">
             <span className="text-5xl">⚔</span>
-            <h3 className="text-[#ff3333] font-bold text-xl mt-3 mb-2">공성전 선언</h3>
-            <p className="text-[#7788a5] mb-5 text-[13px]">
+            <h3 className="text-danger font-bold text-xl mt-3 mb-2">공성전 선언</h3>
+            <p className="text-muted mb-5 text-[13px]">
               {zone.name}을 {totalUnits}명의 유닛으로 공격합니다.
               공격력: {attackPower}
             </p>
-            <div className="bg-[#2a0a0a] border border-[#ff3333] rounded-xl py-3 px-4 mb-5 text-left space-y-1">
-              <p className="text-[#7788a5] text-xs">
+            <div className="bg-[#2a0a0a] border border-danger rounded-xl py-3 px-4 mb-5 text-left space-y-1">
+              <p className="text-muted text-xs">
                 대상: ({targetTerritory?.coordX}, {targetTerritory?.coordY}) · {targetTerritory?.continentName}
               </p>
-              <p className="text-[#7788a5] text-xs">방어자: {targetTerritory?.owner?.nickname}</p>
-              <p className="text-[#7788a5] text-xs">공격 구역: {zone.name}</p>
-              <p className="text-[#7788a5] text-xs">총 유닛: {totalUnits}명 · 공격력: {attackPower}</p>
+              <p className="text-muted text-xs">방어자: {targetTerritory?.owner?.nickname}</p>
+              <p className="text-muted text-xs">공격 구역: {zone.name}</p>
+              <p className="text-muted text-xs">총 유닛: {totalUnits}명 · 공격력: {attackPower}</p>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowConfirm(false)}
                 className="btn-cancel">취소</button>
-              <button
+              <Button
+                variant="danger"
                 onClick={() => void handleStart()}
-                className="flex-1 h-11 bg-[#ff3333] rounded-xl text-white font-bold text-sm hover:brightness-110"
+                className="flex-1"
               >
                 공격 개시
-              </button>
+              </Button>
             </div>
           </div>
         </div>

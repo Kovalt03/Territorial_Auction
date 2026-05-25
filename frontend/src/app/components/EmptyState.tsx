@@ -9,8 +9,8 @@ export function EmptyState({ message, emoji, subMessage, className = 'py-8' }: P
   return (
     <div className={`flex flex-col items-center justify-center gap-3 text-center ${className}`}>
       {emoji && <span className="text-[40px]">{emoji}</span>}
-      <p className="text-[#7788a5] text-sm">{message}</p>
-      {subMessage && <p className="text-[#354064] text-xs">{subMessage}</p>}
+      <p className="text-muted text-sm">{message}</p>
+      {subMessage && <p className="text-outline text-xs">{subMessage}</p>}
     </div>
   );
 }
