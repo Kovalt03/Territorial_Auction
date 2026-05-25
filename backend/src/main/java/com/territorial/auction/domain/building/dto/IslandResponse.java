@@ -37,7 +37,21 @@ public record IslandResponse(
     public static IslandResponse of(HomeIsland island, List<BuildingInstance> buildings) {
         List<IslandBuildingInfo> buildingInfos =
                 buildings.stream().map(IslandBuildingInfo::from).toList();
+        int productionRate =
+                buildings.stream()
+                        .filter(
+                                b ->
+                                        !b.isDestroyed()
+                                                && "WORKSHOP".equals(b.getBuildingType().getName())
+                                                && b.getBuildingType().getGpProductionRate()
+                                                        != null)
+                        .mapToInt(b -> b.getLevel() * b.getBuildingType().getGpProductionRate())
+                        .sum();
         return new IslandResponse(
-                island.getId(), island.getGridSize(), island.getLevel(), 0, buildingInfos);
+                island.getId(),
+                island.getGridSize(),
+                island.getLevel(),
+                productionRate,
+                buildingInfos);
     }
 }

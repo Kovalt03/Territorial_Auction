@@ -22,13 +22,26 @@ public class WorkshopScheduler {
     @Transactional
     public void produceWorkshopGp() {
         LocalDateTime now = LocalDateTime.now();
-        List<Object[]> productions =
+
+        List<Object[]> territoryProductions =
                 buildingInstanceRepository.sumWorkshopGpProductionGroupedByOwner(now);
+        List<Object[]> islandProductions =
+                buildingInstanceRepository.sumIslandWorkshopGpProductionGroupedByOwner(now);
+
+        produceGp(territoryProductions);
+        produceGp(islandProductions);
+
+        log.info(
+                "생산소 GP 생산 완료. 영토 대상 유저 수={}, 섬 대상 유저 수={}",
+                territoryProductions.size(),
+                islandProductions.size());
+    }
+
+    private void produceGp(List<Object[]> productions) {
         for (Object[] row : productions) {
             Long ownerId = (Long) row[0];
             int gpAmount = ((Number) row[1]).intValue();
             walletRepository.findById(ownerId).ifPresent(w -> w.addGp(gpAmount));
         }
-        log.info("생산소 GP 생산 완료. 대상 유저 수={}", productions.size());
     }
 }
