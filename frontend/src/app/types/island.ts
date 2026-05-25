@@ -33,3 +33,11 @@ export interface InventoryItem {
   quantity: number;
   acquiredAt: string;
 }
+
+export interface PlaceFromInventoryResponse {
+  buildingId: number;
+  buildingType: string;
+  posX: number;
+  posY: number;
+  territoryId: number | null;
+}
