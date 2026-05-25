@@ -11,7 +11,7 @@ export function signupApi(username: string, email: string, password: string, nic
 }
 
 export function checkUsernameApi(username: string) {
-  return apiClient.get<void>(`/auth/check-username?username=${encodeURIComponent(username)}`);
+  return apiClient.get<void>(`/auth/check/username?username=${encodeURIComponent(username)}`);
 }
 
 export function logoutApi() {

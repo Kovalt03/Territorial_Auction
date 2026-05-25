@@ -21,3 +21,18 @@ export interface PurchaseItemResponse {
   costAP: number;
   remainingAP: number;
 }
+
+export interface UserItemInfo {
+  userItemId: number;
+  itemId: number;
+  itemName: string;
+  itemType: string;
+  description: string;
+  quantity: number;
+  acquiredAt: string;
+}
+
+export interface ItemInventoryResponse {
+  totalCount: number;
+  items: UserItemInfo[];
+}

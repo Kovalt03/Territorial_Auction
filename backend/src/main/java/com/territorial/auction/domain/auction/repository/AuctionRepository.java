@@ -22,7 +22,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                             + " JOIN FETCH a.territory t"
                             + " JOIN FETCH t.continent"
                             + " JOIN FETCH t.grade"
-                            + " LEFT JOIN a.currentBidder"
+                            + " LEFT JOIN FETCH a.currentBidder"
                             + " WHERE (:continentId IS NULL OR t.continent.id = :continentId)"
                             + " AND (:status IS NULL"
                             + "   OR (:status = 'BIDDING' AND a.endAt > :now)"

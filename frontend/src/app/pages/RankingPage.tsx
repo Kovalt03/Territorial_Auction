@@ -19,7 +19,7 @@ const categoryLabel: Record<Category, { label: string; icon: string }> = {
   production: { label: '생산 효율왕', icon: '⚙️' },
 };
 
-const RANK_COLORS = ['#ffd700', '#bfbfbf', '#cc8033'];
+const RANK_COLORS = ['#ffd700', '#8892b0', '#ff8c00'];
 
 interface NormalizedEntry {
   rank: number;
@@ -59,13 +59,13 @@ function PodiumCard({ entry, height, medal }: { entry: NormalizedEntry; height: 
         style={{ background: color + '4d', border: `2px solid ${color}`, color }}>
         {initial(entry.nickname)}
       </div>
-      <span style={{ fontSize: 30 }}>{medal}</span>
+      <span className="text-[30px]">{medal}</span>
       <div className="w-40 rounded-xl flex flex-col items-center py-4 mb-2"
         style={{ height, background: color + '18', border: `${entry.rank === 1 ? 2 : 1}px solid ${color}` }}>
-        <p className="font-bold" style={{ fontSize: 14, color }}>{entry.rank}위</p>
+        <p className="font-bold text-sm" style={{ color }}>{entry.rank}위</p>
       </div>
-      <p className="font-bold" style={{ fontSize: 13, color }}>{entry.nickname}</p>
-      <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 18 }}>{entry.valueLabel}</p>
+      <p className="font-bold text-[13px]" style={{ color }}>{entry.nickname}</p>
+      <p className="text-foreground font-semibold text-lg">{entry.valueLabel}</p>
     </div>
   );
 }
@@ -74,13 +74,13 @@ function LoadingRows() {
   return (
     <>
       {Array.from({ length: 6 }, (_, i) => (
-        <div key={i} className="grid px-4 py-3 border-b border-[#1e2a3d] items-center animate-pulse"
+        <div key={i} className="grid px-4 py-3 border-b border-outline items-center animate-pulse"
           style={{ gridTemplateColumns: '80px 1fr 1fr 1fr 1fr' }}>
-          <div className="h-4 bg-[#2a3050] rounded w-12" />
-          <div className="h-4 bg-[#2a3050] rounded w-24" />
-          <div className="h-4 bg-[#2a3050] rounded w-16" />
-          <div className="h-4 bg-[#2a3050] rounded w-20" />
-          <div className="h-4 bg-[#2a3050] rounded w-16" />
+          <div className="h-4 bg-elevated rounded w-12" />
+          <div className="h-4 bg-elevated rounded w-24" />
+          <div className="h-4 bg-elevated rounded w-16" />
+          <div className="h-4 bg-elevated rounded w-20" />
+          <div className="h-4 bg-elevated rounded w-16" />
         </div>
       ))}
     </>
@@ -113,36 +113,34 @@ export function RankingPage() {
   const podiumMedals = ['🥈', '🥇', '🥉'];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
-      <div className="flex-1 overflow-y-auto p-5">
-        <h1 className="text-[#e0e8ff] font-bold mb-4" style={{ fontSize: 26 }}>🏆  랭킹 리더보드</h1>
+      <div className="page-body">
+        <h1 className="text-foreground font-bold mb-4 text-[26px]">🏆  랭킹 리더보드</h1>
 
-        <div className="bg-[#2a3050] border border-[#354064] rounded-xl p-1 flex gap-1 mb-4 w-fit">
+        <div className="bg-elevated border border-outline rounded-xl p-1 flex gap-1 mb-4 w-fit">
           {(Object.keys(periodLabel) as Period[]).map(p => (
             <button key={p} onClick={() => setPeriod(p)}
-              className={`px-5 py-2 rounded-lg transition-all font-semibold ${period === p ? 'bg-[#00f5ff] text-[#0a0e1a]' : 'text-[#7788a5] hover:text-[#e0e8ff]'}`}
-              style={{ fontSize: 13 }}>
+              className={`px-5 py-2 rounded-lg transition-all font-semibold text-[13px] ${period === p ? 'bg-primary text-surface' : 'text-muted hover:text-foreground'}`}>
               {periodLabel[p]}
             </button>
           ))}
         </div>
 
-        <div className="bg-[#1a1f35] border border-[#354064] flex mb-5">
+        <div className="bg-panel border border-outline flex mb-5">
           {(Object.keys(categoryLabel) as Category[]).map(c => (
             <button key={c} onClick={() => setCategory(c)}
-              className={`flex-1 py-3 font-semibold transition-colors relative ${category === c ? 'text-[#00f5ff] bg-[#2a3050]' : 'text-[#7788a5] hover:text-[#e0e8ff]'}`}
-              style={{ fontSize: 13 }}>
+              className={`flex-1 py-3 font-semibold transition-colors relative text-[13px] ${category === c ? 'text-primary bg-elevated' : 'text-muted hover:text-foreground'}`}>
               {categoryLabel[c].icon} {categoryLabel[c].label}
-              {category === c && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00f5ff]" />}
+              {category === c && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
             </button>
           ))}
         </div>
 
         {!isApiCategory ? (
-          <div className="flex items-center justify-center h-48 bg-[#1a1f35] border border-[#354064] rounded-xl">
-            <p className="text-[#4a5a7a]" style={{ fontSize: 14 }}>준비 중입니다</p>
+          <div className="flex items-center justify-center h-48 card">
+            <p className="text-muted text-sm">준비 중입니다</p>
           </div>
         ) : (
           <>
@@ -150,14 +148,14 @@ export function RankingPage() {
               <div className="flex items-end justify-center gap-4 mb-6" style={{ height: 280 }}>
                 {[130, 160, 110].map((h, i) => (
                   <div key={i} className="flex flex-col items-center gap-2 animate-pulse">
-                    <div className="w-14 h-14 rounded-full bg-[#2a3050]" />
-                    <div className="w-40 rounded-xl bg-[#2a3050]" style={{ height: h }} />
+                    <div className="w-14 h-14 rounded-full bg-elevated" />
+                    <div className="w-40 rounded-xl bg-elevated" style={{ height: h }} />
                   </div>
                 ))}
               </div>
             ) : top3.length === 0 ? (
-              <div className="flex items-center justify-center h-48 bg-[#1a1f35] border border-[#354064] rounded-xl mb-6">
-                <p className="text-[#4a5a7a]" style={{ fontSize: 14 }}>랭킹 데이터가 없습니다</p>
+              <div className="flex items-center justify-center h-48 card mb-6">
+                <p className="text-muted text-sm">랭킹 데이터가 없습니다</p>
               </div>
             ) : (
               <div className="flex items-end justify-center gap-4 mb-6 relative" style={{ height: 280 }}>
@@ -172,12 +170,12 @@ export function RankingPage() {
               </div>
             )}
 
-            <div className="bg-[#1a1f35] border border-[#354064] rounded-xl overflow-hidden">
-              <div className="bg-[#2a3050] px-4 py-2.5 border-b-2 border-[#00f5ff] flex items-center justify-between">
-                <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>4위 이하 순위</span>
+            <div className="card overflow-hidden">
+              <div className="bg-elevated px-4 py-2.5 border-b-2 border-primary flex items-center justify-between">
+                <span className="text-foreground font-semibold text-[13px]">4위 이하 순위</span>
               </div>
-              <div className="grid text-[#7788a5] px-4 py-2.5 border-b border-[#354064]"
-                style={{ gridTemplateColumns: '80px 1fr 1fr', fontSize: 11 }}>
+              <div className="grid text-muted px-4 py-2.5 border-b border-outline text-[11px]"
+                style={{ gridTemplateColumns: '80px 1fr 1fr' }}>
                 <span>순위</span>
                 <span>플레이어</span>
                 <span>{category === 'territory' ? '점유 영토' : '총 지출'}</span>
@@ -185,25 +183,42 @@ export function RankingPage() {
               {isLoading ? (
                 <LoadingRows />
               ) : rest.length === 0 ? (
-                <div className="px-4 py-6 text-center text-[#4a5a7a]" style={{ fontSize: 12 }}>데이터가 없습니다</div>
+                <div className="px-4 py-6 text-center text-muted text-xs">데이터가 없습니다</div>
               ) : (
                 rest.map((r, i) => (
                   <div key={r.rank}
-                    className={`grid px-4 py-3 border-b border-[#1e2a3d] items-center hover:bg-[#12192c] transition-colors ${i % 2 === 0 ? 'bg-[#12192c] bg-opacity-30' : ''}`}
+                    className={`grid px-4 py-3 border-b border-outline items-center hover:bg-[#12192c] transition-colors ${i % 2 === 0 ? 'bg-[#12192c] bg-opacity-30' : ''}`}
                     style={{ gridTemplateColumns: '80px 1fr 1fr' }}>
-                    <span className="text-[#e0e8ff] font-bold" style={{ fontSize: 14 }}>{r.rank}위</span>
+                    <span className="text-foreground font-bold text-sm">{r.rank}위</span>
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white"
-                        style={{ background: '#8892b04d', fontSize: 14 }}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-sm bg-[#8892b04d]">
                         {initial(r.nickname)}
                       </div>
-                      <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>{r.nickname}</span>
+                      <span className="text-foreground font-semibold text-[13px]">{r.nickname}</span>
                     </div>
-                    <span className="text-[#ffd700] font-medium" style={{ fontSize: 13 }}>{r.valueLabel}</span>
+                    <span className="text-gold font-medium text-[13px]">{r.valueLabel}</span>
                   </div>
                 ))
               )}
             </div>
+
+            {(() => {
+              const myRank = category === 'territory' ? holdData?.myRank : spendData?.myRank;
+              const myScore = category === 'territory' ? holdData?.myScore : spendData?.myScore;
+              if (!myRank) return null;
+              const myValueLabel = category === 'territory'
+                ? `${myScore ?? 0}개`
+                : `${(myScore ?? 0).toLocaleString()} AP`;
+              return (
+                <div className="mt-3 card px-4 py-3 flex items-center justify-between border-primary">
+                  <div className="flex items-center gap-3">
+                    <span className="text-primary font-bold text-sm">내 순위</span>
+                    <span className="text-foreground font-bold text-lg">{myRank}위</span>
+                  </div>
+                  <span className="text-gold font-semibold text-sm">{myValueLabel}</span>
+                </div>
+              );
+            })()}
           </>
         )}
       </div>

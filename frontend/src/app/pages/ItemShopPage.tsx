@@ -1,44 +1,119 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useItems } from '../hooks/useItems';
-import { purchaseItem } from '../api/item';
+import { purchaseItem, fetchInventory } from '../api/item';
 import { fetchMyWallet } from '../api/user';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
-import type { ItemInfo } from '../types/item';
+import type { ItemInfo, UserItemInfo } from '../types/item';
 
 const ITEM_META: Record<string, { icon: string; color: string }> = {
-  INVINCIBILITY:   { icon: '🛡', color: '#00f5ff' },
-  ATTACK_NORMAL:   { icon: '⚔', color: '#ff8c00' },
+  INVINCIBILITY:    { icon: '🛡', color: '#00f5ff' },
+  ATTACK_NORMAL:    { icon: '⚔', color: '#ff8c00' },
   ATTACK_PRECISION: { icon: '🎯', color: '#ff3333' },
-  GP_PURCHASE:     { icon: '💎', color: '#00ff88' },
+  GP_PURCHASE:      { icon: '💎', color: '#00ff88' },
 };
 
 function itemMeta(itemType: string) {
   return ITEM_META[itemType] ?? { icon: '📦', color: '#8892b0' };
 }
 
+function InventoryTab() {
+  const [inventory, setInventory] = useState<UserItemInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchInventory()
+      .then(res => setInventory(res.items))
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-panel border border-outline rounded-2xl h-20 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (inventory.length === 0) {
+    return (
+      <div className="text-center py-16 text-muted">
+        <p className="text-4xl mb-3">📦</p>
+        <p className="text-sm">보유 중인 아이템이 없습니다.</p>
+        <p className="text-xs mt-1">아이템 샵에서 구매해보세요.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {inventory.map(item => {
+        const meta = itemMeta(item.itemType);
+        return (
+          <div key={item.userItemId} className="bg-panel border rounded-2xl p-4 flex items-center gap-4"
+            style={{ borderColor: meta.color + '60' }}>
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: meta.color + '20', border: `1px solid ${meta.color}` }}>
+              <span className="text-[22px]">{meta.icon}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-foreground font-bold text-sm">{item.itemName}</p>
+              <p className="text-muted text-xs truncate">{item.description}</p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="font-bold text-lg" style={{ color: meta.color }}>{item.quantity}개</p>
+              <p className="text-muted text-[10px]">보유 수량</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ItemShopPage() {
   const { ap, gp, syncAP, syncGP } = useApp();
   const { items, isLoading, error, updateInventory } = useItems();
+  const [tab, setTab] = useState<'shop' | 'inventory'>('shop');
   const [confirmItem, setConfirmItem] = useState<ItemInfo | null>(null);
+  const [qty, setQty] = useState(1);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
-  const handlePurchase = async (item: ItemInfo) => {
+  const openConfirm = (item: ItemInfo) => {
+    setConfirmItem(item);
+    setQty(1);
+    setPurchaseError(null);
+  };
+
+  const maxQty = (item: ItemInfo): number => {
+    const byBalance = item.costAP != null
+      ? Math.floor(ap / item.costAP)
+      : item.costGP != null ? Math.floor(gp / item.costGP) : 99;
+    const byLimit = item.dailyLimit != null
+      ? item.dailyLimit - item.myInventory
+      : 99;
+    return Math.max(1, Math.min(byBalance, byLimit));
+  };
+
+  const handlePurchase = async (item: ItemInfo, quantity: number) => {
     setConfirmItem(null);
     setIsPurchasing(true);
     setPurchaseError(null);
     try {
-      const result = await purchaseItem(item.itemId, 1);
+      const result = await purchaseItem(item.itemId, quantity);
       syncAP(result.remainingAP);
       updateInventory(item.itemId, result.totalOwned);
-      if (item.costAP == null && item.costGP != null) {
+      if (item.itemType === 'GP_PURCHASE') {
         const wallet = await fetchMyWallet();
         syncGP(wallet.availableGP);
       }
-      setSuccessMsg(`${item.name} 구매 완료!`);
+      setSuccessMsg(`${item.name} ${quantity}개 구매 완료!`);
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch {
       setPurchaseError('구매에 실패했습니다. 다시 시도해주세요.');
@@ -48,44 +123,59 @@ export function ItemShopPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
-      <div className="flex-1 overflow-y-auto p-5">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-[#e0e8ff] font-bold" style={{ fontSize: 26 }}>🛍  아이템 샵</h1>
+      <div className="page-body">
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-foreground font-bold text-[26px]">🛍  아이템 샵</h1>
           <div className="flex gap-3">
-            <div className="bg-[#2a3050] border border-[#ff0066] rounded-lg px-4 py-2 flex items-center gap-2">
-              <span className="text-[#ff0066] font-semibold" style={{ fontSize: 14 }}>⚡ {ap.toLocaleString()} AP</span>
+            <div className="bg-elevated border border-ap rounded-lg px-4 py-2 flex items-center gap-2">
+              <span className="text-ap font-semibold text-sm">⚡ {ap.toLocaleString()} AP</span>
             </div>
-            <div className="bg-[#2a3050] border border-[#00ff88] rounded-lg px-4 py-2 flex items-center gap-2">
-              <span className="text-[#00ff88] font-semibold" style={{ fontSize: 14 }}>💎 {gp.toLocaleString()} GP</span>
+            <div className="bg-elevated border border-gp rounded-lg px-4 py-2 flex items-center gap-2">
+              <span className="text-gp font-semibold text-sm">💎 {gp.toLocaleString()} GP</span>
             </div>
           </div>
         </div>
 
+        {/* 탭 */}
+        <div className="flex gap-1 bg-elevated border border-outline rounded-xl p-1 mb-5">
+          {(['shop', 'inventory'] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+              style={tab === t
+                ? { background: '#2a3050', color: '#e0e8ff' }
+                : { color: '#7788a5' }}>
+              {t === 'shop' ? '🛒 샵' : '📦 보유 아이템'}
+            </button>
+          ))}
+        </div>
+
         {(error || purchaseError) && (
-          <div className="bg-[#ffd70010] border border-[#ffd70040] rounded-xl px-4 py-2.5 mb-4">
-            <span className="text-[#ffd700]" style={{ fontSize: 12 }}>⚠ {purchaseError ?? error}</span>
+          <div className="bg-gold/10 border border-gold/25 rounded-xl px-4 py-2.5 mb-4">
+            <span className="text-gold text-xs">⚠ {purchaseError ?? error}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="bg-[#00ff8820] border border-[#00ff88] rounded-xl px-4 py-3 mb-4">
-            <span className="text-[#00ff88]" style={{ fontSize: 13 }}>✓ {successMsg}</span>
+          <div className="bg-gp/10 border border-gp rounded-xl px-4 py-3 mb-4">
+            <span className="text-gp text-[13px]">✓ {successMsg}</span>
           </div>
         )}
 
-        {isLoading ? (
+        {tab === 'inventory' ? (
+          <InventoryTab />
+        ) : isLoading ? (
           <div className="grid grid-cols-2 gap-4">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-[#1a1f35] border border-[#354064] rounded-2xl p-5 h-36 animate-pulse">
+              <div key={i} className="bg-panel border border-outline rounded-2xl p-5 h-36 animate-pulse">
                 <div className="flex gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-[#2a3050]" />
+                  <div className="w-16 h-16 rounded-2xl bg-elevated" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-[#2a3050] rounded w-32" />
-                    <div className="h-3 bg-[#2a3050] rounded w-24" />
-                    <div className="h-6 bg-[#2a3050] rounded w-20" />
+                    <div className="h-4 bg-elevated rounded w-32" />
+                    <div className="h-3 bg-elevated rounded w-24" />
+                    <div className="h-6 bg-elevated rounded w-20" />
                   </div>
                 </div>
               </div>
@@ -97,20 +187,26 @@ export function ItemShopPage() {
               const meta = itemMeta(item.itemType);
               const isExhausted = item.dailyLimit != null && item.myInventory >= item.dailyLimit;
               return (
-                <div key={item.itemId} className="bg-[#1a1f35] border rounded-2xl overflow-hidden"
+                <div key={item.itemId} className="bg-panel border rounded-2xl overflow-hidden"
                   style={{ borderColor: meta.color + '80' }}>
                   <div className="p-5 flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
                       style={{ background: meta.color + '20', border: `1px solid ${meta.color}` }}>
-                      <span style={{ fontSize: 28 }}>{meta.icon}</span>
+                      <span className="text-[28px]">{meta.icon}</span>
+                      {item.myInventory > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center"
+                          style={{ background: meta.color, color: '#0a0e1a' }}>
+                          {item.myInventory}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-[#e0e8ff] font-bold mb-1" style={{ fontSize: 16 }}>{item.name}</h3>
-                      <p className="text-[#7788a5] mb-2" style={{ fontSize: 13 }}>{item.description}</p>
+                      <h3 className="text-foreground font-bold mb-1 text-base">{item.name}</h3>
+                      <p className="text-muted mb-2 text-[13px]">{item.description}</p>
                       {item.dailyLimit != null && (
-                        <div className="bg-[#2a3050] border border-[#354064] rounded px-2 py-1 inline-block mb-2">
-                          <span className="text-[#ffd700]" style={{ fontSize: 11 }}>
-                            일 {item.dailyLimit}회 한도 (오늘 {item.myInventory}/{item.dailyLimit}회)
+                        <div className="bg-elevated border border-outline rounded px-2 py-1 inline-block mb-2">
+                          <span className="text-gold text-[11px]">
+                            일 {item.dailyLimit}회 한도 ({item.myInventory}/{item.dailyLimit})
                           </span>
                         </div>
                       )}
@@ -118,25 +214,25 @@ export function ItemShopPage() {
                         {item.costAP != null && (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
                             style={{ background: meta.color + '20', border: `1px solid ${meta.color}` }}>
-                            <span className="font-bold" style={{ fontSize: 16, color: meta.color }}>{item.costAP} AP</span>
+                            <span className="font-bold text-base" style={{ color: meta.color }}>{item.costAP} AP</span>
                           </div>
                         )}
                         {item.costGP != null && (
                           <>
-                            {item.costAP != null && <span className="text-[#7788a5]" style={{ fontSize: 12 }}>또는</span>}
+                            {item.costAP != null && <span className="text-muted text-xs">또는</span>}
                             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
                               style={{ background: '#00f5ff20', border: '1px solid #00f5ff' }}>
-                              <span className="font-bold text-[#00f5ff]" style={{ fontSize: 16 }}>{item.costGP} GP</span>
+                              <span className="font-bold text-primary text-base">{item.costGP} GP</span>
                             </div>
                           </>
                         )}
                       </div>
                     </div>
                     <button
-                      onClick={() => setConfirmItem(item)}
+                      onClick={() => openConfirm(item)}
                       disabled={isExhausted || isPurchasing}
-                      className="h-10 px-5 rounded-xl font-bold transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ background: meta.color, color: '#0a0e1a', fontSize: 14 }}>
+                      className="h-10 px-5 rounded-xl font-bold text-sm text-surface transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ background: meta.color }}>
                       구매
                     </button>
                   </div>
@@ -145,47 +241,69 @@ export function ItemShopPage() {
             })}
           </div>
         )}
-
-        <div className="mt-6 bg-[#2a3050] border border-[#354064] rounded-xl p-4">
-          <p className="text-[#7788a5]" style={{ fontSize: 12 }}>
-            💡 구매한 아이템은 마이페이지 &gt; 아이템 탭에서 확인하실 수 있습니다.
-            GP 구매권은 매일 자정에 횟수가 초기화됩니다.
-          </p>
-        </div>
       </div>
 
-      {confirmItem && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
-          <div className="bg-[#1a1f35] rounded-2xl p-8 max-w-sm mx-4 text-center"
-            style={{ border: `2px solid ${itemMeta(confirmItem.itemType).color}` }}>
-            <span style={{ fontSize: 40 }}>{itemMeta(confirmItem.itemType).icon}</span>
-            <h3 className="text-[#e0e8ff] font-bold text-xl mt-3 mb-2">{confirmItem.name}</h3>
-            <p className="text-[#7788a5] mb-5" style={{ fontSize: 13 }}>{confirmItem.description}</p>
-            <div className="bg-[#2a3050] rounded-xl py-4 mb-6">
-              <p className="text-[#7788a5]" style={{ fontSize: 12 }}>차감 금액</p>
-              <p className="font-bold" style={{ fontSize: 24, color: itemMeta(confirmItem.itemType).color }}>
-                {confirmItem.costAP != null ? `${confirmItem.costAP} AP` : `${confirmItem.costGP} GP`}
-              </p>
-              <p className="text-[#7788a5]" style={{ fontSize: 11 }}>
-                잔여: {confirmItem.costAP != null
-                  ? `${ap.toLocaleString()} → ${(ap - (confirmItem.costAP ?? 0)).toLocaleString()} AP`
-                  : `${gp.toLocaleString()} → ${(gp - (confirmItem.costGP ?? 0)).toLocaleString()} GP`}
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmItem(null)}
-                className="flex-1 h-11 bg-[#2a3050] border border-[#354064] rounded-xl text-[#7788a5]"
-                style={{ fontSize: 14 }}>취소</button>
-              <button onClick={() => void handlePurchase(confirmItem)}
-                disabled={isPurchasing}
-                className="flex-1 h-11 rounded-xl text-[#0a0e1a] font-bold disabled:opacity-50"
-                style={{ background: itemMeta(confirmItem.itemType).color, fontSize: 14 }}>
-                {isPurchasing ? '처리중...' : '구매하기'}
-              </button>
+      {confirmItem && (() => {
+        const meta = itemMeta(confirmItem.itemType);
+        const unitCost = confirmItem.costAP ?? confirmItem.costGP ?? 0;
+        const totalCost = unitCost * qty;
+        const useAP = confirmItem.costAP != null;
+        const remaining = useAP ? ap - totalCost : gp - totalCost;
+        const max = maxQty(confirmItem);
+        return (
+          <div className="modal-overlay">
+            <div className="bg-panel rounded-2xl p-8 max-w-sm mx-4 text-center"
+              style={{ border: `2px solid ${meta.color}` }}>
+              <span className="text-[40px]">{meta.icon}</span>
+              <h3 className="text-foreground font-bold text-xl mt-3 mb-1">{confirmItem.name}</h3>
+              <p className="text-muted mb-5 text-[13px]">{confirmItem.description}</p>
+
+              {/* 수량 선택 */}
+              <div className="flex items-center justify-center gap-4 mb-5">
+                <button
+                  onClick={() => setQty(q => Math.max(1, q - 1))}
+                  disabled={qty <= 1}
+                  className="w-10 h-10 rounded-xl border border-outline text-foreground text-xl font-bold disabled:opacity-30 hover:border-[#00f5ff] transition-colors">
+                  −
+                </button>
+                <span className="text-foreground font-bold text-3xl w-12 text-center">{qty}</span>
+                <button
+                  onClick={() => setQty(q => Math.min(max, q + 1))}
+                  disabled={qty >= max}
+                  className="w-10 h-10 rounded-xl border border-outline text-foreground text-xl font-bold disabled:opacity-30 hover:border-[#00f5ff] transition-colors">
+                  +
+                </button>
+              </div>
+
+              {/* 비용 요약 */}
+              <div className="bg-elevated rounded-xl py-4 mb-6">
+                <p className="text-muted text-xs mb-1">총 차감 금액</p>
+                <p className="font-bold text-[24px]" style={{ color: meta.color }}>
+                  {totalCost.toLocaleString()} {useAP ? 'AP' : 'GP'}
+                </p>
+                {qty > 1 && (
+                  <p className="text-muted text-[11px]">
+                    {unitCost.toLocaleString()} × {qty}개
+                  </p>
+                )}
+                <p className="text-muted text-[11px] mt-1">
+                  잔여: {(useAP ? ap : gp).toLocaleString()} → {remaining.toLocaleString()} {useAP ? 'AP' : 'GP'}
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setConfirmItem(null)} className="btn-cancel">취소</button>
+                <button onClick={() => void handlePurchase(confirmItem, qty)}
+                  disabled={isPurchasing || remaining < 0}
+                  className="flex-1 h-11 rounded-xl text-surface font-bold text-sm disabled:opacity-50"
+                  style={{ background: meta.color }}>
+                  {isPurchasing ? '처리중...' : `${qty}개 구매`}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 
 import { fetchMyProfile, fetchMyWallet } from '../api/user';
 import { fetchMySeasonPass } from '../api/season';
+import { fetchNotificationList } from '../api/notification';
+import { disconnectStomp } from '../hooks/useStompClient';
 
 export interface Territory {
   id: string;
@@ -44,6 +46,7 @@ interface AppState {
   territories: Territory[];
   messages: ChatMessage[];
   isLoggedIn: boolean;
+  isAuthLoading: boolean;
   username: string;
   userId: number | null;
 }
@@ -55,34 +58,30 @@ interface AppContextType extends AppState {
   syncAP: (amount: number) => void;
   syncGP: (amount: number) => void;
   syncPass: (hasPass: boolean, expiresAt: string | null) => void;
-  useAP: (amount: number) => boolean;
-  useGP: (amount: number) => boolean;
+  spendAP: (amount: number) => boolean;
+  spendGP: (amount: number) => boolean;
   toggleWishlist: (id: string) => void;
   placeBid: (id: string, amount: number) => void;
   sendMessage: (text: string) => void;
   activatePass: () => void;
+  decrementNotification: () => void;
+  incrementNotification: () => void;
+  resetNotifications: () => void;
 }
-
-const defaultMessages: ChatMessage[] = [
-  { id: '1', user: '강남부자', message: '네온 하이웨이 경매 시작했어요!', time: '14:30' },
-  { id: '2', user: '픽셀왕', message: '사이버 협곡 방어 완료 👍', time: '14:28' },
-  { id: '3', user: '영토수집가', message: '글리치 구역 입찰 누가 함?', time: '14:25' },
-  { id: '4', user: '시스템', message: '새 경매가 시작되었습니다: 데이터 봉우리', time: '14:20' },
-  { id: '5', user: '사이버해커', message: '이번 시즌 GP 생산 최고 달성!', time: '14:15' },
-];
 
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>({
-    ap: 3500,
-    gp: 12800,
+    ap: 0,
+    gp: 0,
     hasPass: false,
     passEndDate: null,
-    notifications: 3,
+    notifications: 0,
     territories: [],
-    messages: defaultMessages,
+    messages: [],
     isLoggedIn: false,
+    isAuthLoading: !!localStorage.getItem('accessToken'),
     username: '',
     userId: null,
   });
@@ -95,6 +94,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setState(prev => ({
           ...prev,
           isLoggedIn: true,
+          isAuthLoading: false,
           username: profile.nickname,
           userId: profile.userId,
           ap: wallet.availableAP,
@@ -102,9 +102,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           hasPass: pass.hasSeasonPass,
           passEndDate: pass.seasonPass?.expiresAt ? new Date(pass.seasonPass.expiresAt) : null,
         }));
+        // 알림 카운트는 별도 fetch — 실패해도 로그인 상태에 영향 없음
+        fetchNotificationList(0, 1)
+          .then(notifs => setState(prev => ({ ...prev, notifications: notifs.unreadCount })))
+          .catch(() => {});
       })
       .catch(() => {
         localStorage.removeItem('accessToken');
+        setState(prev => ({ ...prev, isAuthLoading: false }));
       });
   }, []);
 
@@ -115,14 +120,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isLoggedIn: true,
       username: name,
       userId: opts?.userId ?? null,
-      ap: opts?.ap ?? (prev.ap + 1000),
+      ap: opts?.ap ?? 0,
       gp: opts?.gp ?? prev.gp,
     }));
   };
 
   const logout = () => {
     localStorage.removeItem('accessToken');
-    setState(prev => ({ ...prev, isLoggedIn: false, username: '', userId: null }));
+    disconnectStomp();
+    setState(prev => ({ ...prev, isLoggedIn: false, username: '', userId: null, notifications: 0 }));
+  };
+
+  const decrementNotification = () => {
+    setState(prev => ({ ...prev, notifications: Math.max(0, prev.notifications - 1) }));
+  };
+
+  const incrementNotification = () => {
+    setState(prev => ({ ...prev, notifications: prev.notifications + 1 }));
+  };
+
+  const resetNotifications = () => {
+    setState(prev => ({ ...prev, notifications: 0 }));
   };
 
   const addAP = (amount: number) => {
@@ -145,13 +163,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const useAP = (amount: number): boolean => {
+  const spendAP = (amount: number): boolean => {
     if (state.ap < amount) return false;
     setState(prev => ({ ...prev, ap: prev.ap - amount }));
     return true;
   };
 
-  const useGP = (amount: number): boolean => {
+  const spendGP = (amount: number): boolean => {
     if (state.gp < amount) return false;
     setState(prev => ({ ...prev, gp: prev.gp - amount }));
     return true;
@@ -167,6 +185,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const placeBid = (id: string, amount: number) => {
+    const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
     setState(prev => ({
       ...prev,
       territories: prev.territories.map(t =>
@@ -176,7 +195,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               currentBid: amount,
               myBid: amount,
               bidHistory: [
-                { user: prev.username || '나', amount, time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) },
+                { user: prev.username || '나', amount, time },
                 ...t.bidHistory,
               ],
             }
@@ -186,13 +205,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const sendMessage = (text: string) => {
-    const msg: ChatMessage = {
-      id: Date.now().toString(),
-      user: state.username || '나',
-      message: text,
-      time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-    };
-    setState(prev => ({ ...prev, messages: [...prev.messages, msg] }));
+    const id = Date.now().toString();
+    const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    setState(prev => ({
+      ...prev,
+      messages: [...prev.messages, { id, user: prev.username || '나', message: text, time }],
+    }));
   };
 
   const activatePass = () => {
@@ -205,7 +223,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ ...state, login, logout, addAP, syncAP, syncGP, syncPass, useAP, useGP, toggleWishlist, placeBid, sendMessage, activatePass }}>
+    <AppContext.Provider value={{ ...state, login, logout, addAP, syncAP, syncGP, syncPass, spendAP, spendGP, toggleWishlist, placeBid, sendMessage, activatePass, decrementNotification, incrementNotification, resetNotifications }}>
       {children}
     </AppContext.Provider>
   );
