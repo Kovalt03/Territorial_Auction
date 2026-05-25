@@ -6,7 +6,7 @@ import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
 import { fetchTerritoryDetail } from '../api/map';
 import { placeBidApi } from '../api/auction';
-import { CONTINENTS } from './WorldMapPage';
+import { CONTINENTS } from '../data/continents';
 import type { GridTerritoryDto } from '../types/map';
 import type { Grade } from '../types/grade';
 import { GRADE_COLOR } from '../types/grade';
