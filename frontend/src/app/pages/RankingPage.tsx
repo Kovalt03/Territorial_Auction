@@ -15,7 +15,7 @@ const categoryLabel: Record<Category, { label: string; icon: string }> = {
   territory: { label: '영토 왕', icon: '🏰' },
   assets: { label: '자산가', icon: '💰' },
   trophy: { label: '트로피 랭킹', icon: '🏆' },
-  continent: { label: '대륙 지배자', icon: '👑' },
+  continent: { label: '행성 지배자', icon: '👑' },
   production: { label: '생산 효율왕', icon: '⚙️' },
 };
 
