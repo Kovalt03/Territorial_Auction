@@ -194,13 +194,16 @@ export function PersonalIslandPage() {
   };
 
   const [isBuilding, setIsBuilding] = useState(false);
+  const isBuildingRef = useRef(false);
 
   const handleBuild = async () => {
+    if (isBuildingRef.current) return;
     setBuildError('');
     if (!selectedBuilding) { setBuildError('건물을 선택해주세요.'); return; }
     if (!selectedCell) { setBuildError('그리드에서 빈 셀을 선택해주세요.'); return; }
     const typeId = BUILDING_TYPE_ID[selectedBuilding];
     if (!typeId) { setBuildError('아직 건설할 수 없는 건물입니다.'); return; }
+    isBuildingRef.current = true;
     setIsBuilding(true);
     try {
       const result = await placeIslandBuilding(typeId, selectedCell.x, selectedCell.y);
@@ -223,6 +226,7 @@ export function PersonalIslandPage() {
     } catch {
       setBuildError('건설에 실패했습니다. 다시 시도해주세요.');
     } finally {
+      isBuildingRef.current = false;
       setIsBuilding(false);
     }
   };

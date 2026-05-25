@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import { fetchIsland } from '../api/island';
 import { ApiError } from '../api/client';
@@ -8,8 +8,9 @@ export function useIsland() {
   const [island, setIsland] = useState<IslandData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadedRef = useRef(false);
 
-  const load = useCallback(async () => {
+  const load = async () => {
     setIsLoading(true);
     try {
       const data = await fetchIsland();
@@ -19,9 +20,14 @@ export function useIsland() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    void load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return { island, isLoading, error, reload: load };
 }
