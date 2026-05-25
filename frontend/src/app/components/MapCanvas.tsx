@@ -50,7 +50,9 @@ export function MapCanvas() {
     const s = stateRef.current;
     CONTINENTS.forEach(c => {
       s.particles.set(c.id, createParticles(c));
-      s.paths.set(c.id, new Path2D(c.pathData));
+      const p = new Path2D();
+      p.arc(c.cx, c.cy, c.halfHeight, 0, Math.PI * 2);
+      s.paths.set(c.id, p);
     });
   }, []);
 
@@ -204,7 +206,7 @@ export function MapCanvas() {
         <button onClick={resetView} className={BTN}>⊡</button>
       </div>
       <div className="absolute bottom-3 left-3 z-10 text-[#2a3a5a] text-[10px] pointer-events-none select-none">
-        스크롤로 줌 · 드래그로 이동 · 대륙 클릭으로 진입
+        스크롤로 줌 · 드래그로 이동 · 행성 클릭으로 진입
       </div>
     </div>
   );
