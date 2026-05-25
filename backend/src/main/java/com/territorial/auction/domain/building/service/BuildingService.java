@@ -10,6 +10,7 @@ import com.territorial.auction.domain.building.dto.PlaceBuildingRequest;
 import com.territorial.auction.domain.building.dto.PlaceBuildingResponse;
 import com.territorial.auction.domain.building.dto.PlaceFromInventoryRequest;
 import com.territorial.auction.domain.building.dto.PlaceFromInventoryResponse;
+import com.territorial.auction.domain.building.dto.PlaceOnIslandFromInventoryRequest;
 import com.territorial.auction.domain.building.dto.RepairBuildingResponse;
 import com.territorial.auction.domain.building.dto.StoreBuildingResponse;
 import com.territorial.auction.domain.building.dto.TerritoryBuildingResponse;
@@ -218,10 +219,13 @@ public class BuildingService {
             Long userId, Long inventoryId, PlaceFromInventoryRequest request) {
         BuildingInstance stored =
                 buildingInstanceRepository
-                        .findById(inventoryId)
+                        .findByIdWithLock(inventoryId)
                         .orElseThrow(() -> new CustomException(ErrorCode.BUILDING_NOT_FOUND));
 
-        if (!stored.isInInventory() || !userId.equals(stored.ownerId())) {
+        if (!stored.isInInventory()) {
+            throw new CustomException(ErrorCode.BUILDING_NOT_FOUND);
+        }
+        if (!userId.equals(stored.ownerId())) {
             throw new CustomException(ErrorCode.BUILDING_NOT_FOUND);
         }
 
@@ -244,6 +248,42 @@ public class BuildingService {
                 stored.getPosX(),
                 stored.getPosY(),
                 territory.getId());
+    }
+
+    @Transactional
+    public PlaceFromInventoryResponse placeFromInventoryOnIsland(
+            Long userId, Long inventoryId, PlaceOnIslandFromInventoryRequest request) {
+        BuildingInstance stored =
+                buildingInstanceRepository
+                        .findByIdWithLock(inventoryId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.BUILDING_NOT_FOUND));
+
+        if (!stored.isInInventory()) {
+            throw new CustomException(ErrorCode.BUILDING_NOT_FOUND);
+        }
+        if (!userId.equals(stored.ownerId())) {
+            throw new CustomException(ErrorCode.BUILDING_NOT_FOUND);
+        }
+
+        HomeIsland island =
+                homeIslandRepository
+                        .findByUserId(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.ISLAND_NOT_FOUND));
+
+        List<BuildingInstance> existing = buildingInstanceRepository.findByIslandId(island.getId());
+        int gridSize = island.getGridSize();
+        int zone = calculateZone(request.posX(), request.posY(), gridSize);
+        validatePosition(
+                existing, stored.getBuildingType(), request.posX(), request.posY(), gridSize);
+
+        stored.placeOnIsland(island, request.posX(), request.posY(), zone);
+
+        return new PlaceFromInventoryResponse(
+                stored.getId(),
+                stored.getBuildingType().getName(),
+                stored.getPosX(),
+                stored.getPosY(),
+                null);
     }
 
     @Transactional
