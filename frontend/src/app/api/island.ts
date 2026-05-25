@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { InventoryItem, IslandData, PlaceIslandBuildingResponse } from '../types/island';
+import type { InventoryItem, IslandData, PlaceFromInventoryResponse, PlaceIslandBuildingResponse } from '../types/island';
 
 export function fetchIsland() {
   return apiClient.get<IslandData>('/island');
@@ -17,6 +17,10 @@ export function moveBuilding(buildingId: number, posX: number, posY: number) {
   return apiClient.patch<unknown>(`/buildings/${buildingId}/move`, { posX, posY });
 }
 
-export function fetchBuildingInventory() {
-  return apiClient.get<InventoryItem[]>('/inventory');
+export function fetchBuildingInventory(): Promise<InventoryItem[]> {
+  return apiClient.get<{ items: InventoryItem[] }>('/inventory').then(r => r.items);
+}
+
+export function placeFromInventoryOnIsland(inventoryId: number, posX: number, posY: number): Promise<PlaceFromInventoryResponse> {
+  return apiClient.post<PlaceFromInventoryResponse>(`/inventory/${inventoryId}/place-on-island`, { posX, posY });
 }
