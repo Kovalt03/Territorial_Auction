@@ -84,7 +84,7 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " GROUP BY b.territory.owner.id")
     List<Object[]> sumFarmlandFoodProductionGroupedByOwner();
 
-    /** 생산 중인 WORKSHOP GP 생산량을 소유자별로 합산 — WorkshopScheduler 전용 파괴된 건물과 디버프 중인 건물은 제외 */
+    /** 영토 WORKSHOP GP 생산량을 소유자별로 합산 — WorkshopScheduler 전용 */
     @Query(
             "SELECT b.territory.owner.id, SUM(b.level * b.buildingType.gpProductionRate)"
                     + " FROM BuildingInstance b"
@@ -92,4 +92,13 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " AND (b.workshopDebuffUntil IS NULL OR b.workshopDebuffUntil < :now)"
                     + " GROUP BY b.territory.owner.id")
     List<Object[]> sumWorkshopGpProductionGroupedByOwner(@Param("now") LocalDateTime now);
+
+    /** 섬 WORKSHOP GP 생산량을 소유자별로 합산 — WorkshopScheduler 전용 */
+    @Query(
+            "SELECT b.island.user.id, SUM(b.level * b.buildingType.gpProductionRate)"
+                    + " FROM BuildingInstance b"
+                    + " WHERE b.buildingType.name = 'WORKSHOP' AND b.isDestroyed = false AND b.island IS NOT NULL"
+                    + " AND (b.workshopDebuffUntil IS NULL OR b.workshopDebuffUntil < :now)"
+                    + " GROUP BY b.island.user.id")
+    List<Object[]> sumIslandWorkshopGpProductionGroupedByOwner(@Param("now") LocalDateTime now);
 }
