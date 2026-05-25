@@ -46,6 +46,7 @@ interface AppState {
   territories: Territory[];
   messages: ChatMessage[];
   isLoggedIn: boolean;
+  isAuthLoading: boolean;
   username: string;
   userId: number | null;
 }
@@ -80,6 +81,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     territories: [],
     messages: [],
     isLoggedIn: false,
+    isAuthLoading: !!localStorage.getItem('accessToken'),
     username: '',
     userId: null,
   });
@@ -92,6 +94,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setState(prev => ({
           ...prev,
           isLoggedIn: true,
+          isAuthLoading: false,
           username: profile.nickname,
           userId: profile.userId,
           ap: wallet.availableAP,
@@ -106,6 +109,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         localStorage.removeItem('accessToken');
+        setState(prev => ({ ...prev, isAuthLoading: false }));
       });
   }, []);
 
