@@ -5,7 +5,6 @@ export interface ContinentDef {
   desc: string;
   color: string;
   grade: string;
-  topOwner: string;
   trophyReq: number | null;
   cx: number;
   cy: number;
@@ -120,49 +119,49 @@ const SE: [number, number][] = [
 export const CONTINENTS: ContinentDef[] = [
   {
     id: 'north', dbId: 1, name: '북부 대륙', desc: '얼음과 강철의 땅',
-    color: '#00f5ff', grade: 'S', topOwner: '강남부자', trophyReq: 5000,
+    color: '#00f5ff', grade: 'S', trophyReq: 5000,
     cx: 394, cy: 113, halfHeight: 65,
     pathData: smooth(NORTH),
   },
   {
     id: 'northwest', dbId: 2, name: '북서부', desc: '글리치 구역',
-    color: '#44aaff', grade: 'B', topOwner: '레이더', trophyReq: 1000,
+    color: '#44aaff', grade: 'B', trophyReq: 1000,
     cx: 124, cy: 211, halfHeight: 70,
     pathData: smooth(NW),
   },
   {
     id: 'northeast', dbId: 3, name: '북동부', desc: '바이트 필드',
-    color: '#ff8c00', grade: 'B', topOwner: '글리치마스터', trophyReq: 1000,
+    color: '#ff8c00', grade: 'B', trophyReq: 1000,
     cx: 610, cy: 215, halfHeight: 70,
     pathData: smooth(NE),
   },
   {
     id: 'west', dbId: 4, name: '서부 대륙', desc: '크롬의 황야',
-    color: '#00ff88', grade: 'B', topOwner: '사이버해커', trophyReq: 800,
+    color: '#00ff88', grade: 'B', trophyReq: 800,
     cx: 102, cy: 365, halfHeight: 95,
     pathData: smooth(WEST),
   },
   {
     id: 'central', dbId: 5, name: '중앙 자유 구역', desc: '개인 영토 자유 구역',
-    color: '#8b50ff', grade: 'S', topOwner: '강남부자', trophyReq: null,
+    color: '#8b50ff', grade: 'S', trophyReq: null,
     cx: 396, cy: 374, halfHeight: 75,
     pathData: smooth(C_MAIN) + ' ' + smooth(C_R) + ' ' + smooth(C_B),
   },
   {
     id: 'east', dbId: 6, name: '동부 대륙', desc: '네온의 도시',
-    color: '#ff1493', grade: 'A', topOwner: '영토수집가', trophyReq: 3000,
+    color: '#ff1493', grade: 'A', trophyReq: 3000,
     cx: 667, cy: 378, halfHeight: 82,
     pathData: smooth(EAST),
   },
   {
     id: 'south', dbId: 7, name: '남부 대륙', desc: '사막의 전장',
-    color: '#ffd700', grade: 'A', topOwner: '픽셀왕', trophyReq: 2000,
+    color: '#ffd700', grade: 'A', trophyReq: 2000,
     cx: 392, cy: 571, halfHeight: 95,
     pathData: smooth(SOUTH),
   },
   {
     id: 'southeast', dbId: 8, name: '남동부', desc: '디지털 포트',
-    color: '#ff6644', grade: 'C', topOwner: '뉴비123', trophyReq: 300,
+    color: '#ff6644', grade: 'C', trophyReq: 300,
     cx: 618, cy: 572, halfHeight: 78,
     pathData: smooth(SE),
   },
