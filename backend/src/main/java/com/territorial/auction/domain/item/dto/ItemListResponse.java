@@ -13,7 +13,8 @@ public record ItemListResponse(List<ItemInfo> items) {
             Integer costAP,
             Integer costGP,
             Integer dailyLimit,
-            int myInventory) {
+            int myInventory,
+            String iconUrl) {
 
         public static ItemInfo of(Item item, int myInventory) {
             return new ItemInfo(
@@ -24,7 +25,8 @@ public record ItemListResponse(List<ItemInfo> items) {
                     item.getCostAp(),
                     item.getCostGp(),
                     item.getDailyLimit(),
-                    myInventory);
+                    myInventory,
+                    item.getIconUrl());
         }
     }
 }
