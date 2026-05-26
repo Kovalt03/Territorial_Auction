@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+import { ApiError } from '../api/client';
+
 import { fetchMyProfile, fetchMyWallet } from '../api/user';
 import { fetchMySeasonPass } from '../api/season';
 import { fetchNotificationList } from '../api/notification';
@@ -107,9 +109,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .then(notifs => setState(prev => ({ ...prev, notifications: notifs.unreadCount })))
           .catch(() => {});
       })
-      .catch(() => {
-        localStorage.removeItem('accessToken');
-        setState(prev => ({ ...prev, isAuthLoading: false }));
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          // 인증 실패 — 토큰 무효화, 로그아웃
+          localStorage.removeItem('accessToken');
+          setState(prev => ({ ...prev, isAuthLoading: false }));
+        } else {
+          // 서버 오류(5xx 등) — 토큰 유지, 로그인 상태 유지하되 프로필은 빈 값
+          setState(prev => ({ ...prev, isLoggedIn: true, isAuthLoading: false }));
+        }
       });
   }, []);
 

@@ -22,15 +22,19 @@ export function LoginPage() {
     try {
       const { accessToken } = await loginApi(email, pw);
       localStorage.setItem('accessToken', accessToken);
-      const [profile, wallet] = await Promise.all([fetchMyProfile(), fetchMyWallet()]);
-      login(profile.nickname, {
+      const [profile, wallet] = await Promise.all([
+        fetchMyProfile().catch(() => null),
+        fetchMyWallet().catch(() => null),
+      ]);
+      login(profile?.nickname ?? '', {
         token: accessToken,
-        userId: profile.userId,
-        ap: wallet.availableAP,
-        gp: wallet.availableGP,
+        userId: profile?.userId,
+        ap: wallet?.availableAP ?? 0,
+        gp: wallet?.availableGP ?? 0,
       });
       navigate('/app/map');
     } catch {
+      localStorage.removeItem('accessToken');
       setError('이메일 또는 비밀번호가 올바르지 않습니다.');
     } finally {
       setIsSubmitting(false);
