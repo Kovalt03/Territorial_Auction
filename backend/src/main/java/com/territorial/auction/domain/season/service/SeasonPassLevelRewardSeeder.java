@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import org.yaml.snakeyaml.Yaml;
 
 @Slf4j
 @Component
+@Order(8)
 @RequiredArgsConstructor
 public class SeasonPassLevelRewardSeeder implements ApplicationRunner {
 
