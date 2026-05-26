@@ -6,8 +6,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
+import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.user.entity.NotificationSetting;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.UserProfile;
@@ -36,7 +40,10 @@ class CustomOAuth2UserServiceTest {
     @Mock private WalletRepository walletRepository;
     @Mock private NotificationSettingRepository notificationSettingRepository;
     @Mock private HomeIslandRepository homeIslandRepository;
+    @Mock private IslandGradeRepository islandGradeRepository;
     @Mock private UserProfileRepository userProfileRepository;
+    @Mock private BuildingTypeRepository buildingTypeRepository;
+    @Mock private BuildingInstanceRepository buildingInstanceRepository;
 
     private OAuth2UserInfo userInfo;
 
@@ -81,6 +88,16 @@ class CustomOAuth2UserServiceTest {
             // given
             given(userRepository.findByUsername("google:google-uid-999"))
                     .willReturn(Optional.empty());
+            given(buildingTypeRepository.findByName("CASTLE"))
+                    .willReturn(
+                            Optional.of(
+                                    BuildingType.builder()
+                                            .name("CASTLE")
+                                            .width(2)
+                                            .height(2)
+                                            .maxHp(1000)
+                                            .baseCostGp(0)
+                                            .build()));
 
             User savedUser =
                     User.builder()
@@ -91,6 +108,8 @@ class CustomOAuth2UserServiceTest {
                             .build();
             ReflectionTestUtils.setField(savedUser, "id", 1L);
             given(userRepository.save(any(User.class))).willReturn(savedUser);
+            given(homeIslandRepository.save(any(HomeIsland.class)))
+                    .willAnswer(inv -> inv.getArgument(0));
 
             // when
             User result = customOAuth2UserService.saveOrUpdate(userInfo, "google");
