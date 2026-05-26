@@ -103,12 +103,12 @@ END $$;
 DO $$
 BEGIN
   IF (SELECT COUNT(*) FROM items) = 0 THEN
-    INSERT INTO items (name, item_type, description, cost_ap, cost_gp, daily_limit, gp_reward)
+    INSERT INTO items (name, item_type, description, cost_ap, cost_gp, daily_limit, gp_reward, icon_url)
     VALUES
-      ('무적 시간 추가권', 'INVINCIBILITY',   '영토 보호 시간 +4시간',       200, NULL, NULL, NULL),
-      ('일반 공격권',     'ATTACK_NORMAL',   'Zone 단계별 공격 허용',        100,  500, NULL, NULL),
-      ('정밀 공격권',     'ATTACK_PRECISION','목표 건물 직접 지정 공격',     300, NULL, NULL, NULL),
-      ('GP 구매권',       'GP_PURCHASE',     'GP 1,000 즉시 획득',           50,  NULL,    5, 1000);
+      ('무적 시간 추가권', 'INVINCIBILITY',   '영토 보호 시간 +4시간',       200, NULL, NULL, NULL, '/images/items/invincibility.svg'),
+      ('일반 공격권',     'ATTACK_NORMAL',   'Zone 단계별 공격 허용',        100,  500, NULL, NULL, '/images/items/attack_normal.svg'),
+      ('정밀 공격권',     'ATTACK_PRECISION','목표 건물 직접 지정 공격',     300, NULL, NULL, NULL, '/images/items/attack_precision.svg'),
+      ('GP 구매권',       'GP_PURCHASE',     'GP 1,000 즉시 획득',            50, NULL,    5, 1000, '/images/items/gp_purchase.svg');
     RAISE NOTICE 'items 시드 완료 (4건)';
   ELSE
     RAISE NOTICE 'items 이미 존재 — 건너뜀';
