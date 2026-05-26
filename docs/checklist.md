@@ -1,6 +1,6 @@
 # 구현 체크리스트
 
-> 마지막 갱신: 2026-05-22 (be-34 머지 반영)  
+> 마지막 갱신: 2026-05-26 (all-20 머지 반영)  
 > 기준 브랜치: `dev`
 
 범례: ✅ 완료 · 🔄 일부 완료 · ⬜ 미구현
@@ -185,6 +185,16 @@
 | ✅ | MilitaryPolicy.WORKSHOP_DEBUFF_HOURS | 기본 12시간 |
 | ✅ | SiegeService — WORKSHOP 파괴 시 디버프 적용 | Zone 2 클리어, HP 0 → workshopDebuffUntil 설정 |
 
+### Building — 섬 등급 시스템 (all-20)
+| 상태 | 기능 | 비고 |
+|---|---|---|
+| ✅ | 섬 성 자동 배치 (신규 유저 + 기존 유저 마이그레이션) | 회원가입 시 HomeIsland·CASTLE 동시 생성 |
+| ✅ | 성 레벨별 섬 등급 시스템 (D→10×10, B→15×15, S→20×20) | IslandGrade 엔티티, castle 레벨 업그레이드 시 등급 갱신 |
+| ✅ | 섬 GP 수확 엔드포인트 | `POST /api/v1/island/harvest` |
+| ✅ | 보관함 → 섬 배치 | `POST /api/v1/inventory/{inventoryId}/place-on-island` |
+| ⬜ | island_grades DB 테이블 관리 (zone1Radius, zone2Radius) | 시드 데이터 및 마이그레이션 스크립트 미작성 |
+| ⬜ | IslandGrade FK로 HomeIsland 리팩터링 | home_islands.grid_size 컬럼 제거, island_grade_id FK 적용 |
+
 ---
 
 ### Ranking
@@ -307,6 +317,11 @@
 | ✅ | 알림 목록 조회·무한스크롤 | `NotificationPage` | (fe-01) |
 | ✅ | 단건 읽음 처리 | `NotificationPage` | `decrementNotification` 연동 (fe-01) |
 | ✅ | 전체 읽음 처리 | `NotificationPage` | `resetNotifications` 연동 (fe-01) |
+
+### 섬 / 보관함 (all-20)
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 보관함 → 섬 배치 | 섬 관리 페이지 | API·타입·페이지 연동 완료 (all-20) |
 
 ---
 
