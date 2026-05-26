@@ -53,7 +53,6 @@ function drawStars(ctx: CanvasRenderingContext2D, t: number, w: number, h: numbe
     ctx.fillStyle = `rgba(${r},${gb},255,${(brightness * 0.65 + twinkle * 0.35).toFixed(2)})`;
     ctx.fill();
   }
-  // 밝은 별 몇 개
   for (let i = 0; i < 12; i++) {
     const seed = i * 273.9 + 1000;
     const x = ((seed * 43.7) % w + w) % w;
@@ -77,12 +76,65 @@ function drawSpaceBackground(ctx: CanvasRenderingContext2D, t: number, w: number
   drawNebula(ctx, w, h);
   drawStars(ctx, t, w, h);
 
-  // 가장자리 비네팅
   const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2, w / 2, h / 2, Math.max(w, h) * 0.78);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
   vg.addColorStop(1, 'rgba(0,0,0,0.65)');
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, w, h);
+}
+
+// ── 태양계 중심 ───────────────────────────────────────────────────────────
+
+export const SUN_X = 700;
+export const SUN_Y = 550;
+
+function drawOrbitalRings(ctx: CanvasRenderingContext2D, continents: ContinentDef[]): void {
+  ctx.save();
+  ctx.setLineDash([4, 10]);
+  for (const c of continents) {
+    ctx.beginPath();
+    ctx.ellipse(SUN_X, SUN_Y, c.orbitRx, c.orbitRy, c.orbitRotation, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(55, 75, 115, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawSun(ctx: CanvasRenderingContext2D, t: number): void {
+  const pulse = 0.88 + Math.sin(t * 0.0009) * 0.12;
+
+  const outerHalo = ctx.createRadialGradient(SUN_X, SUN_Y, 0, SUN_X, SUN_Y, 160 * pulse);
+  outerHalo.addColorStop(0,   'rgba(255, 200, 40, 0.10)');
+  outerHalo.addColorStop(0.4, 'rgba(255, 130, 10, 0.04)');
+  outerHalo.addColorStop(1,   'rgba(255, 80, 0, 0)');
+  ctx.fillStyle = outerHalo;
+  ctx.beginPath();
+  ctx.arc(SUN_X, SUN_Y, 160 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  const halo = ctx.createRadialGradient(SUN_X, SUN_Y, 0, SUN_X, SUN_Y, 100 * pulse);
+  halo.addColorStop(0,    'rgba(255, 220, 80, 0.22)');
+  halo.addColorStop(0.5,  'rgba(255, 150, 30, 0.09)');
+  halo.addColorStop(1,    'rgba(255, 100, 0, 0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(SUN_X, SUN_Y, 100 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  const core = ctx.createRadialGradient(SUN_X - 14, SUN_Y - 14, 0, SUN_X, SUN_Y, 50);
+  core.addColorStop(0,    'rgba(255, 252, 220, 0.98)');
+  core.addColorStop(0.30, 'rgba(255, 210, 70, 0.92)');
+  core.addColorStop(0.70, 'rgba(245, 140, 25, 0.68)');
+  core.addColorStop(1,    'rgba(200, 80, 10, 0)');
+  ctx.shadowBlur = 45;
+  ctx.shadowColor = '#ffb040';
+  ctx.fillStyle = core;
+  ctx.beginPath();
+  ctx.arc(SUN_X, SUN_Y, 50, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
 }
 
 // ── 파티클 (궤도 위성) ────────────────────────────────────────────────────
@@ -120,7 +172,6 @@ function drawRing(ctx: CanvasRenderingContext2D, c: ContinentDef, isHovered: boo
   const rx = c.halfHeight * 1.72;
   const ry = c.halfHeight * 0.28;
 
-  // 바깥 고리
   ctx.beginPath();
   ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
   ctx.strokeStyle = hexToRgba(c.color, isHovered ? 0.6 : 0.38);
@@ -129,7 +180,6 @@ function drawRing(ctx: CanvasRenderingContext2D, c: ContinentDef, isHovered: boo
   ctx.shadowColor = c.color;
   ctx.stroke();
 
-  // 안쪽 고리
   ctx.beginPath();
   ctx.ellipse(0, 0, rx * 0.76, ry * 0.76, 0, 0, Math.PI * 2);
   ctx.strokeStyle = hexToRgba(c.color, isHovered ? 0.32 : 0.18);
@@ -147,8 +197,11 @@ function drawContinent(
   isHovered: boolean,
   t: number,
   particles: Particle[],
-  path: Path2D,
 ): void {
+  // Path2D constructed per-frame using current position
+  const path = new Path2D();
+  path.arc(c.cx, c.cy, c.halfHeight, 0, Math.PI * 2);
+
   ctx.save();
 
   if (isHovered) {
@@ -157,7 +210,6 @@ function drawContinent(
     ctx.translate(-c.cx, -c.cy);
   }
 
-  // S등급: 고리 뒤쪽 절반 (행성보다 먼저, 위쪽 절반 클립)
   if (c.grade === 'S') {
     ctx.save();
     ctx.beginPath();
@@ -167,18 +219,15 @@ function drawContinent(
     ctx.restore();
   }
 
-  // 1. 대기권 글로우 헤일로
   ctx.shadowBlur = isHovered ? 65 : 38;
   ctx.shadowColor = c.color;
   ctx.fillStyle = hexToRgba(c.color, 0.06);
   ctx.fill(path);
   ctx.shadowBlur = 0;
 
-  // 2. 행성 어두운 기저면
   ctx.fillStyle = '#03060f';
   ctx.fill(path);
 
-  // 3. 구체 조명 — 좌상단 광원 (행성의 구형 느낌)
   const lx = c.cx - c.halfHeight * 0.38;
   const ly = c.cy - c.halfHeight * 0.44;
   const sphere = ctx.createRadialGradient(lx, ly, 0, c.cx, c.cy, c.halfHeight * 1.35);
@@ -189,11 +238,9 @@ function drawContinent(
   ctx.fillStyle = sphere;
   ctx.fill(path);
 
-  // 4. 표면 대기 밴드 + 스페큘러 (클립 안)
   ctx.save();
   ctx.clip(path);
 
-  // 대기 밴드
   for (let b = 0; b < 7; b++) {
     const fy = c.cy - c.halfHeight + ((b + 0.5) / 7) * c.halfHeight * 2;
     const alpha = Math.sin((b / 7) * Math.PI) * 0.055;
@@ -205,18 +252,16 @@ function drawContinent(
     ctx.stroke();
   }
 
-  // 스페큘러 하이라이트 (좌상단 빛 반사점)
   const sx = c.cx - c.halfHeight * 0.27;
   const sy = c.cy - c.halfHeight * 0.32;
   const spec = ctx.createRadialGradient(sx, sy, 0, sx, sy, c.halfHeight * 0.36);
-  spec.addColorStop(0,   'rgba(255,255,255,0.32)');
+  spec.addColorStop(0,    'rgba(255,255,255,0.32)');
   spec.addColorStop(0.55, 'rgba(255,255,255,0.07)');
-  spec.addColorStop(1,   'rgba(255,255,255,0)');
+  spec.addColorStop(1,    'rgba(255,255,255,0)');
   ctx.fillStyle = spec;
   ctx.fillRect(c.cx - 300, c.cy - 300, 600, 600);
   ctx.restore();
 
-  // 5. 림 라이트 (행성 테두리 대기 산란)
   ctx.setLineDash([]);
   ctx.strokeStyle = hexToRgba(c.color, isHovered ? 0.92 : 0.62);
   ctx.lineWidth = isHovered ? 2.4 : 1.7;
@@ -225,7 +270,6 @@ function drawContinent(
   ctx.stroke(path);
   ctx.shadowBlur = 0;
 
-  // S등급: 고리 앞쪽 절반 (행성 위에, 아래쪽 절반 클립)
   if (c.grade === 'S') {
     ctx.save();
     ctx.beginPath();
@@ -235,7 +279,6 @@ function drawContinent(
     ctx.restore();
   }
 
-  // 6. 궤도 파티클 (위성 느낌)
   for (const p of particles) {
     const alpha = Math.max(0, 0.28 + Math.sin(p.phase) * 0.32);
     const sz = p.size * (isHovered ? 1.35 : 1);
@@ -248,7 +291,6 @@ function drawContinent(
   }
   ctx.shadowBlur = 0;
 
-  // 7. 레이블
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.shadowBlur = isHovered ? 22 : 12;
@@ -289,7 +331,6 @@ export function drawFrame(
   t: number,
   hoveredId: string | null,
   particleMap: Map<string, Particle[]>,
-  pathMap: Map<string, Path2D>,
   continents: ContinentDef[],
   canvasWidth: number,
   canvasHeight: number,
@@ -301,11 +342,12 @@ export function drawFrame(
 
   ctx.save();
   ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
+  drawOrbitalRings(ctx, continents);
+  drawSun(ctx, t);
   for (const c of continents) {
     drawContinent(
       ctx, c, hoveredId === c.id, t,
-      particleMap.get(c.id) ?? [],
-      pathMap.get(c.id)!,
+      particleMap.get(c.slotId) ?? [],
     );
   }
   ctx.restore();
