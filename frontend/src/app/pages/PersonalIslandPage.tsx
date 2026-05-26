@@ -4,7 +4,7 @@ import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
 import { useMilitary } from '../hooks/useMilitary';
-import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp } from '../api/island';
+import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi } from '../api/island';
 import { produceUnit } from '../api/military';
 import { ApiError } from '../api/client';
 import type { InventoryItem, IslandData } from '../types/island';
@@ -165,6 +165,20 @@ export function PersonalIslandPage() {
   const reloadInventory = useCallback(() => {
     fetchBuildingInventory().then(setInventory).catch(() => {});
   }, []);
+
+  const handleUpgradeBuilding = async () => {
+    const buildingId = selectedCellData?.buildingId;
+    if (!buildingId) return;
+    try {
+      const result = await upgradeBuildingApi(buildingId);
+      syncGP(result.gpRemaining);
+      void reloadIsland();
+      setShowBuildingAction(false);
+      showToast(`Lv.${result.newLevel}으로 업그레이드 완료 (${result.upgradeCost.toLocaleString()} GP 소모)`, false);
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : '업그레이드에 실패했습니다');
+    }
+  };
 
   const handleProduceUnit = async () => {
     if (!trainUnitTypeId || trainQuantity < 1) return;
@@ -902,6 +916,27 @@ export function PersonalIslandPage() {
               >
                 닫기
               </button>
+            </div>
+            <div className="px-4 pb-4">
+              {(() => {
+                const curLevel = selectedCellData.level ?? 1;
+                const isMaxLevel = curLevel >= 3;
+                return (
+                  <button
+                    onClick={handleUpgradeBuilding}
+                    disabled={isMaxLevel}
+                    className="w-full h-10 rounded-xl font-semibold border transition-all text-[13px]"
+                    style={{
+                      color: isMaxLevel ? '#354064' : '#00f5ff',
+                      borderColor: isMaxLevel ? '#354064' : '#00f5ff60',
+                      cursor: isMaxLevel ? 'not-allowed' : 'pointer',
+                      background: 'transparent',
+                    }}
+                  >
+                    {isMaxLevel ? '⬆ 업그레이드 (최대 레벨)' : `⬆ 업그레이드 Lv.${curLevel} → Lv.${curLevel + 1}`}
+                  </button>
+                );
+              })()}
             </div>
             {selectedCellData.type === 'castle' && (
               <p className="text-center text-muted pb-3 text-[11px]">성(Castle)은 핵심 건물로 보관함에 담을 수 없습니다</p>

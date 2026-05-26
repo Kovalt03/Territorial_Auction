@@ -47,6 +47,15 @@ export interface InventoryItem {
   acquiredAt: string;
 }
 
+export interface UpgradeBuildingResponse {
+  buildingId: number;
+  newLevel: number;
+  nextLevel: number | null;
+  maxLevel: number;
+  upgradeCost: number;
+  gpRemaining: number;
+}
+
 export interface PlaceFromInventoryResponse {
   buildingId: number;
   buildingType: string;
