@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
-import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland } from '../api/island';
+import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp } from '../api/island';
+import { ApiError } from '../api/client';
 import type { InventoryItem, IslandData } from '../types/island';
 
 type BuildingType = 'castle' | 'workshop' | 'barracks' | 'storage' | 'wall' | 'tower' | 'garden' | 'bank' | 'lab' | 'port' | 'mine' | 'empty';
@@ -13,8 +14,11 @@ interface Cell {
   level?: number;
   hp?: number;
   maxHp?: number;
-  zone?: 1 | 2 | 3 | 4;
+  zone?: 1 | 2 | 3;
   buildingId?: number;
+  isBody?: boolean; // 2x2 등 다중 셀 건물의 원점(posX,posY) 이외 셀
+  width?: number;
+  height?: number;
 }
 
 const buildingColors: Record<BuildingType, string> = {
@@ -35,36 +39,65 @@ const buildingNames: Record<BuildingType, string> = {
   lab: '연구소', port: '항구', mine: '광산', empty: '빈 공간',
 };
 
-const COLS = 20;
-const ROWS = 16;
-
-function assignZone(x: number, y: number): 1 | 2 | 3 | 4 {
-  if (x >= 9 && x <= 10 && y >= 7 && y <= 8) return 1;
-  if (x >= 6 && x <= 13 && y >= 6 && y <= 9) return 2;
-  if (x >= 3 && x <= 16 && y >= 3 && y <= 12) return 3;
-  return 4;
+function assignZone(x: number, y: number, size: number): 1 | 2 | 3 {
+  const center = Math.floor(size / 2);
+  const dist = Math.max(Math.abs(x - center), Math.abs(y - center));
+  const third = Math.floor(size / 3);
+  if (dist <= third) return 1;
+  if (dist <= third * 2) return 2;
+  return 3;
 }
 
-function emptyGrid(): Cell[][] {
-  return Array.from({ length: ROWS }, (_, y) =>
-    Array.from({ length: COLS }, (_, x) => ({ type: 'empty' as BuildingType, zone: assignZone(x, y) }))
+function emptyGrid(size: number): Cell[][] {
+  return Array.from({ length: size }, (_, y) =>
+    Array.from({ length: size }, (_, x) => ({ type: 'empty' as BuildingType, zone: assignZone(x, y, size) }))
   );
 }
 
 function buildGridFromIsland(island: IslandData): Cell[][] {
-  const grid = emptyGrid();
+  const size = island.gridSize;
+  const grid = emptyGrid(size);
   for (const b of island.buildings) {
-    if (b.isDestroyed || b.posY >= ROWS || b.posX >= COLS) continue;
-    grid[b.posY][b.posX] = {
-      type: b.type.toLowerCase() as BuildingType,
-      level: b.level,
-      hp: b.hp,
-      maxHp: b.maxHp,
-      buildingId: b.buildingId,
-      zone: assignZone(b.posX, b.posY),
-    };
+    if (b.isDestroyed || b.posY >= size || b.posX >= size) continue;
+    const w = b.width ?? 1;
+    const h = b.height ?? 1;
+    const type = b.type.toLowerCase() as BuildingType;
+    for (let dy = 0; dy < h; dy++) {
+      for (let dx = 0; dx < w; dx++) {
+        const gx = b.posX + dx;
+        const gy = b.posY + dy;
+        if (gx >= size || gy >= size) continue;
+        grid[gy][gx] = {
+          type,
+          level: b.level,
+          hp: b.hp,
+          maxHp: b.maxHp,
+          buildingId: b.buildingId,
+          zone: assignZone(gx, gy, size),
+          isBody: dx > 0 || dy > 0,
+          width: w,
+          height: h,
+        };
+      }
+    }
   }
   return grid;
+}
+
+function findOriginCell(grid: Cell[][], buildingId: number): { x: number; y: number } | null {
+  for (let gy = 0; gy < grid.length; gy++) {
+    for (let gx = 0; gx < grid[gy].length; gx++) {
+      const c = grid[gy][gx];
+      if (c.buildingId === buildingId && !c.isBody) return { x: gx, y: gy };
+    }
+  }
+  return null;
+}
+
+function clearBuildingCells(grid: Cell[][], buildingId: number): Cell[][] {
+  return grid.map(row =>
+    row.map(c => c.buildingId === buildingId ? { type: 'empty' as BuildingType, zone: c.zone } : { ...c })
+  );
 }
 
 // 백엔드 building_types 시드 순서 기준 ID 매핑 (building-types.yml)
@@ -76,9 +109,10 @@ export function PersonalIslandPage() {
   const navigate = useNavigate();
   const { ap, gp, username, syncGP } = useApp();
   const { island, reload: reloadIsland } = useIsland();
+  const gridSize = island?.gridSize ?? 10;
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [showBuild, setShowBuild] = useState(false);
-  const [grid, setGrid] = useState<Cell[][]>(emptyGrid);
+  const [grid, setGrid] = useState<Cell[][]>(() => emptyGrid(10));
 
   useEffect(() => {
     if (island) setGrid(buildGridFromIsland(island));
@@ -103,6 +137,14 @@ export function PersonalIslandPage() {
   // 건설 위치 선택 모드 (사이드바 버튼 → 셀 클릭)
   const [buildPending, setBuildPending] = useState(false);
 
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [toast, setToast] = useState<{ message: string; isError: boolean } | null>(null);
+  const showToast = useCallback((message: string, isError = true) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, isError });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
+  }, []);
+
   const reloadInventory = useCallback(() => {
     fetchBuildingInventory().then(setInventory).catch(() => {});
   }, []);
@@ -118,7 +160,7 @@ export function PersonalIslandPage() {
     setBuildPending(false);
   };
 
-  const handleCellClick = (x: number, y: number, cell: { type: BuildingType; level?: number; hp?: number; maxHp?: number; zone?: 1 | 2 | 3 | 4 }) => {
+  const handleCellClick = (x: number, y: number, cell: { type: BuildingType; level?: number; hp?: number; maxHp?: number; zone?: 1 | 2 | 3 }) => {
     if (buildPending) {
       if (cell.type === 'empty') {
         setSelectedCell({ x, y });
@@ -130,15 +172,39 @@ export function PersonalIslandPage() {
     if (moveMode && moveSourceCell) {
       if (cell.type === 'empty') {
         const sourceCell = grid[moveSourceCell.y][moveSourceCell.x];
+        if (!sourceCell.buildingId) { cancelModes(); return; }
         const destZone = grid[y][x].zone;
-        if (sourceCell.type === 'castle' && destZone !== 1) return;
-        if (sourceCell.buildingId) {
-          moveBuildingApi(sourceCell.buildingId, x, y).catch(() => {});
+        if (sourceCell.type === 'castle') {
+          showToast('성은 이동할 수 없습니다');
+          cancelModes();
+          return;
         }
+
+        const origin = findOriginCell(grid, sourceCell.buildingId);
+        if (!origin) { cancelModes(); return; }
+        const originCell = grid[origin.y][origin.x];
+        const w = originCell.width ?? 1;
+        const h = originCell.height ?? 1;
+
+        moveBuildingApi(sourceCell.buildingId, x, y).catch((err) => {
+          void reloadIsland();
+          showToast(err instanceof ApiError ? err.message : '이동에 실패했습니다');
+        });
         setGrid(prev => {
-          const next = prev.map(row => row.map(c => ({ ...c })));
-          next[y][x] = { ...next[moveSourceCell.y][moveSourceCell.x], zone: destZone };
-          next[moveSourceCell.y][moveSourceCell.x] = { type: 'empty', zone: next[moveSourceCell.y][moveSourceCell.x].zone };
+          let next = clearBuildingCells(prev, sourceCell.buildingId!);
+          for (let dy = 0; dy < h; dy++) {
+            for (let dx = 0; dx < w; dx++) {
+              const destX = x + dx;
+              const destY = y + dy;
+              if (destY < next.length && destX < next[destY].length) {
+                next = next.map((row, ry) => row.map((c, rx) =>
+                  ry === destY && rx === destX
+                    ? { ...originCell, zone: prev[destY][destX].zone, isBody: dx > 0 || dy > 0 }
+                    : c
+                ));
+              }
+            }
+          }
           return next;
         });
         cancelModes();
@@ -159,8 +225,12 @@ export function PersonalIslandPage() {
         setInventory(prev => prev.filter((_, i) => i !== deployFromInventoryIdx));
         setDeployFromInventoryIdx(null);
         placeFromInventoryOnIsland(item.inventoryId, x, y)
-          .then(() => reloadInventory())
-          .catch(() => { reloadInventory(); void reloadIsland(); });
+          .then(() => { reloadInventory(); void reloadIsland(); })
+          .catch((err) => {
+            reloadInventory();
+            void reloadIsland();
+            showToast(err instanceof ApiError ? err.message : '배치에 실패했습니다');
+          });
       }
       return;
     }
@@ -182,22 +252,39 @@ export function PersonalIslandPage() {
   const handleStoreBuilding = () => {
     if (!selectedCell) return;
     const cell = grid[selectedCell.y][selectedCell.x];
-    if (cell.type === 'castle') return;
-    if (cell.buildingId) {
-      storeBuildingApi(cell.buildingId)
-        .then(() => reloadInventory())
-        .catch(() => {});
+    if (!cell.buildingId) return;
+    if (cell.type === 'castle') {
+      showToast('성은 보관함에 담을 수 없습니다');
+      return;
     }
-    setGrid(prev => {
-      const next = prev.map(row => row.map(c => ({ ...c })));
-      next[selectedCell.y][selectedCell.x] = { type: 'empty', zone: next[selectedCell.y][selectedCell.x].zone };
-      return next;
-    });
+    const buildingId = cell.buildingId;
+    storeBuildingApi(buildingId)
+      .then(() => reloadInventory())
+      .catch((err) => {
+        void reloadIsland();
+        showToast(err instanceof ApiError ? err.message : '보관에 실패했습니다');
+      });
+    setGrid(prev => clearBuildingCells(prev, buildingId));
     setShowBuildingAction(false);
   };
 
   const [isBuilding, setIsBuilding] = useState(false);
   const isBuildingRef = useRef(false);
+  const [isHarvesting, setIsHarvesting] = useState(false);
+
+  const handleHarvest = async () => {
+    if (isHarvesting) return;
+    setIsHarvesting(true);
+    try {
+      const result = await harvestIslandGp();
+      syncGP(result.gpBalance);
+      void reloadIsland();
+    } catch {
+      // 수확 실패는 사용자에게 별도 안내 없이 무시 (GP 0인 경우 포함)
+    } finally {
+      setIsHarvesting(false);
+    }
+  };
 
   const handleBuild = async () => {
     if (isBuildingRef.current) return;
@@ -211,23 +298,11 @@ export function PersonalIslandPage() {
     try {
       const result = await placeIslandBuilding(typeId, selectedCell.x, selectedCell.y);
       syncGP(result.gpRemaining);
-      const zone = selectedCellData?.zone ?? 4;
-      setGrid(prev => {
-        const next = prev.map(row => row.map(cell => ({ ...cell })));
-        next[selectedCell.y][selectedCell.x] = {
-          type: result.type.toLowerCase() as BuildingType,
-          level: 1,
-          hp: 0,
-          maxHp: 0,
-          buildingId: result.buildingId,
-          zone,
-        };
-        return next;
-      });
       setSelectedBuilding(null);
       setShowBuild(false);
-    } catch {
-      setBuildError('건설에 실패했습니다. 다시 시도해주세요.');
+      void reloadIsland();
+    } catch (err) {
+      setBuildError(err instanceof ApiError ? err.message : '건설에 실패했습니다. 다시 시도해주세요.');
     } finally {
       isBuildingRef.current = false;
       setIsBuilding(false);
@@ -240,8 +315,8 @@ export function PersonalIslandPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ mx: 0, my: 0, px: 0, py: 0 });
 
-  const ISLAND_W = COLS * 38; // CELL_SIZE(36) + gap(2)
-  const ISLAND_H = ROWS * 38;
+  const ISLAND_W = gridSize * 38; // CELL_SIZE(36) + gap(2)
+  const ISLAND_H = gridSize * 38;
 
   const getFitView = useCallback(() => {
     const el = containerRef.current;
@@ -294,11 +369,10 @@ export function PersonalIslandPage() {
   const handleMouseUp = () => setIsDragging(false);
 
   const zoneOverlay: Record<number, string> = {
-    1: 'rgba(255, 215, 0, 0.08)', 2: 'rgba(255, 51, 51, 0.06)',
-    3: 'rgba(0, 245, 255, 0.04)', 4: 'rgba(0, 255, 136, 0.03)',
+    1: 'rgba(255, 215, 0, 0.08)', 2: 'rgba(255, 51, 51, 0.06)', 3: 'rgba(0, 245, 255, 0.04)',
   };
   const zoneBorder: Record<number, string> = {
-    1: '#ffd700', 2: '#ff3333', 3: '#00f5ff', 4: '#00ff88',
+    1: '#ffd700', 2: '#ff3333', 3: '#00f5ff',
   };
 
   const countBuildings = (type: BuildingType) => grid.flat().filter(c => c.type === type).length;
@@ -321,6 +395,26 @@ export function PersonalIslandPage() {
     <div className="page-root">
       <GNB />
 
+      {toast && (
+        <div
+          className="fixed top-5 left-1/2 z-[100] flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold"
+          style={{
+            transform: 'translateX(-50%)',
+            background: toast.isError ? '#1a0a0a' : '#0a1a0f',
+            border: `1.5px solid ${toast.isError ? '#ff3333' : '#00ff88'}`,
+            color: toast.isError ? '#ff6666' : '#00ff88',
+            animation: 'fadeInDown 0.2s ease',
+          }}
+        >
+          <span>{toast.isError ? '⚠' : '✓'}</span>
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="ml-2 opacity-60 hover:opacity-100 text-base leading-none"
+          >✕</button>
+        </div>
+      )}
+
       <div className="bg-surface border-b border-[#00ff8840] px-5 py-3 flex items-center gap-4 flex-shrink-0">
         <button onClick={() => navigate('/app/map')} className="text-muted hover:text-foreground mr-1">←</button>
         <div className="w-10 h-10 bg-[#00ff8830] rounded-xl border border-gp flex items-center justify-center">
@@ -328,11 +422,11 @@ export function PersonalIslandPage() {
         </div>
         <div>
           <h1 className="text-gp font-bold text-xl">나의 섬 · {username || '—'}</h1>
-          <p className="text-muted text-xs">중앙 대륙 · S급 개인 영토 · 20×16 그리드</p>
+          <p className="text-muted text-xs">중앙 대륙 · {island?.grade ?? 'D'}급 개인 영토 · {gridSize}×{gridSize} 그리드</p>
         </div>
         <div className="flex items-center gap-2 ml-4">
           <div className="h-7 px-3 rounded-lg bg-[#ffd70020] border border-gold flex items-center">
-            <span className="text-gold font-bold text-[11px]">S급</span>
+            <span className="text-gold font-bold text-[11px]">{island?.grade ?? 'D'}급</span>
           </div>
           <div className="flex items-center gap-1 bg-elevated border border-gp rounded-lg px-2 py-1">
             <div className="w-2 h-2 bg-gp rounded-full animate-pulse" />
@@ -405,7 +499,7 @@ export function PersonalIslandPage() {
           {/* Legend bar */}
           <div className="px-4 pt-3 pb-2 flex justify-between items-center flex-shrink-0">
             <div className="flex gap-3">
-              {[4, 3, 2, 1].map(z => (
+              {[3, 2, 1].map(z => (
                 <div key={z} className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-sm border" style={{ background: zoneOverlay[z], borderColor: zoneBorder[z] }} />
                   <span className="text-muted text-[10px]">Zone {z}</span>
@@ -433,13 +527,13 @@ export function PersonalIslandPage() {
             onMouseLeave={handleMouseUp}
           >
             <div style={{ position: 'absolute', top: 0, left: 0, transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0', willChange: 'transform' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`, gridTemplateRows: `repeat(${ROWS}, ${CELL_SIZE}px)`, gap: 2, width: COLS * (CELL_SIZE + 2) }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${gridSize}, ${CELL_SIZE}px)`, gridTemplateRows: `repeat(${gridSize}, ${CELL_SIZE}px)`, gap: 2, width: gridSize * (CELL_SIZE + 2) }}>
             {grid.map((row, y) =>
               row.map((cell, x) => {
                 const isSelected = selectedCell?.x === x && selectedCell?.y === y;
                 const isMoveSource = moveSourceCell?.x === x && moveSourceCell?.y === y;
                 const isActionTarget = (moveMode || deployFromInventoryIdx !== null || buildPending) && cell.type === 'empty';
-                const zone = cell.zone || 4;
+                const zone = cell.zone || 3;
                 const bg = isMoveSource ? buildingColors[cell.type] + '80' : cell.type !== 'empty' ? buildingColors[cell.type] + '50' : showZones ? zoneOverlay[zone] : 'var(--color-surface)';
                 const hpPct = cell.hp && cell.maxHp ? cell.hp / cell.maxHp : 0;
                 const hpColor = hpPct > 0.7 ? '#00ff88' : hpPct > 0.4 ? '#ffd700' : '#ff3333';
@@ -463,13 +557,15 @@ export function PersonalIslandPage() {
                   >
                     {cell.type !== 'empty' ? (
                       <>
-                        <span className="text-sm leading-none">{buildingLabels[cell.type]}</span>
-                        {cell.level && (
+                        {!cell.isBody && (
+                          <span className="text-sm leading-none">{buildingLabels[cell.type]}</span>
+                        )}
+                        {!cell.isBody && cell.level && (
                           <div className="absolute bottom-0.5 left-0.5 right-0.5 h-1 rounded-full overflow-hidden" style={{ background: '#0a0e1a' }}>
                             <div className="h-full rounded-full" style={{ width: `${hpPct * 100}%`, background: hpColor }} />
                           </div>
                         )}
-                        {cell.level && (
+                        {!cell.isBody && cell.level && (
                           <div className="absolute top-0 right-0 w-3 h-3 rounded-full flex items-center justify-center text-[6px]" style={{ background: buildingColors[cell.type] }}>
                             {cell.level}
                           </div>
@@ -573,7 +669,7 @@ export function PersonalIslandPage() {
               <div className="p-3 space-y-3">
                 <div className="bg-[#00ff8820] border border-gp rounded-xl p-3">
                   <p className="text-gp font-semibold text-xs">섬 현황</p>
-                  <p className="text-muted text-[11px]">현재 크기: {island?.gridSize ?? COLS}×{ROWS} ({(island?.gridSize ?? COLS) * ROWS} 타일)</p>
+                  <p className="text-muted text-[11px]">현재 크기: {gridSize}×{gridSize} ({gridSize * gridSize} 타일)</p>
                   <p className="text-muted text-[11px]">빈 타일: {grid.flat().filter(c => c.type === 'empty').length}개</p>
                 </div>
                 {[
@@ -619,7 +715,20 @@ export function PersonalIslandPage() {
                 </span>
               )}
             </button>
-            <button className="w-full h-9 bg-gp rounded-xl text-surface font-bold text-xs hover:brightness-110 transition-all">💎 GP 금고 이전</button>
+            <button
+              onClick={() => void handleHarvest()}
+              disabled={isHarvesting}
+              className="w-full h-9 rounded-xl font-bold text-xs transition-all"
+              style={{
+                background: isHarvesting ? '#2a3050' : '#00ff88',
+                color: isHarvesting ? '#7788a5' : '#0a0e1a',
+                border: isHarvesting ? '1px solid #354064' : 'none',
+              }}
+            >
+              {isHarvesting
+                ? '수확 중...'
+                : `🌾 GP 수확하기${island && island.accumulatedGp > 0 ? ` (+${island.accumulatedGp.toLocaleString()})` : ''}`}
+            </button>
             <button onClick={() => navigate('/app/map')} className="w-full h-9 bg-elevated border border-outline rounded-xl text-muted text-xs">🗺 월드맵으로</button>
           </div>
         </div>
@@ -633,7 +742,7 @@ export function PersonalIslandPage() {
               <div>
                 <h3 className="text-gp font-bold text-lg">🏗 건물 건설</h3>
                 {selectedCell
-                  ? <p className="text-muted text-xs">위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData?.zone ?? 4} · 보유 GP: {gp.toLocaleString()}</p>
+                  ? <p className="text-muted text-xs">위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData?.zone ?? 3} · 보유 GP: {gp.toLocaleString()}</p>
                   : <p className="text-muted text-xs">빈 셀을 클릭하여 위치를 선택하세요 · 보유 GP: {gp.toLocaleString()}</p>
                 }
               </div>
