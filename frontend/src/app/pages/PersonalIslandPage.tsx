@@ -39,24 +39,25 @@ const buildingNames: Record<BuildingType, string> = {
   lab: '연구소', port: '항구', mine: '광산', empty: '빈 공간',
 };
 
-function assignZone(x: number, y: number, size: number): 1 | 2 | 3 {
+function assignZone(x: number, y: number, size: number, zone1Radius: number, zone2Radius: number): 1 | 2 | 3 {
   const center = Math.floor(size / 2);
   const dist = Math.max(Math.abs(x - center), Math.abs(y - center));
-  const third = Math.floor(size / 3);
-  if (dist <= third) return 1;
-  if (dist <= third * 2) return 2;
+  if (dist <= zone1Radius) return 1;
+  if (dist <= zone2Radius) return 2;
   return 3;
 }
 
-function emptyGrid(size: number): Cell[][] {
+function emptyGrid(size: number, zone1Radius: number, zone2Radius: number): Cell[][] {
   return Array.from({ length: size }, (_, y) =>
-    Array.from({ length: size }, (_, x) => ({ type: 'empty' as BuildingType, zone: assignZone(x, y, size) }))
+    Array.from({ length: size }, (_, x) => ({ type: 'empty' as BuildingType, zone: assignZone(x, y, size, zone1Radius, zone2Radius) }))
   );
 }
 
 function buildGridFromIsland(island: IslandData): Cell[][] {
   const size = island.gridSize;
-  const grid = emptyGrid(size);
+  const z1 = island.zone1Radius;
+  const z2 = island.zone2Radius;
+  const grid = emptyGrid(size, z1, z2);
   for (const b of island.buildings) {
     if (b.isDestroyed || b.posY >= size || b.posX >= size) continue;
     const w = b.width ?? 1;
@@ -73,7 +74,7 @@ function buildGridFromIsland(island: IslandData): Cell[][] {
           hp: b.hp,
           maxHp: b.maxHp,
           buildingId: b.buildingId,
-          zone: assignZone(gx, gy, size),
+          zone: assignZone(gx, gy, size, z1, z2),
           isBody: dx > 0 || dy > 0,
           width: w,
           height: h,
@@ -112,7 +113,7 @@ export function PersonalIslandPage() {
   const gridSize = island?.gridSize ?? 10;
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [showBuild, setShowBuild] = useState(false);
-  const [grid, setGrid] = useState<Cell[][]>(() => emptyGrid(10));
+  const [grid, setGrid] = useState<Cell[][]>(() => emptyGrid(10, 2, 4));
 
   useEffect(() => {
     if (island) setGrid(buildGridFromIsland(island));
