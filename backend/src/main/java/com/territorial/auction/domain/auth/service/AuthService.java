@@ -1,8 +1,14 @@
 package com.territorial.auction.domain.auth.service;
 
 import com.territorial.auction.domain.auth.dto.*;
+import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.entity.IslandGrade;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.user.entity.*;
 import com.territorial.auction.domain.user.repository.NotificationSettingRepository;
 import com.territorial.auction.domain.user.repository.UserProfileRepository;
@@ -29,7 +35,10 @@ public class AuthService {
     private final WalletRepository walletRepository;
     private final NotificationSettingRepository notificationSettingRepository;
     private final HomeIslandRepository homeIslandRepository;
+    private final IslandGradeRepository islandGradeRepository;
     private final UserProfileRepository userProfileRepository;
+    private final BuildingTypeRepository buildingTypeRepository;
+    private final BuildingInstanceRepository buildingInstanceRepository;
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
@@ -59,9 +68,11 @@ public class AuthService {
         NotificationSetting notificationSetting = NotificationSetting.builder().user(user).build();
         notificationSettingRepository.save(notificationSetting);
 
-        // HomeIsland 생성
-        HomeIsland homeIsland = HomeIsland.builder().user(user).build();
+        // HomeIsland 생성 + 기본 성 배치
+        IslandGrade dGrade = islandGradeRepository.findByName("D").orElse(null);
+        HomeIsland homeIsland = HomeIsland.builder().user(user).islandGrade(dGrade).build();
         homeIslandRepository.save(homeIsland);
+        placeDefaultCastle(homeIsland);
 
         // UserProfile 생성
         UserProfile userProfile = UserProfile.builder().user(user).build();
@@ -134,5 +145,23 @@ public class AuthService {
     public void checkUsername(String username) {
         if (userRepository.existsByUsername(username))
             throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
+    }
+
+    private void placeDefaultCastle(HomeIsland island) {
+        BuildingType castleType =
+                buildingTypeRepository
+                        .findByName("CASTLE")
+                        .orElseThrow(() -> new CustomException(ErrorCode.BUILDING_TYPE_NOT_FOUND));
+        // 10×10 그리드 기준 2×2 성을 정중앙(4,4)에 배치
+        int center = (island.getGridSize() / 2) - 1;
+        buildingInstanceRepository.save(
+                BuildingInstance.builder()
+                        .island(island)
+                        .buildingType(castleType)
+                        .posX(center)
+                        .posY(center)
+                        .hp(castleType.getMaxHp())
+                        .zone(1)
+                        .build());
     }
 }

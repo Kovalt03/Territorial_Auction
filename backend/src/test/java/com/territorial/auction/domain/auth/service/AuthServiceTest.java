@@ -10,8 +10,12 @@ import com.territorial.auction.domain.auth.dto.LoginRequest;
 import com.territorial.auction.domain.auth.dto.SignupRequest;
 import com.territorial.auction.domain.auth.dto.SignupResponse;
 import com.territorial.auction.domain.auth.dto.TokenPair;
+import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.user.entity.NotificationSetting;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.UserProfile;
@@ -45,7 +49,10 @@ class AuthServiceTest {
     @Mock private WalletRepository walletRepository;
     @Mock private NotificationSettingRepository notificationSettingRepository;
     @Mock private HomeIslandRepository homeIslandRepository;
+    @Mock private IslandGradeRepository islandGradeRepository;
     @Mock private UserProfileRepository userProfileRepository;
+    @Mock private BuildingTypeRepository buildingTypeRepository;
+    @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private RefreshTokenService refreshTokenService;
@@ -70,6 +77,16 @@ class AuthServiceTest {
                                 ReflectionTestUtils.setField(user, "id", 1L);
                                 return user;
                             });
+            given(buildingTypeRepository.findByName("CASTLE"))
+                    .willReturn(
+                            Optional.of(
+                                    BuildingType.builder()
+                                            .name("CASTLE")
+                                            .width(2)
+                                            .height(2)
+                                            .maxHp(1000)
+                                            .baseCostGp(0)
+                                            .build()));
 
             SignupResponse response = authService.signup(request);
 
@@ -93,6 +110,16 @@ class AuthServiceTest {
                                 ReflectionTestUtils.setField(user, "id", 1L);
                                 return user;
                             });
+            given(buildingTypeRepository.findByName("CASTLE"))
+                    .willReturn(
+                            Optional.of(
+                                    BuildingType.builder()
+                                            .name("CASTLE")
+                                            .width(2)
+                                            .height(2)
+                                            .maxHp(1000)
+                                            .baseCostGp(0)
+                                            .build()));
 
             authService.signup(request);
 

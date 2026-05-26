@@ -6,15 +6,28 @@ export interface IslandBuilding {
   hp: number;
   maxHp: number;
   level: number;
+  width: number;
+  height: number;
   isDestroyed: boolean;
 }
 
 export interface IslandData {
   islandId: number;
+  grade: string;
   gridSize: number;
   level: number;
   productionRate: number;
+  lastHarvestAt: string;
+  accumulatedGp: number;
+  zone1Radius: number;
+  zone2Radius: number;
   buildings: IslandBuilding[];
+}
+
+export interface HarvestIslandGpResponse {
+  harvestedGp: number;
+  gpBalance: number;
+  lastHarvestAt: string;
 }
 
 export interface PlaceIslandBuildingResponse {

@@ -45,6 +45,10 @@ public class BuildingType {
         return "CASTLE".equals(this.name);
     }
 
+    public void patchGpProductionRate(int rate) {
+        this.gpProductionRate = rate;
+    }
+
     @Builder
     public BuildingType(
             String name,

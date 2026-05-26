@@ -1,7 +1,13 @@
 package com.territorial.auction.global.security.oauth2;
 
+import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.entity.IslandGrade;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.user.entity.NotificationSetting;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.UserProfile;
@@ -10,6 +16,8 @@ import com.territorial.auction.domain.user.repository.NotificationSettingReposit
 import com.territorial.auction.domain.user.repository.UserProfileRepository;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -27,7 +35,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final WalletRepository walletRepository;
     private final NotificationSettingRepository notificationSettingRepository;
     private final HomeIslandRepository homeIslandRepository;
+    private final IslandGradeRepository islandGradeRepository;
     private final UserProfileRepository userProfileRepository;
+    private final BuildingTypeRepository buildingTypeRepository;
+    private final BuildingInstanceRepository buildingInstanceRepository;
 
     @Override
     @Transactional
@@ -64,9 +75,30 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                                 .build());
         walletRepository.save(Wallet.builder().user(user).build());
         notificationSettingRepository.save(NotificationSetting.builder().user(user).build());
-        homeIslandRepository.save(HomeIsland.builder().user(user).build());
+        IslandGrade dGrade = islandGradeRepository.findByName("D").orElse(null);
+        HomeIsland homeIsland =
+                homeIslandRepository.save(
+                        HomeIsland.builder().user(user).islandGrade(dGrade).build());
+        placeDefaultCastle(homeIsland);
         userProfileRepository.save(UserProfile.builder().user(user).build());
         return user;
+    }
+
+    private void placeDefaultCastle(HomeIsland island) {
+        BuildingType castleType =
+                buildingTypeRepository
+                        .findByName("CASTLE")
+                        .orElseThrow(() -> new CustomException(ErrorCode.BUILDING_TYPE_NOT_FOUND));
+        int center = (island.getGridSize() / 2) - 1;
+        buildingInstanceRepository.save(
+                BuildingInstance.builder()
+                        .island(island)
+                        .buildingType(castleType)
+                        .posX(center)
+                        .posY(center)
+                        .hp(castleType.getMaxHp())
+                        .zone(1)
+                        .build());
     }
 
     private String generateNickname(String name) {

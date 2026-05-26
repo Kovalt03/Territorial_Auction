@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.building.service;
 
 import com.territorial.auction.domain.building.BuildingPolicy;
+import com.territorial.auction.domain.building.dto.HarvestIslandGpResponse;
 import com.territorial.auction.domain.building.dto.InventoryResponse;
 import com.territorial.auction.domain.building.dto.InventoryResponse.InventoryItem;
 import com.territorial.auction.domain.building.dto.IslandResponse;
@@ -19,9 +20,11 @@ import com.territorial.auction.domain.building.dto.UpgradeBuildingResponse;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.entity.IslandGrade;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
@@ -32,11 +35,14 @@ import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -45,6 +51,7 @@ public class BuildingService {
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final BuildingTypeRepository buildingTypeRepository;
     private final HomeIslandRepository homeIslandRepository;
+    private final IslandGradeRepository islandGradeRepository;
     private final TerritoryRepository territoryRepository;
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
@@ -115,6 +122,18 @@ public class BuildingService {
         wallet.spendGp(cost);
         building.upgrade();
 
+        if (building.getBuildingType().isCastle() && building.getIsland() != null) {
+            IslandGrade newGrade =
+                    islandGradeRepository
+                            .findByCastleLevelRequired(building.getLevel())
+                            .orElse(building.getIsland().getIslandGrade());
+            building.getIsland().upgradeIsland(newGrade);
+            log.info(
+                    "섬 등급 업그레이드. islandId={}, castleLevel={}",
+                    building.getIsland().getId(),
+                    building.getLevel());
+        }
+
         Integer nextLevel =
                 building.getLevel() < BuildingPolicy.MAX_LEVEL ? building.getLevel() + 1 : null;
         return new UpgradeBuildingResponse(
@@ -180,8 +199,9 @@ public class BuildingService {
         validateBuilderSlot(userId, existing);
 
         int gridSize = island.getGridSize();
-        int zone = calculateZone(request.posX(), request.posY(), gridSize);
+        int zone = calculateIslandZone(request.posX(), request.posY(), island);
         validatePosition(existing, buildingType, request.posX(), request.posY(), gridSize);
+        validateZoneRestriction(buildingType, zone);
 
         Wallet wallet = findWalletOrThrow(userId);
         validateGp(wallet, buildingType.getBaseCostGp());
@@ -272,9 +292,10 @@ public class BuildingService {
 
         List<BuildingInstance> existing = buildingInstanceRepository.findByIslandId(island.getId());
         int gridSize = island.getGridSize();
-        int zone = calculateZone(request.posX(), request.posY(), gridSize);
+        int zone = calculateIslandZone(request.posX(), request.posY(), island);
         validatePosition(
                 existing, stored.getBuildingType(), request.posX(), request.posY(), gridSize);
+        validateZoneRestriction(stored.getBuildingType(), zone);
 
         stored.placeOnIsland(island, request.posX(), request.posY(), zone);
 
@@ -290,11 +311,14 @@ public class BuildingService {
     public MoveBuildingResponse move(Long userId, Long buildingId, MoveBuildingRequest request) {
         BuildingInstance building = findBuildingOrThrow(buildingId);
         validateBuildingOwner(building, userId);
+        if (building.getBuildingType().isCastle()) {
+            throw new CustomException(ErrorCode.CASTLE_CANNOT_BE_MOVED);
+        }
 
         List<BuildingInstance> existing = findExistingBuildings(building);
         int gridSize = resolveGridSize(building);
 
-        int zone = calculateZone(request.posX(), request.posY(), gridSize);
+        int zone = resolveZone(building, request.posX(), request.posY());
         List<BuildingInstance> othersOnly =
                 existing.stream().filter(b -> !b.getId().equals(buildingId)).toList();
         validatePosition(
@@ -333,6 +357,57 @@ public class BuildingService {
                 building.getLevel(),
                 building.getHp(),
                 storedAt);
+    }
+
+    @Transactional
+    public HarvestIslandGpResponse harvestIslandGp(Long userId) {
+        HomeIsland island =
+                homeIslandRepository
+                        .findByUserId(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.ISLAND_NOT_FOUND));
+
+        List<BuildingInstance> buildings =
+                buildingInstanceRepository.findByIslandId(island.getId());
+        int productionRatePerMinute = calculateIslandProductionRatePerMinute(buildings);
+
+        LocalDateTime lastHarvest = resolveLastHarvest(island);
+        long minutesElapsed =
+                Math.max(
+                        0,
+                        Math.min(
+                                ChronoUnit.MINUTES.between(lastHarvest, LocalDateTime.now()),
+                                BuildingPolicy.MAX_HARVEST_ACCUMULATION_MINUTES));
+        int gpAmount = (int) (minutesElapsed * productionRatePerMinute);
+
+        Wallet wallet = findWalletOrThrow(userId);
+        if (gpAmount > 0) {
+            wallet.addGp(gpAmount);
+        }
+        island.recordHarvest();
+
+        log.info("섬 GP 수확 완료. userId={}, harvestedGp={}", userId, gpAmount);
+
+        return new HarvestIslandGpResponse(
+                gpAmount, wallet.getAvailableGp(), island.getLastHarvestAt());
+    }
+
+    private LocalDateTime resolveLastHarvest(HomeIsland island) {
+        if (island.getLastHarvestAt() != null) return island.getLastHarvestAt();
+        if (island.getCreatedAt() != null) return island.getCreatedAt();
+        return LocalDateTime.now();
+    }
+
+    private int calculateIslandProductionRatePerMinute(List<BuildingInstance> buildings) {
+        int perHour =
+                buildings.stream()
+                        .filter(
+                                b ->
+                                        !b.isDestroyed()
+                                                && b.getBuildingType().getGpProductionRate()
+                                                        != null)
+                        .mapToInt(b -> b.getLevel() * b.getBuildingType().getGpProductionRate())
+                        .sum();
+        return perHour / 60;
     }
 
     // ─── private helpers ──────────────────────────────────────────────────────
@@ -405,6 +480,21 @@ public class BuildingService {
         if (distance <= third) return 1;
         if (distance <= third * 2) return 2;
         return 3;
+    }
+
+    private int calculateIslandZone(int posX, int posY, HomeIsland island) {
+        int center = island.getGridSize() / 2;
+        int distance = Math.max(Math.abs(posX - center), Math.abs(posY - center));
+        if (distance <= island.getZone1Radius()) return 1;
+        if (distance <= island.getZone2Radius()) return 2;
+        return 3;
+    }
+
+    private int resolveZone(BuildingInstance building, int posX, int posY) {
+        if (building.getIsland() != null) {
+            return calculateIslandZone(posX, posY, building.getIsland());
+        }
+        return calculateZone(posX, posY, building.getTerritory().getGrade().getGridSize());
     }
 
     private void validateZoneRestriction(BuildingType buildingType, int zone) {
