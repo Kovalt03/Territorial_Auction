@@ -42,7 +42,6 @@ export function LoginPage() {
   };
 
   const handleGuest = () => {
-    login('게스트');
     navigate('/app/map');
   };
 
