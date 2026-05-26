@@ -1,3 +1,4 @@
+# Building type seed data
 buildingTypes:
   - name: CASTLE
     width: 2
