@@ -1,24 +1,14 @@
 import { apiClient } from './client';
+import type { AttackTokens, ProduceUnitResponse, UnitsResponse } from '../types/military';
 
-export interface AttackTokens {
-  normalCount: number;
-  precisionCount: number;
-}
-
-export interface CreateUnitRequest {
-  unitTypeId: number;
-  quantity: number;
-}
-
-export interface CreateUnitResponse {
-  remainingGP: number;
-  totalOwned: number;
-}
-
-export function fetchAttackTokens() {
+export function fetchAttackTokens(): Promise<AttackTokens> {
   return apiClient.get<AttackTokens>('/military/attack-tokens');
 }
 
-export function createUnit(req: CreateUnitRequest) {
-  return apiClient.post<CreateUnitResponse>('/military/units', req);
+export function fetchUnits(): Promise<UnitsResponse> {
+  return apiClient.get<UnitsResponse>('/military/units');
+}
+
+export function produceUnit(unitTypeId: number, quantity: number): Promise<ProduceUnitResponse> {
+  return apiClient.post<ProduceUnitResponse>('/military/units', { unitTypeId, quantity });
 }
