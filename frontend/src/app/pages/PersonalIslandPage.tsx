@@ -717,27 +717,10 @@ export function PersonalIslandPage() {
               </div>
             )}
             {activeTab === 'expand' && (
-              <div className="p-3 space-y-3">
-                <div className="bg-[#00ff8820] border border-gp rounded-xl p-3">
-                  <p className="text-gp font-semibold text-xs">섬 현황</p>
-                  <p className="text-muted text-[11px]">현재 크기: {gridSize}×{gridSize} ({gridSize * gridSize} 타일)</p>
-                  <p className="text-muted text-[11px]">빈 타일: {grid.flat().filter(c => c.type === 'empty').length}개</p>
-                </div>
-                {[
-                  { label: '동쪽 확장 (+4열)', cost: '5,000 AP', color: '#00f5ff', desc: '80 타일 추가' },
-                  { label: '서쪽 확장 (+4열)', cost: '5,000 AP', color: '#00f5ff', desc: '80 타일 추가' },
-                  { label: '남쪽 확장 (+4행)', cost: '4,000 AP', color: '#8b50ff', desc: '96 타일 추가' },
-                  { label: '섬 합병 (다른 섬)', cost: '20,000 AP', color: '#ffd700', desc: '인접 섬 흡수' },
-                ].map(item => (
-                  <div key={item.label} className="bg-[#12192c] rounded-xl p-3">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs" style={{ color: item.color }}>{item.label}</span>
-                      <span className="text-xs" style={{ color: item.color }}>{item.cost}</span>
-                    </div>
-                    <p className="text-muted text-[10px]">{item.desc}</p>
-                    <button className="mt-2 w-full h-7 rounded-lg border font-bold text-[11px]" style={{ borderColor: item.color, color: item.color }}>확장</button>
-                  </div>
-                ))}
+              <div className="p-3 flex flex-col items-center justify-center gap-3 py-12">
+                <span className="text-[40px]">🚧</span>
+                <p className="text-foreground font-semibold text-sm">준비 중</p>
+                <p className="text-muted text-[11px] text-center">섬 확장 기능은 추후 업데이트 예정입니다</p>
               </div>
             )}
           </div>
