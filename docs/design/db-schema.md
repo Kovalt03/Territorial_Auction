@@ -175,8 +175,15 @@ INDEX: `(season_id, user_id)` — 랭킹 집계 최적화
 | column | 자료형 | 조건 | 설명 |
 |---|---|---|---|
 | `id` | `BIGSERIAL` | PK | |
-| `name` | `VARCHAR(50)` | NOT NULL | |
+| `name` | `VARCHAR(50)` | NOT NULL | 내부 지리명 (마이그레이션 키로만 사용) |
 | `theme_color` | `VARCHAR(7)` | NOT NULL | HEX 색상 코드 |
+| `display_name` | `VARCHAR(50)` | NULL 허용 | 표시 행성명 (크리오 행성 등) |
+| `grade` | `VARCHAR(2)` | NULL 허용 | 최고 영토 등급 (S / A / B / C) |
+| `min_trophy_required` | `INTEGER` | NULL 허용 | 진입 트로피 조건. NULL = 자유 입장 |
+| `description` | `VARCHAR(100)` | NULL 허용 | 행성 설명 문구 |
+
+> 초기 데이터는 `src/main/resources/continents.yml`에서 `ContinentSeeder`가 앱 시작 시 자동 삽입한다.  
+> `name` 컬럼은 기존 DB 마이그레이션 판별 키로만 사용되며, 화면 표시에는 `display_name`을 사용한다.
 
 #### territory_grades
 

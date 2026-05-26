@@ -56,7 +56,7 @@
 
 **GET** `/api/v1/continents`
 
-**Authorization**: Bearer `{{accessToken}}` (선택)
+**Authorization**: 불필요 (공개 엔드포인트)
 
 ### Response (200 OK)
 
@@ -64,20 +64,48 @@
 {
   "status": 200,
   "message": "OK",
-  "data": [
-    {
-      "continentId": 1,
-      "name": "북부 대륙",
-      "themeColor": "#4A90D9",
-      "territoryCount": 50,
-      "occupiedCount": 30
-    }
-  ]
+  "data": {
+    "totalContinents": 8,
+    "continent": [
+      {
+        "continentId": 1,
+        "continentName": "크리오 행성",
+        "themeColor": "#00f5ff",
+        "grade": "S",
+        "minTrophyRequired": 5000,
+        "description": "얼음과 강철의 땅",
+        "totalTerritories": 50,
+        "occupiedTerritories": 30,
+        "dominantGuildName": null,
+        "avgTerritorytGrade": null,
+        "bonusDescription": null
+      }
+    ]
+  }
 }
 ```
 
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `continentId` | Long | DB 자동생성 ID |
+| `continentName` | String | 행성 표시명 (`display_name`) |
+| `themeColor` | String | HEX 색상 코드 |
+| `grade` | String | 최고 영토 등급 (S / A / B / C) |
+| `minTrophyRequired` | Integer \| null | 진입 트로피 조건. null = 자유 입장 |
+| `description` | String | 행성 설명 문구 |
+| `totalTerritories` | int | 전체 영토 수 |
+| `occupiedTerritories` | int | 점령된 영토 수 |
+| `dominantGuildName` | String \| null | 지배 길드명 (TODO: 길드 도메인 연동 후 구현) |
+| `avgTerritorytGrade` | String \| null | 평균 영토 등급 (TODO: 집계 쿼리 구현 후) |
+| `bonusDescription` | String \| null | 보너스 타일 설명 (TODO: BonusTile 연동 후) |
+
+> 초기 데이터 출처: `src/main/resources/continents.yml`  
+> 응답 캐시: `continent-list` (서버 재시작 또는 캐시 무효화 전까지 유지)
+
 ### 남은작업
-- 길드 도메인 연동 (대륙 지배 길드 정보)
+- `dominantGuildName`: 길드 도메인 구현 후 연동
+- `avgTerritorytGrade`: 등급별 집계 쿼리 구현
+- `bonusDescription`: BonusTile 연동
 
 ---
 
