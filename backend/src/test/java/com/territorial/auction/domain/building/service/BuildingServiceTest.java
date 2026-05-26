@@ -20,9 +20,11 @@ import com.territorial.auction.domain.building.dto.UpgradeBuildingResponse;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.entity.IslandGrade;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.entity.TerritoryGrade;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
@@ -57,6 +59,7 @@ class BuildingServiceTest {
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private BuildingTypeRepository buildingTypeRepository;
     @Mock private HomeIslandRepository homeIslandRepository;
+    @Mock private IslandGradeRepository islandGradeRepository;
     @Mock private TerritoryRepository territoryRepository;
     @Mock private WalletRepository walletRepository;
     @Mock private UserRepository userRepository;
@@ -148,6 +151,22 @@ class BuildingServiceTest {
 
     private HomeIsland sampleIsland(User user) {
         HomeIsland island = HomeIsland.builder().user(user).build();
+        ReflectionTestUtils.setField(island, "id", 1L);
+        return island;
+    }
+
+    private IslandGrade islandGrade(String name, int gridSize, int z1, int z2, int castleLvl) {
+        return IslandGrade.builder()
+                .name(name)
+                .gridSize(gridSize)
+                .zone1Radius(z1)
+                .zone2Radius(z2)
+                .castleLevelRequired(castleLvl)
+                .build();
+    }
+
+    private HomeIsland islandWithGrade(User user, IslandGrade grade) {
+        HomeIsland island = HomeIsland.builder().user(user).islandGrade(grade).build();
         ReflectionTestUtils.setField(island, "id", 1L);
         return island;
     }
@@ -796,7 +815,8 @@ class BuildingServiceTest {
                             .build();
             ReflectionTestUtils.setField(stored, "id", 300L);
 
-            given(buildingInstanceRepository.findById(300L)).willReturn(Optional.of(stored));
+            given(buildingInstanceRepository.findByIdWithLock(300L))
+                    .willReturn(Optional.of(stored));
             given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
             given(buildingInstanceRepository.findByTerritoryId(10L))
                     .willReturn(Collections.emptyList());
@@ -811,13 +831,171 @@ class BuildingServiceTest {
         @Test
         @DisplayName("보관함에 없는 아이템 → BUILDING_NOT_FOUND")
         void not_in_inventory() {
-            given(buildingInstanceRepository.findById(999L)).willReturn(Optional.empty());
-
             PlaceFromInventoryRequest req = new PlaceFromInventoryRequest(10L, 0, 0);
             assertThatThrownBy(() -> buildingService.placeFromInventory(1L, 999L, req))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.BUILDING_NOT_FOUND);
+        }
+    }
+
+    // ─── upgrade() — 섬 성 레벨업 시 IslandGrade 연동 ─────────────────────────
+
+    @Nested
+    @DisplayName("upgrade() — 섬 성 레벨업 & IslandGrade 연동")
+    class UpgradeCastleOnIsland {
+
+        private BuildingType castleWithGpProduction() {
+            BuildingType bt =
+                    BuildingType.builder()
+                            .name("CASTLE")
+                            .width(2)
+                            .height(2)
+                            .maxHp(100)
+                            .baseCostGp(1000)
+                            .zoneRestriction(1)
+                            .gpProductionRate(10)
+                            .build();
+            ReflectionTestUtils.setField(bt, "id", 1L);
+            return bt;
+        }
+
+        private BuildingInstance castleOnIsland(BuildingType bt, HomeIsland island) {
+            BuildingInstance bi =
+                    BuildingInstance.builder()
+                            .buildingType(bt)
+                            .island(island)
+                            .posX(3)
+                            .posY(3)
+                            .hp(bt.getMaxHp())
+                            .zone(1)
+                            .build();
+            ReflectionTestUtils.setField(bi, "id", 100L);
+            ReflectionTestUtils.setField(bi, "level", 1);
+            return bi;
+        }
+
+        @Test
+        @DisplayName("성 Lv1→2 업그레이드 → islandGrade가 B등급으로 변경됨")
+        void castle_upgrade_changes_island_grade() {
+            User user = sampleUser(1L);
+            IslandGrade dGrade = islandGrade("D", 10, 2, 4, 1);
+            IslandGrade bGrade = islandGrade("B", 15, 4, 7, 2);
+            HomeIsland island = islandWithGrade(user, dGrade);
+            BuildingType bt = castleWithGpProduction();
+            BuildingInstance castle = castleOnIsland(bt, island);
+            Wallet wallet = walletWithGp(user, 5000);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(islandGradeRepository.findByCastleLevelRequired(2))
+                    .willReturn(Optional.of(bGrade));
+
+            buildingService.upgrade(1L, 100L);
+
+            assertThat(island.getIslandGrade()).isEqualTo(bGrade);
+            assertThat(island.getGridSize()).isEqualTo(15);
+            assertThat(island.getGrade()).isEqualTo("B");
+            assertThat(island.getZone1Radius()).isEqualTo(4);
+            assertThat(island.getZone2Radius()).isEqualTo(7);
+        }
+
+        @Test
+        @DisplayName("IslandGrade 조회 실패 시 기존 등급 유지")
+        void castle_upgrade_grade_not_found_keeps_current() {
+            User user = sampleUser(1L);
+            IslandGrade dGrade = islandGrade("D", 10, 2, 4, 1);
+            HomeIsland island = islandWithGrade(user, dGrade);
+            BuildingType bt = castleWithGpProduction();
+            BuildingInstance castle = castleOnIsland(bt, island);
+            Wallet wallet = walletWithGp(user, 5000);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(islandGradeRepository.findByCastleLevelRequired(2)).willReturn(Optional.empty());
+
+            buildingService.upgrade(1L, 100L);
+
+            assertThat(island.getIslandGrade()).isEqualTo(dGrade);
+            assertThat(island.getGridSize()).isEqualTo(10);
+        }
+
+        @Test
+        @DisplayName("영토 건물 성 업그레이드 → IslandGrade 조회 없음")
+        void territory_castle_upgrade_skips_island_grade() {
+            User user = sampleUser(1L);
+            Territory territory = territoryOwnedBy(user, gradeA());
+            BuildingType bt = castleWithGpProduction();
+            BuildingInstance castle = placedInstance(bt, territory, 4, 4);
+            Wallet wallet = walletWithGp(user, 5000);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            buildingService.upgrade(1L, 100L);
+
+            // IslandGrade repo should never be called for territory buildings
+            org.mockito.BDDMockito.then(islandGradeRepository).shouldHaveNoInteractions();
+        }
+    }
+
+    // ─── calculateIslandZone (간접 검증 via placeOnIsland) ────────────────────
+
+    @Nested
+    @DisplayName("IslandGrade 존 경계 검증")
+    class IslandZoneBoundary {
+
+        @Test
+        @DisplayName("D등급(10x10) 존1 반경=2: center=5, posX=4,posY=4 → zone1")
+        void d_grade_zone1_boundary() {
+            User user = sampleUser(1L);
+            IslandGrade dGrade = islandGrade("D", 10, 2, 4, 1);
+            HomeIsland island = islandWithGrade(user, dGrade);
+            BuildingType bt = storage();
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(Collections.emptyList());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.save(any()))
+                    .willAnswer(
+                            inv -> {
+                                BuildingInstance saved = inv.getArgument(0);
+                                ReflectionTestUtils.setField(saved, "id", 201L);
+                                return saved;
+                            });
+
+            // center=5, dist=|4-5|=1 ≤ zone1Radius(2) → zone1
+            PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 4, 4);
+            PlaceBuildingResponse response = buildingService.placeOnIsland(1L, req);
+
+            assertThat(response.buildingId()).isEqualTo(201L);
+        }
+
+        @Test
+        @DisplayName("B등급(15x15) Castle을 zone1이 아닌 곳 배치 → ZONE_RESTRICTION_VIOLATED")
+        void b_grade_castle_outside_zone1_rejected() {
+            User user = sampleUser(1L);
+            IslandGrade bGrade = islandGrade("B", 15, 4, 7, 2);
+            HomeIsland island = islandWithGrade(user, bGrade);
+            BuildingType castleType = castle(); // zoneRestriction=1
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(1L)).willReturn(Optional.of(castleType));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(Collections.emptyList());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+
+            // center=7, posX=0 → dist=7 > zone1Radius(4) → zone2/3, not zone1
+            PlaceBuildingRequest req = new PlaceBuildingRequest(1L, 0, 0);
+            assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.ZONE_RESTRICTION_VIOLATED);
         }
     }
 }
