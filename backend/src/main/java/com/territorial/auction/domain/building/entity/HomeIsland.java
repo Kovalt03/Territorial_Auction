@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.building.entity;
 
+import com.territorial.auction.domain.building.BuildingPolicy;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -28,14 +29,31 @@ public class HomeIsland {
     @Column(nullable = false)
     private Integer gridSize = 10;
 
+    @Column(length = 5)
+    private String grade;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column private LocalDateTime lastHarvestAt;
 
     @Builder
     public HomeIsland(User user, Integer level, Integer gridSize) {
         this.user = user;
         this.level = level != null ? level : 1;
         this.gridSize = gridSize != null ? gridSize : 10;
+        this.grade = "D";
+        this.lastHarvestAt = LocalDateTime.now();
+    }
+
+    public void recordHarvest() {
+        this.lastHarvestAt = LocalDateTime.now();
+    }
+
+    /** 성 레벨업 시 섬 등급과 그리드 크기를 함께 갱신한다. */
+    public void upgradeIsland(int castleLevel) {
+        this.gridSize = BuildingPolicy.islandGridSizeForCastleLevel(castleLevel);
+        this.grade = BuildingPolicy.islandGradeForCastleLevel(castleLevel);
     }
 }
