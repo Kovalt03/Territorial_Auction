@@ -81,10 +81,7 @@ public class UserService {
                         .findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        HomeIsland island =
-                homeIslandRepository
-                        .findByUserId(userId)
-                        .orElseThrow(() -> new CustomException(ErrorCode.ISLAND_NOT_FOUND));
+        Optional<HomeIsland> islandOpt = homeIslandRepository.findByUserId(userId);
 
         // TODO: Redis 캐시 우선 조회 후 미존재 시 DB 조회로 전환 필요 (TTL 30분)
         //       명세: https://www.notion.so/33c2efa4278d81a88cf3eff675a30e46 비고 참고
@@ -95,16 +92,23 @@ public class UserService {
 
         int territoryCount = (int) territoryRepository.countByOwnerId(userId);
 
+        MyProfileResponse.IslandInfo islandInfo =
+                islandOpt
+                        .map(
+                                island ->
+                                        new MyProfileResponse.IslandInfo(
+                                                island.getId(),
+                                                island.getLevel(),
+                                                0, // TODO: 섬 건물 합산 생산량 계산으로 교체 필요
+                                                builderCount))
+                        .orElse(null);
+
         return new MyProfileResponse(
                 user.getId(),
                 user.getNickname(),
                 new MyProfileResponse.WalletInfo(
                         wallet.getAvailableGp(), wallet.getAvailableAp(), wallet.getLockedAp()),
-                new MyProfileResponse.IslandInfo(
-                        island.getId(),
-                        island.getLevel(),
-                        0, // TODO: 섬 건물 합산 생산량 계산으로 교체 필요 (건물 도메인 구현 후)
-                        builderCount),
+                islandInfo,
                 activePass
                         .map(
                                 p ->

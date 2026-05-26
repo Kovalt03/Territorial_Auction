@@ -15,10 +15,10 @@ public class Territory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "coord_x", nullable = false)
     private Integer coordX;
 
-    @Column(nullable = false)
+    @Column(name = "coord_y", nullable = false)
     private Integer coordY;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -44,6 +44,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     return body.data as T;
   }
 
+  // 토큰 없이 받은 401은 엔드포인트 자체의 인증 실패 (잘못된 비밀번호 등) — 리프레시 불필요
+  if (!token) {
+    let message = 'Unauthorized';
+    try { const b = await res.json(); if (b?.message) message = b.message; } catch { /* ignore */ }
+    throw new ApiError(message, 401);
+  }
+
   // 401 — attempt token refresh
   if (isRefreshing) {
     return new Promise<T>((resolve, reject) => {

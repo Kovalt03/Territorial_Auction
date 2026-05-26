@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useApp } from '../context/AppContext';
-import { signupApi, loginApi, checkUsernameApi } from '../api/auth';
+import { signupApi, loginApi, checkUsernameApi, checkEmailApi } from '../api/auth';
 import { fetchMyProfile, fetchMyWallet } from '../api/user';
 import { ApiError } from '../api/client';
 import { GridBackground } from '../components/GridBackground';
@@ -15,6 +15,8 @@ export function RegisterPage() {
   const [form, setForm] = useState({ username: '', email: '', password: '', pwConfirm: '', nickname: '' });
   const [usernameChecked, setUsernameChecked] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [emailChecked, setEmailChecked] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
@@ -22,6 +24,7 @@ export function RegisterPage() {
   const handleChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
     if (field === 'username') { setUsernameChecked(false); setUsernameAvailable(null); }
+    if (field === 'email') { setEmailChecked(false); setEmailAvailable(null); }
     setError('');
   };
 
@@ -36,10 +39,21 @@ export function RegisterPage() {
     setUsernameChecked(true);
   };
 
+  const handleCheckEmail = async () => {
+    if (!form.email) return;
+    try {
+      await checkEmailApi(form.email);
+      setEmailAvailable(true);
+    } catch {
+      setEmailAvailable(false);
+    }
+    setEmailChecked(true);
+  };
+
   const handleSubmit = async () => {
     setError('');
     if (!usernameChecked || !usernameAvailable) { setError('아이디 중복확인을 해주세요.'); return; }
-    if (!form.email) { setError('이메일을 입력해주세요.'); return; }
+    if (!emailChecked || !emailAvailable) { setError('이메일 중복확인을 해주세요.'); return; }
     if (form.password.length < 8) { setError('비밀번호는 8자 이상이어야 합니다.'); return; }
     if (form.password !== form.pwConfirm) { setError('비밀번호가 일치하지 않습니다.'); return; }
     if (!form.nickname) { setError('닉네임을 입력해주세요.'); return; }
@@ -49,8 +63,11 @@ export function RegisterPage() {
       await signupApi(form.username, form.email, form.password, form.nickname);
       const tokenData = await loginApi(form.email, form.password);
       localStorage.setItem('accessToken', tokenData.accessToken);
-      const [profile, wallet] = await Promise.all([fetchMyProfile(), fetchMyWallet()]);
-      login(profile.nickname, { token: tokenData.accessToken, userId: profile.userId, ap: wallet.availableAP, gp: wallet.availableGP });
+      const [profile, wallet] = await Promise.all([
+        fetchMyProfile().catch(() => null),
+        fetchMyWallet().catch(() => null),
+      ]);
+      login(profile?.nickname ?? '', { token: tokenData.accessToken, userId: profile?.userId, ap: wallet?.availableAP ?? 0, gp: wallet?.availableGP ?? 0 });
       setShowWelcome(true);
     } catch (e: unknown) {
       if (e instanceof ApiError && e.status === 409) setError('이미 사용 중인 아이디 또는 이메일입니다.');
@@ -108,13 +125,28 @@ export function RegisterPage() {
 
           {/* 이메일 */}
           <label className="form-label">이메일</label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={e => handleChange('email', e.target.value)}
-            placeholder="example@email.com"
-            className="form-input mb-4"
-          />
+          <div className="flex gap-2 mb-1">
+            <input
+              type="email"
+              value={form.email}
+              onChange={e => handleChange('email', e.target.value)}
+              placeholder="example@email.com"
+              className="flex-1 bg-elevated border border-outline rounded-md px-3 h-[38px] text-foreground outline-none focus:border-primary transition-colors text-xs"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCheckEmail}
+            >
+              중복확인
+            </Button>
+          </div>
+          {emailChecked && (
+            <p className={`mb-3 text-[11px] ${emailAvailable ? 'text-gp' : 'text-danger'}`}>
+              {emailAvailable ? '✓ 사용 가능한 이메일입니다' : '✗ 이미 사용 중인 이메일입니다'}
+            </p>
+          )}
+          {!emailChecked && <div className="mb-3" />}
 
           {/* 비밀번호 */}
           <label className="form-label">비밀번호</label>

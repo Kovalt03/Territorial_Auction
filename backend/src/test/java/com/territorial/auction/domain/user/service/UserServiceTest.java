@@ -200,17 +200,19 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("섬 정보가 없으면 ISLAND_NOT_FOUND 예외")
+        @DisplayName("섬 미생성 유저는 islandInfo null로 정상 반환")
         void getMyProfile_islandNotFound() {
             User user = sampleUser();
             given(userRepository.findById(1L)).willReturn(Optional.of(user));
             given(walletRepository.findById(1L)).willReturn(Optional.of(sampleWallet(user)));
             given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.empty());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+            given(territoryRepository.countByOwnerId(1L)).willReturn(0L);
 
-            assertThatThrownBy(() -> userService.getMyProfile(1L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.ISLAND_NOT_FOUND);
+            MyProfileResponse response = userService.getMyProfile(1L);
+
+            assertThat(response.island()).isNull();
         }
     }
 
