@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.building.service;
 
 import com.territorial.auction.domain.building.BuildingPolicy;
+import com.territorial.auction.domain.building.dto.HarvestIslandGpResponse;
 import com.territorial.auction.domain.building.dto.InventoryResponse;
 import com.territorial.auction.domain.building.dto.InventoryResponse.InventoryItem;
 import com.territorial.auction.domain.building.dto.IslandResponse;
@@ -32,11 +33,14 @@ import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -115,6 +119,14 @@ public class BuildingService {
         wallet.spendGp(cost);
         building.upgrade();
 
+        if (building.getBuildingType().isCastle() && building.getIsland() != null) {
+            building.getIsland().upgradeIsland(building.getLevel());
+            log.info(
+                    "섬 등급 업그레이드. islandId={}, castleLevel={}",
+                    building.getIsland().getId(),
+                    building.getLevel());
+        }
+
         Integer nextLevel =
                 building.getLevel() < BuildingPolicy.MAX_LEVEL ? building.getLevel() + 1 : null;
         return new UpgradeBuildingResponse(
@@ -182,6 +194,7 @@ public class BuildingService {
         int gridSize = island.getGridSize();
         int zone = calculateZone(request.posX(), request.posY(), gridSize);
         validatePosition(existing, buildingType, request.posX(), request.posY(), gridSize);
+        validateZoneRestriction(buildingType, zone);
 
         Wallet wallet = findWalletOrThrow(userId);
         validateGp(wallet, buildingType.getBaseCostGp());
@@ -275,6 +288,7 @@ public class BuildingService {
         int zone = calculateZone(request.posX(), request.posY(), gridSize);
         validatePosition(
                 existing, stored.getBuildingType(), request.posX(), request.posY(), gridSize);
+        validateZoneRestriction(stored.getBuildingType(), zone);
 
         stored.placeOnIsland(island, request.posX(), request.posY(), zone);
 
@@ -290,6 +304,9 @@ public class BuildingService {
     public MoveBuildingResponse move(Long userId, Long buildingId, MoveBuildingRequest request) {
         BuildingInstance building = findBuildingOrThrow(buildingId);
         validateBuildingOwner(building, userId);
+        if (building.getBuildingType().isCastle()) {
+            throw new CustomException(ErrorCode.CASTLE_CANNOT_BE_MOVED);
+        }
 
         List<BuildingInstance> existing = findExistingBuildings(building);
         int gridSize = resolveGridSize(building);
@@ -333,6 +350,57 @@ public class BuildingService {
                 building.getLevel(),
                 building.getHp(),
                 storedAt);
+    }
+
+    @Transactional
+    public HarvestIslandGpResponse harvestIslandGp(Long userId) {
+        HomeIsland island =
+                homeIslandRepository
+                        .findByUserId(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.ISLAND_NOT_FOUND));
+
+        List<BuildingInstance> buildings =
+                buildingInstanceRepository.findByIslandId(island.getId());
+        int productionRatePerMinute = calculateIslandProductionRatePerMinute(buildings);
+
+        LocalDateTime lastHarvest = resolveLastHarvest(island);
+        long minutesElapsed =
+                Math.max(
+                        0,
+                        Math.min(
+                                ChronoUnit.MINUTES.between(lastHarvest, LocalDateTime.now()),
+                                BuildingPolicy.MAX_HARVEST_ACCUMULATION_MINUTES));
+        int gpAmount = (int) (minutesElapsed * productionRatePerMinute);
+
+        Wallet wallet = findWalletOrThrow(userId);
+        if (gpAmount > 0) {
+            wallet.addGp(gpAmount);
+        }
+        island.recordHarvest();
+
+        log.info("섬 GP 수확 완료. userId={}, harvestedGp={}", userId, gpAmount);
+
+        return new HarvestIslandGpResponse(
+                gpAmount, wallet.getAvailableGp(), island.getLastHarvestAt());
+    }
+
+    private LocalDateTime resolveLastHarvest(HomeIsland island) {
+        if (island.getLastHarvestAt() != null) return island.getLastHarvestAt();
+        if (island.getCreatedAt() != null) return island.getCreatedAt();
+        return LocalDateTime.now();
+    }
+
+    private int calculateIslandProductionRatePerMinute(List<BuildingInstance> buildings) {
+        int perHour =
+                buildings.stream()
+                        .filter(
+                                b ->
+                                        !b.isDestroyed()
+                                                && b.getBuildingType().getGpProductionRate()
+                                                        != null)
+                        .mapToInt(b -> b.getLevel() * b.getBuildingType().getGpProductionRate())
+                        .sum();
+        return perHour / 60;
     }
 
     // ─── private helpers ──────────────────────────────────────────────────────
