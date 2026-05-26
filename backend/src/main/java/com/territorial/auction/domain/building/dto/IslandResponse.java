@@ -15,6 +15,8 @@ public record IslandResponse(
         int productionRate,
         LocalDateTime lastHarvestAt,
         int accumulatedGp,
+        int zone1Radius,
+        int zone2Radius,
         List<IslandBuildingInfo> buildings) {
 
     public record IslandBuildingInfo(
@@ -77,12 +79,14 @@ public record IslandResponse(
 
         return new IslandResponse(
                 island.getId(),
-                island.getGrade() != null ? island.getGrade() : "D",
+                island.getGrade(),
                 island.getGridSize(),
                 island.getLevel(),
                 productionRate,
                 lastHarvestAt,
                 accumulatedGp,
+                island.getZone1Radius(),
+                island.getZone2Radius(),
                 buildingInfos);
     }
 }

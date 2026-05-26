@@ -6,6 +6,7 @@ import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ public class BuildingTypeSeeder implements ApplicationRunner {
     private final BuildingTypeRepository buildingTypeRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final HomeIslandRepository homeIslandRepository;
+    private final IslandGradeRepository islandGradeRepository;
 
     @Override
     @Transactional
@@ -55,7 +57,7 @@ public class BuildingTypeSeeder implements ApplicationRunner {
                         });
     }
 
-    /** 성 레벨에 따라 섬 등급·그리드 크기·성 위치를 일괄 동기화한다. */
+    /** 성 레벨에 따라 섬 IslandGrade FK·그리드 크기·성 위치를 일괄 동기화한다. */
     private void migrateIslandGradeAndSize() {
         List<HomeIsland> islands = homeIslandRepository.findAll();
         int count = 0;
@@ -69,7 +71,9 @@ public class BuildingTypeSeeder implements ApplicationRunner {
                             .orElse(null);
 
             int castleLevel = castle != null ? castle.getLevel() : 1;
-            island.upgradeIsland(castleLevel);
+            islandGradeRepository
+                    .findByCastleLevelRequired(castleLevel)
+                    .ifPresent(island::upgradeIsland);
 
             if (castle != null) {
                 int center = (island.getGridSize() / 2) - 1;
@@ -78,7 +82,7 @@ public class BuildingTypeSeeder implements ApplicationRunner {
             count++;
         }
         if (count > 0) {
-            log.info("섬 등급·그리드 크기 마이그레이션 완료. 대상 섬 수={}", count);
+            log.info("섬 IslandGrade 마이그레이션 완료. 대상 섬 수={}", count);
         }
     }
 
