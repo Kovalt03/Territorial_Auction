@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.building.controller;
 
+import com.territorial.auction.domain.building.dto.HarvestIslandGpResponse;
 import com.territorial.auction.domain.building.dto.IslandResponse;
 import com.territorial.auction.domain.building.dto.PlaceBuildingRequest;
 import com.territorial.auction.domain.building.dto.PlaceBuildingResponse;
@@ -36,5 +37,11 @@ public class IslandController {
             @AuthenticationPrincipal Long userId,
             @RequestBody @Valid PlaceBuildingRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(buildingService.placeOnIsland(userId, request)));
+    }
+
+    @PostMapping("/harvest")
+    public ResponseEntity<ApiResponse<HarvestIslandGpResponse>> harvestGp(
+            @AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(ApiResponse.ok(buildingService.harvestIslandGp(userId)));
     }
 }
