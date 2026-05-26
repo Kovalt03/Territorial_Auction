@@ -1,37 +1,11 @@
 -- =============================================
 -- Territorial Auction - Dev Seed Data
 -- =============================================
-
--- 시즌 (현재 진행 중)
-INSERT INTO seasons (season_number, started_at, ended_at)
-VALUES (1, '2026-01-01 00:00:00+00', '2026-12-31 23:59:59+00')
-ON CONFLICT (season_number) DO NOTHING;
-
--- 시즌 패스 상품
-INSERT INTO season_passes (name, cost_ap, duration_days, island_bonus_pct, extra_builders, tax_exempt_bonus)
-VALUES ('시즌 패스 Vol.1', 1000, 30, 50, 1, 2);
-
--- 시즌 패스 레벨별 보상 (season_id=1)
-INSERT INTO season_pass_level_rewards (season_id, level, reward_name) VALUES
-(1,  5, 'GP 500'),
-(1, 10, '병력 증강제 x1'),
-(1, 15, '병력 증강제 x3'),
-(1, 20, '전설 영토 스킨'),
-(1, 25, 'GP 1000'),
-(1, 30, '무적권 x2');
-
--- 건물 타입 (8종)
-INSERT INTO building_types (name, width, height, max_hp, base_cost_gp, zone_restriction, defense_power, food_production_rate, unit_capacity_per_level, gp_production_rate)
-VALUES
-  ('CASTLE',    2, 2, 200,    0,  1, NULL, NULL, NULL, NULL),
-  ('STORAGE',   2, 2, 100, 2000,  NULL, NULL, NULL, NULL, NULL),
-  ('WORKSHOP',  2, 1,  80, 4000,  NULL, NULL, NULL, NULL,   30),
-  ('BARRACKS',  2, 2, 100, 3000,  NULL, NULL, NULL, NULL, NULL),
-  ('WALL',      1, 1,  60,  500,  NULL,   20, NULL, NULL, NULL),
-  ('TOWER',     1, 1,  80, 1500,  NULL,   50, NULL, NULL, NULL),
-  ('FARMLAND',  2, 2,  80, 2000,    -2, NULL,   10, NULL, NULL),
-  ('RESIDENCE', 2, 2,  80, 2500,  NULL, NULL, NULL,    5, NULL)
-ON CONFLICT DO NOTHING;
+-- 레퍼런스 데이터(territory_grades, continents, territories, island_grades,
+-- seasons, items, building_types, season_passes)는 Spring Boot 시작 시
+-- 각 Seeder(ApplicationRunner)가 resources/db/*.yml 에서 읽어 자동 삽입합니다.
+-- 이 파일에는 개발용 테스트 유저 데이터만 유지합니다.
+-- =============================================
 
 -- 테스트 유저 (password: password1!)
 INSERT INTO users (username, email, password_hash, nickname)
@@ -53,11 +27,3 @@ ON CONFLICT (user_id) DO UPDATE
 INSERT INTO notification_settings (user_id)
 SELECT id FROM users WHERE username = 'testuser'
 ON CONFLICT (user_id) DO NOTHING;
-
--- 아이템 (4종)
-INSERT INTO items (name, item_type, description, cost_ap, cost_gp, daily_limit, gp_reward, icon_url) VALUES
-('무적 시간 추가권', 'INVINCIBILITY',   '영토 보호 시간 +4시간',       200, NULL, NULL, NULL, '/images/items/invincibility.svg'),
-('일반 공격권',     'ATTACK_NORMAL',   'Zone 단계별 공격 허용',        100,  500, NULL, NULL, '/images/items/attack_normal.svg'),
-('정밀 공격권',     'ATTACK_PRECISION','목표 건물 직접 지정 공격',     300, NULL, NULL, NULL, '/images/items/attack_precision.svg'),
-('GP 구매권',       'GP_PURCHASE',     'GP 1,000 즉시 획득',            50, NULL,    5, 1000, '/images/items/gp_purchase.svg')
-ON CONFLICT DO NOTHING;

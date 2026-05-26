@@ -2,11 +2,11 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 import { useGridMap } from '../hooks/useGridMap';
+import { useContinent } from '../hooks/useContinent';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
 import { fetchTerritoryDetail } from '../api/map';
 import { placeBidApi } from '../api/auction';
-import { CONTINENTS } from '../data/continents';
 import type { GridTerritoryDto } from '../types/map';
 import type { Grade } from '../types/grade';
 import { GRADE_COLOR } from '../types/grade';
@@ -82,10 +82,16 @@ function fmtTime(s: number) {
 export function ContinentPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const continent = CONTINENTS.find(c => c.id === id) || CONTINENTS[0];
+  const { continents } = useContinent();
   const { ap, userId, spendAP } = useApp();
 
-  const { territories, cols, rows, minX, minY, isLoading, error } = useGridMap(continent.dbId);
+  const continentId = Number(id);
+  const continentData = continents.find(c => c.id === id);
+  const continent = continentData ?? {
+    color: '#8892b0', name: '로딩 중...', desc: '', grade: 'C', trophyReq: null,
+  };
+
+  const { territories, cols, rows, minX, minY, isLoading, error } = useGridMap(continentId || undefined);
 
   const grid = useMemo(
     () => (cols > 0 && rows > 0 ? buildDisplayGrid(territories, minX, minY, cols, rows, userId) : []),

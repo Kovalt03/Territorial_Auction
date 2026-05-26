@@ -9,6 +9,10 @@ public record ContinentListResponse(int totalContinents, List<ContinentInfo> con
     public record ContinentInfo(
             Long continentId,
             String continentName,
+            String themeColor,
+            String grade,
+            Integer minTrophyRequired,
+            String description,
             int totalTerritories,
             int occupiedTerritories,
             String dominantGuildName,

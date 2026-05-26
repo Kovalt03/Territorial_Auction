@@ -1,6 +1,10 @@
 export interface ContinentInfo {
   continentId: number;
   continentName: string;
+  themeColor: string | null;
+  grade: string | null;
+  minTrophyRequired: number | null;
+  description: string | null;
   totalTerritories: number;
   occupiedTerritories: number;
   dominantGuildName: string | null;

@@ -1,11 +1,12 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { CONTINENTS } from '../data/continents';
-import { type Particle, createParticles, updateParticles, drawFrame } from './mapDraw';
+import { CONTINENTS, type ContinentDef } from '../data/continents';
+import { useContinent } from '../hooks/useContinent';
+import { SUN_X, SUN_Y, type Particle, createParticles, updateParticles, drawFrame } from './mapDraw';
 
-const SVG_W = 800;
-const SVG_H = 700;
+const SVG_W = 1400;
+const SVG_H = 1100;
 const BTN = 'w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white hover:border-[#00f5ff] transition-colors flex items-center justify-center text-sm';
 
 interface MapState {
@@ -19,11 +20,18 @@ interface MapState {
   t: number;
   lastTime: number;
   particles: Map<string, Particle[]>;
-  paths: Map<string, Path2D>;
+  orbitalAngles: Map<string, number>;
+  isPaused: boolean;
 }
 
 export function MapCanvas() {
   const navigate = useNavigate();
+  const { continents } = useContinent();
+  const continentsRef = useRef<ContinentDef[]>(continents);
+  useEffect(() => { continentsRef.current = continents; }, [continents]);
+
+  const [isPaused, setIsPaused] = useState(false);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<MapState>({
     zoom: 1, pan: { x: 0, y: 0 },
@@ -34,7 +42,8 @@ export function MapCanvas() {
     mousePos: { x: 0, y: 0 },
     t: 0, lastTime: 0,
     particles: new Map(),
-    paths: new Map(),
+    orbitalAngles: new Map(CONTINENTS.map(c => [c.slotId, c.orbitAngle0])),
+    isPaused: false,
   });
   const rafRef = useRef(0);
 
@@ -45,18 +54,18 @@ export function MapCanvas() {
     return { z, x: (c.width - SVG_W * z) / 2, y: (c.height - SVG_H * z) / 2 };
   }, []);
 
-  // Init particles + paths once
+  // Init particles once (positions are initial, updated each frame by orbital mechanics)
   useEffect(() => {
     const s = stateRef.current;
     CONTINENTS.forEach(c => {
-      s.particles.set(c.id, createParticles(c));
-      const p = new Path2D();
-      p.arc(c.cx, c.cy, c.halfHeight, 0, Math.PI * 2);
-      s.paths.set(c.id, p);
+      s.particles.set(c.slotId, createParticles(c));
     });
   }, []);
 
-  // Resize observer — keep canvas pixel dimensions in sync with container
+  // Sync isPaused React state → stateRef
+  useEffect(() => { stateRef.current.isPaused = isPaused; }, [isPaused]);
+
+  // Resize observer
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -88,25 +97,49 @@ export function MapCanvas() {
       s.lastTime = time;
       s.t += dt;
 
-      CONTINENTS.forEach(c => {
-        const ps = s.particles.get(c.id);
-        if (ps) updateParticles(ps, c, dt);
+      // Advance orbital angles when not paused
+      if (!s.isPaused) {
+        for (const c of continentsRef.current) {
+          const prev = s.orbitalAngles.get(c.slotId) ?? c.orbitAngle0;
+          s.orbitalAngles.set(c.slotId, prev + c.orbitSpeed * dt);
+        }
+      }
+
+      // Build render array with current orbital positions (tilted ellipse formula)
+      const renderArr: ContinentDef[] = continentsRef.current.map(c => {
+        const angle = s.orbitalAngles.get(c.slotId) ?? c.orbitAngle0;
+        const cosR = Math.cos(c.orbitRotation);
+        const sinR = Math.sin(c.orbitRotation);
+        const px = c.orbitRx * Math.cos(angle);
+        const py = c.orbitRy * Math.sin(angle);
+        return {
+          ...c,
+          cx: Math.round(SUN_X + px * cosR - py * sinR),
+          cy: Math.round(SUN_Y + px * sinR + py * cosR),
+        };
       });
 
-      // Hit test using identity transform + virtual coords
+      // Update particles to follow planet positions
+      for (const c of renderArr) {
+        const ps = s.particles.get(c.slotId);
+        if (ps) updateParticles(ps, c, dt);
+      }
+
+      // Distance-based hit test
       ctx.resetTransform();
       const vx = (s.mousePos.x - s.pan.x) / s.zoom;
       const vy = (s.mousePos.y - s.pan.y) / s.zoom;
       s.hoveredId = null;
-      for (const c of CONTINENTS) {
-        if (ctx.isPointInPath(s.paths.get(c.id)!, vx, vy)) {
+      for (const c of renderArr) {
+        const dx = vx - c.cx, dy = vy - c.cy;
+        if (dx * dx + dy * dy <= c.halfHeight * c.halfHeight) {
           s.hoveredId = c.id;
           break;
         }
       }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawFrame(ctx, s.zoom, s.pan, s.t, s.hoveredId, s.particles, s.paths, CONTINENTS, canvas.width, canvas.height);
+      drawFrame(ctx, s.zoom, s.pan, s.t, s.hoveredId, s.particles, renderArr, canvas.width, canvas.height);
 
       canvas.style.cursor = s.isDragging ? 'grabbing' : s.hoveredId ? 'pointer' : 'grab';
 
@@ -167,15 +200,27 @@ export function MapCanvas() {
 
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
     const vx = (e.clientX - rect.left - s.pan.x) / s.zoom;
     const vy = (e.clientY - rect.top - s.pan.y) / s.zoom;
-    ctx.resetTransform();
-    for (const c of CONTINENTS) {
-      if (ctx.isPointInPath(s.paths.get(c.id)!, vx, vy)) {
-        navigate(`/app/continent/${c.id}`);
+
+    const renderArr: ContinentDef[] = continentsRef.current.map(c => {
+      const angle = s.orbitalAngles.get(c.slotId) ?? c.orbitAngle0;
+      const cosR = Math.cos(c.orbitRotation);
+      const sinR = Math.sin(c.orbitRotation);
+      const px = c.orbitRx * Math.cos(angle);
+      const py = c.orbitRy * Math.sin(angle);
+      return {
+        ...c,
+        cx: Math.round(SUN_X + px * cosR - py * sinR),
+        cy: Math.round(SUN_Y + px * sinR + py * cosR),
+      };
+    });
+
+    for (const c of renderArr) {
+      const dx = vx - c.cx, dy = vy - c.cy;
+      if (dx * dx + dy * dy <= c.halfHeight * c.halfHeight) {
+        if (c.continentId !== 0) navigate(`/app/continent/${c.id}`);
         return;
       }
     }
@@ -204,6 +249,14 @@ export function MapCanvas() {
         <button onClick={zoomIn} className={BTN}>+</button>
         <button onClick={zoomOut} className={BTN}>−</button>
         <button onClick={resetView} className={BTN}>⊡</button>
+      </div>
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
+        <button
+          onClick={() => setIsPaused(p => !p)}
+          className="flex items-center gap-1.5 px-3 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white hover:border-[#00f5ff] transition-colors text-xs"
+        >
+          {isPaused ? '▶ 재생' : '⏸ 일시정지'}
+        </button>
       </div>
       <div className="absolute bottom-3 left-3 z-10 text-[#2a3a5a] text-[10px] pointer-events-none select-none">
         스크롤로 줌 · 드래그로 이동 · 행성 클릭으로 진입

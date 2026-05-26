@@ -1,0 +1,18 @@
+islandGrades:
+  - name: "D"
+    gridSize: 10
+    zone1Radius: 2
+    zone2Radius: 4
+    castleLevelRequired: 1
+
+  - name: "B"
+    gridSize: 15
+    zone1Radius: 4
+    zone2Radius: 7
+    castleLevelRequired: 2
+
+  - name: "S"
+    gridSize: 20
+    zone1Radius: 6
+    zone2Radius: 10
+    castleLevelRequired: 3

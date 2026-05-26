@@ -38,7 +38,14 @@ public class ContinentService {
                                 c ->
                                         ContinentListResponse.ContinentInfo.builder()
                                                 .continentId(c.getId())
-                                                .continentName(c.getName())
+                                                .continentName(
+                                                        c.getDisplayName() != null
+                                                                ? c.getDisplayName()
+                                                                : c.getName())
+                                                .themeColor(c.getThemeColor())
+                                                .grade(c.getGrade())
+                                                .minTrophyRequired(c.getMinTrophyRequired())
+                                                .description(c.getDescription())
                                                 .totalTerritories(
                                                         totalCountMap
                                                                 .getOrDefault(c.getId(), 0L)

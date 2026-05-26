@@ -13,12 +13,20 @@ CREATE TABLE IF NOT EXISTS users (
     status        VARCHAR(10)   NOT NULL DEFAULT 'ACTIVE'
 );
 
+-- user_profiles
+CREATE TABLE IF NOT EXISTS user_profiles (
+    user_id           BIGINT       PRIMARY KEY REFERENCES users(id),
+    profile_image_url VARCHAR(255),
+    updated_at        TIMESTAMP    NOT NULL DEFAULT now()
+);
+
 -- wallets
 CREATE TABLE IF NOT EXISTS wallets (
     user_id        BIGINT  PRIMARY KEY REFERENCES users(id),
     available_ap   INTEGER NOT NULL DEFAULT 0,
     locked_ap      INTEGER NOT NULL DEFAULT 0,
     available_gp   INTEGER NOT NULL DEFAULT 0,
+    available_food INTEGER NOT NULL DEFAULT 100,
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -33,9 +41,13 @@ CREATE TABLE IF NOT EXISTS notification_settings (
 
 -- continents
 CREATE TABLE IF NOT EXISTS continents (
-    id          BIGSERIAL   PRIMARY KEY,
-    name        VARCHAR(50) NOT NULL,
-    theme_color VARCHAR(7)  NOT NULL
+    id                  BIGSERIAL    PRIMARY KEY,
+    name                VARCHAR(50)  NOT NULL,
+    theme_color         VARCHAR(7)   NOT NULL,
+    display_name        VARCHAR(50),
+    grade               VARCHAR(2),
+    min_trophy_required INTEGER,
+    description         VARCHAR(100)
 );
 
 -- territory_grades
@@ -100,7 +112,8 @@ CREATE TABLE IF NOT EXISTS auction_histories (
     territory_id BIGINT      REFERENCES territories(id),
     winner_id    BIGINT      REFERENCES users(id),
     final_price  INTEGER     NOT NULL,
-    won_at       TIMESTAMPTZ NOT NULL
+    won_at       TIMESTAMPTZ NOT NULL,
+    season_id    BIGINT      -- FK to seasons added below after seasons table
 );
 
 -- color_histories
@@ -219,13 +232,26 @@ CREATE TABLE IF NOT EXISTS user_season_passes (
     is_active      BOOLEAN     NOT NULL DEFAULT true
 );
 
+-- island_grades
+CREATE TABLE IF NOT EXISTS island_grades (
+    id                    BIGSERIAL  PRIMARY KEY,
+    name                  VARCHAR(5) NOT NULL UNIQUE,
+    grid_size             INTEGER    NOT NULL,
+    zone1_radius          INTEGER    NOT NULL,
+    zone2_radius          INTEGER    NOT NULL,
+    castle_level_required INTEGER    NOT NULL
+);
+
 -- home_islands
 CREATE TABLE IF NOT EXISTS home_islands (
-    id         BIGSERIAL   PRIMARY KEY,
-    user_id    BIGINT      UNIQUE NOT NULL REFERENCES users(id),
-    level      INTEGER     NOT NULL DEFAULT 1,
-    grid_size  INTEGER     NOT NULL DEFAULT 10,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    id              BIGSERIAL   PRIMARY KEY,
+    user_id         BIGINT      UNIQUE NOT NULL REFERENCES users(id),
+    level           INTEGER     NOT NULL DEFAULT 1,
+    grid_size       INTEGER     NOT NULL DEFAULT 10,
+    grade           VARCHAR(5),
+    island_grade_id BIGINT      REFERENCES island_grades(id),
+    last_harvest_at TIMESTAMP,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- building_types
@@ -325,6 +351,29 @@ CREATE TABLE IF NOT EXISTS seasons (
     started_at    TIMESTAMPTZ NOT NULL,
     ended_at      TIMESTAMPTZ,
     processed_at  TIMESTAMPTZ
+);
+
+-- FK: auction_histories.season_id → seasons (deferred because seasons is defined later)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'fk_auction_histories_season'
+    ) THEN
+        ALTER TABLE auction_histories
+            ADD CONSTRAINT fk_auction_histories_season
+            FOREIGN KEY (season_id) REFERENCES seasons(id);
+    END IF;
+END $$;
+
+-- season_territory_holds
+CREATE TABLE IF NOT EXISTS season_territory_holds (
+    id           BIGSERIAL   PRIMARY KEY,
+    season_id    BIGINT      NOT NULL REFERENCES seasons(id),
+    user_id      BIGINT      NOT NULL REFERENCES users(id),
+    territory_id BIGINT      NOT NULL REFERENCES territories(id),
+    grade        VARCHAR(1)  NOT NULL,
+    held_from    TIMESTAMP   NOT NULL,
+    held_until   TIMESTAMP
 );
 
 -- season_pass_progress
