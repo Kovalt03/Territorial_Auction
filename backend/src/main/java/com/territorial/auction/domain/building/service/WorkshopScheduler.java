@@ -25,16 +25,10 @@ public class WorkshopScheduler {
 
         List<Object[]> territoryProductions =
                 buildingInstanceRepository.sumWorkshopGpProductionGroupedByOwner(now);
-        List<Object[]> islandProductions =
-                buildingInstanceRepository.sumIslandWorkshopGpProductionGroupedByOwner(now);
 
         produceGp(territoryProductions);
-        produceGp(islandProductions);
 
-        log.info(
-                "생산소 GP 생산 완료. 영토 대상 유저 수={}, 섬 대상 유저 수={}",
-                territoryProductions.size(),
-                islandProductions.size());
+        log.info("영토 생산소 GP 생산 완료. 대상 유저 수={}", territoryProductions.size());
     }
 
     private void produceGp(List<Object[]> productions) {
