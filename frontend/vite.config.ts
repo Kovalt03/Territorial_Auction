@@ -21,6 +21,7 @@ export default defineConfig({
     proxy: {
       '/api': process.env.API_TARGET ?? 'http://localhost:8080',
       '/ws': { target: process.env.WS_TARGET ?? 'ws://localhost:8080', ws: true },
+      '/images': process.env.API_TARGET ?? 'http://localhost:8080',
     },
   },
   test: {

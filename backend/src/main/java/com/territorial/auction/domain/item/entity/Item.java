@@ -38,6 +38,9 @@ public class Item {
 
     private Integer gpReward; // GP_PURCHASE 타입: 구매 즉시 지급할 GP 수량
 
+    @Column(length = 100)
+    private String iconUrl;
+
     @Builder
     public Item(
             String name,
@@ -46,7 +49,8 @@ public class Item {
             Integer costAp,
             Integer costGp,
             Integer dailyLimit,
-            Integer gpReward) {
+            Integer gpReward,
+            String iconUrl) {
         this.name = name;
         this.itemType = itemType;
         this.description = description;
@@ -54,5 +58,6 @@ public class Item {
         this.costGp = costGp;
         this.dailyLimit = dailyLimit;
         this.gpReward = gpReward;
+        this.iconUrl = iconUrl;
     }
 }

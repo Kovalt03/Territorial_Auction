@@ -174,7 +174,8 @@ CREATE TABLE IF NOT EXISTS items (
     cost_ap     INTEGER,
     cost_gp     INTEGER,
     daily_limit INTEGER,
-    gp_reward   INTEGER
+    gp_reward   INTEGER,
+    icon_url    VARCHAR(100)
 );
 
 -- user_items
