@@ -20,9 +20,11 @@ import com.territorial.auction.domain.building.dto.UpgradeBuildingResponse;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.entity.IslandGrade;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
@@ -49,6 +51,7 @@ public class BuildingService {
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final BuildingTypeRepository buildingTypeRepository;
     private final HomeIslandRepository homeIslandRepository;
+    private final IslandGradeRepository islandGradeRepository;
     private final TerritoryRepository territoryRepository;
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
@@ -120,7 +123,11 @@ public class BuildingService {
         building.upgrade();
 
         if (building.getBuildingType().isCastle() && building.getIsland() != null) {
-            building.getIsland().upgradeIsland(building.getLevel());
+            IslandGrade newGrade =
+                    islandGradeRepository
+                            .findByCastleLevelRequired(building.getLevel())
+                            .orElse(building.getIsland().getIslandGrade());
+            building.getIsland().upgradeIsland(newGrade);
             log.info(
                     "섬 등급 업그레이드. islandId={}, castleLevel={}",
                     building.getIsland().getId(),
@@ -192,7 +199,7 @@ public class BuildingService {
         validateBuilderSlot(userId, existing);
 
         int gridSize = island.getGridSize();
-        int zone = calculateZone(request.posX(), request.posY(), gridSize);
+        int zone = calculateIslandZone(request.posX(), request.posY(), island);
         validatePosition(existing, buildingType, request.posX(), request.posY(), gridSize);
         validateZoneRestriction(buildingType, zone);
 
@@ -285,7 +292,7 @@ public class BuildingService {
 
         List<BuildingInstance> existing = buildingInstanceRepository.findByIslandId(island.getId());
         int gridSize = island.getGridSize();
-        int zone = calculateZone(request.posX(), request.posY(), gridSize);
+        int zone = calculateIslandZone(request.posX(), request.posY(), island);
         validatePosition(
                 existing, stored.getBuildingType(), request.posX(), request.posY(), gridSize);
         validateZoneRestriction(stored.getBuildingType(), zone);
@@ -311,7 +318,7 @@ public class BuildingService {
         List<BuildingInstance> existing = findExistingBuildings(building);
         int gridSize = resolveGridSize(building);
 
-        int zone = calculateZone(request.posX(), request.posY(), gridSize);
+        int zone = resolveZone(building, request.posX(), request.posY());
         List<BuildingInstance> othersOnly =
                 existing.stream().filter(b -> !b.getId().equals(buildingId)).toList();
         validatePosition(
@@ -473,6 +480,21 @@ public class BuildingService {
         if (distance <= third) return 1;
         if (distance <= third * 2) return 2;
         return 3;
+    }
+
+    private int calculateIslandZone(int posX, int posY, HomeIsland island) {
+        int center = island.getGridSize() / 2;
+        int distance = Math.max(Math.abs(posX - center), Math.abs(posY - center));
+        if (distance <= island.getZone1Radius()) return 1;
+        if (distance <= island.getZone2Radius()) return 2;
+        return 3;
+    }
+
+    private int resolveZone(BuildingInstance building, int posX, int posY) {
+        if (building.getIsland() != null) {
+            return calculateIslandZone(posX, posY, building.getIsland());
+        }
+        return calculateZone(posX, posY, building.getTerritory().getGrade().getGridSize());
     }
 
     private void validateZoneRestriction(BuildingType buildingType, int zone) {
