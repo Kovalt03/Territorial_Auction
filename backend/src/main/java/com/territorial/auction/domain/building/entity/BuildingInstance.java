@@ -34,10 +34,10 @@ public class BuildingInstance {
     @JoinColumn(name = "user_id")
     private User owner;
 
-    @Column(nullable = false)
+    @Column(name = "pos_x", nullable = false)
     private Integer posX;
 
-    @Column(nullable = false)
+    @Column(name = "pos_y", nullable = false)
     private Integer posY;
 
     @Column(nullable = false)
