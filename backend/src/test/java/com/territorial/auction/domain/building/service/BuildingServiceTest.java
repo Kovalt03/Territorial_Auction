@@ -796,7 +796,8 @@ class BuildingServiceTest {
                             .build();
             ReflectionTestUtils.setField(stored, "id", 300L);
 
-            given(buildingInstanceRepository.findById(300L)).willReturn(Optional.of(stored));
+            given(buildingInstanceRepository.findByIdWithLock(300L))
+                    .willReturn(Optional.of(stored));
             given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
             given(buildingInstanceRepository.findByTerritoryId(10L))
                     .willReturn(Collections.emptyList());
@@ -811,7 +812,7 @@ class BuildingServiceTest {
         @Test
         @DisplayName("보관함에 없는 아이템 → BUILDING_NOT_FOUND")
         void not_in_inventory() {
-            given(buildingInstanceRepository.findById(999L)).willReturn(Optional.empty());
+            given(buildingInstanceRepository.findByIdWithLock(999L)).willReturn(Optional.empty());
 
             PlaceFromInventoryRequest req = new PlaceFromInventoryRequest(10L, 0, 0);
             assertThatThrownBy(() -> buildingService.placeFromInventory(1L, 999L, req))
