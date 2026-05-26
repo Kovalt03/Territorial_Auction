@@ -80,3 +80,8 @@ body {
   .form-label    { @apply block text-dim mb-1.5 text-[11px] font-medium; }
   .form-input    { @apply w-full bg-elevated border border-outline rounded-md px-3 h-[38px] text-foreground outline-none focus:border-primary transition-colors text-xs; }
 }
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
