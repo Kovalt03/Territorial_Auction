@@ -7,6 +7,7 @@ export interface ItemInfo {
   costGP: number | null;
   dailyLimit: number | null;
   myInventory: number;
+  iconUrl: string;
 }
 
 export interface ItemListResponse {

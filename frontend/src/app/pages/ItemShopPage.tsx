@@ -7,15 +7,19 @@ import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
 import type { ItemInfo, UserItemInfo } from '../types/item';
 
-const ITEM_META: Record<string, { icon: string; color: string }> = {
-  INVINCIBILITY:    { icon: '🛡', color: '#00f5ff' },
-  ATTACK_NORMAL:    { icon: '⚔', color: '#ff8c00' },
-  ATTACK_PRECISION: { icon: '🎯', color: '#ff3333' },
-  GP_PURCHASE:      { icon: '💎', color: '#00ff88' },
+const ITEM_COLOR: Record<string, string> = {
+  INVINCIBILITY:    '#00f5ff',
+  ATTACK_NORMAL:    '#ff8c00',
+  ATTACK_PRECISION: '#ff3333',
+  GP_PURCHASE:      '#00ff88',
 };
 
-function itemMeta(itemType: string) {
-  return ITEM_META[itemType] ?? { icon: '📦', color: '#8892b0' };
+function itemColor(itemType: string): string {
+  return ITEM_COLOR[itemType] ?? '#8892b0';
+}
+
+function itemIconUrl(itemType: string): string {
+  return `/images/items/${itemType.toLowerCase()}.svg`;
 }
 
 function InventoryTab() {
@@ -52,20 +56,20 @@ function InventoryTab() {
   return (
     <div className="space-y-3">
       {inventory.map(item => {
-        const meta = itemMeta(item.itemType);
+        const color = itemColor(item.itemType);
         return (
           <div key={item.userItemId} className="bg-panel border rounded-2xl p-4 flex items-center gap-4"
-            style={{ borderColor: meta.color + '60' }}>
+            style={{ borderColor: color + '60' }}>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: meta.color + '20', border: `1px solid ${meta.color}` }}>
-              <span className="text-[22px]">{meta.icon}</span>
+              style={{ background: color + '20', border: `1px solid ${color}` }}>
+              <img src={itemIconUrl(item.itemType)} alt={item.itemName} className="w-7 h-7 object-contain" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-foreground font-bold text-sm">{item.itemName}</p>
               <p className="text-muted text-xs truncate">{item.description}</p>
             </div>
             <div className="text-right flex-shrink-0">
-              <p className="font-bold text-lg" style={{ color: meta.color }}>{item.quantity}개</p>
+              <p className="font-bold text-lg" style={{ color }}>{item.quantity}개</p>
               <p className="text-muted text-[10px]">보유 수량</p>
             </div>
           </div>
@@ -184,18 +188,18 @@ export function ItemShopPage() {
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {items.map(item => {
-              const meta = itemMeta(item.itemType);
+              const color = itemColor(item.itemType);
               const isExhausted = item.dailyLimit != null && item.myInventory >= item.dailyLimit;
               return (
                 <div key={item.itemId} className="bg-panel border rounded-2xl overflow-hidden"
-                  style={{ borderColor: meta.color + '80' }}>
+                  style={{ borderColor: color + '80' }}>
                   <div className="p-5 flex items-start gap-4">
                     <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: meta.color + '20', border: `1px solid ${meta.color}` }}>
-                      <span className="text-[28px]">{meta.icon}</span>
+                      style={{ background: color + '20', border: `1px solid ${color}` }}>
+                      <img src={item.iconUrl} alt={item.name} className="w-9 h-9 object-contain" />
                       {item.myInventory > 0 && (
                         <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center"
-                          style={{ background: meta.color, color: '#0a0e1a' }}>
+                          style={{ background: color, color: '#0a0e1a' }}>
                           {item.myInventory}
                         </span>
                       )}
@@ -213,8 +217,8 @@ export function ItemShopPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         {item.costAP != null && (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-                            style={{ background: meta.color + '20', border: `1px solid ${meta.color}` }}>
-                            <span className="font-bold text-base" style={{ color: meta.color }}>{item.costAP} AP</span>
+                            style={{ background: color + '20', border: `1px solid ${color}` }}>
+                            <span className="font-bold text-base" style={{ color }}>{item.costAP} AP</span>
                           </div>
                         )}
                         {item.costGP != null && (
@@ -232,7 +236,7 @@ export function ItemShopPage() {
                       onClick={() => openConfirm(item)}
                       disabled={isExhausted || isPurchasing}
                       className="h-10 px-5 rounded-xl font-bold text-sm text-surface transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ background: meta.color }}>
+                      style={{ background: color }}>
                       구매
                     </button>
                   </div>
@@ -244,7 +248,7 @@ export function ItemShopPage() {
       </div>
 
       {confirmItem && (() => {
-        const meta = itemMeta(confirmItem.itemType);
+        const color = itemColor(confirmItem.itemType);
         const unitCost = confirmItem.costAP ?? confirmItem.costGP ?? 0;
         const totalCost = unitCost * qty;
         const useAP = confirmItem.costAP != null;
@@ -253,8 +257,8 @@ export function ItemShopPage() {
         return (
           <div className="modal-overlay">
             <div className="bg-panel rounded-2xl p-8 max-w-sm mx-4 text-center"
-              style={{ border: `2px solid ${meta.color}` }}>
-              <span className="text-[40px]">{meta.icon}</span>
+              style={{ border: `2px solid ${color}` }}>
+              <img src={confirmItem.iconUrl} alt={confirmItem.name} className="w-14 h-14 object-contain mx-auto" />
               <h3 className="text-foreground font-bold text-xl mt-3 mb-1">{confirmItem.name}</h3>
               <p className="text-muted mb-5 text-[13px]">{confirmItem.description}</p>
 
@@ -278,7 +282,7 @@ export function ItemShopPage() {
               {/* 비용 요약 */}
               <div className="bg-elevated rounded-xl py-4 mb-6">
                 <p className="text-muted text-xs mb-1">총 차감 금액</p>
-                <p className="font-bold text-[24px]" style={{ color: meta.color }}>
+                <p className="font-bold text-[24px]" style={{ color }}>
                   {totalCost.toLocaleString()} {useAP ? 'AP' : 'GP'}
                 </p>
                 {qty > 1 && (
@@ -296,7 +300,7 @@ export function ItemShopPage() {
                 <button onClick={() => void handlePurchase(confirmItem, qty)}
                   disabled={isPurchasing || remaining < 0}
                   className="flex-1 h-11 rounded-xl text-surface font-bold text-sm disabled:opacity-50"
-                  style={{ background: meta.color }}>
+                  style={{ background: color }}>
                   {isPurchasing ? '처리중...' : `${qty}개 구매`}
                 </button>
               </div>
