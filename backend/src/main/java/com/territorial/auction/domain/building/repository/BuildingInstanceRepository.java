@@ -44,6 +44,10 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
     Optional<BuildingInstance> findActiveStorageByTerritoryId(
             @Param("territoryId") Long territoryId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType WHERE b.id = :id")
+    Optional<BuildingInstance> findByIdWithLock(@Param("id") Long id);
+
     // 파괴 여부 무관 조회 + 비관적 락 — collect() 전용
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(
