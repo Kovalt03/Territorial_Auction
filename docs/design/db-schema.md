@@ -411,6 +411,17 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 
 ### 🏝️ Island Domain
 
+#### island_grades
+
+| column | 자료형 | 조건 | 설명 |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | PK | |
+| `name` | `VARCHAR(5)` | NOT NULL, UNIQUE | D / B / S |
+| `grid_size` | `INTEGER` | NOT NULL | 10 / 15 / 20 |
+| `zone1_radius` | `INTEGER` | NOT NULL | Zone1 Chebyshev 반경 |
+| `zone2_radius` | `INTEGER` | NOT NULL | Zone2 Chebyshev 반경 |
+| `castle_level_required` | `INTEGER` | NOT NULL | 해당 등급 도달에 필요한 성 레벨 (1/2/3) |
+
 #### home_islands
 
 | column | 자료형 | 조건 | 설명 |
@@ -418,8 +429,9 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `id` | `BIGSERIAL` | PK | |
 | `user_id` | `BIGINT` | FK, UNIQUE | 1유저 1섬 |
 | `level` | `INTEGER` | NOT NULL, DEFAULT 1 | |
-| `grid_size` | `INTEGER` | NOT NULL, DEFAULT 10 | |
+| `island_grade_id` | `BIGINT` | FK → island_grades.id | |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL | |
+| `last_harvest_at` | `TIMESTAMPTZ` | NULL 허용 | 마지막 GP 수확 시각 |
 
 ---
 
