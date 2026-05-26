@@ -4,9 +4,11 @@ import com.territorial.auction.domain.auth.dto.*;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.entity.IslandGrade;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.user.entity.*;
 import com.territorial.auction.domain.user.repository.NotificationSettingRepository;
 import com.territorial.auction.domain.user.repository.UserProfileRepository;
@@ -33,6 +35,7 @@ public class AuthService {
     private final WalletRepository walletRepository;
     private final NotificationSettingRepository notificationSettingRepository;
     private final HomeIslandRepository homeIslandRepository;
+    private final IslandGradeRepository islandGradeRepository;
     private final UserProfileRepository userProfileRepository;
     private final BuildingTypeRepository buildingTypeRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
@@ -66,7 +69,8 @@ public class AuthService {
         notificationSettingRepository.save(notificationSetting);
 
         // HomeIsland 생성 + 기본 성 배치
-        HomeIsland homeIsland = HomeIsland.builder().user(user).build();
+        IslandGrade dGrade = islandGradeRepository.findByName("D").orElse(null);
+        HomeIsland homeIsland = HomeIsland.builder().user(user).islandGrade(dGrade).build();
         homeIslandRepository.save(homeIsland);
         placeDefaultCastle(homeIsland);
 
