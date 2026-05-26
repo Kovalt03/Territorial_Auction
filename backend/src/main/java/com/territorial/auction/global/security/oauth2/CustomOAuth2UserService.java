@@ -3,9 +3,11 @@ package com.territorial.auction.global.security.oauth2;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.entity.IslandGrade;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
+import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.user.entity.NotificationSetting;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.UserProfile;
@@ -33,6 +35,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final WalletRepository walletRepository;
     private final NotificationSettingRepository notificationSettingRepository;
     private final HomeIslandRepository homeIslandRepository;
+    private final IslandGradeRepository islandGradeRepository;
     private final UserProfileRepository userProfileRepository;
     private final BuildingTypeRepository buildingTypeRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
@@ -72,7 +75,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                                 .build());
         walletRepository.save(Wallet.builder().user(user).build());
         notificationSettingRepository.save(NotificationSetting.builder().user(user).build());
-        HomeIsland homeIsland = homeIslandRepository.save(HomeIsland.builder().user(user).build());
+        IslandGrade dGrade = islandGradeRepository.findByName("D").orElse(null);
+        HomeIsland homeIsland =
+                homeIslandRepository.save(
+                        HomeIsland.builder().user(user).islandGrade(dGrade).build());
         placeDefaultCastle(homeIsland);
         userProfileRepository.save(UserProfile.builder().user(user).build());
         return user;
