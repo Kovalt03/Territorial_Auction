@@ -19,6 +19,8 @@ export interface IslandData {
   productionRate: number;
   lastHarvestAt: string;
   accumulatedGp: number;
+  zone1Radius: number;
+  zone2Radius: number;
   buildings: IslandBuilding[];
 }
 
