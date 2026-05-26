@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface SeasonRepository extends JpaRepository<Season, Long> {
 
+    boolean existsBySeasonNumber(Integer seasonNumber);
+
     @Query(
             "SELECT s FROM Season s WHERE s.startedAt <= :now AND (s.endedAt IS NULL OR s.endedAt >= :now)")
     Optional<Season> findActiveSeason(@Param("now") LocalDateTime now);
