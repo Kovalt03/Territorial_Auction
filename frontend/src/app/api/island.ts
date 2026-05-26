@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { HarvestIslandGpResponse, InventoryItem, IslandData, PlaceFromInventoryResponse, PlaceIslandBuildingResponse } from '../types/island';
+import type { HarvestIslandGpResponse, InventoryItem, IslandData, PlaceFromInventoryResponse, PlaceIslandBuildingResponse, UpgradeBuildingResponse } from '../types/island';
 
 export function fetchIsland() {
   return apiClient.get<IslandData>('/island');
@@ -27,4 +27,8 @@ export function placeFromInventoryOnIsland(inventoryId: number, posX: number, po
 
 export function harvestIslandGp(): Promise<HarvestIslandGpResponse> {
   return apiClient.post<HarvestIslandGpResponse>('/island/harvest', {});
+}
+
+export function upgradeBuilding(buildingId: number): Promise<UpgradeBuildingResponse> {
+  return apiClient.post<UpgradeBuildingResponse>(`/buildings/${buildingId}/upgrade`, {});
 }
