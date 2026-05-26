@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
+import { useMilitary } from '../hooks/useMilitary';
 import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp } from '../api/island';
+import { produceUnit } from '../api/military';
 import { ApiError } from '../api/client';
 import type { InventoryItem, IslandData } from '../types/island';
 
@@ -101,6 +103,12 @@ function clearBuildingCells(grid: Cell[][], buildingId: number): Cell[][] {
   );
 }
 
+const UNIT_LABELS: Record<string, { label: string; icon: string; color: string }> = {
+  INFANTRY: { label: '보병', icon: '🗡', color: '#e0e8ff' },
+  ARCHER: { label: '궁수', icon: '🏹', color: '#00ff88' },
+  KNIGHT: { label: '기사', icon: '⚔', color: '#ffd700' },
+};
+
 // 백엔드 building_types 시드 순서 기준 ID 매핑 (building-types.yml)
 const BUILDING_TYPE_ID: Partial<Record<string, number>> = {
   castle: 1, storage: 2, workshop: 3, barracks: 4, wall: 5, tower: 6,
@@ -110,6 +118,7 @@ export function PersonalIslandPage() {
   const navigate = useNavigate();
   const { ap, gp, username, syncGP } = useApp();
   const { island, reload: reloadIsland } = useIsland();
+  const { data: militaryData, isLoading: isMilitaryLoading, reload: reloadMilitary } = useMilitary();
   const gridSize = island?.gridSize ?? 10;
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [showBuild, setShowBuild] = useState(false);
@@ -135,6 +144,12 @@ export function PersonalIslandPage() {
   const [showInventory, setShowInventory] = useState(false);
   const [deployFromInventoryIdx, setDeployFromInventoryIdx] = useState<number | null>(null);
 
+  // 유닛 훈련 모달
+  const [showTrainModal, setShowTrainModal] = useState(false);
+  const [trainUnitTypeId, setTrainUnitTypeId] = useState<number | null>(null);
+  const [trainQuantity, setTrainQuantity] = useState(1);
+  const [isTraining, setIsTraining] = useState(false);
+
   // 건설 위치 선택 모드 (사이드바 버튼 → 셀 클릭)
   const [buildPending, setBuildPending] = useState(false);
 
@@ -149,6 +164,22 @@ export function PersonalIslandPage() {
   const reloadInventory = useCallback(() => {
     fetchBuildingInventory().then(setInventory).catch(() => {});
   }, []);
+
+  const handleProduceUnit = async () => {
+    if (!trainUnitTypeId || trainQuantity < 1) return;
+    setIsTraining(true);
+    try {
+      const result = await produceUnit(trainUnitTypeId, trainQuantity);
+      syncGP(result.gpRemaining);
+      void reloadMilitary();
+      setShowTrainModal(false);
+      showToast(`유닛 ${trainQuantity}개 훈련 완료`, false);
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : '훈련에 실패했습니다');
+    } finally {
+      setIsTraining(false);
+    }
+  };
 
   useEffect(() => { reloadInventory(); }, [reloadInventory]);
 
@@ -620,50 +651,65 @@ export function PersonalIslandPage() {
             {activeTab === 'resources' && (
               <div className="p-3 space-y-3">
                 <div className="bg-[#12192c] rounded-xl p-3">
-                  <div className="flex justify-between mb-2"><span className="text-gold font-semibold text-xs">⚡ AP</span><span className="text-gold font-bold text-sm">{ap.toLocaleString()}</span></div>
-                  <div className="bg-panel h-2 rounded-full overflow-hidden"><div className="h-full bg-gold rounded-full" style={{ width: '62%' }} /></div>
+                  <div className="flex justify-between"><span className="text-gold font-semibold text-xs">⚡ AP</span><span className="text-gold font-bold text-sm">{ap.toLocaleString()}</span></div>
                 </div>
                 <div className="bg-[#12192c] rounded-xl p-3">
-                  <div className="flex justify-between mb-1"><span className="text-gp font-semibold text-xs">💎 GP 생산</span><span className="text-gp font-bold text-sm">+105/분</span></div>
+                  <div className="flex justify-between mb-1"><span className="text-gp font-semibold text-xs">💎 GP 생산</span><span className="text-gp font-bold text-sm">+{island?.productionRate ?? 0}/분</span></div>
                   <div className="space-y-1 mt-2">
-                    {[{ src: '생산소 ×4', val: '+48', color: '#00ff88' }, { src: '금고 ×2', val: '+22', color: '#ffaa00' }, { src: '광산 ×4', val: '+35', color: '#cc8844' }].map(r => (
-                      <div key={r.src} className="flex justify-between"><span className="text-muted text-[10px]">{r.src}</span><span className="text-[10px]" style={{ color: r.color }}>{r.val}/분</span></div>
-                    ))}
+                    {countBuildings('workshop') > 0
+                      ? <div className="flex justify-between"><span className="text-muted text-[10px]">생산소 ×{countBuildings('workshop')}개</span><span className="text-[10px]" style={{ color: '#00ff88' }}>+{island?.productionRate ?? 0}/분</span></div>
+                      : <p className="text-muted text-[10px]">생산 건물 없음</p>
+                    }
                   </div>
                 </div>
                 <div className="bg-[#12192c] rounded-xl p-3">
                   <p className="text-[#ff44cc] font-semibold mb-2 text-xs">🔬 연구 현황</p>
-                  <p className="text-[#7788a5] text-[11px]">방어력 강화 Lv.3</p>
-                  <div className="bg-panel h-1.5 rounded-full overflow-hidden mt-1"><div className="h-full bg-[#ff44cc] rounded-full" style={{ width: '45%' }} /></div>
-                  <p className="text-muted text-[9px]">완료까지 약 4시간</p>
+                  <p className="text-muted text-[10px]">준비 중</p>
                 </div>
               </div>
             )}
             {activeTab === 'units' && (
               <div className="p-3 space-y-2">
-                <p className="text-muted font-semibold text-xs">주둔 유닛</p>
-                {[
-                  { label: '보병', icon: '🗡', owned: 24, max: 40, color: '#e0e8ff', attack: 25 },
-                  { label: '궁수', icon: '🏹', owned: 12, max: 30, color: '#00ff88', attack: 30 },
-                  { label: '기사', icon: '⚔', owned: 5, max: 15, color: '#ffd700', attack: 80 },
-                  { label: '마법사', icon: '🔮', owned: 3, max: 10, color: '#ff44cc', attack: 120 },
-                  { label: '발리스타', icon: '🎯', owned: 2, max: 5, color: '#ff8c00', attack: 200 },
-                ].map(u => (
-                  <div key={u.label} className="bg-[#12192c] rounded-xl p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-base">{u.icon}</span>
-                      <div className="flex-1">
-                        <div className="flex justify-between">
-                          <span className="text-xs" style={{ color: u.color }}>{u.label}</span>
-                          <span className="text-muted text-[11px]">{u.owned}/{u.max}</span>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-muted font-semibold text-xs">주둔 유닛</p>
+                  {militaryData && (
+                    <span className="text-[10px] text-gold">🌾 식량 {militaryData.availableFood.toLocaleString()}</span>
+                  )}
+                </div>
+                {isMilitaryLoading && <p className="text-muted text-xs text-center py-4">불러오는 중...</p>}
+                {!isMilitaryLoading && militaryData?.units.map(u => {
+                  const meta = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
+                  return (
+                    <div key={u.unitTypeId} className="bg-[#12192c] rounded-xl p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-base">{meta.icon}</span>
+                        <div className="flex-1">
+                          <div className="flex justify-between">
+                            <span className="text-xs" style={{ color: meta.color }}>{meta.label}</span>
+                            <span className="text-muted text-[11px]">{u.quantity}개</span>
+                          </div>
+                          <p className="text-muted text-[9px]">대기 {u.idleCount} · 배치 {u.deployedCount} · 공격력 {u.attackPower}</p>
                         </div>
-                        <p className="text-muted text-[9px]">공격력 {u.attack}</p>
                       </div>
+                      {u.quantity > 0 && (
+                        <div className="bg-panel h-1.5 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${Math.round((u.deployedCount / u.quantity) * 100)}%`, background: meta.color }} />
+                        </div>
+                      )}
                     </div>
-                    <div className="bg-panel h-1.5 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${(u.owned / u.max) * 100}%`, background: u.color }} /></div>
-                  </div>
-                ))}
-                <button className="w-full h-9 border border-secondary rounded-xl text-secondary text-xs hover:bg-[#8b50ff20] transition-colors">유닛 훈련하기</button>
+                  );
+                })}
+                {!isMilitaryLoading && militaryData?.units.length === 0 && (
+                  <p className="text-muted text-xs text-center py-4">보유한 유닛이 없습니다</p>
+                )}
+                <button
+                  onClick={() => {
+                    if (militaryData?.units.length) setTrainUnitTypeId(militaryData.units[0].unitTypeId);
+                    setTrainQuantity(1);
+                    setShowTrainModal(true);
+                  }}
+                  className="w-full h-9 border border-secondary rounded-xl text-secondary text-xs hover:bg-[#8b50ff20] transition-colors"
+                >유닛 훈련하기</button>
               </div>
             )}
             {activeTab === 'expand' && (
@@ -890,6 +936,64 @@ export function PersonalIslandPage() {
             {selectedCellData.type === 'castle' && (
               <p className="text-center text-muted pb-3 text-[11px]">성(Castle)은 핵심 건물로 보관함에 담을 수 없습니다</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ───── Train unit modal ───── */}
+      {showTrainModal && militaryData && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowTrainModal(false)} />
+          <div className="relative rounded-2xl overflow-hidden flex flex-col" style={{ width: 400, background: '#1a1f35', border: '1.5px solid #8b50ff' }}>
+            <div className="px-5 py-4 flex items-center justify-between" style={{ background: '#1a0a35', borderBottom: '2px solid #8b50ff' }}>
+              <div>
+                <h3 className="text-secondary font-bold text-xl">⚔ 유닛 훈련</h3>
+                <p className="text-muted text-xs">보유 GP: {gp.toLocaleString()} · 식량: {militaryData.availableFood.toLocaleString()}</p>
+              </div>
+              <button onClick={() => setShowTrainModal(false)} className="btn-close">✕</button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <p className="text-muted text-xs mb-2">유닛 선택</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {militaryData.units.map(u => {
+                    const meta = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
+                    const isSelected = trainUnitTypeId === u.unitTypeId;
+                    return (
+                      <button
+                        key={u.unitTypeId}
+                        onClick={() => setTrainUnitTypeId(u.unitTypeId)}
+                        className="rounded-xl p-2 flex flex-col items-center gap-1 transition-all"
+                        style={{ background: isSelected ? meta.color + '20' : '#12192c', border: `1.5px solid ${isSelected ? meta.color : '#354064'}`, color: meta.color }}
+                      >
+                        <span className="text-lg">{meta.icon}</span>
+                        <span className="text-[11px] font-semibold">{meta.label}</span>
+                        <span className="text-[10px] text-muted">식량 {u.foodCost}/개</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <p className="text-muted text-xs mb-1">수량</p>
+                <input
+                  type="number"
+                  min={1}
+                  value={trainQuantity}
+                  onChange={e => setTrainQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full h-9 rounded-xl px-3 text-sm"
+                  style={{ background: '#2a3050', border: '1px solid #354064', color: '#e0e8ff' }}
+                />
+              </div>
+              <button
+                onClick={handleProduceUnit}
+                disabled={isTraining || !trainUnitTypeId}
+                className="w-full h-10 rounded-xl font-semibold text-sm transition-all hover:brightness-110 disabled:opacity-50"
+                style={{ background: '#8b50ff30', color: '#8b50ff', border: '1.5px solid #8b50ff' }}
+              >
+                {isTraining ? '훈련 중...' : '훈련하기'}
+              </button>
+            </div>
           </div>
         </div>
       )}
