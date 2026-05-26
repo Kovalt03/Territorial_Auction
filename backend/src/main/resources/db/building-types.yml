@@ -8,7 +8,7 @@ buildingTypes:
     defensePower: ~
     foodProductionRate: ~
     unitCapacityPerLevel: ~
-    gpProductionRate: ~
+    gpProductionRate: 10
 
   - name: STORAGE
     width: 2
