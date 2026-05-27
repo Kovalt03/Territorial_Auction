@@ -127,7 +127,7 @@ public class MapService {
                 territory.getId(),
                 territory.getCoordX(),
                 territory.getCoordY(),
-                territory.getContinent().getName(),
+                territory.getContinent().getDisplayName(),
                 territory.getGrade().getGrade(),
                 territory.getGrade().getProductionMultiplier(),
                 territory.getGrade().getGridSize(),

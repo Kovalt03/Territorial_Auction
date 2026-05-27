@@ -215,7 +215,7 @@ public class UserService {
                                                 t.getId(),
                                                 t.getGrade().getGrade(),
                                                 new PositionPair(t.getCoordX(), t.getCoordY()),
-                                                t.getContinent().getName(),
+                                                t.getContinent().getDisplayName(),
                                                 deriveOccupiedAt(t),
                                                 unitCounts.getOrDefault(t.getId(), 0L).intValue(),
                                                 invincibleIds.contains(t.getId())))
