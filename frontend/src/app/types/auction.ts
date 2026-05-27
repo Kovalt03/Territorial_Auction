@@ -25,6 +25,17 @@ export interface MyBidEntry {
   isHighestBidder: boolean;
   endAt: string;
   status: string;
+  grade: string;
+  continentName: string;
+}
+
+export interface AuctionBidBroadcast {
+  auctionId: number;
+  currentPrice: number;
+  bidderId: number;
+  bidderNickname: string;
+  bidAt: string;
+  endAt: string;
 }
 
 export interface MyBidsResponse {

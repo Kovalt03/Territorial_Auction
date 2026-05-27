@@ -12,3 +12,12 @@ export function placeBidApi(auctionId: number, bidAmount: number) {
 export function fetchMyBids() {
   return apiClient.get<MyBidsResponse>('/auctions/my-bids');
 }
+
+interface TerritoryAuctionHistoryResponse {
+  territoryId: number;
+  histories: { auctionId: number; winnerNickname: string; finalPrice: number; wonAt: string }[];
+}
+
+export function fetchTerritoryAuctionHistory(territoryId: number) {
+  return apiClient.get<TerritoryAuctionHistoryResponse>(`/territories/${territoryId}/auction-history`);
+}

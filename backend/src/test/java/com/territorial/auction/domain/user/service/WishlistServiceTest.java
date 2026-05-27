@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.territorial.auction.domain.map.entity.Territory;
@@ -42,12 +43,11 @@ class WishlistServiceTest {
     @BeforeEach
     void setUp() {
         user = mock(User.class);
-        given(user.getId()).willReturn(1L);
     }
 
     private Wishlist sampleWishlist(Long territoryId) {
         Territory territory = mock(Territory.class);
-        given(territory.getId()).willReturn(territoryId);
+        lenient().when(territory.getId()).thenReturn(territoryId);
 
         Wishlist wishlist = Wishlist.builder().user(user).territory(territory).build();
         ReflectionTestUtils.setField(wishlist, "id", territoryId);

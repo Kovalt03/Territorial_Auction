@@ -14,5 +14,11 @@ export function useMyBids() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  return { bids, isLoading };
+  const refresh = () => {
+    fetchMyBids()
+      .then(data => setBids(data.bids))
+      .catch(() => {});
+  };
+
+  return { bids, isLoading, refresh };
 }
