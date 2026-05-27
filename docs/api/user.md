@@ -16,6 +16,9 @@
 | PATCH | `/api/v1/users/me/nickname` | 닉네임 변경 | ✅ (일부 TODO) |
 | PATCH | `/api/v1/users/me/password` | 비밀번호 변경 | ✅ |
 | POST | `/api/v1/users/me/ap/charge` | AP 충전 | ✅ (PG 연동 TODO) |
+| GET | `/api/v1/users/me/wishlist` | 위시리스트 조회 | ⬜ |
+| POST | `/api/v1/users/me/wishlist/{territoryId}` | 위시리스트 추가 | ⬜ |
+| DELETE | `/api/v1/users/me/wishlist/{territoryId}` | 위시리스트 제거 | ⬜ |
 
 ---
 
@@ -221,7 +224,7 @@
         "territoryId": 10,
         "grade": "A",
         "position": { "x": 2, "y": 3 },
-        "continentName": "아시아",
+        "continentName": "크리오 행성",
         "occupiedAt": null,
         "militaryCount": 0,
         "isInvincible": false
@@ -241,7 +244,7 @@
 | `territories[].grade` | String | 영토 등급 (S/A/B/C/D) | `territory_grades.grade` |
 | `territories[].position.x` | int | 그리드 X 좌표 | `territories.coord_x` |
 | `territories[].position.y` | int | 그리드 Y 좌표 | `territories.coord_y` |
-| `territories[].continentName` | String | 소속 대륙 이름 | `continents.name` |
+| `territories[].continentName` | String | 소속 행성 표시명 | `continents.display_name` |
 | `territories[].occupiedAt` | String (ISO 8601) | 점령 시각 (미구현, null) | - |
 | `territories[].militaryCount` | int | 배치된 유닛 수 (미구현, 0) | - |
 | `territories[].isInvincible` | boolean | 무적 상태 여부 (미구현, false) | - |
@@ -419,3 +422,102 @@
 
 ### 남은 작업
 - TODO: PG 연동 (Toss Payments 등) — 현재 `validatePayment()` 는 stub 구현
+
+---
+
+## 위시리스트 조회
+
+**GET** `/api/v1/users/me/wishlist`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+로그인 유저의 위시리스트에 등록된 영토 ID 목록을 반환합니다.
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "territoryIds": [1, 5, 12]
+  }
+}
+```
+
+> 위시리스트가 비어 있으면 `"territoryIds": []` 반환. null 반환 금지.
+
+| field | 타입 | 설명 | 출처 |
+|---|---|---|---|
+| `territoryIds` | Long[] | 위시리스트에 등록된 영토 ID 목록 | `wishlists.territory_id` |
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 401 | UNAUTHORIZED | 인증 토큰 없음 또는 만료 |
+
+---
+
+## 위시리스트 추가
+
+**POST** `/api/v1/users/me/wishlist/{territoryId}`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+지정한 영토를 위시리스트에 추가합니다.
+
+### Path Parameters
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `territoryId` | Long | 추가할 영토 ID |
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": null
+}
+```
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 404 | TERRITORY_NOT_FOUND | 존재하지 않는 영토 |
+| 409 | WISHLIST_ALREADY_EXISTS | 이미 위시리스트에 등록된 영토 |
+
+---
+
+## 위시리스트 제거
+
+**DELETE** `/api/v1/users/me/wishlist/{territoryId}`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+지정한 영토를 위시리스트에서 제거합니다.
+
+### Path Parameters
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `territoryId` | Long | 제거할 영토 ID |
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": null
+}
+```
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 404 | WISHLIST_NOT_FOUND | 위시리스트에 등록되지 않은 영토 |
