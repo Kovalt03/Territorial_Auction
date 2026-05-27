@@ -42,5 +42,12 @@ export function useTerritoryDetail(territoryId: number) {
     }
   };
 
-  return { territory, bids, isLoading, error, refreshBids };
+  const updateCurrentPrice = (price: number) => {
+    setTerritory(prev => {
+      if (!prev?.auction) return prev;
+      return { ...prev, auction: { ...prev.auction, currentPrice: price } };
+    });
+  };
+
+  return { territory, bids, isLoading, error, refreshBids, updateCurrentPrice };
 }

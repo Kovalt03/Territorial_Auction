@@ -1,21 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
 import { EmptyState } from '../components/EmptyState';
 import { useApp } from '../context/AppContext';
 import { useMyBids } from '../hooks/useMyBids';
 import { useVault } from '../hooks/useVault';
+import { subscribeMultiple } from '../hooks/useStompClient';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { GRADE_COLOR } from '../types/grade';
 
 type ActivityTab = 'active' | 'mine' | 'history' | 'bids';
+type BidSort = 'time' | 'ap' | 'outbid';
+
+function fmtTimeLeft(endAt: string, now: number): string {
+  const diff = new Date(endAt).getTime() - now;
+  if (diff <= 0) return '종료';
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  if (h > 0) return `${h}시간 ${String(m).padStart(2, '0')}분`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
 
 export function MyPage() {
   const navigate = useNavigate();
   const { ap, gp, username, hasPass, passEndDate } = useApp();
-  const { bids: myBids, isLoading: bidsLoading } = useMyBids();
+  const { bids: myBids, isLoading: bidsLoading, refresh: refreshBids } = useMyBids();
   const { territories, isLoading: territoriesLoading } = useVault();
   const [tab, setTab] = useState<ActivityTab>('active');
+  const [bidSort, setBidSort] = useState<BidSort>('time');
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const passDays = passEndDate
     ? Math.max(0, Math.ceil((passEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -29,6 +48,23 @@ export function MyPage() {
 
   const activeBids = myBids.filter(b => b.status === 'BIDDING');
   const allBids = myBids;
+
+  function sortedList(list: typeof myBids) {
+    if (bidSort === 'ap') return [...list].sort((a, b) => b.currentPrice - a.currentPrice);
+    if (bidSort === 'outbid') return [...list].sort((a, b) => {
+      if (a.isHighestBidder !== b.isHighestBidder) return a.isHighestBidder ? 1 : -1;
+      return 0;
+    });
+    // 'time': 남은 시간 짧은 순
+    return [...list].sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime());
+  }
+
+  const activeBidAuctionIds = activeBids.map(b => b.auctionId).join(',');
+  useEffect(() => {
+    if (!activeBidAuctionIds) return;
+    const ids = activeBidAuctionIds.split(',').map(Number);
+    return subscribeMultiple(ids.map(id => `/sub/auction/${id}`), refreshBids);
+  }, [activeBidAuctionIds, refreshBids]);
 
   const tabItems: { id: ActivityTab; label: string; count: number }[] = [
     { id: 'active', label: '경매 진행', count: activeBids.length },
@@ -220,13 +256,36 @@ export function MyPage() {
             </div>
           ) : (
             <div className="p-4">
+              {!bidsLoading && (tab === 'active' ? activeBids : allBids).length > 0 && (
+                <div className="flex items-center gap-1.5 mb-3">
+                  <span className="text-muted text-[11px] mr-1">정렬</span>
+                  {([
+                    { val: 'time', label: '⏱ 시간순' },
+                    { val: 'ap', label: '💰 AP순' },
+                    { val: 'outbid', label: '🔺 상회입찰' },
+                  ] as { val: BidSort; label: string }[]).map(s => (
+                    <button
+                      key={s.val}
+                      onClick={() => setBidSort(s.val)}
+                      className="px-2.5 h-7 rounded-lg text-[11px] font-semibold transition-colors"
+                      style={{
+                        background: bidSort === s.val ? '#00f5ff' : '#1a2438',
+                        color: bidSort === s.val ? '#060a14' : '#7788a5',
+                        border: `1px solid ${bidSort === s.val ? '#00f5ff' : '#354064'}`,
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               {bidsLoading ? (
                 <div className="text-center py-8 text-muted text-sm">불러오는 중...</div>
               ) : (tab === 'active' ? activeBids : allBids).length === 0 ? (
                 <EmptyState message="데이터가 없습니다" />
               ) : (
                 <div className="space-y-2">
-                  {(tab === 'active' ? activeBids : allBids).map(b => (
+                  {sortedList(tab === 'active' ? activeBids : allBids).map(b => (
                     <button
                       key={b.auctionId}
                       onClick={() => navigate(`/app/territory/${b.territoryId}`)}
@@ -243,11 +302,22 @@ export function MyPage() {
                         {b.isHighestBidder ? '↑' : '↓'}
                       </div>
                       <div className="flex-1">
-                        <p className="text-foreground font-semibold text-[13px]">
-                          ({b.coordX}, {b.coordY})
-                        </p>
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <p className="text-foreground font-semibold text-[13px]">
+                            ({b.coordX}, {b.coordY})
+                          </p>
+                          <span
+                            className="px-1.5 py-0.5 rounded font-bold text-[9px]"
+                            style={{ color: GRADE_COLOR[b.grade as keyof typeof GRADE_COLOR] ?? '#8892b0', background: (GRADE_COLOR[b.grade as keyof typeof GRADE_COLOR] ?? '#8892b0') + '20' }}
+                          >
+                            {b.grade}급
+                          </span>
+                        </div>
                         <p className="text-muted text-[11px]">
-                          내 입찰 {b.myBidAmount.toLocaleString()} AP · {b.isHighestBidder ? '최고가 유지' : '상회 입찰됨'}
+                          {b.continentName} · {b.isHighestBidder ? '최고가 유지' : '상회 입찰됨'}
+                        </p>
+                        <p className="text-[#7788a5] text-[10px]">
+                          내 입찰 {b.myBidAmount.toLocaleString()} AP
                         </p>
                       </div>
                       <div className="text-right">
@@ -255,6 +325,14 @@ export function MyPage() {
                           {b.currentPrice.toLocaleString()} AP
                         </p>
                         <p className="text-muted text-[10px]">현재가</p>
+                        {b.status === 'BIDDING' && (
+                          <p
+                            className="font-semibold text-[10px] mt-0.5 tabular-nums"
+                            style={{ color: (() => { const diff = new Date(b.endAt).getTime() - now; return diff < 300000 ? '#ff8c00' : '#8892b0'; })() }}
+                          >
+                            {fmtTimeLeft(b.endAt, now)}
+                          </p>
+                        )}
                       </div>
                     </button>
                   ))}
