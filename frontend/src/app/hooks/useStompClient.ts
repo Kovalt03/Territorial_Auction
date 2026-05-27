@@ -78,6 +78,23 @@ export function useStompPublish() {
   }, []);
 }
 
+export function subscribeMultiple(destinations: string[], callback: () => void): () => void {
+  let subs: StompSubscription[] = [];
+  let cancelled = false;
+
+  ensureConnected().then(() => {
+    if (cancelled) return;
+    const client = getOrCreateClient();
+    if (!client.connected) return;
+    subs = destinations.map(dest => client.subscribe(dest, callback));
+  }).catch(() => {});
+
+  return () => {
+    cancelled = true;
+    subs.forEach(s => s.unsubscribe());
+  };
+}
+
 export function disconnectStomp() {
   sharedClient?.deactivate();
   sharedClient = null;

@@ -25,6 +25,8 @@ export interface MyBidEntry {
   isHighestBidder: boolean;
   endAt: string;
   status: string;
+  grade: string;
+  continentName: string;
 }
 
 export interface MyBidsResponse {
@@ -32,4 +34,25 @@ export interface MyBidsResponse {
   page: number;
   size: number;
   bids: MyBidEntry[];
+}
+
+export interface TerritoryAuctionHistoryEntry {
+  auctionId: number;
+  winnerNickname: string;
+  finalPrice: number;
+  wonAt: string;
+}
+
+export interface TerritoryAuctionHistoryResponse {
+  territoryId: number;
+  histories: TerritoryAuctionHistoryEntry[];
+}
+
+export interface AuctionBidBroadcast {
+  auctionId: number;
+  currentPrice: number;
+  bidderId: number;
+  bidderNickname: string;
+  bidAt: string;
+  endAt: string;
 }
