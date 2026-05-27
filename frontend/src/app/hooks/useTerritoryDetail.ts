@@ -44,7 +44,7 @@ export function useTerritoryDetail(territoryId: number) {
 
   const updateCurrentPrice = (price: number) => {
     setTerritory(prev => {
-      if (!prev || !prev.auction) return prev;
+      if (!prev?.auction) return prev;
       return { ...prev, auction: { ...prev.auction, currentPrice: price } };
     });
   };

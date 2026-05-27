@@ -66,7 +66,12 @@ class MapServiceTest {
     }
 
     private Continent continent() {
-        Continent c = Continent.builder().name("붉은 사막").themeColor("#FF4444").build();
+        Continent c =
+                Continent.builder()
+                        .name("붉은 사막")
+                        .themeColor("#FF4444")
+                        .displayName("붉은 사막")
+                        .build();
         ReflectionTestUtils.setField(c, "id", 1L);
         return c;
     }

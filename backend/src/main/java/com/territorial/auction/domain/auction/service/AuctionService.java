@@ -74,7 +74,7 @@ public class AuctionService {
                                                 a.getTerritory().getId(),
                                                 a.getTerritory().getCoordX(),
                                                 a.getTerritory().getCoordY(),
-                                                a.getTerritory().getContinent().getName(),
+                                                a.getTerritory().getContinent().getDisplayName(),
                                                 a.getTerritory().getGrade().getGrade(),
                                                 a.getCurrentPrice(),
                                                 a.getCurrentBidder() != null
@@ -188,9 +188,9 @@ public class AuctionService {
 
     public MyBidListResponse getMyBids(Long userId, Pageable pageable) {
         LocalDateTime now = LocalDateTime.now();
-        Page<AuctionBid> page = auctionBidRepository.findAllByBidderIdWithAuction(userId, pageable);
+        List<AuctionBid> bidsRaw = auctionBidRepository.findLatestBidPerAuctionByBidder(userId);
         List<MyBidListResponse.MyBidItemDto> bids =
-                page.getContent().stream()
+                bidsRaw.stream()
                         .map(
                                 b -> {
                                     Auction a = b.getAuction();
@@ -208,11 +208,12 @@ public class AuctionService {
                                             a.getCurrentPrice(),
                                             isHighest,
                                             a.getEndAt(),
-                                            AuctionStatus.from(a.getEndAt(), now));
+                                            AuctionStatus.from(a.getEndAt(), now),
+                                            a.getTerritory().getGrade().getGrade(),
+                                            a.getTerritory().getContinent().getDisplayName());
                                 })
                         .toList();
-        return new MyBidListResponse(
-                page.getTotalElements(), page.getNumber(), page.getSize(), bids);
+        return new MyBidListResponse(bids.size(), 0, bids.size(), bids);
     }
 
     public AuctionBidHistoryResponse getAuctionBidHistory(Long auctionId) {

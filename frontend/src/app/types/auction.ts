@@ -29,6 +29,25 @@ export interface MyBidEntry {
   continentName: string;
 }
 
+export interface MyBidsResponse {
+  totalCount: number;
+  page: number;
+  size: number;
+  bids: MyBidEntry[];
+}
+
+export interface TerritoryAuctionHistoryEntry {
+  auctionId: number;
+  winnerNickname: string;
+  finalPrice: number;
+  wonAt: string;
+}
+
+export interface TerritoryAuctionHistoryResponse {
+  territoryId: number;
+  histories: TerritoryAuctionHistoryEntry[];
+}
+
 export interface AuctionBidBroadcast {
   auctionId: number;
   currentPrice: number;
@@ -36,11 +55,4 @@ export interface AuctionBidBroadcast {
   bidderNickname: string;
   bidAt: string;
   endAt: string;
-}
-
-export interface MyBidsResponse {
-  totalCount: number;
-  page: number;
-  size: number;
-  bids: MyBidEntry[];
 }

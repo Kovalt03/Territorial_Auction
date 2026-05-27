@@ -15,5 +15,7 @@ public record MyBidListResponse(long totalCount, int page, int size, List<MyBidI
             Integer currentPrice,
             Boolean isHighestBidder,
             LocalDateTime endAt,
-            AuctionStatus status) {}
+            AuctionStatus status,
+            String grade,
+            String continentName) {}
 }
