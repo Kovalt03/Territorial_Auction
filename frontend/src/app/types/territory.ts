@@ -24,7 +24,7 @@ export interface TerritoryDetailResponse {
   coordY: number;
   continentName: string;
   grade: string;
-  productionMultiplier: number;
+  gradeMultiplier: number;
   gridSize: number;
   status: string;
   owner: TerritoryOwner | null;
