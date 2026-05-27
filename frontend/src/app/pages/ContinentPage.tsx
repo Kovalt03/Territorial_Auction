@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useGridMap } from '../hooks/useGridMap';
 import { useContinent } from '../hooks/useContinent';
 import { GNB } from '../components/GNB';
+import { ChatPanel } from '../components/ChatPanel';
 import { useApp } from '../context/AppContext';
 import { fetchTerritoryDetail } from '../api/map';
 import { placeBidApi, fetchAuctionBids } from '../api/auction';
@@ -101,6 +102,7 @@ export function ContinentPage() {
     [territories, minX, minY, cols, rows, userId],
   );
 
+  const [panelTab, setPanelTab] = useState<'info' | 'chat'>('info');
   const [filter, setFilter] = useState<'all' | TStatus>('all');
   const [selected, setSelected] = useState<DisplayTerritory | null>(null);
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
@@ -355,7 +357,30 @@ export function ContinentPage() {
         </div>
 
         <div className="w-[260px] bg-[#080d1a] border-l border-[#1a2438] flex flex-col flex-shrink-0">
-          {selected ? (
+          {/* Panel tabs */}
+          <div className="flex-shrink-0 flex border-b border-[#1a2438]">
+            {([['info', '📋 정보'], ['chat', '💬 채팅']] as ['info' | 'chat', string][]).map(([t, label]) => (
+              <button
+                key={t}
+                onClick={() => setPanelTab(t)}
+                className="flex-1 py-2 text-[11px] transition-colors"
+                style={panelTab === t
+                  ? { color: '#00f5ff', borderBottom: '2px solid #00f5ff' }
+                  : { color: '#7788a5', borderBottom: '2px solid transparent' }
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Chat panel */}
+          {panelTab === 'chat' && (
+            <ChatPanel roomId={`room_continent_${continentId}`} />
+          )}
+
+          {/* Info panel */}
+          {panelTab === 'info' && (selected ? (
             <>
               {/* Territory header */}
               <div className="px-4 py-3 border-b border-[#1a2438] flex-shrink-0">
@@ -517,7 +542,7 @@ export function ContinentPage() {
                 <button onClick={() => navigate('/app/territory/1')} className="w-full h-9 rounded-xl font-bold hover:brightness-110 text-xs" style={{ background: continent.color, color: '#060a14' }}>경매 영토 보기</button>
               </div>
             </div>
-          )}
+          ))}
         </div>
       </div>
     </div>

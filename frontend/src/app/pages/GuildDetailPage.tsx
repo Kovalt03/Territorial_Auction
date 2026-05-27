@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
+import { ChatPanel } from '../components/ChatPanel';
 import { useApp } from '../context/AppContext';
 import {
   fetchGuildDetail, fetchMyGuild, fetchGuildApplications,
@@ -12,7 +13,7 @@ import {
   type GuildDetail, type MyGuild, type GuildApplication,
 } from '../api/guild';
 
-type Tab = 'members' | 'applications' | 'settings';
+type Tab = 'members' | 'applications' | 'settings' | 'chat';
 
 export function GuildDetailPage() {
   const { id } = useParams();
@@ -111,6 +112,7 @@ export function GuildDetailPage() {
 
   const tabs: [Tab, string][] = [
     ['members', '멤버'],
+    ...(isMember ? [['chat', '채팅'] as [Tab, string]] : []),
     ...(isMaster
       ? [
           ['applications', `신청 (${applications.length})`] as [Tab, string],
@@ -193,6 +195,16 @@ export function GuildDetailPage() {
               </button>
             ))}
           </div>
+
+          {/* Chat tab */}
+          {tab === 'chat' && isMember && (
+            <div
+              className="bg-panel border border-outline rounded-2xl overflow-hidden flex flex-col"
+              style={{ height: '60vh' }}
+            >
+              <ChatPanel roomId={`room_guild_${guildId}`} />
+            </div>
+          )}
 
           {/* Members tab */}
           {tab === 'members' && (
