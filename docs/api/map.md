@@ -125,7 +125,7 @@
     "territoryId": 1,
     "coordX": 0,
     "coordY": 0,
-    "continentName": "북부 대륙",
+    "continentName": "크리오 행성",
     "grade": "B",
     "productionMultiplier": 1.0,
     "gridSize": 8,

@@ -47,7 +47,7 @@
         "territoryId": 5,
         "coordX": 2,
         "coordY": 3,
-        "continentName": "북부 대륙",
+        "continentName": "크리오 행성",
         "grade": "A",
         "currentPrice": 2000,
         "currentBidderNickname": "입찰왕",
@@ -68,7 +68,7 @@
 | `auctions[].territoryId` | Long | 영토 ID | `territories.id` |
 | `auctions[].coordX` | Integer | 그리드 X 좌표 | `territories.coord_x` |
 | `auctions[].coordY` | Integer | 그리드 Y 좌표 | `territories.coord_y` |
-| `auctions[].continentName` | String | 소속 대륙 이름 | `continents.name` |
+| `auctions[].continentName` | String | 소속 행성 표시명 | `continents.display_name` |
 | `auctions[].grade` | String | 영토 등급 (S/A/B/C/D) | `territory_grades.grade` |
 | `auctions[].currentPrice` | Integer | 현재 최고 입찰가 | `auctions.current_price` |
 | `auctions[].currentBidderNickname` | String (nullable) | 현재 최고 입찰자 닉네임 | `users.nickname` (없으면 null) |
@@ -258,16 +258,12 @@
 
 ## 내 입찰 내역 조회
 
-**GET** `/api/v1/auctions/my-bids?page={0}&size={20}`
+**GET** `/api/v1/auctions/my-bids`
 
 **Authorization**: Bearer `{{accessToken}}` (필수)
 
-### Query Parameters
-
-| 파라미터 | 타입 | 필수 | 기본값 | 설명 |
-|---|---|---|---|---|
-| `page` | Integer | N | 0 | 페이지 번호 (0-based) |
-| `size` | Integer | N | 20 | 페이지 크기 |
+- 동일 영토에 여러 경매가 존재해도 **영토별 가장 최근 입찰 1건**만 반환 (중복 제거)
+- 페이지네이션 없이 전체 목록 반환
 
 ### Response (200 OK)
 
@@ -278,7 +274,7 @@
   "data": {
     "totalCount": 12,
     "page": 0,
-    "size": 20,
+    "size": 12,
     "bids": [
       {
         "auctionId": 1,
@@ -289,7 +285,9 @@
         "currentPrice": 2500,
         "isHighestBidder": false,
         "endAt": "2026-04-28T12:00:00Z",
-        "status": "BIDDING"
+        "status": "BIDDING",
+        "grade": "A",
+        "continentName": "크리오 행성"
       }
     ]
   }
@@ -300,18 +298,20 @@
 
 | field | 타입 | 설명 | 출처 |
 |---|---|---|---|
-| `totalCount` | Long | 전체 입찰 건수 | `auction_bids` 집계 |
-| `page` | Integer | 현재 페이지 번호 | 요청 파라미터 |
-| `size` | Integer | 페이지 크기 | 요청 파라미터 |
+| `totalCount` | Long | 영토별 중복 제거 후 전체 건수 | `auction_bids` 집계 |
+| `page` | Integer | 고정값 0 | - |
+| `size` | Integer | `totalCount`와 동일 | - |
 | `bids[].auctionId` | Long | 경매 ID | `auction_bids.auction_id` |
 | `bids[].territoryId` | Long | 영토 ID | `territories.id` |
 | `bids[].coordX` | Integer | 그리드 X 좌표 | `territories.coord_x` |
 | `bids[].coordY` | Integer | 그리드 Y 좌표 | `territories.coord_y` |
-| `bids[].myBidAmount` | Integer | 내 최고 입찰 금액 | `auction_bids.price` (MAX per auction) |
+| `bids[].myBidAmount` | Integer | 영토별 가장 최근 입찰 금액 | `auction_bids.price` |
 | `bids[].currentPrice` | Integer | 현재 최고 입찰가 | `auctions.current_price` |
 | `bids[].isHighestBidder` | Boolean | 내가 현재 최고 입찰자 여부 | `auctions.current_bidder_id = userId` 파생 |
 | `bids[].endAt` | DateTime | 경매 종료 시각 | `auctions.end_at` |
 | `bids[].status` | AuctionStatus | 경매 상태 | `auctions.end_at > now()` → `BIDDING`, 이하 → `IDLE` |
+| `bids[].grade` | String | 영토 등급 (S/A/B/C/D) | `territory_grades.grade` |
+| `bids[].continentName` | String | 소속 행성 표시명 | `continents.display_name` |
 
 ### 남은 작업
 - ~~서비스 구현~~ ✅
