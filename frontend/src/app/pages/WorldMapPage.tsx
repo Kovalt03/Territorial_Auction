@@ -1,23 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
+import { useApp } from '../context/AppContext';
+import { fetchMyGuild } from '../api/guild';
 import { GNB } from '../components/GNB';
 import { MapCanvas } from '../components/MapCanvas';
-import { useApp } from '../context/AppContext';
+import { ChatPanel } from '../components/ChatPanel';
 
 // Re-export for backward compatibility
 export type { ContinentDef } from '../data/continents';
 export { CONTINENTS } from '../data/continents';
 
+type ChatTab = 'world' | 'guild';
+
 export function WorldMapPage() {
   const [showChat, setShowChat] = useState(false);
-  const [chatInput, setChatInput] = useState('');
-  const { messages, sendMessage } = useApp();
+  const [chatTab, setChatTab] = useState<ChatTab>('world');
+  const [myGuildId, setMyGuildId] = useState<number | null>(null);
+  const { isLoggedIn } = useApp();
 
-  const handleSendChat = () => {
-    if (!chatInput.trim()) return;
-    sendMessage(chatInput.trim());
-    setChatInput('');
-  };
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    fetchMyGuild()
+      .then(g => setMyGuildId(g.guildId))
+      .catch(() => setMyGuildId(null));
+  }, [isLoggedIn]);
+
+  const roomId = chatTab === 'world'
+    ? 'room_world'
+    : myGuildId != null ? `room_guild_${myGuildId}` : null;
 
   return (
     <div className="flex flex-col h-screen bg-surface overflow-hidden">
@@ -44,36 +54,38 @@ export function WorldMapPage() {
         {/* Chat slide-in panel */}
         {showChat && (
           <div className="flex-shrink-0 w-[280px] bg-[#080d1a] border-l border-[#1a2438] flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a2438]">
+            {/* Header */}
+            <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-[#1a2438]">
               <span className="text-[#c0ccdd] font-semibold text-sm">💬 채팅</span>
-              <button onClick={() => setShowChat(false)} className="text-muted hover:text-[#c0ccdd]">✕</button>
+              <button onClick={() => setShowChat(false)} className="text-muted hover:text-[#c0ccdd] transition-colors">✕</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {messages.map(msg => (
-                <div key={msg.id} className="text-xs">
-                  <span style={{ color: msg.user === '시스템' ? '#ffd700' : '#00f5ff', fontWeight: 600 }}>
-                    {msg.user}
-                  </span>
-                  <span className="text-muted"> {msg.time}</span>
-                  <p className="text-[#c0ccdd] mt-0.5">{msg.message}</p>
-                </div>
+
+            {/* Tabs */}
+            <div className="flex-shrink-0 flex border-b border-[#1a2438]">
+              {([['world', '🌍 전체'], ['guild', '🏰 길드']] as [ChatTab, string][]).map(([tab, label]) => (
+                <button
+                  key={tab}
+                  onClick={() => { if (tab === 'guild' && myGuildId == null) return; setChatTab(tab); }}
+                  disabled={tab === 'guild' && myGuildId == null}
+                  className="flex-1 py-2 text-[11px] transition-colors disabled:opacity-40"
+                  style={chatTab === tab
+                    ? { color: '#00f5ff', borderBottom: '2px solid #00f5ff' }
+                    : { color: '#7788a5', borderBottom: '2px solid transparent' }
+                  }
+                >
+                  {label}
+                </button>
               ))}
             </div>
-            <div className="p-3 border-t border-[#1a2438] flex gap-2">
-              <input
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSendChat()}
-                placeholder="메시지 입력..."
-                className="flex-1 h-8 bg-[#12192c] border border-[#1e2a3d] rounded-lg px-3 text-[#c0ccdd] outline-none focus:border-primary transition-colors text-xs"
-              />
-              <button
-                onClick={handleSendChat}
-                className="w-8 h-8 bg-primary rounded-lg text-[#060a14] font-bold flex items-center justify-center"
-              >
-                →
-              </button>
-            </div>
+
+            {/* Chat content */}
+            {roomId != null ? (
+              <ChatPanel roomId={roomId} />
+            ) : (
+              <div className="flex-1 flex items-center justify-center p-4">
+                <p className="text-muted text-[11px] text-center">길드에 가입하면<br />길드 채팅을 이용할 수 있습니다.</p>
+              </div>
+            )}
           </div>
         )}
       </div>
