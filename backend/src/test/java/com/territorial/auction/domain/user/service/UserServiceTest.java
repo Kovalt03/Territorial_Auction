@@ -519,7 +519,7 @@ class UserServiceTest {
             given(grade.getGrade()).willReturn("A");
 
             Continent continent = mock(Continent.class);
-            given(continent.getName()).willReturn("아시아");
+            given(continent.getDisplayName()).willReturn("아시아");
 
             Territory territory = mock(Territory.class);
             given(territory.getId()).willReturn(10L);

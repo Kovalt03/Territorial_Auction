@@ -120,6 +120,7 @@ class AuctionServiceTest {
 
         Continent continent = mock(Continent.class);
         lenient().when(continent.getName()).thenReturn("북부 대륙");
+        lenient().when(continent.getDisplayName()).thenReturn("북부 대륙");
 
         Territory territory = mock(Territory.class);
         lenient().when(territory.getId()).thenReturn(5L);
@@ -627,15 +628,15 @@ class AuctionServiceTest {
             AuctionBid bid = mockBid(10L, user, 2100, false); // 최고 입찰자 아님
 
             PageRequest pageable = PageRequest.of(0, 20);
-            Page<AuctionBid> page = new PageImpl<>(List.of(bid), pageable, 1);
 
-            given(auctionBidRepository.findAllByBidderIdWithAuction(1L, pageable)).willReturn(page);
+            given(auctionBidRepository.findLatestBidPerAuctionByBidder(1L))
+                    .willReturn(List.of(bid));
 
             MyBidListResponse response = auctionService.getMyBids(1L, pageable);
 
             assertThat(response.totalCount()).isEqualTo(1);
             assertThat(response.page()).isEqualTo(0);
-            assertThat(response.size()).isEqualTo(20);
+            assertThat(response.size()).isEqualTo(1);
             assertThat(response.bids()).hasSize(1);
 
             MyBidListResponse.MyBidItemDto item = response.bids().get(0);
@@ -653,9 +654,9 @@ class AuctionServiceTest {
             AuctionBid bid = mockBid(10L, user, 2100, true); // 최고 입찰자
 
             PageRequest pageable = PageRequest.of(0, 20);
-            Page<AuctionBid> page = new PageImpl<>(List.of(bid), pageable, 1);
 
-            given(auctionBidRepository.findAllByBidderIdWithAuction(1L, pageable)).willReturn(page);
+            given(auctionBidRepository.findLatestBidPerAuctionByBidder(1L))
+                    .willReturn(List.of(bid));
 
             MyBidListResponse response = auctionService.getMyBids(1L, pageable);
 
@@ -666,8 +667,8 @@ class AuctionServiceTest {
         @DisplayName("입찰 내역 없으면 totalCount=0, 빈 목록 반환")
         void getMyBids_empty() {
             PageRequest pageable = PageRequest.of(0, 20);
-            given(auctionBidRepository.findAllByBidderIdWithAuction(1L, pageable))
-                    .willReturn(new PageImpl<>(Collections.emptyList(), pageable, 0));
+            given(auctionBidRepository.findLatestBidPerAuctionByBidder(1L))
+                    .willReturn(Collections.emptyList());
 
             MyBidListResponse response = auctionService.getMyBids(1L, pageable);
 
