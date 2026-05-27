@@ -17,12 +17,6 @@ islandGrades:
     zone2Radius: 7
     castleLevelRequired: 3
 
-  - name: "B"
-    gridSize: 15
-    zone1Radius: 2
-    zone2Radius: 7
-    castleLevelRequired: 4
-
   - name: "A"
     gridSize: 15
     zone1Radius: 2
