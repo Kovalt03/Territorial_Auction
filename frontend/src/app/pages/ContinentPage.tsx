@@ -3,14 +3,17 @@ import { useNavigate, useParams } from 'react-router';
 
 import { useGridMap } from '../hooks/useGridMap';
 import { useContinent } from '../hooks/useContinent';
+import { useStompSubscribe } from '../hooks/useStompClient';
+import { useWishlist } from '../hooks/useWishlist';
 import { GNB } from '../components/GNB';
 import { ChatPanel } from '../components/ChatPanel';
 import { useApp } from '../context/AppContext';
 import { fetchTerritoryDetail } from '../api/map';
 import { placeBidApi, fetchAuctionBids } from '../api/auction';
+import { fetchMyWallet } from '../api/user';
 import type { GridTerritoryDto } from '../types/map';
 import type { Grade } from '../types/grade';
-import type { BidEntry } from '../types/auction';
+import type { BidEntry, AuctionBidBroadcast } from '../types/auction';
 import { GRADE_COLOR } from '../types/grade';
 
 type TStatus = 'mine' | 'occupied' | 'auction' | 'idle';
@@ -87,7 +90,8 @@ export function ContinentPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { continents } = useContinent();
-  const { ap, userId, username, spendAP } = useApp();
+  const { ap, userId, username, spendAP, syncAP } = useApp();
+  const { wishlistIds, toggle: toggleWishlist } = useWishlist();
 
   const continentId = Number(id);
   const continentData = continents.find(c => c.id === id);
@@ -115,6 +119,22 @@ export function ContinentPage() {
   const [bidHistory, setBidHistory] = useState<BidEntry[]>([]);
   const isHighestBidder = bidHistory.length > 0 && bidHistory[0].bidderNickname === username;
   const [isBidding, setIsBidding] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  useStompSubscribe<AuctionBidBroadcast>(
+    selectedAuctionId ? `/sub/auction/${selectedAuctionId}` : null,
+    (msg) => {
+      setAuctionCurrentPrice(msg.currentPrice);
+      setAuctionEndAt(msg.endAt);
+      setBidInput(String(Math.max(Math.ceil(msg.currentPrice * 1.05), msg.currentPrice + 10)));
+      fetchAuctionBids(msg.auctionId).then(res => setBidHistory(res.bids)).catch(() => {});
+      // 상대방이 입찰하면 내 locked AP가 환불되므로 지갑 즉시 갱신
+      if (msg.bidderId !== userId) {
+        fetchMyWallet().then(wallet => syncAP(wallet.availableAP)).catch(() => {});
+      }
+    },
+  );
+
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -200,21 +220,28 @@ export function ContinentPage() {
   };
   const handleMouseUp = () => setIsDragging(false);
 
-  const handleBidSubmit = async () => {
+  const handleBidSubmit = () => {
+    const amt = parseInt(bidInput);
+    if (!amt || !selectedAuctionId || isBidding) return;
+    setShowConfirm(true);
+  };
+
+  const handleConfirmBid = async () => {
     const amt = parseInt(bidInput);
     if (!amt || !selectedAuctionId || isBidding) return;
     setIsBidding(true);
     try {
       const result = await placeBidApi(selectedAuctionId, amt);
       spendAP(amt);
+      setShowConfirm(false);
       setBidSuccess(true);
       setTimeout(() => setBidSuccess(false), 2500);
       setAuctionCurrentPrice(result.newPrice);
       setAuctionEndAt(result.endAt);
-      setBidInput(String(result.newPrice + 100));
+      setBidInput(String(Math.max(Math.ceil(result.newPrice * 1.05), result.newPrice + 10)));
       fetchAuctionBids(selectedAuctionId).then(res => setBidHistory(res.bids)).catch(() => {});
     } catch {
-      // keep current state on bid error
+      setShowConfirm(false);
     } finally {
       setIsBidding(false);
     }
@@ -333,7 +360,8 @@ export function ContinentPage() {
                                 setSelectedAuctionId(d.auction.auctionId);
                                 setAuctionCurrentPrice(d.auction.currentPrice);
                                 setAuctionEndAt(d.auction.endAt);
-                                setBidInput(String(d.auction.currentPrice + 100));
+                                const min = Math.max(Math.ceil(d.auction.currentPrice * 1.05), d.auction.currentPrice + 10);
+                                setBidInput(String(min));
                               }
                             }).catch(() => {});
                           }
@@ -425,62 +453,69 @@ export function ContinentPage() {
                     </div>
 
                     {/* Price info */}
-                    <div className="bg-[#0d1628] border border-[#354064] rounded-xl p-3" style={isHighestBidder ? { borderColor: '#00ff8860' } : undefined}>
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-muted text-[9px]">현재 최고 입찰가</p>
-                        {isHighestBidder && (
-                          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#00ff8820', color: '#00ff88', border: '1px solid #00ff8840' }}>
-                            👑 최고 입찰자
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[#ffd700] font-bold text-lg leading-none">
-                        {auctionCurrentPrice.toLocaleString()}
-                        <span className="text-[11px] text-muted font-normal ml-1">AP</span>
-                      </p>
-                      <div className="mt-2 pt-2 border-t border-[#1a2438] flex justify-between">
-                        <span className="text-muted text-[9px]">최소 입찰가</span>
-                        <span className="text-[#c0ccdd] text-[9px] font-semibold">{(auctionCurrentPrice + 100).toLocaleString()} AP</span>
-                      </div>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-muted text-[9px]">보유 AP</span>
-                        <span className="text-[#00ff88] text-[9px] font-semibold">{ap.toLocaleString()} AP</span>
-                      </div>
-                    </div>
-
-                    {/* Bid form */}
-                    <div className="bg-[#0d1628] border border-[#ffd70040] rounded-xl p-3">
-                      <p className="text-[#ffd700] font-bold mb-2 text-[11px]">⚡ 입찰하기</p>
-                      {bidSuccess ? (
-                        <div className="text-center py-2">
-                          <p className="text-[#00ff88] font-bold text-xs">✓ 입찰 완료!</p>
-                          <p className="text-muted text-[10px] mt-0.5">잔여 AP: {ap.toLocaleString()}</p>
-                        </div>
-                      ) : (
+                    {(() => {
+                      const minBid = Math.max(Math.ceil(auctionCurrentPrice * 1.05), auctionCurrentPrice + 10);
+                      return (
                         <>
-                          <div className="flex gap-1 mb-2">
-                            {[500, 1000, 5000].map(inc => (
-                              <button key={inc} onClick={() => setBidInput(v => String((parseInt(v) || auctionCurrentPrice) + inc))}
-                                className="flex-1 h-6 rounded transition-colors hover:brightness-125 text-[9px]"
-                                style={{ background: '#1a2438', border: '1px solid #354064', color: '#c0ccdd' }}>
-                                +{inc >= 1000 ? `${inc / 1000}K` : inc}
-                              </button>
-                            ))}
+                          <div className="bg-[#0d1628] border border-[#354064] rounded-xl p-3" style={isHighestBidder ? { borderColor: '#00ff8860' } : undefined}>
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-muted text-[9px]">현재 최고 입찰가</p>
+                              {isHighestBidder && (
+                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#00ff8820', color: '#00ff88', border: '1px solid #00ff8840' }}>
+                                  👑 최고 입찰자
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[#ffd700] font-bold text-lg leading-none">
+                              {auctionCurrentPrice.toLocaleString()}
+                              <span className="text-[11px] text-muted font-normal ml-1">AP</span>
+                            </p>
+                            <div className="mt-2 pt-2 border-t border-[#1a2438] flex justify-between">
+                              <span className="text-muted text-[9px]">최소 입찰가</span>
+                              <span className="text-[#c0ccdd] text-[9px] font-semibold">{minBid.toLocaleString()} AP</span>
+                            </div>
+                            <div className="flex justify-between mt-1">
+                              <span className="text-muted text-[9px]">보유 AP</span>
+                              <span className="text-[#00ff88] text-[9px] font-semibold">{ap.toLocaleString()} AP</span>
+                            </div>
                           </div>
-                          <div className="flex gap-1.5 mb-1.5">
-                            <input type="number" value={bidInput} onChange={e => setBidInput(e.target.value)}
-                              placeholder={`${(auctionCurrentPrice + 100).toLocaleString()}`}
-                              className="flex-1 h-8 bg-[#060a14] border border-outline rounded-lg px-2 text-foreground outline-none focus:border-gold text-[11px]" />
-                            <button onClick={handleBidSubmit}
-                              disabled={!bidInput || !selectedAuctionId || isBidding || parseInt(bidInput) <= auctionCurrentPrice || parseInt(bidInput) > ap}
-                              className="h-8 px-3 rounded-lg font-bold transition-all hover:brightness-110 disabled:opacity-40 text-[11px]"
-                              style={{ background: '#ffd700', color: '#060a14' }}>
-                              {isBidding ? '...' : '입찰'}
-                            </button>
+
+                          {/* Bid form */}
+                          <div className="bg-[#0d1628] border border-[#ffd70040] rounded-xl p-3">
+                            <p className="text-[#ffd700] font-bold mb-2 text-[11px]">⚡ 입찰하기</p>
+                            {bidSuccess ? (
+                              <div className="text-center py-2">
+                                <p className="text-[#00ff88] font-bold text-xs">✓ 입찰 완료!</p>
+                                <p className="text-muted text-[10px] mt-0.5">잔여 AP: {ap.toLocaleString()}</p>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex gap-1 mb-2">
+                                  {[500, 1000, 5000].map(inc => (
+                                    <button key={inc} onClick={() => setBidInput(v => String((parseInt(v) || minBid) + inc))}
+                                      className="flex-1 h-6 rounded transition-colors hover:brightness-125 text-[9px]"
+                                      style={{ background: '#1a2438', border: '1px solid #354064', color: '#c0ccdd' }}>
+                                      +{inc >= 1000 ? `${inc / 1000}K` : inc}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="flex gap-1.5 mb-1.5">
+                                  <input type="number" value={bidInput} onChange={e => setBidInput(e.target.value)}
+                                    placeholder={`${minBid.toLocaleString()}`}
+                                    className="flex-1 h-8 bg-[#060a14] border border-outline rounded-lg px-2 text-foreground outline-none focus:border-gold text-[11px]" />
+                                  <button onClick={handleBidSubmit}
+                                    disabled={!bidInput || !selectedAuctionId || isBidding || parseInt(bidInput) < minBid || parseInt(bidInput) > ap}
+                                    className="h-8 px-3 rounded-lg font-bold transition-all hover:brightness-110 disabled:opacity-40 text-[11px]"
+                                    style={{ background: '#ffd700', color: '#060a14' }}>
+                                    {isBidding ? '...' : '입찰'}
+                                  </button>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </>
-                      )}
-                    </div>
+                      );
+                    })()}
 
                     {/* Bid history */}
                     <div>
@@ -524,6 +559,17 @@ export function ContinentPage() {
                 <button onClick={() => navigate(`/app/territory/${selected.id}`)} className="w-full h-8 rounded-xl font-bold transition-all hover:brightness-110 text-[11px]" style={{ background: continent.color, color: '#060a14' }}>영토 상세 보기</button>
                 {selected.status === 'occupied' && <button onClick={() => navigate('/app/siege')} className="w-full h-8 bg-[#ff303020] border border-[#ff3030] rounded-xl text-[#ff5050] font-bold text-[11px]">⚔ 공성전 선언</button>}
                 {selected.status === 'mine' && <button onClick={() => navigate(`/app/territory-grid/${selected.id}`)} className="w-full h-8 bg-[#00ff8820] border border-[#00ff8860] rounded-xl text-[#00ff88] font-bold text-[11px]">🏗 영토 내부 보기</button>}
+                {selected.id !== 0 && (
+                  <button
+                    onClick={() => void toggleWishlist(selected.id)}
+                    className="w-full h-8 rounded-xl font-bold text-[11px] transition-all hover:brightness-110"
+                    style={wishlistIds.has(selected.id)
+                      ? { background: '#ff8c0020', border: '1px solid #ff8c0060', color: '#ff8c00' }
+                      : { background: '#1a2438', border: '1px solid #354064', color: '#8892b0' }}
+                  >
+                    {wishlistIds.has(selected.id) ? '♥ 관심 해제' : '♡ 관심 등록'}
+                  </button>
+                )}
                 <button onClick={handleDeselect} className="w-full h-7 bg-[#0d1628] border border-[#1a2438] rounded-xl text-muted text-[10px]">선택 해제</button>
               </div>
             </>
@@ -545,6 +591,49 @@ export function ContinentPage() {
           ))}
         </div>
       </div>
+
+      {showConfirm && selected && (
+        <div className="modal-overlay">
+          <div className="bg-panel border-2 rounded-2xl p-8 max-w-sm mx-4 text-center" style={{ borderColor: '#ffd700' }}>
+            <span style={{ fontSize: 40 }}>⚡</span>
+            <h3 className="font-bold text-xl mt-3 mb-2 text-gold">입찰 확인</h3>
+            <p className="text-muted mb-5" style={{ fontSize: 13 }}>
+              영토 ({selected.coordX}, {selected.coordY}) · {continent.name}
+            </p>
+            <div className="bg-elevated rounded-xl py-4 mb-6 space-y-2">
+              <div className="flex justify-between px-4">
+                <span className="text-muted" style={{ fontSize: 13 }}>입찰 금액</span>
+                <span className="font-bold text-gold" style={{ fontSize: 16 }}>{parseInt(bidInput).toLocaleString()} AP</span>
+              </div>
+              <div className="flex justify-between px-4">
+                <span className="text-muted" style={{ fontSize: 13 }}>현재가 대비</span>
+                <span className="text-gp" style={{ fontSize: 13 }}>+{(parseInt(bidInput) - auctionCurrentPrice).toLocaleString()} AP</span>
+              </div>
+              <div className="flex justify-between px-4">
+                <span className="text-muted" style={{ fontSize: 13 }}>입찰 후 잔여</span>
+                <span className="text-foreground" style={{ fontSize: 13 }}>{(ap - parseInt(bidInput)).toLocaleString()} AP</span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 h-11 bg-elevated border border-outline rounded-xl text-muted"
+                style={{ fontSize: 14 }}
+              >
+                취소
+              </button>
+              <button
+                onClick={() => void handleConfirmBid()}
+                disabled={isBidding}
+                className="flex-1 h-11 rounded-xl font-bold disabled:opacity-50"
+                style={{ fontSize: 14, background: '#ffd700', color: '#0a0e1a' }}
+              >
+                {isBidding ? '처리 중...' : '입찰하기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

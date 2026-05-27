@@ -72,6 +72,7 @@ public class SecurityConfig {
                                     .requestMatchers(HttpMethod.GET, "/api/v1/siege/events").permitAll()
                                     .requestMatchers("/api/v1/military/**").authenticated()
                                     .requestMatchers("/api/v1/siege/**").authenticated()
+                                    .requestMatchers("/api/v1/users/me/wishlist/**").authenticated()
                                     .anyRequest().authenticated())
                         // spotless:on
                 .oauth2Login(

@@ -28,3 +28,15 @@ export function changePassword(currentPassword: string, newPassword: string) {
 export function deleteAccount(password: string) {
   return apiClient.delete<null>('/users/me', { password });
 }
+
+export function fetchWishlist() {
+  return apiClient.get<{ territoryIds: number[] }>('/users/me/wishlist');
+}
+
+export function addToWishlist(territoryId: number) {
+  return apiClient.post<null>(`/users/me/wishlist/${territoryId}`, {});
+}
+
+export function removeFromWishlist(territoryId: number) {
+  return apiClient.delete<null>(`/users/me/wishlist/${territoryId}`);
+}

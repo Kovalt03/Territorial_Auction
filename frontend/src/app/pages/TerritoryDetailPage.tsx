@@ -2,22 +2,25 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 
 import { useApp } from '../context/AppContext';
-import { placeBidApi } from '../api/auction';
+import { placeBidApi, fetchTerritoryAuctionHistory } from '../api/auction';
 import { fetchMyWallet } from '../api/user';
 import { fetchChatHistory } from '../api/chat';
+import { fetchTerritoryDetail } from '../api/map';
+import type { TerritoryDetailResponse } from '../types/territory';
 import { useTerritoryDetail } from '../hooks/useTerritoryDetail';
 import { useMyBids } from '../hooks/useMyBids';
+import { useWishlist } from '../hooks/useWishlist';
 import { useStompSubscribe, useStompPublish } from '../hooks/useStompClient';
 import { GNB } from '../components/GNB';
 import type { MyBidEntry } from '../types/auction';
 
 type ListTab = 'bidding' | 'wishlist';
-type ChartRange = '7일' | '30일' | '90일';
+type ChartRange = '3일' | '7일' | '30일';
 
 const GRADE_COLOR: Record<string, string> = { S: '#ffd700', A: '#00f5ff', B: '#00ff88', C: '#8892b0' };
 
 function LineChart({ data, color }: { data: number[]; color: string }) {
-  if (data.length === 0) return <div className="flex items-center justify-center h-[120px] text-muted" style={{ fontSize: 12 }}>데이터 없음</div>;
+  if (data.length === 0) return <div className="flex items-center justify-center h-[120px] text-muted" style={{ fontSize: 12 }}>해당 기간 낙찰 이력 없음</div>;
   const W = 300, H = 120, PAD = 4;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -46,9 +49,9 @@ function LineChart({ data, color }: { data: number[]; color: string }) {
 }
 
 const RANGE_MS: Record<ChartRange, number> = {
+  '3일': 3 * 86400_000,
   '7일': 7 * 86400_000,
   '30일': 30 * 86400_000,
-  '90일': 90 * 86400_000,
 };
 
 interface ChatMsg { user: string; text: string; time: string; mine: boolean; }
@@ -90,20 +93,26 @@ export function TerritoryDetailPage() {
   const { ap, syncAP, userId, username, isLoggedIn } = useApp();
 
   const territoryId = Number(id);
-  const { territory, bids, isLoading, error, refreshBids } = useTerritoryDetail(territoryId);
-  const { bids: myBids } = useMyBids();
+  const { territory, bids, isLoading, error, refreshBids, updateCurrentPrice } = useTerritoryDetail(territoryId);
+  const { bids: myBids, refresh: refreshMyBids } = useMyBids();
 
   const gradeColor = GRADE_COLOR[territory?.grade ?? 'B'] ?? '#00ff88';
   const gridSize = territory?.gridSize ?? 8;
   const currentBid = territory?.auction?.currentPrice ?? 0;
   const auctionId = territory?.auction?.auctionId ?? null;
+  const minBid = Math.max(Math.ceil(currentBid * 1.05), currentBid + 10);
 
   const myBidEntry: MyBidEntry | undefined = myBids.find(b => b.territoryId === territoryId);
   const myBid = myBidEntry?.myBidAmount ?? 0;
-  const isOutbid = myBid > 0 && !myBidEntry?.isHighestBidder;
+  const isHighestBidder = !!myBidEntry?.isHighestBidder;
+  const isOutbid = myBid > 0 && !isHighestBidder;
   const isMyTerritory = territory?.owner?.userId === userId;
 
   const [listTab, setListTab] = useState<ListTab>('bidding');
+  const [bidSort, setBidSort] = useState<'time' | 'ap' | 'outbid'>('time');
+  const [wishlistTerritories, setWishlistTerritories] = useState<TerritoryDetailResponse[]>([]);
+  const [isLoadingWishlist, setIsLoadingWishlist] = useState(false);
+  const [now, setNow] = useState(Date.now());
   const [bidAmount, setBidAmount] = useState(currentBid + 100);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isBidding, setIsBidding] = useState(false);
@@ -112,7 +121,7 @@ export function TerritoryDetailPage() {
   const [chartRange, setChartRange] = useState<ChartRange>('7일');
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [localWishlist, setLocalWishlist] = useState<Set<number>>(new Set());
+  const { wishlistIds: localWishlist, toggle: toggleWishlist } = useWishlist();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const stompPublish = useStompPublish();
 
@@ -122,9 +131,15 @@ export function TerritoryDetailPage() {
   // Real-time auction updates
   const handleAuctionMessage = useCallback((msg: AuctionWsMessage) => {
     if (msg.auctionId === auctionId) {
+      updateCurrentPrice(msg.currentPrice);
       refreshBids(auctionId);
+      refreshMyBids();
+      // 상대방이 입찰하면 내 locked AP가 환불되므로 지갑 즉시 갱신
+      if (msg.bidderId !== userId) {
+        fetchMyWallet().then(wallet => syncAP(wallet.availableAP)).catch(() => {});
+      }
     }
-  }, [auctionId, refreshBids]);
+  }, [auctionId, refreshBids, updateCurrentPrice, refreshMyBids, userId, syncAP]);
   useStompSubscribe<AuctionWsMessage>(auctionWsDest, handleAuctionMessage);
 
   // Real-time chat
@@ -149,27 +164,45 @@ export function TerritoryDetailPage() {
       .catch(() => {});
   }, [chatRoomId, userId]);
 
-  useEffect(() => { setBidAmount(currentBid + 100); }, [currentBid]);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    setBidAmount(Math.max(Math.ceil(currentBid * 1.05), currentBid + 10));
+  }, [currentBid]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
+  const [auctionHistory, setAuctionHistory] = useState<{ price: number; wonAt: string }[]>([]);
+  useEffect(() => {
+    if (!territoryId) return;
+    fetchTerritoryAuctionHistory(territoryId)
+      .then(res => setAuctionHistory(res.histories.map(h => ({ price: h.finalPrice, wonAt: h.wonAt }))))
+      .catch(() => setAuctionHistory([]));
+  }, [territoryId]);
+
   const chartData = useMemo(() => {
     const cutoff = Date.now() - RANGE_MS[chartRange];
-    const filtered = bids.filter(b => new Date(b.bidAt).getTime() >= cutoff);
-    return filtered.map(b => b.price);
-  }, [bids, chartRange]);
+    return auctionHistory
+      .filter(h => new Date(h.wonAt).getTime() >= cutoff)
+      .map(h => h.price);
+  }, [auctionHistory, chartRange]);
 
   const handleBid = async () => {
     if (!auctionId) return;
     setIsBidding(true);
     setBidError(null);
     try {
-      await placeBidApi(auctionId, bidAmount);
+      const result = await placeBidApi(auctionId, bidAmount);
       const wallet = await fetchMyWallet();
       syncAP(wallet.availableAP);
+      updateCurrentPrice(result.newPrice);
       await refreshBids(auctionId);
+      refreshMyBids();
       setBidDone(true);
       setShowConfirm(false);
       setTimeout(() => setBidDone(false), 2500);
@@ -189,7 +222,27 @@ export function TerritoryDetailPage() {
   };
 
   const activeBids = myBids.filter(b => b.status === 'BIDDING');
-  const wishlistBids = myBids.filter(b => localWishlist.has(b.territoryId));
+
+  useEffect(() => {
+    if (listTab !== 'wishlist' || localWishlist.size === 0) {
+      setWishlistTerritories([]);
+      return;
+    }
+    setIsLoadingWishlist(true);
+    Promise.all([...localWishlist].map(id => fetchTerritoryDetail(id)))
+      .then(results => setWishlistTerritories(results))
+      .catch(() => {})
+      .finally(() => setIsLoadingWishlist(false));
+  }, [listTab, localWishlist]);
+
+  function sortedBidList(list: typeof myBids) {
+    if (bidSort === 'ap') return [...list].sort((a, b) => b.currentPrice - a.currentPrice);
+    if (bidSort === 'outbid') return [...list].sort((a, b) => {
+      if (a.isHighestBidder !== b.isHighestBidder) return a.isHighestBidder ? 1 : -1;
+      return 0;
+    });
+    return [...list].sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime());
+  }
 
   return (
     <div className="page-root">
@@ -199,7 +252,7 @@ export function TerritoryDetailPage() {
         {/* ── Left Panel ── Bidding list / Wishlist */}
         <div className="w-[270px] bg-[#0d1220] border-r border-[#1e2a3d] flex flex-col flex-shrink-0">
           <div className="flex border-b border-[#1e2a3d]">
-            {([['bidding', '입찰 중', '#00f5ff', activeBids.length], ['wishlist', '관심 등록', '#ffd700', wishlistBids.length]] as const).map(([tab, label, color, cnt]) => (
+            {([['bidding', '입찰 중', '#00f5ff', activeBids.length], ['wishlist', '관심 등록', '#ffd700', localWishlist.size]] as const).map(([tab, label, color, cnt]) => (
               <button
                 key={tab}
                 onClick={() => setListTab(tab)}
@@ -216,8 +269,32 @@ export function TerritoryDetailPage() {
             ))}
           </div>
 
+          {listTab === 'bidding' && activeBids.length > 0 && (
+            <div className="flex items-center gap-1 px-3 py-2 border-b border-[#1e2a3d]">
+              {([
+                { val: 'time', label: '⏱' },
+                { val: 'ap', label: '💰' },
+                { val: 'outbid', label: '🔺' },
+              ] as { val: 'time' | 'ap' | 'outbid'; label: string }[]).map(s => (
+                <button
+                  key={s.val}
+                  onClick={() => setBidSort(s.val)}
+                  className="flex-1 h-6 rounded-md font-semibold transition-colors"
+                  style={{
+                    fontSize: 10,
+                    background: bidSort === s.val ? '#00f5ff' : '#1a2438',
+                    color: bidSort === s.val ? '#060a14' : '#7788a5',
+                    border: `1px solid ${bidSort === s.val ? '#00f5ff' : '#2a3a5a'}`,
+                  }}
+                >
+                  {s.label} {s.val === 'time' ? '시간' : s.val === 'ap' ? 'AP' : '상회'}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {(listTab === 'bidding' ? activeBids : wishlistBids).map(b => {
+            {listTab === 'bidding' && sortedBidList(activeBids).map(b => {
               const isLeading = b.isHighestBidder;
               const isLosing = !b.isHighestBidder;
               const isCurrent = b.territoryId === territoryId;
@@ -246,11 +323,18 @@ export function TerritoryDetailPage() {
                       <div className="ml-auto w-1.5 h-1.5 bg-gp rounded-full animate-pulse" />
                     </div>
                   )}
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="text-foreground font-semibold" style={{ fontSize: 12 }}>
                       ({b.coordX}, {b.coordY})
                     </span>
+                    <span
+                      className="px-1.5 py-0.5 rounded font-bold"
+                      style={{ fontSize: 9, color: GRADE_COLOR[b.grade] ?? '#8892b0', background: (GRADE_COLOR[b.grade] ?? '#8892b0') + '20' }}
+                    >
+                      {b.grade}급
+                    </span>
                   </div>
+                  <p className="text-[#4a5a7a] mb-2" style={{ fontSize: 9 }}>{b.continentName}</p>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-muted" style={{ fontSize: 10 }}>현재가</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: isLosing ? '#ff5555' : isLeading ? '#00ff88' : '#00f5ff' }}>
@@ -262,25 +346,94 @@ export function TerritoryDetailPage() {
                       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isLosing ? 'bg-[#ff5555]' : 'bg-gp animate-pulse'}`} />
                       <span className="text-[#4a5a7a]" style={{ fontSize: 9 }}>내 입찰 {b.myBidAmount.toLocaleString()}</span>
                     </div>
-                    {isLeading ? (
-                      <span className="text-[#00ff88] font-bold" style={{ fontSize: 9 }}>✓ 최고가 유지 중</span>
-                    ) : (
-                      <span className="text-[#ff5555] font-bold" style={{ fontSize: 9 }}>재입찰 필요</span>
-                    )}
+                    {(() => {
+                      const diff = new Date(b.endAt).getTime() - now;
+                      const timeStr = diff <= 0 ? '종료' : (() => {
+                        const h = Math.floor(diff / 3600000);
+                        const m = Math.floor((diff % 3600000) / 60000);
+                        const s = Math.floor((diff % 60000) / 1000);
+                        return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                      })();
+                      const isUrgent = diff > 0 && diff < 300000;
+                      return (
+                        <span className="font-bold tabular-nums" style={{ fontSize: 9, color: isUrgent ? '#ff8c00' : '#4a5a7a' }}>
+                          {timeStr}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               );
             })}
-            {(listTab === 'bidding' ? activeBids : wishlistBids).length === 0 && (
+
+            {listTab === 'bidding' && activeBids.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-[#4a5a7a]" style={{ fontSize: 13 }}>
-                  {listTab === 'bidding' ? '입찰 중인 영토가 없습니다' : '관심 등록된 영토가 없습니다'}
-                </p>
-                <button
-                  onClick={() => navigate('/app/map')}
-                  className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted hover:text-[#c0ccdd] transition-colors"
-                  style={{ fontSize: 11 }}
+                <p className="text-[#4a5a7a]" style={{ fontSize: 13 }}>입찰 중인 영토가 없습니다</p>
+                <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted hover:text-[#c0ccdd] transition-colors" style={{ fontSize: 11 }}>
+                  지도로 이동 →
+                </button>
+              </div>
+            )}
+
+            {listTab === 'wishlist' && isLoadingWishlist && (
+              <div className="text-center py-8">
+                <p className="text-[#4a5a7a]" style={{ fontSize: 12 }}>불러오는 중...</p>
+              </div>
+            )}
+
+            {listTab === 'wishlist' && !isLoadingWishlist && wishlistTerritories.map(t => {
+              const isCurrent = t.territoryId === territoryId;
+              const hasAuction = t.auction !== null;
+              return (
+                <div
+                  key={t.territoryId}
+                  onClick={() => navigate(`/app/territory/${t.territoryId}`)}
+                  className="rounded-xl p-3 cursor-pointer transition-all hover:brightness-110"
+                  style={{
+                    background: isCurrent ? '#1a2a3a' : '#12192c',
+                    border: `1px solid ${isCurrent ? '#ffd700' : hasAuction ? '#ffd70040' : '#1e2a3d'}`,
+                  }}
                 >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-foreground font-semibold" style={{ fontSize: 12 }}>
+                        ({t.coordX}, {t.coordY})
+                      </span>
+                      <span
+                        className="px-1.5 py-0.5 rounded font-bold"
+                        style={{ fontSize: 9, color: GRADE_COLOR[t.grade] ?? '#8892b0', background: (GRADE_COLOR[t.grade] ?? '#8892b0') + '20' }}
+                      >
+                        {t.grade}급
+                      </span>
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); void toggleWishlist(t.territoryId); }}
+                      style={{ fontSize: 12, color: '#ff8c00', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                      ♥
+                    </button>
+                  </div>
+                  <p className="text-[#4a5a7a] mb-2" style={{ fontSize: 9 }}>{t.continentName}</p>
+                  {hasAuction ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#ffd700] font-bold" style={{ fontSize: 9 }}>경매 중</span>
+                      <span className="text-[#ffd700] font-bold" style={{ fontSize: 10 }}>
+                        {t.auction!.currentPrice.toLocaleString()} AP
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-[#4a5a7a]" style={{ fontSize: 9 }}>
+                      {t.status === 'OCCUPIED' ? (t.owner ? `${t.owner.nickname} 점령` : '점령됨') : '미점령'}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+
+            {listTab === 'wishlist' && !isLoadingWishlist && localWishlist.size === 0 && (
+              <div className="text-center py-8">
+                <p className="text-[#4a5a7a]" style={{ fontSize: 13 }}>관심 등록된 영토가 없습니다</p>
+                <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted hover:text-[#c0ccdd] transition-colors" style={{ fontSize: 11 }}>
                   지도로 이동 →
                 </button>
               </div>
@@ -333,11 +486,7 @@ export function TerritoryDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setLocalWishlist(prev => {
-                        const next = new Set(prev);
-                        if (next.has(territory.territoryId)) next.delete(territory.territoryId); else next.add(territory.territoryId);
-                        return next;
-                      })}
+                      onClick={() => toggleWishlist(territory.territoryId)}
                       className="h-9 px-4 rounded-xl border transition-colors"
                       style={{
                         fontSize: 13,
@@ -382,7 +531,7 @@ export function TerritoryDetailPage() {
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-muted" style={{ fontSize: 12 }}>가격 추이</p>
                         <div className="flex gap-1">
-                          {(['7일', '30일', '90일'] as ChartRange[]).map(r => (
+                          {(['3일', '7일', '30일'] as ChartRange[]).map(r => (
                             <button
                               key={r}
                               onClick={() => setChartRange(r)}
@@ -430,7 +579,7 @@ export function TerritoryDetailPage() {
                               </p>
                             </div>
                             <button
-                              onClick={() => setBidAmount(currentBid + 100)}
+                              onClick={() => setBidAmount(minBid)}
                               className="px-2 h-6 rounded font-bold flex-shrink-0"
                               style={{ fontSize: 9, background: '#ff4444', color: '#fff' }}
                             >
@@ -473,7 +622,7 @@ export function TerritoryDetailPage() {
                             </button>
                           ))}
                           <button
-                            onClick={() => setBidAmount(currentBid + 100)}
+                            onClick={() => setBidAmount(minBid)}
                             disabled={!auctionId}
                             className="px-1.5 h-6 rounded text-[#4a5a7a] hover:text-[#c0ccdd] transition-colors disabled:opacity-40"
                             style={{ fontSize: 9, background: '#1a2030', border: '1px solid #2a3050' }}
@@ -488,19 +637,19 @@ export function TerritoryDetailPage() {
 
                         <button
                           onClick={() => setShowConfirm(true)}
-                          disabled={!auctionId || bidAmount <= currentBid || ap < bidAmount || isBidding}
+                          disabled={!auctionId || isHighestBidder || bidAmount < minBid || ap < bidAmount || isBidding}
                           className="w-full h-9 rounded-xl font-bold transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
                           style={{
                             fontSize: 12,
-                            background: auctionId && bidAmount > currentBid && ap >= bidAmount ? (isOutbid ? '#ff4444' : '#00f5ff') : '#2a3050',
-                            color: auctionId && bidAmount > currentBid && ap >= bidAmount ? (isOutbid ? '#fff' : '#060a14') : '#4a5a7a',
-                            border: `1px solid ${auctionId && bidAmount > currentBid && ap >= bidAmount ? (isOutbid ? '#ff4444' : '#00f5ff') : '#354064'}`,
+                            background: auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#ff4444' : '#00f5ff') : '#2a3050',
+                            color: auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#fff' : '#060a14') : '#4a5a7a',
+                            border: `1px solid ${auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#ff4444' : '#00f5ff') : '#354064'}`,
                           }}
                         >
                           {isBidding ? '처리 중...' : isOutbid ? '🔺 재입찰' : '⚡ 입찰'}
                         </button>
-                        <p className="text-center mt-1" style={{ fontSize: 9, color: !auctionId ? '#7788a5' : bidAmount <= currentBid ? '#ff5555' : ap < bidAmount ? '#ff5555' : '#00ff88' }}>
-                          {!auctionId ? '현재 경매 없음' : bidAmount <= currentBid ? `최소 ${(currentBid + 1).toLocaleString()}` : ap < bidAmount ? 'AP 부족' : `잔여 ${(ap - bidAmount).toLocaleString()}`}
+                        <p className="text-center mt-1" style={{ fontSize: 9, color: !auctionId ? '#7788a5' : isHighestBidder ? '#00ff88' : bidAmount < minBid ? '#ff5555' : ap < bidAmount ? '#ff5555' : '#00ff88' }}>
+                          {!auctionId ? '현재 경매 없음' : isHighestBidder ? '✓ 최고 입찰 중' : bidAmount < minBid ? `최소 ${minBid.toLocaleString()}` : ap < bidAmount ? 'AP 부족' : `잔여 ${(ap - bidAmount).toLocaleString()}`}
                         </p>
                       </div>
 
