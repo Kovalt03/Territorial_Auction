@@ -227,7 +227,7 @@ export function TerritoryGridPage() {
 
       {/* Mode indicator banners */}
       {moveMode && (
-        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#1a1200', borderBottom: '1px solid #ffd70060' }}>
+        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0 border-b border-[#ffd70060]" style={{ background: '#1a1200' }}>
           <div className="flex items-center gap-2">
             <span className="text-sm">🔄</span>
             <span className="text-gold font-semibold text-[13px]">
@@ -239,7 +239,7 @@ export function TerritoryGridPage() {
         </div>
       )}
       {deployFromInventoryIdx !== null && inventory[deployFromInventoryIdx] && (
-        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#001a10', borderBottom: '1px solid #00ff8860' }}>
+        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0 border-b border-[#00ff8860]" style={{ background: '#001a10' }}>
           <div className="flex items-center gap-2">
             <span className="text-sm">📦</span>
             <span className="text-gp font-semibold text-[13px]">
@@ -376,8 +376,8 @@ export function TerritoryGridPage() {
 
       {/* ───── Build modal ───── */}
       {showBuild && (
-        <div className="fixed inset-0 flex justify-end z-50">
-          <div className="absolute inset-0 bg-black/60" onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} />
+        <div className="modal-side-overlay">
+          <div className="modal-backdrop" onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} />
           <div className="relative bg-panel border-[1.5px] border-primary w-[540px] flex flex-col overflow-hidden">
             <div className="bg-elevated px-5 py-4 border-b-2 border-primary flex items-center justify-between">
               <div>
@@ -474,10 +474,10 @@ export function TerritoryGridPage() {
 
       {/* ───── Building action panel ───── */}
       {showBuildingAction && selectedCell && selectedCellData && selectedCellData.type !== 'empty' && (
-        <div className="fixed inset-0 flex items-end justify-center z-50">
+        <div className="modal-sheet-overlay">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowBuildingAction(false)} />
-          <div className="relative w-full max-w-lg rounded-t-2xl overflow-hidden" style={{ background: '#1a1f35', border: '1px solid #354064', borderBottom: 'none' }}>
-            <div className="px-5 py-4 flex items-center justify-between" style={{ background: buildingColors[selectedCellData.type] + '20', borderBottom: `2px solid ${buildingColors[selectedCellData.type]}` }}>
+          <div className="modal-sheet-panel">
+            <div className="modal-header" style={{ background: buildingColors[selectedCellData.type] + '20', borderBottom: `2px solid ${buildingColors[selectedCellData.type]}` }}>
               <div>
                 <h3 className="font-bold text-lg" style={{ color: buildingColors[selectedCellData.type] }}>
                   {buildingNames[selectedCellData.type]}
@@ -535,10 +535,10 @@ export function TerritoryGridPage() {
 
       {/* ───── Inventory modal ───── */}
       {showInventory && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowInventory(false)} />
+        <div className="modal-center-overlay">
+          <div className="modal-backdrop" onClick={() => setShowInventory(false)} />
           <div className="relative rounded-2xl overflow-hidden flex flex-col" style={{ width: 480, maxHeight: '70vh', background: '#1a1f35', border: '1.5px solid #8b50ff' }}>
-            <div className="px-5 py-4 flex items-center justify-between" style={{ background: '#1a0a35', borderBottom: '2px solid #8b50ff' }}>
+            <div className="modal-header-secondary" style={{ background: '#1a0a35' }}>
               <div>
                 <h3 className="text-secondary font-bold text-xl">📦 보관함</h3>
                 <p className="text-muted text-xs">건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>

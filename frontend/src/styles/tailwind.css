@@ -70,7 +70,14 @@ body {
   .card          { @apply bg-panel border border-outline rounded-xl; }
 
   /* Modal */
-  .modal-overlay { @apply fixed inset-0 flex items-center justify-center z-50 bg-black/70; }
+  .modal-overlay         { @apply fixed inset-0 flex items-center justify-center z-50 bg-black/70; }
+  .modal-center-overlay  { @apply fixed inset-0 flex items-center justify-center z-50; }
+  .modal-sheet-overlay   { @apply fixed inset-0 flex items-end justify-center z-50; }
+  .modal-side-overlay    { @apply fixed inset-0 flex justify-end z-50; }
+  .modal-backdrop        { @apply absolute inset-0 bg-black/60; }
+  .modal-sheet-panel     { @apply relative w-full max-w-lg rounded-t-2xl overflow-hidden bg-panel border border-outline border-b-0; }
+  .modal-header          { @apply px-5 py-4 flex items-center justify-between; }
+  .modal-header-secondary { @apply px-5 py-4 flex items-center justify-between border-b-2 border-secondary; }
 
   /* Buttons */
   .btn-cancel    { @apply flex-1 h-11 bg-elevated border border-outline rounded-xl text-muted text-sm; }
