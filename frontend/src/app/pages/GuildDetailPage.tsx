@@ -185,11 +185,7 @@ export function GuildDetailPage() {
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className="px-4 py-2 rounded-lg text-[13px] transition-colors"
-                style={tab === t
-                  ? { background: '#00f5ff20', border: '1px solid #00f5ff', color: '#00f5ff' }
-                  : { background: '#1a1f35', border: '1px solid #354064', color: '#7788a5' }
-                }
+                className={`px-4 py-2 rounded-lg text-[13px] transition-colors ${tab === t ? 'bg-[#00f5ff20] border border-primary text-primary' : 'bg-panel border border-outline text-muted'}`}
               >
                 {label}
               </button>
@@ -314,11 +310,7 @@ export function GuildDetailPage() {
                     <button
                       key={s}
                       onClick={() => setEditStatus(s)}
-                      className="px-4 py-2 rounded-lg text-sm transition-colors"
-                      style={editStatus === s
-                        ? { background: '#00f5ff20', border: '1px solid #00f5ff', color: '#00f5ff' }
-                        : { background: '#2a3050', border: '1px solid #354064', color: '#7788a5' }
-                      }
+                      className={`px-4 py-2 rounded-lg text-sm transition-colors ${editStatus === s ? 'bg-[#00f5ff20] border border-primary text-primary' : 'bg-elevated border border-outline text-muted'}`}
                     >
                       {s === 'OPEN' ? '모집 중' : '모집 마감'}
                     </button>

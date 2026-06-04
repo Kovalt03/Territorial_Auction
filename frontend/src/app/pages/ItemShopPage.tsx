@@ -147,10 +147,7 @@ export function ItemShopPage() {
         <div className="flex gap-1 bg-elevated border border-outline rounded-xl p-1 mb-5">
           {(['shop', 'inventory'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
-              style={tab === t
-                ? { background: '#2a3050', color: '#e0e8ff' }
-                : { color: '#7788a5' }}>
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t ? 'bg-elevated text-foreground' : 'text-muted'}`}>
               {t === 'shop' ? '🛒 샵' : '📦 보유 아이템'}
             </button>
           ))}

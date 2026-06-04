@@ -209,11 +209,7 @@ export function SettingsPage() {
                   ].map((item, idx, arr) => (
                     <div
                       key={item.key}
-                      className="flex items-center justify-between px-5 py-4"
-                      style={{
-                        background: '#1a1f35',
-                        borderBottom: idx < arr.length - 1 ? '1px solid #354064' : 'none',
-                      }}
+                      className={`flex items-center justify-between px-5 py-4 bg-panel${idx < arr.length - 1 ? ' border-b border-outline' : ''}`}
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-xl mt-px">{item.icon}</span>

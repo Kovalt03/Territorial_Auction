@@ -391,11 +391,7 @@ export function ContinentPage() {
               <button
                 key={t}
                 onClick={() => setPanelTab(t)}
-                className="flex-1 py-2 text-[11px] transition-colors"
-                style={panelTab === t
-                  ? { color: '#00f5ff', borderBottom: '2px solid #00f5ff' }
-                  : { color: '#7788a5', borderBottom: '2px solid transparent' }
-                }
+                className={`flex-1 py-2 text-[11px] transition-colors border-b-2 ${panelTab === t ? 'text-primary border-primary' : 'text-muted border-transparent'}`}
               >
                 {label}
               </button>
@@ -447,7 +443,7 @@ export function ContinentPage() {
                     {/* Countdown */}
                     <div className="bg-[#0d1628] border border-[#ffd70030] rounded-xl p-3">
                       <p className="text-[#8892b0] text-[9px] mb-1">경매 종료까지</p>
-                      <p className="text-[#ffd700] font-bold text-xl text-center tracking-wider" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      <p className="text-[#ffd700] font-bold text-xl text-center tracking-wider tabular-nums">
                         {timeLeft || '--:--:--'}
                       </p>
                     </div>
@@ -595,38 +591,37 @@ export function ContinentPage() {
       {showConfirm && selected && (
         <div className="modal-overlay">
           <div className="bg-panel border-2 rounded-2xl p-8 max-w-sm mx-4 text-center" style={{ borderColor: '#ffd700' }}>
-            <span style={{ fontSize: 40 }}>⚡</span>
+            <span className="text-[40px]">⚡</span>
             <h3 className="font-bold text-xl mt-3 mb-2 text-gold">입찰 확인</h3>
-            <p className="text-muted mb-5" style={{ fontSize: 13 }}>
+            <p className="text-muted mb-5 text-[13px]">
               영토 ({selected.coordX}, {selected.coordY}) · {continent.name}
             </p>
             <div className="bg-elevated rounded-xl py-4 mb-6 space-y-2">
               <div className="flex justify-between px-4">
-                <span className="text-muted" style={{ fontSize: 13 }}>입찰 금액</span>
-                <span className="font-bold text-gold" style={{ fontSize: 16 }}>{parseInt(bidInput).toLocaleString()} AP</span>
+                <span className="text-muted text-[13px]">입찰 금액</span>
+                <span className="font-bold text-gold text-base">{parseInt(bidInput).toLocaleString()} AP</span>
               </div>
               <div className="flex justify-between px-4">
-                <span className="text-muted" style={{ fontSize: 13 }}>현재가 대비</span>
-                <span className="text-gp" style={{ fontSize: 13 }}>+{(parseInt(bidInput) - auctionCurrentPrice).toLocaleString()} AP</span>
+                <span className="text-muted text-[13px]">현재가 대비</span>
+                <span className="text-gp text-[13px]">+{(parseInt(bidInput) - auctionCurrentPrice).toLocaleString()} AP</span>
               </div>
               <div className="flex justify-between px-4">
-                <span className="text-muted" style={{ fontSize: 13 }}>입찰 후 잔여</span>
-                <span className="text-foreground" style={{ fontSize: 13 }}>{(ap - parseInt(bidInput)).toLocaleString()} AP</span>
+                <span className="text-muted text-[13px]">입찰 후 잔여</span>
+                <span className="text-foreground text-[13px]">{(ap - parseInt(bidInput)).toLocaleString()} AP</span>
               </div>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 h-11 bg-elevated border border-outline rounded-xl text-muted"
-                style={{ fontSize: 14 }}
+                className="flex-1 h-11 bg-elevated border border-outline rounded-xl text-muted text-sm"
               >
                 취소
               </button>
               <button
                 onClick={() => void handleConfirmBid()}
                 disabled={isBidding}
-                className="flex-1 h-11 rounded-xl font-bold disabled:opacity-50"
-                style={{ fontSize: 14, background: '#ffd700', color: '#0a0e1a' }}
+                className="flex-1 h-11 rounded-xl font-bold text-sm disabled:opacity-50"
+                style={{ background: '#ffd700', color: '#0a0e1a' }}
               >
                 {isBidding ? '처리 중...' : '입찰하기'}
               </button>
