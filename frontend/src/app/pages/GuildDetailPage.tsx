@@ -29,7 +29,9 @@ export function GuildDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('members');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionDone, setActionDone] = useState<string | null>(null);
   const [isActing, setIsActing] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   const [editDesc, setEditDesc] = useState('');
   // recruitingStatus not in GuildDetailResponse — default OPEN, user sets explicitly
@@ -75,7 +77,10 @@ export function GuildDetailPage() {
     setActionError(null);
     try {
       await fn();
-      if (successMsg) alert(successMsg);
+      if (successMsg) {
+        setActionDone(successMsg);
+        setTimeout(() => setActionDone(null), 3000);
+      }
       await load();
       fetchMyGuild().then(setMyGuild).catch(() => {});
     } catch {
@@ -168,7 +173,10 @@ export function GuildDetailPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => { if (confirm('길드에서 탈퇴하시겠습니까?')) executeAction(() => leaveGuild(guildId), '탈퇴했습니다.'); }}
+                    onClick={() => setConfirmAction({
+                      message: '길드에서 탈퇴하시겠습니까?',
+                      onConfirm: () => void executeAction(() => leaveGuild(guildId), '탈퇴했습니다.'),
+                    })}
                     disabled={isActing}
                   >
                     탈퇴
@@ -177,6 +185,7 @@ export function GuildDetailPage() {
               </div>
             </div>
             {actionError && <p className="text-danger mt-3 text-xs">{actionError}</p>}
+            {actionDone && <p className="text-gp mt-3 text-xs">✓ {actionDone}</p>}
           </div>
 
           {/* Tabs */}
@@ -223,13 +232,19 @@ export function GuildDetailPage() {
                   {isMaster && m.userId !== userId && (
                     <div className="flex gap-1">
                       <button
-                        onClick={() => { if (confirm(`${m.nickname}에게 길드장을 이전하시겠습니까?`)) executeAction(() => transferMaster(guildId, m.userId)); }}
+                        onClick={() => setConfirmAction({
+                          message: `${m.nickname}에게 길드장을 이전하시겠습니까?`,
+                          onConfirm: () => void executeAction(() => transferMaster(guildId, m.userId)),
+                        })}
                         className="px-2 py-1 rounded text-xs border border-outline text-dim hover:border-gold hover:text-gold transition-colors"
                       >
                         이전
                       </button>
                       <button
-                        onClick={() => { if (confirm(`${m.nickname}을 추방하시겠습니까?`)) executeAction(() => kickMember(guildId, m.userId)); }}
+                        onClick={() => setConfirmAction({
+                          message: `${m.nickname}을 추방하시겠습니까?`,
+                          onConfirm: () => void executeAction(() => kickMember(guildId, m.userId)),
+                        })}
                         className="px-2 py-1 rounded text-xs border border-outline text-dim hover:border-danger hover:text-danger transition-colors"
                       >
                         추방
@@ -329,6 +344,23 @@ export function GuildDetailPage() {
 
         </div>
       </div>
+
+      {confirmAction && (
+        <div className="modal-overlay">
+          <div className="bg-panel border border-outline rounded-2xl p-6 max-w-xs mx-4 text-center">
+            <p className="text-foreground text-sm mb-5">{confirmAction.message}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmAction(null)} className="btn-cancel">취소</button>
+              <button
+                onClick={() => { confirmAction.onConfirm(); setConfirmAction(null); }}
+                className="flex-1 h-11 bg-danger rounded-xl text-white font-bold text-sm hover:brightness-110 transition-all"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
