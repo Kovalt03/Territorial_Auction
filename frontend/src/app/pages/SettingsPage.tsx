@@ -6,14 +6,9 @@ import { logoutApi } from '../api/auth';
 import { fetchSettings, updateSettings, changePassword, deleteAccount } from '../api/user';
 import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
+import type { NotificationSettings } from '../types/user';
 
 type Section = 'notifications' | 'security' | 'account';
-
-interface NotificationSettings {
-  isOutbidEnabled: boolean;
-  isAuctionStartEnabled: boolean;
-  isMarketingEnabled: boolean;
-}
 
 export function SettingsPage() {
   const navigate = useNavigate();

@@ -281,7 +281,7 @@ export function ContinentPage() {
           ))}
         </div>
         <div className="flex items-center gap-1.5 ml-auto">
-          {[{ val: 'all', label: '전체', color: '#c0ccdd' }, { val: 'mine', label: '내 영토', color: '#00ff88' }, { val: 'auction', label: '경매중', color: '#ffd700' }, { val: 'occupied', label: '점령됨', color: '#8b50ff' }, { val: 'idle', label: '미점령', color: '#4a5a7a' }].map(f => (
+          {[{ val: 'all', label: '전체', color: '#c0ccdd' }, { val: 'mine', label: '내 영토', color: '#00ff88' }, { val: 'auction', label: '경매중', color: '#ffd700' }, { val: 'occupied', label: '점령됨', color: '#8b50ff' }, { val: 'idle', label: '미점령', color: 'var(--color-muted)' }].map(f => (
             <button key={f.val} onClick={() => setFilter(f.val as typeof filter)} className="px-2.5 h-7 rounded-lg transition-colors text-[10px]"
               style={{ color: filter === f.val ? '#060a14' : f.color, background: filter === f.val ? f.color : f.color + '20', border: `1px solid ${f.color}60`, fontWeight: filter === f.val ? 700 : 400 }}>
               {f.label}
@@ -434,7 +434,7 @@ export function ContinentPage() {
                 {selected.status === 'idle' && (
                   <div className="bg-[#0d1628] border border-[#354064] rounded-xl p-3 text-center">
                     <p className="text-muted text-[11px]">현재 경매 없음</p>
-                    <p className="text-[#4a5a7a] text-[9px] mt-1">토지세 미납 또는 공성전 후 자동 경매 예정</p>
+                    <p className="text-muted text-[9px] mt-1">토지세 미납 또는 공성전 후 자동 경매 예정</p>
                   </div>
                 )}
 
@@ -517,7 +517,7 @@ export function ContinentPage() {
                     <div>
                       <p className="text-muted text-[10px] mb-1.5">입찰 현황 ({bidHistory.length}건)</p>
                       {bidHistory.length === 0 ? (
-                        <p className="text-[#4a5a7a] text-[9px] text-center py-2">입찰 내역이 없습니다</p>
+                        <p className="text-muted text-[9px] text-center py-2">입찰 내역이 없습니다</p>
                       ) : (
                         <div className="space-y-1">
                           {bidHistory.slice(0, 10).map((bid, i) => {
@@ -574,7 +574,7 @@ export function ContinentPage() {
               <div className="px-4 py-4 border-b border-[#1a2438]">
                 <p className="font-bold mb-3 text-[13px]" style={{ color: continent.color }}>{continent.name}</p>
                 <div className="space-y-2">
-                  {[{ label: '등급', val: continent.grade, color: GRADE_COLOR[continent.grade as Grade] || '#c0ccdd' }, { label: '경매 중', val: `${auctionCount}개`, color: '#ffd700' }, { label: '내 영토', val: `${myCount}개`, color: '#00ff88' }, { label: '점령됨', val: `${occupiedCount}개`, color: '#8b50ff' }, { label: '미점령', val: `${cols * rows - myCount - auctionCount - occupiedCount}개`, color: '#4a5a7a' }].map(s => (
+                  {[{ label: '등급', val: continent.grade, color: GRADE_COLOR[continent.grade as Grade] || '#c0ccdd' }, { label: '경매 중', val: `${auctionCount}개`, color: '#ffd700' }, { label: '내 영토', val: `${myCount}개`, color: '#00ff88' }, { label: '점령됨', val: `${occupiedCount}개`, color: '#8b50ff' }, { label: '미점령', val: `${cols * rows - myCount - auctionCount - occupiedCount}개`, color: 'var(--color-muted)' }].map(s => (
                     <div key={s.label} className="flex justify-between"><span className="text-muted text-[11px]">{s.label}</span><span className="font-semibold text-[11px]" style={{ color: s.color }}>{s.val}</span></div>
                   ))}
                 </div>

@@ -311,7 +311,7 @@ export function TerritoryDetailPage() {
                     <div className="flex items-center gap-1 mb-2 px-2 py-1 rounded-lg" style={{ background: '#ff222215', border: '1px solid #ff444440' }}>
                       <span className="text-[9px]">🔺</span>
                       <span className="text-[#ff5555] font-bold text-[9px]">상회 입찰됨</span>
-                      <span className="text-[#4a5a7a] ml-auto text-[9px]">내 입찰 {b.myBidAmount.toLocaleString()}</span>
+                      <span className="text-muted ml-auto text-[9px]">내 입찰 {b.myBidAmount.toLocaleString()}</span>
                     </div>
                   )}
                   {isLeading && (
@@ -332,7 +332,7 @@ export function TerritoryDetailPage() {
                       {b.grade}급
                     </span>
                   </div>
-                  <p className="text-[#4a5a7a] mb-2 text-[9px]">{b.continentName}</p>
+                  <p className="text-muted mb-2 text-[9px]">{b.continentName}</p>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-muted text-[10px]">현재가</span>
                     <span className="text-[11px] font-bold" style={{ color: isLosing ? '#ff5555' : isLeading ? '#00ff88' : '#00f5ff' }}>
@@ -342,7 +342,7 @@ export function TerritoryDetailPage() {
                   <div className="flex items-center gap-1.5 pt-1.5 border-t border-[#1e2a3d]">
                     <div className="flex items-center gap-1 flex-1">
                       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isLosing ? 'bg-[#ff5555]' : 'bg-gp animate-pulse'}`} />
-                      <span className="text-[#4a5a7a] text-[9px]">내 입찰 {b.myBidAmount.toLocaleString()}</span>
+                      <span className="text-muted text-[9px]">내 입찰 {b.myBidAmount.toLocaleString()}</span>
                     </div>
                     {(() => {
                       const diff = new Date(b.endAt).getTime() - now;
@@ -354,7 +354,7 @@ export function TerritoryDetailPage() {
                       })();
                       const isUrgent = diff > 0 && diff < 300000;
                       return (
-                        <span className="font-bold tabular-nums text-[9px]" style={{ color: isUrgent ? '#ff8c00' : '#4a5a7a' }}>
+                        <span className="font-bold tabular-nums text-[9px]" style={{ color: isUrgent ? '#ff8c00' : 'var(--color-muted)' }}>
                           {timeStr}
                         </span>
                       );
@@ -366,7 +366,7 @@ export function TerritoryDetailPage() {
 
             {listTab === 'bidding' && activeBids.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-[#4a5a7a] text-[13px]">입찰 중인 영토가 없습니다</p>
+                <p className="text-muted text-[13px]">입찰 중인 영토가 없습니다</p>
                 <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted text-[11px] hover:text-[#c0ccdd] transition-colors">
                   지도로 이동 →
                 </button>
@@ -375,7 +375,7 @@ export function TerritoryDetailPage() {
 
             {listTab === 'wishlist' && isLoadingWishlist && (
               <div className="text-center py-8">
-                <p className="text-[#4a5a7a] text-xs">불러오는 중...</p>
+                <p className="text-muted text-xs">불러오는 중...</p>
               </div>
             )}
 
@@ -411,7 +411,7 @@ export function TerritoryDetailPage() {
                       ♥
                     </button>
                   </div>
-                  <p className="text-[#4a5a7a] mb-2 text-[9px]">{t.continentName}</p>
+                  <p className="text-muted mb-2 text-[9px]">{t.continentName}</p>
                   {hasAuction ? (
                     <div className="flex items-center justify-between">
                       <span className="text-[#ffd700] font-bold text-[9px]">경매 중</span>
@@ -420,7 +420,7 @@ export function TerritoryDetailPage() {
                       </span>
                     </div>
                   ) : (
-                    <p className="text-[#4a5a7a] text-[9px]">
+                    <p className="text-muted text-[9px]">
                       {t.status === 'OCCUPIED' ? (t.owner ? `${t.owner.nickname} 점령` : '점령됨') : '미점령'}
                     </p>
                   )}
@@ -430,7 +430,7 @@ export function TerritoryDetailPage() {
 
             {listTab === 'wishlist' && !isLoadingWishlist && localWishlist.size === 0 && (
               <div className="text-center py-8">
-                <p className="text-[#4a5a7a] text-[13px]">관심 등록된 영토가 없습니다</p>
+                <p className="text-muted text-[13px]">관심 등록된 영토가 없습니다</p>
                 <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted text-[11px] hover:text-[#c0ccdd] transition-colors">
                   지도로 이동 →
                 </button>
@@ -619,7 +619,7 @@ export function TerritoryDetailPage() {
                           <button
                             onClick={() => setBidAmount(minBid)}
                             disabled={!auctionId}
-                            className="px-1.5 h-6 rounded text-[9px] text-[#4a5a7a] hover:text-[#c0ccdd] transition-colors disabled:opacity-40"
+                            className="px-1.5 h-6 rounded text-[9px] text-muted hover:text-[#c0ccdd] transition-colors disabled:opacity-40"
                             style={{ background: '#1a2030', border: '1px solid #2a3050' }}
                           >
                             초기화
@@ -636,7 +636,7 @@ export function TerritoryDetailPage() {
                           className="w-full h-9 rounded-xl text-xs font-bold transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
                           style={{
                             background: auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#ff4444' : '#00f5ff') : '#2a3050',
-                            color: auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#fff' : '#060a14') : '#4a5a7a',
+                            color: auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#fff' : '#060a14') : 'var(--color-muted)',
                             border: `1px solid ${auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#ff4444' : '#00f5ff') : '#354064'}`,
                           }}
                         >

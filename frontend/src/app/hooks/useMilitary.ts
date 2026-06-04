@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { fetchUnits } from '../api/military';
 import { ApiError } from '../api/client';
@@ -9,7 +9,7 @@ export function useMilitary() {
   const [isLoading, setIsLoading] = useState(true);
   const loadedRef = useRef(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await fetchUnits();
@@ -19,14 +19,13 @@ export function useMilitary() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (loadedRef.current) return;
     loadedRef.current = true;
     void load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   return { data, isLoading, reload: load };
 }
