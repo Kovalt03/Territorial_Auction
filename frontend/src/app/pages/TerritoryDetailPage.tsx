@@ -20,7 +20,7 @@ type ChartRange = '3일' | '7일' | '30일';
 const GRADE_COLOR: Record<string, string> = { S: '#ffd700', A: '#00f5ff', B: '#00ff88', C: '#8892b0' };
 
 function LineChart({ data, color }: { data: number[]; color: string }) {
-  if (data.length === 0) return <div className="flex items-center justify-center h-[120px] text-muted" style={{ fontSize: 12 }}>해당 기간 낙찰 이력 없음</div>;
+  if (data.length === 0) return <div className="flex items-center justify-center h-[120px] text-muted text-xs">해당 기간 낙찰 이력 없음</div>;
   const W = 300, H = 120, PAD = 4;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -256,9 +256,8 @@ export function TerritoryDetailPage() {
               <button
                 key={tab}
                 onClick={() => setListTab(tab)}
-                className="flex-1 py-3 font-semibold transition-colors"
+                className="flex-1 py-3 text-xs font-semibold transition-colors"
                 style={{
-                  fontSize: 12,
                   color: listTab === tab ? color : '#7788a5',
                   background: listTab === tab ? color + '10' : 'transparent',
                   borderBottom: listTab === tab ? `2px solid ${color}` : '2px solid transparent',
@@ -279,9 +278,8 @@ export function TerritoryDetailPage() {
                 <button
                   key={s.val}
                   onClick={() => setBidSort(s.val)}
-                  className="flex-1 h-6 rounded-md font-semibold transition-colors"
+                  className="flex-1 h-6 rounded-md text-[10px] font-semibold transition-colors"
                   style={{
-                    fontSize: 10,
                     background: bidSort === s.val ? '#00f5ff' : '#1a2438',
                     color: bidSort === s.val ? '#060a14' : '#7788a5',
                     border: `1px solid ${bidSort === s.val ? '#00f5ff' : '#2a3a5a'}`,
@@ -311,40 +309,40 @@ export function TerritoryDetailPage() {
                 >
                   {isLosing && (
                     <div className="flex items-center gap-1 mb-2 px-2 py-1 rounded-lg" style={{ background: '#ff222215', border: '1px solid #ff444440' }}>
-                      <span style={{ fontSize: 9 }}>🔺</span>
-                      <span className="text-[#ff5555] font-bold" style={{ fontSize: 9 }}>상회 입찰됨</span>
-                      <span className="text-[#4a5a7a] ml-auto" style={{ fontSize: 9 }}>내 입찰 {b.myBidAmount.toLocaleString()}</span>
+                      <span className="text-[9px]">🔺</span>
+                      <span className="text-[#ff5555] font-bold text-[9px]">상회 입찰됨</span>
+                      <span className="text-muted ml-auto text-[9px]">내 입찰 {b.myBidAmount.toLocaleString()}</span>
                     </div>
                   )}
                   {isLeading && (
                     <div className="flex items-center gap-1 mb-2 px-2 py-1 rounded-lg" style={{ background: '#00ff8815', border: '1px solid #00ff8840' }}>
-                      <span style={{ fontSize: 9 }}>✓</span>
-                      <span className="text-[#00ff88] font-bold" style={{ fontSize: 9 }}>최고 입찰 중</span>
+                      <span className="text-[9px]">✓</span>
+                      <span className="text-[#00ff88] font-bold text-[9px]">최고 입찰 중</span>
                       <div className="ml-auto w-1.5 h-1.5 bg-gp rounded-full animate-pulse" />
                     </div>
                   )}
                   <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-foreground font-semibold" style={{ fontSize: 12 }}>
+                    <span className="text-foreground font-semibold text-xs">
                       ({b.coordX}, {b.coordY})
                     </span>
                     <span
-                      className="px-1.5 py-0.5 rounded font-bold"
-                      style={{ fontSize: 9, color: GRADE_COLOR[b.grade] ?? '#8892b0', background: (GRADE_COLOR[b.grade] ?? '#8892b0') + '20' }}
+                      className="px-1.5 py-0.5 rounded font-bold text-[9px]"
+                      style={{ color: GRADE_COLOR[b.grade] ?? '#8892b0', background: (GRADE_COLOR[b.grade] ?? '#8892b0') + '20' }}
                     >
                       {b.grade}급
                     </span>
                   </div>
-                  <p className="text-[#4a5a7a] mb-2" style={{ fontSize: 9 }}>{b.continentName}</p>
+                  <p className="text-muted mb-2 text-[9px]">{b.continentName}</p>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-muted" style={{ fontSize: 10 }}>현재가</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: isLosing ? '#ff5555' : isLeading ? '#00ff88' : '#00f5ff' }}>
+                    <span className="text-muted text-[10px]">현재가</span>
+                    <span className="text-[11px] font-bold" style={{ color: isLosing ? '#ff5555' : isLeading ? '#00ff88' : '#00f5ff' }}>
                       {b.currentPrice.toLocaleString()} AP
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 pt-1.5 border-t border-[#1e2a3d]">
                     <div className="flex items-center gap-1 flex-1">
                       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isLosing ? 'bg-[#ff5555]' : 'bg-gp animate-pulse'}`} />
-                      <span className="text-[#4a5a7a]" style={{ fontSize: 9 }}>내 입찰 {b.myBidAmount.toLocaleString()}</span>
+                      <span className="text-muted text-[9px]">내 입찰 {b.myBidAmount.toLocaleString()}</span>
                     </div>
                     {(() => {
                       const diff = new Date(b.endAt).getTime() - now;
@@ -356,7 +354,7 @@ export function TerritoryDetailPage() {
                       })();
                       const isUrgent = diff > 0 && diff < 300000;
                       return (
-                        <span className="font-bold tabular-nums" style={{ fontSize: 9, color: isUrgent ? '#ff8c00' : '#4a5a7a' }}>
+                        <span className="font-bold tabular-nums text-[9px]" style={{ color: isUrgent ? '#ff8c00' : 'var(--color-muted)' }}>
                           {timeStr}
                         </span>
                       );
@@ -368,8 +366,8 @@ export function TerritoryDetailPage() {
 
             {listTab === 'bidding' && activeBids.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-[#4a5a7a]" style={{ fontSize: 13 }}>입찰 중인 영토가 없습니다</p>
-                <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted hover:text-[#c0ccdd] transition-colors" style={{ fontSize: 11 }}>
+                <p className="text-muted text-[13px]">입찰 중인 영토가 없습니다</p>
+                <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted text-[11px] hover:text-[#c0ccdd] transition-colors">
                   지도로 이동 →
                 </button>
               </div>
@@ -377,7 +375,7 @@ export function TerritoryDetailPage() {
 
             {listTab === 'wishlist' && isLoadingWishlist && (
               <div className="text-center py-8">
-                <p className="text-[#4a5a7a]" style={{ fontSize: 12 }}>불러오는 중...</p>
+                <p className="text-muted text-xs">불러오는 중...</p>
               </div>
             )}
 
@@ -396,33 +394,33 @@ export function TerritoryDetailPage() {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-foreground font-semibold" style={{ fontSize: 12 }}>
+                      <span className="text-foreground font-semibold text-xs">
                         ({t.coordX}, {t.coordY})
                       </span>
                       <span
-                        className="px-1.5 py-0.5 rounded font-bold"
-                        style={{ fontSize: 9, color: GRADE_COLOR[t.grade] ?? '#8892b0', background: (GRADE_COLOR[t.grade] ?? '#8892b0') + '20' }}
+                        className="px-1.5 py-0.5 rounded font-bold text-[9px]"
+                        style={{ color: GRADE_COLOR[t.grade] ?? '#8892b0', background: (GRADE_COLOR[t.grade] ?? '#8892b0') + '20' }}
                       >
                         {t.grade}급
                       </span>
                     </div>
                     <button
                       onClick={e => { e.stopPropagation(); void toggleWishlist(t.territoryId); }}
-                      style={{ fontSize: 12, color: '#ff8c00', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                      className="text-xs text-[#ff8c00] bg-transparent border-0 cursor-pointer p-0"
                     >
                       ♥
                     </button>
                   </div>
-                  <p className="text-[#4a5a7a] mb-2" style={{ fontSize: 9 }}>{t.continentName}</p>
+                  <p className="text-muted mb-2 text-[9px]">{t.continentName}</p>
                   {hasAuction ? (
                     <div className="flex items-center justify-between">
-                      <span className="text-[#ffd700] font-bold" style={{ fontSize: 9 }}>경매 중</span>
-                      <span className="text-[#ffd700] font-bold" style={{ fontSize: 10 }}>
+                      <span className="text-[#ffd700] font-bold text-[9px]">경매 중</span>
+                      <span className="text-[#ffd700] font-bold text-[10px]">
                         {t.auction!.currentPrice.toLocaleString()} AP
                       </span>
                     </div>
                   ) : (
-                    <p className="text-[#4a5a7a]" style={{ fontSize: 9 }}>
+                    <p className="text-muted text-[9px]">
                       {t.status === 'OCCUPIED' ? (t.owner ? `${t.owner.nickname} 점령` : '점령됨') : '미점령'}
                     </p>
                   )}
@@ -432,8 +430,8 @@ export function TerritoryDetailPage() {
 
             {listTab === 'wishlist' && !isLoadingWishlist && localWishlist.size === 0 && (
               <div className="text-center py-8">
-                <p className="text-[#4a5a7a]" style={{ fontSize: 13 }}>관심 등록된 영토가 없습니다</p>
-                <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted hover:text-[#c0ccdd] transition-colors" style={{ fontSize: 11 }}>
+                <p className="text-muted text-[13px]">관심 등록된 영토가 없습니다</p>
+                <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted text-[11px] hover:text-[#c0ccdd] transition-colors">
                   지도로 이동 →
                 </button>
               </div>
@@ -447,13 +445,13 @@ export function TerritoryDetailPage() {
 
             {isLoading && (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-primary" style={{ fontSize: 14 }}>영토 정보 불러오는 중...</p>
+                <p className="text-primary text-sm">영토 정보 불러오는 중...</p>
               </div>
             )}
 
             {error && !isLoading && (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-danger" style={{ fontSize: 14 }}>{error}</p>
+                <p className="text-danger text-sm">{error}</p>
               </div>
             )}
 
@@ -463,33 +461,32 @@ export function TerritoryDetailPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
-                      <h1 className="text-foreground font-bold" style={{ fontSize: 22 }}>
+                      <h1 className="text-foreground font-bold text-[22px]">
                         영토 ({territory.coordX}, {territory.coordY})
                       </h1>
-                      <span className="px-2 py-0.5 rounded font-bold" style={{ fontSize: 11, color: gradeColor, background: gradeColor + '20', border: `1px solid ${gradeColor}50` }}>
+                      <span className="px-2 py-0.5 rounded font-bold text-[11px]" style={{ color: gradeColor, background: gradeColor + '20', border: `1px solid ${gradeColor}50` }}>
                         {territory.grade}급
                       </span>
                       {isOutbid && (
-                        <span className="px-2 py-0.5 rounded-lg font-bold animate-pulse" style={{ fontSize: 11, color: '#ff5555', background: '#ff222215', border: '1px solid #ff444440' }}>
+                        <span className="px-2 py-0.5 rounded-lg font-bold text-[11px] animate-pulse" style={{ color: '#ff5555', background: '#ff222215', border: '1px solid #ff444440' }}>
                           🔺 상회 입찰됨
                         </span>
                       )}
                       {bidDone && (
-                        <span className="px-2 py-0.5 rounded-lg font-bold" style={{ fontSize: 11, color: '#00ff88', background: '#00ff8815', border: '1px solid #00ff8840' }}>
+                        <span className="px-2 py-0.5 rounded-lg font-bold text-[11px]" style={{ color: '#00ff88', background: '#00ff8815', border: '1px solid #00ff8840' }}>
                           ✓ 입찰 완료
                         </span>
                       )}
                     </div>
-                    <p className="text-muted" style={{ fontSize: 13 }}>
+                    <p className="text-muted text-[13px]">
                       {territory.continentName} · {gridSize}×{gridSize} 그리드
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => toggleWishlist(territory.territoryId)}
-                      className="h-9 px-4 rounded-xl border transition-colors"
+                      className="h-9 px-4 rounded-xl border text-[13px] transition-colors"
                       style={{
-                        fontSize: 13,
                         color: localWishlist.has(territory.territoryId) ? '#ff1493' : '#7788a5',
                         borderColor: localWishlist.has(territory.territoryId) ? '#ff1493' : '#354064',
                         background: localWishlist.has(territory.territoryId) ? '#ff149320' : '#2a3050',
@@ -506,8 +503,8 @@ export function TerritoryDetailPage() {
                   <div>
                     <div className="card p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <p className="text-muted" style={{ fontSize: 12 }}>영토 미리보기</p>
-                        <span className="font-bold" style={{ fontSize: 11, color: gradeColor }}>{gridSize}×{gridSize} ({territory.grade}급)</span>
+                        <p className="text-muted text-xs">영토 미리보기</p>
+                        <span className="font-bold text-[11px]" style={{ color: gradeColor }}>{gridSize}×{gridSize} ({territory.grade}급)</span>
                       </div>
                       <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}>
                         {Array.from({ length: gridSize * gridSize }, (_, i) => {
@@ -529,15 +526,14 @@ export function TerritoryDetailPage() {
                     {/* Price chart */}
                     <div className="card p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <p className="text-muted" style={{ fontSize: 12 }}>가격 추이</p>
+                        <p className="text-muted text-xs">가격 추이</p>
                         <div className="flex gap-1">
                           {(['3일', '7일', '30일'] as ChartRange[]).map(r => (
                             <button
                               key={r}
                               onClick={() => setChartRange(r)}
-                              className="px-2 h-6 rounded-md font-semibold transition-colors"
+                              className="px-2 h-6 rounded-md text-[10px] font-semibold transition-colors"
                               style={{
-                                fontSize: 10,
                                 color: chartRange === r ? '#060a14' : '#7788a5',
                                 background: chartRange === r ? gradeColor : '#2a3050',
                                 border: `1px solid ${chartRange === r ? gradeColor : '#354064'}`,
@@ -551,8 +547,8 @@ export function TerritoryDetailPage() {
 
                       {chartData.length > 0 && (
                         <div className="flex justify-between mb-1">
-                          <span className="text-muted" style={{ fontSize: 9 }}>{Math.min(...chartData).toLocaleString()}</span>
-                          <span style={{ fontSize: 9, color: gradeColor }}>{Math.max(...chartData).toLocaleString()} AP</span>
+                          <span className="text-muted text-[9px]">{Math.min(...chartData).toLocaleString()}</span>
+                          <span className="text-[9px]" style={{ color: gradeColor }}>{Math.max(...chartData).toLocaleString()} AP</span>
                         </div>
                       )}
 
@@ -571,30 +567,30 @@ export function TerritoryDetailPage() {
                       >
                         {isOutbid && (
                           <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 rounded-lg" style={{ background: '#ff222220', border: '1px solid #ff444450' }}>
-                            <span style={{ fontSize: 12 }}>🔺</span>
+                            <span className="text-xs">🔺</span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[#ff5555] font-bold" style={{ fontSize: 11 }}>상회 입찰됨!</p>
-                              <p className="text-muted truncate" style={{ fontSize: 9 }}>
+                              <p className="text-[#ff5555] font-bold text-[11px]">상회 입찰됨!</p>
+                              <p className="text-muted truncate text-[9px]">
                                 {myBid.toLocaleString()} → {currentBid.toLocaleString()} AP
                               </p>
                             </div>
                             <button
                               onClick={() => setBidAmount(minBid)}
-                              className="px-2 h-6 rounded font-bold flex-shrink-0"
-                              style={{ fontSize: 9, background: '#ff4444', color: '#fff' }}
+                              className="px-2 h-6 rounded font-bold text-[9px] flex-shrink-0"
+                              style={{ background: '#ff4444', color: '#fff' }}
                             >
                               재입찰
                             </button>
                           </div>
                         )}
 
-                        <p className="font-semibold mb-2" style={{ fontSize: 11, color: isOutbid ? '#ff5555' : gradeColor }}>
+                        <p className="font-semibold mb-2 text-[11px]" style={{ color: isOutbid ? '#ff5555' : gradeColor }}>
                           {!auctionId ? '경매 없음' : isOutbid ? '🔺 재입찰하기' : '⚡ 입찰하기'}
                         </p>
 
                         <div className="flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg" style={{ background: (isOutbid ? '#ff4444' : gradeColor) + '12', border: `1px solid ${isOutbid ? '#ff4444' : gradeColor}30` }}>
-                          <span className="text-muted" style={{ fontSize: 10 }}>현재가</span>
-                          <span className="font-bold" style={{ fontSize: 14, color: isOutbid ? '#ff5555' : gradeColor }}>{currentBid.toLocaleString()} AP</span>
+                          <span className="text-muted text-[10px]">현재가</span>
+                          <span className="font-bold text-sm" style={{ color: isOutbid ? '#ff5555' : gradeColor }}>{currentBid.toLocaleString()} AP</span>
                         </div>
 
                         <div className="flex items-center gap-1.5 mb-1.5">
@@ -603,10 +599,9 @@ export function TerritoryDetailPage() {
                             value={bidAmount}
                             onChange={e => setBidAmount(Number(e.target.value))}
                             disabled={!auctionId}
-                            className="flex-1 h-8 bg-[#1a2438] border border-outline rounded-lg px-2 text-foreground outline-none focus:border-primary transition-colors font-bold disabled:opacity-40"
-                            style={{ fontSize: 13 }}
+                            className="flex-1 h-8 bg-[#1a2438] border border-outline rounded-lg px-2 text-[13px] text-foreground outline-none focus:border-primary transition-colors font-bold disabled:opacity-40"
                           />
-                          <span className="text-muted" style={{ fontSize: 10 }}>AP</span>
+                          <span className="text-muted text-[10px]">AP</span>
                         </div>
 
                         <div className="flex gap-1 mb-2">
@@ -615,8 +610,8 @@ export function TerritoryDetailPage() {
                               key={add}
                               onClick={() => setBidAmount(v => v + add)}
                               disabled={!auctionId}
-                              className="flex-1 h-6 rounded text-[#c0ccdd] hover:text-white transition-colors disabled:opacity-40"
-                              style={{ fontSize: 10, background: '#1e2a3d', border: '1px solid #354064' }}
+                              className="flex-1 h-6 rounded text-[10px] text-[#c0ccdd] hover:text-white transition-colors disabled:opacity-40"
+                              style={{ background: '#1e2a3d', border: '1px solid #354064' }}
                             >
                               +{add >= 1000 ? `${add / 1000}K` : add}
                             </button>
@@ -624,31 +619,30 @@ export function TerritoryDetailPage() {
                           <button
                             onClick={() => setBidAmount(minBid)}
                             disabled={!auctionId}
-                            className="px-1.5 h-6 rounded text-[#4a5a7a] hover:text-[#c0ccdd] transition-colors disabled:opacity-40"
-                            style={{ fontSize: 9, background: '#1a2030', border: '1px solid #2a3050' }}
+                            className="px-1.5 h-6 rounded text-[9px] text-muted hover:text-[#c0ccdd] transition-colors disabled:opacity-40"
+                            style={{ background: '#1a2030', border: '1px solid #2a3050' }}
                           >
                             초기화
                           </button>
                         </div>
 
                         {bidError && (
-                          <p className="text-[#ff5555] mb-1.5" style={{ fontSize: 10 }}>⚠ {bidError}</p>
+                          <p className="text-[#ff5555] mb-1.5 text-[10px]">⚠ {bidError}</p>
                         )}
 
                         <button
                           onClick={() => setShowConfirm(true)}
                           disabled={!auctionId || isHighestBidder || bidAmount < minBid || ap < bidAmount || isBidding}
-                          className="w-full h-9 rounded-xl font-bold transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="w-full h-9 rounded-xl text-xs font-bold transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
                           style={{
-                            fontSize: 12,
                             background: auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#ff4444' : '#00f5ff') : '#2a3050',
-                            color: auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#fff' : '#060a14') : '#4a5a7a',
+                            color: auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#fff' : '#060a14') : 'var(--color-muted)',
                             border: `1px solid ${auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#ff4444' : '#00f5ff') : '#354064'}`,
                           }}
                         >
                           {isBidding ? '처리 중...' : isOutbid ? '🔺 재입찰' : '⚡ 입찰'}
                         </button>
-                        <p className="text-center mt-1" style={{ fontSize: 9, color: !auctionId ? '#7788a5' : isHighestBidder ? '#00ff88' : bidAmount < minBid ? '#ff5555' : ap < bidAmount ? '#ff5555' : '#00ff88' }}>
+                        <p className="text-center mt-1 text-[9px]" style={{ color: !auctionId ? '#7788a5' : isHighestBidder ? '#00ff88' : bidAmount < minBid ? '#ff5555' : ap < bidAmount ? '#ff5555' : '#00ff88' }}>
                           {!auctionId ? '현재 경매 없음' : isHighestBidder ? '✓ 최고 입찰 중' : bidAmount < minBid ? `최소 ${minBid.toLocaleString()}` : ap < bidAmount ? 'AP 부족' : `잔여 ${(ap - bidAmount).toLocaleString()}`}
                         </p>
                       </div>
@@ -656,25 +650,25 @@ export function TerritoryDetailPage() {
                       {/* Bid history */}
                       <div className="flex-1 card overflow-hidden flex flex-col">
                         <div className="bg-elevated px-3 py-2 border-b border-outline">
-                          <span className="text-foreground font-semibold" style={{ fontSize: 12 }}>입찰 이력</span>
+                          <span className="text-foreground font-semibold text-xs">입찰 이력</span>
                         </div>
                         <div className="flex-1 overflow-y-auto divide-y divide-[#1e2a3d]">
                           {bids.slice().reverse().slice(0, 8).map((bid, i) => (
                             <div key={`${bid.bidAt}-${bid.bidderNickname ?? i}`} className="flex items-center justify-between px-3 py-2">
                               <div className="flex items-center gap-1.5">
                                 {i === 0 && <div className="w-1.5 h-1.5 bg-gp rounded-full flex-shrink-0" />}
-                                <span className="text-foreground" style={{ fontSize: 11 }}>{bid.bidderNickname ?? '시작가'}</span>
+                                <span className="text-foreground text-[11px]">{bid.bidderNickname ?? '시작가'}</span>
                               </div>
                               <div className="flex flex-col items-end">
-                                <span className="text-gold font-semibold" style={{ fontSize: 11 }}>{bid.price.toLocaleString()} AP</span>
-                                <span className="text-muted" style={{ fontSize: 9 }}>
+                                <span className="text-gold font-semibold text-[11px]">{bid.price.toLocaleString()} AP</span>
+                                <span className="text-muted text-[9px]">
                                   {new Date(bid.bidAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
                             </div>
                           ))}
                           {bids.length === 0 && (
-                            <p className="text-center text-muted py-6" style={{ fontSize: 11 }}>입찰 내역 없음</p>
+                            <p className="text-center text-muted text-[11px] py-6">입찰 내역 없음</p>
                           )}
                         </div>
                       </div>
@@ -682,7 +676,7 @@ export function TerritoryDetailPage() {
 
                     {/* Stats */}
                     <div className="card p-4">
-                      <p className="text-muted font-semibold mb-3" style={{ fontSize: 12 }}>영토 스탯</p>
+                      <p className="text-muted font-semibold mb-3 text-xs">영토 스탯</p>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                         {[
                           { label: 'GP 생산', val: `+${territory.baseProductionRate}/분`, color: '#00ff88' },
@@ -691,8 +685,8 @@ export function TerritoryDetailPage() {
                           { label: '상태', val: getStatusLabel(territory.status, isMyTerritory), color: getStatusColor(territory.status, isMyTerritory) },
                         ].map(s => (
                           <div key={s.label} className="flex flex-col gap-0.5">
-                            <span className="text-muted" style={{ fontSize: 10 }}>{s.label}</span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: s.color }}>{s.val}</span>
+                            <span className="text-muted text-[10px]">{s.label}</span>
+                            <span className="text-xs font-semibold" style={{ color: s.color }}>{s.val}</span>
                           </div>
                         ))}
                       </div>
@@ -701,30 +695,28 @@ export function TerritoryDetailPage() {
                     {/* Chat */}
                     <div className="bg-[#0d1220] border border-[#1e2a3d] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
                       <div className="flex items-center gap-2 px-4 py-2.5 bg-[#12192c] border-b border-[#1e2a3d] flex-shrink-0">
-                        <span style={{ fontSize: 14 }}>💬</span>
-                        <span className="text-foreground font-semibold" style={{ fontSize: 13 }}>{territory.continentName} 채팅</span>
+                        <span className="text-sm">💬</span>
+                        <span className="text-foreground font-semibold text-[13px]">{territory.continentName} 채팅</span>
                         <div className="flex items-center gap-1 ml-2">
                           <div className="w-1.5 h-1.5 bg-gp rounded-full animate-pulse" />
-                          <span className="text-muted" style={{ fontSize: 10 }}>실시간</span>
+                          <span className="text-muted text-[10px]">실시간</span>
                         </div>
                       </div>
                       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
                         {chatMessages.map((msg, i) => (
                           <div key={i} className={`flex items-start gap-2 ${msg.mine ? 'flex-row-reverse' : ''}`}>
                             {!msg.mine && (
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 font-bold" style={{ fontSize: 10, background: '#2a3050', color: '#00f5ff' }}>
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-[10px]" style={{ background: '#2a3050', color: '#00f5ff' }}>
                                 {msg.user[0]}
                               </div>
                             )}
                             <div className={`max-w-[70%] ${msg.mine ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
                               {!msg.mine && (
-                                <span className="text-muted" style={{ fontSize: 10 }}>{msg.user}</span>
+                                <span className="text-muted text-[10px]">{msg.user}</span>
                               )}
                               <div
-                                className="px-3 py-1.5 rounded-xl"
+                                className="px-3 py-1.5 rounded-xl text-xs text-foreground"
                                 style={{
-                                  fontSize: 12,
-                                  color: '#e0e8ff',
                                   background: msg.mine ? '#00f5ff20' : '#1a2438',
                                   border: `1px solid ${msg.mine ? '#00f5ff40' : '#2a3050'}`,
                                   borderBottomRightRadius: msg.mine ? 4 : undefined,
@@ -733,7 +725,7 @@ export function TerritoryDetailPage() {
                               >
                                 {msg.text}
                               </div>
-                              <span className="text-muted" style={{ fontSize: 9 }}>{msg.time}</span>
+                              <span className="text-muted text-[9px]">{msg.time}</span>
                             </div>
                           </div>
                         ))}
@@ -745,14 +737,13 @@ export function TerritoryDetailPage() {
                           onChange={e => setChatInput(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleSendChat()}
                           placeholder={`${territory.continentName} 채팅 입력...`}
-                          className="flex-1 h-8 bg-[#1a2438] border border-outline rounded-lg px-3 text-foreground outline-none focus:border-primary transition-colors"
-                          style={{ fontSize: 12 }}
+                          className="flex-1 h-8 bg-[#1a2438] border border-outline rounded-lg px-3 text-xs text-foreground outline-none focus:border-primary transition-colors"
                         />
                         <button
                           onClick={handleSendChat}
                           disabled={!chatInput.trim()}
-                          className="h-8 px-3 rounded-lg font-semibold transition-all hover:brightness-110 disabled:opacity-40"
-                          style={{ fontSize: 12, background: '#00f5ff', color: '#060a14' }}
+                          className="h-8 px-3 rounded-lg text-xs font-semibold transition-all hover:brightness-110 disabled:opacity-40"
+                          style={{ background: '#00f5ff', color: '#060a14' }}
                         >
                           전송
                         </button>
@@ -769,36 +760,35 @@ export function TerritoryDetailPage() {
       {showConfirm && territory && (
         <div className="modal-overlay">
           <div className="bg-panel border-2 rounded-2xl p-8 max-w-sm mx-4 text-center" style={{ borderColor: isOutbid ? '#ff4444' : gradeColor }}>
-            <span style={{ fontSize: 40 }}>{isOutbid ? '🔺' : '⚡'}</span>
+            <span className="text-[40px]">{isOutbid ? '🔺' : '⚡'}</span>
             <h3 className="font-bold text-xl mt-3 mb-2" style={{ color: isOutbid ? '#ff5555' : gradeColor }}>
               {isOutbid ? '재입찰 확인' : '입찰 확인'}
             </h3>
-            <p className="text-muted mb-5" style={{ fontSize: 13 }}>
+            <p className="text-muted mb-5 text-[13px]">
               영토 ({territory.coordX}, {territory.coordY}) · {territory.continentName}
             </p>
             <div className="bg-elevated rounded-xl py-4 mb-6 space-y-2">
               <div className="flex justify-between px-4">
-                <span className="text-muted" style={{ fontSize: 13 }}>입찰 금액</span>
-                <span className="font-bold" style={{ fontSize: 16, color: isOutbid ? '#ff5555' : gradeColor }}>{bidAmount.toLocaleString()} AP</span>
+                <span className="text-muted text-[13px]">입찰 금액</span>
+                <span className="font-bold text-base" style={{ color: isOutbid ? '#ff5555' : gradeColor }}>{bidAmount.toLocaleString()} AP</span>
               </div>
               <div className="flex justify-between px-4">
-                <span className="text-muted" style={{ fontSize: 13 }}>현재가 대비</span>
-                <span className="text-gp" style={{ fontSize: 13 }}>+{(bidAmount - currentBid).toLocaleString()} AP</span>
+                <span className="text-muted text-[13px]">현재가 대비</span>
+                <span className="text-gp text-[13px]">+{(bidAmount - currentBid).toLocaleString()} AP</span>
               </div>
               <div className="flex justify-between px-4">
-                <span className="text-muted" style={{ fontSize: 13 }}>입찰 후 잔여</span>
-                <span className="text-foreground" style={{ fontSize: 13 }}>{(ap - bidAmount).toLocaleString()} AP</span>
+                <span className="text-muted text-[13px]">입찰 후 잔여</span>
+                <span className="text-foreground text-[13px]">{(ap - bidAmount).toLocaleString()} AP</span>
               </div>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowConfirm(false)}
-                className="flex-1 h-11 bg-elevated border border-outline rounded-xl text-muted"
-                style={{ fontSize: 14 }}>취소</button>
+                className="flex-1 h-11 bg-elevated border border-outline rounded-xl text-muted text-sm">취소</button>
               <button
                 onClick={() => void handleBid()}
                 disabled={isBidding}
-                className="flex-1 h-11 rounded-xl font-bold disabled:opacity-50"
-                style={{ fontSize: 14, background: isOutbid ? '#ff4444' : gradeColor, color: isOutbid ? '#fff' : '#0a0e1a' }}>
+                className="flex-1 h-11 rounded-xl font-bold text-sm disabled:opacity-50"
+                style={{ background: isOutbid ? '#ff4444' : gradeColor, color: isOutbid ? '#fff' : '#0a0e1a' }}>
                 {isBidding ? '처리 중...' : isOutbid ? '재입찰하기' : '입찰하기'}
               </button>
             </div>

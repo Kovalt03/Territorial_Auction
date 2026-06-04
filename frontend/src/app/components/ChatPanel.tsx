@@ -72,7 +72,7 @@ export function ChatPanel({ roomId }: Props) {
         )}
         {messages.map(msg => (
           <div key={msg.messageId} className="text-xs">
-            <span style={{ color: '#00f5ff', fontWeight: 600 }}>{msg.senderNickname}</span>
+            <span className="text-primary font-semibold">{msg.senderNickname}</span>
             <span className="text-muted"> {formatTime(msg.sentAt)}</span>
             <p className="text-[#c0ccdd] mt-0.5 break-words">{msg.content}</p>
           </div>

@@ -67,11 +67,7 @@ export function WorldMapPage() {
                   key={tab}
                   onClick={() => { if (tab === 'guild' && myGuildId == null) return; setChatTab(tab); }}
                   disabled={tab === 'guild' && myGuildId == null}
-                  className="flex-1 py-2 text-[11px] transition-colors disabled:opacity-40"
-                  style={chatTab === tab
-                    ? { color: '#00f5ff', borderBottom: '2px solid #00f5ff' }
-                    : { color: '#7788a5', borderBottom: '2px solid transparent' }
-                  }
+                  className={`flex-1 py-2 text-[11px] transition-colors disabled:opacity-40 border-b-2 ${chatTab === tab ? 'text-primary border-primary' : 'text-muted border-transparent'}`}
                 >
                   {label}
                 </button>

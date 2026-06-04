@@ -15,9 +15,7 @@ export function useFetch<T>(
       .then(setData)
       .catch(() => setError(errorMsg))
       .finally(() => setIsLoading(false));
-    // fetchFn은 컴포넌트 외부에서 정의된 stable 참조여야 함
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchFn, errorMsg]);
 
   return { data, isLoading, error };
 }

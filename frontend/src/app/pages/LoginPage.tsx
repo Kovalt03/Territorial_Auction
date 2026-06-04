@@ -51,7 +51,7 @@ export function LoginPage() {
 
       <div className="absolute w-[500px] h-[600px] bg-primary opacity-[0.04] rounded-full blur-3xl" />
 
-      <div className="relative bg-panel border-[1.5px] border-primary rounded-2xl w-full max-w-[380px] mx-4 overflow-hidden shadow-2xl" style={{ boxShadow: '0 0 40px #00f5ff15' }}>
+      <div className="relative bg-panel border-[1.5px] border-primary rounded-2xl w-full max-w-[380px] mx-4 overflow-hidden shadow-[0_0_40px_#00f5ff15]">
         <div className="pt-8 pb-4 flex flex-col items-center">
           <div className="w-16 h-16 bg-[#00f5ff15] border-2 border-primary rounded-2xl flex items-center justify-center mb-3">
             <span className="text-[32px]">⬡</span>

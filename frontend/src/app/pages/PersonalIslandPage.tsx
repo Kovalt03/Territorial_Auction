@@ -509,7 +509,7 @@ export function PersonalIslandPage() {
 
       {/* Mode indicator banners */}
       {moveMode && (
-        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#1a1200', borderBottom: '1px solid #ffd70060' }}>
+        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0 border-b border-[#ffd70060]" style={{ background: '#1a1200' }}>
           <div className="flex items-center gap-2">
             <span className="text-sm">🔄</span>
             <span className="text-gold font-semibold text-[13px]">
@@ -521,7 +521,7 @@ export function PersonalIslandPage() {
         </div>
       )}
       {buildPending && (
-        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#001020', borderBottom: '1px solid #00f5ff60' }}>
+        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0 border-b border-[#00f5ff60]" style={{ background: '#001020' }}>
           <div className="flex items-center gap-2">
             <span className="text-sm">🏗</span>
             <span className="font-semibold text-[13px]" style={{ color: '#00f5ff' }}>건설 위치 선택 — 빈 셀을 클릭하세요</span>
@@ -530,7 +530,7 @@ export function PersonalIslandPage() {
         </div>
       )}
       {deployFromInventoryIdx !== null && inventory[deployFromInventoryIdx] && (
-        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ background: '#001a10', borderBottom: '1px solid #00ff8860' }}>
+        <div className="flex items-center justify-between px-5 py-2 flex-shrink-0 border-b border-[#00ff8860]" style={{ background: '#001a10' }}>
           <div className="flex items-center gap-2">
             <span className="text-sm">📦</span>
             <span className="text-gp font-semibold text-[13px]">
@@ -636,7 +636,7 @@ export function PersonalIslandPage() {
         <div className="w-[260px] bg-surface border-l border-outline flex flex-col flex-shrink-0">
           <div className="flex border-b border-outline">
             {(['buildings', 'resources', 'units', 'expand'] as const).map(tabId => (
-              <button key={tabId} onClick={() => setActiveTab(tabId)} className="flex-1 py-2.5 text-[11px] transition-colors" style={{ color: activeTab === tabId ? '#00ff88' : '#7788a5', borderBottom: activeTab === tabId ? '2px solid #00ff88' : '2px solid transparent', background: activeTab === tabId ? '#00ff8810' : 'transparent' }}>
+              <button key={tabId} onClick={() => setActiveTab(tabId)} className={`flex-1 py-2.5 text-[11px] transition-colors border-b-2 ${activeTab === tabId ? 'text-gp border-gp bg-[#00ff8810]' : 'text-muted border-transparent bg-transparent'}`}>
                 {{ buildings: '건물', resources: '자원', units: '유닛', expand: '확장' }[tabId]}
               </button>
             ))}
@@ -781,8 +781,8 @@ export function PersonalIslandPage() {
       </div>
 
       {showBuild && (
-        <div className="fixed inset-0 flex justify-end z-50">
-          <div className="absolute inset-0 bg-black/60" onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} />
+        <div className="modal-side-overlay">
+          <div className="modal-backdrop" onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} />
           <div className="relative bg-panel border-l-2 border-gp w-[520px] flex flex-col overflow-hidden">
             <div className="bg-surface px-5 py-4 border-b-2 border-gp flex items-center justify-between">
               <div>
@@ -872,10 +872,10 @@ export function PersonalIslandPage() {
 
       {/* ───── Building action panel ───── */}
       {showBuildingAction && selectedCell && selectedCellData && selectedCellData.type !== 'empty' && (
-        <div className="fixed inset-0 flex items-end justify-center z-50">
+        <div className="modal-sheet-overlay">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowBuildingAction(false)} />
-          <div className="relative w-full max-w-lg rounded-t-2xl overflow-hidden" style={{ background: '#1a1f35', border: '1px solid #354064', borderBottom: 'none' }}>
-            <div className="px-5 py-4 flex items-center justify-between" style={{ background: buildingColors[selectedCellData.type] + '20', borderBottom: `2px solid ${buildingColors[selectedCellData.type]}` }}>
+          <div className="modal-sheet-panel">
+            <div className="modal-header" style={{ background: buildingColors[selectedCellData.type] + '20', borderBottom: `2px solid ${buildingColors[selectedCellData.type]}` }}>
               <div>
                 <h3 className="font-bold text-lg" style={{ color: buildingColors[selectedCellData.type] }}>
                   {buildingNames[selectedCellData.type]}
@@ -962,10 +962,10 @@ export function PersonalIslandPage() {
 
       {/* ───── Train unit modal ───── */}
       {showTrainModal && militaryData && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowTrainModal(false)} />
+        <div className="modal-center-overlay">
+          <div className="modal-backdrop" onClick={() => setShowTrainModal(false)} />
           <div className="relative rounded-2xl overflow-hidden flex flex-col" style={{ width: 400, background: '#1a1f35', border: '1.5px solid #8b50ff' }}>
-            <div className="px-5 py-4 flex items-center justify-between" style={{ background: '#1a0a35', borderBottom: '2px solid #8b50ff' }}>
+            <div className="modal-header-secondary" style={{ background: '#1a0a35' }}>
               <div>
                 <h3 className="text-secondary font-bold text-xl">⚔ 유닛 훈련</h3>
                 <p className="text-muted text-xs">보유 GP: {gp.toLocaleString()} · 식량: {militaryData.availableFood.toLocaleString()}</p>
@@ -1020,10 +1020,10 @@ export function PersonalIslandPage() {
 
       {/* ───── Inventory modal ───── */}
       {showInventory && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowInventory(false)} />
+        <div className="modal-center-overlay">
+          <div className="modal-backdrop" onClick={() => setShowInventory(false)} />
           <div className="relative rounded-2xl overflow-hidden flex flex-col" style={{ width: 480, maxHeight: '70vh', background: '#1a1f35', border: '1.5px solid #8b50ff' }}>
-            <div className="px-5 py-4 flex items-center justify-between" style={{ background: '#1a0a35', borderBottom: '2px solid #8b50ff' }}>
+            <div className="modal-header-secondary" style={{ background: '#1a0a35' }}>
               <div>
                 <h3 className="text-secondary font-bold text-xl">📦 보관함</h3>
                 <p className="text-muted text-xs">건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>

@@ -6,9 +6,8 @@ export function GridBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <svg
-        className="w-full h-full"
+        className="w-full h-full opacity-[0.06]"
         xmlns="http://www.w3.org/2000/svg"
-        style={{ opacity: 0.06 }}
       >
         {vLines.map(x => (
           <line key={`v-${x}`} x1={`${x}px`} y1="0" x2={`${x}px`} y2="100%" stroke="#00f5ff" strokeWidth="1" />

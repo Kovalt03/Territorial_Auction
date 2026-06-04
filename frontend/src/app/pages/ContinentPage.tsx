@@ -281,7 +281,7 @@ export function ContinentPage() {
           ))}
         </div>
         <div className="flex items-center gap-1.5 ml-auto">
-          {[{ val: 'all', label: '전체', color: '#c0ccdd' }, { val: 'mine', label: '내 영토', color: '#00ff88' }, { val: 'auction', label: '경매중', color: '#ffd700' }, { val: 'occupied', label: '점령됨', color: '#8b50ff' }, { val: 'idle', label: '미점령', color: '#4a5a7a' }].map(f => (
+          {[{ val: 'all', label: '전체', color: '#c0ccdd' }, { val: 'mine', label: '내 영토', color: '#00ff88' }, { val: 'auction', label: '경매중', color: '#ffd700' }, { val: 'occupied', label: '점령됨', color: '#8b50ff' }, { val: 'idle', label: '미점령', color: 'var(--color-muted)' }].map(f => (
             <button key={f.val} onClick={() => setFilter(f.val as typeof filter)} className="px-2.5 h-7 rounded-lg transition-colors text-[10px]"
               style={{ color: filter === f.val ? '#060a14' : f.color, background: filter === f.val ? f.color : f.color + '20', border: `1px solid ${f.color}60`, fontWeight: filter === f.val ? 700 : 400 }}>
               {f.label}
@@ -391,11 +391,7 @@ export function ContinentPage() {
               <button
                 key={t}
                 onClick={() => setPanelTab(t)}
-                className="flex-1 py-2 text-[11px] transition-colors"
-                style={panelTab === t
-                  ? { color: '#00f5ff', borderBottom: '2px solid #00f5ff' }
-                  : { color: '#7788a5', borderBottom: '2px solid transparent' }
-                }
+                className={`flex-1 py-2 text-[11px] transition-colors border-b-2 ${panelTab === t ? 'text-primary border-primary' : 'text-muted border-transparent'}`}
               >
                 {label}
               </button>
@@ -438,7 +434,7 @@ export function ContinentPage() {
                 {selected.status === 'idle' && (
                   <div className="bg-[#0d1628] border border-[#354064] rounded-xl p-3 text-center">
                     <p className="text-muted text-[11px]">현재 경매 없음</p>
-                    <p className="text-[#4a5a7a] text-[9px] mt-1">토지세 미납 또는 공성전 후 자동 경매 예정</p>
+                    <p className="text-muted text-[9px] mt-1">토지세 미납 또는 공성전 후 자동 경매 예정</p>
                   </div>
                 )}
 
@@ -447,7 +443,7 @@ export function ContinentPage() {
                     {/* Countdown */}
                     <div className="bg-[#0d1628] border border-[#ffd70030] rounded-xl p-3">
                       <p className="text-[#8892b0] text-[9px] mb-1">경매 종료까지</p>
-                      <p className="text-[#ffd700] font-bold text-xl text-center tracking-wider" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      <p className="text-[#ffd700] font-bold text-xl text-center tracking-wider tabular-nums">
                         {timeLeft || '--:--:--'}
                       </p>
                     </div>
@@ -521,7 +517,7 @@ export function ContinentPage() {
                     <div>
                       <p className="text-muted text-[10px] mb-1.5">입찰 현황 ({bidHistory.length}건)</p>
                       {bidHistory.length === 0 ? (
-                        <p className="text-[#4a5a7a] text-[9px] text-center py-2">입찰 내역이 없습니다</p>
+                        <p className="text-muted text-[9px] text-center py-2">입찰 내역이 없습니다</p>
                       ) : (
                         <div className="space-y-1">
                           {bidHistory.slice(0, 10).map((bid, i) => {
@@ -578,7 +574,7 @@ export function ContinentPage() {
               <div className="px-4 py-4 border-b border-[#1a2438]">
                 <p className="font-bold mb-3 text-[13px]" style={{ color: continent.color }}>{continent.name}</p>
                 <div className="space-y-2">
-                  {[{ label: '등급', val: continent.grade, color: GRADE_COLOR[continent.grade as Grade] || '#c0ccdd' }, { label: '경매 중', val: `${auctionCount}개`, color: '#ffd700' }, { label: '내 영토', val: `${myCount}개`, color: '#00ff88' }, { label: '점령됨', val: `${occupiedCount}개`, color: '#8b50ff' }, { label: '미점령', val: `${cols * rows - myCount - auctionCount - occupiedCount}개`, color: '#4a5a7a' }].map(s => (
+                  {[{ label: '등급', val: continent.grade, color: GRADE_COLOR[continent.grade as Grade] || '#c0ccdd' }, { label: '경매 중', val: `${auctionCount}개`, color: '#ffd700' }, { label: '내 영토', val: `${myCount}개`, color: '#00ff88' }, { label: '점령됨', val: `${occupiedCount}개`, color: '#8b50ff' }, { label: '미점령', val: `${cols * rows - myCount - auctionCount - occupiedCount}개`, color: 'var(--color-muted)' }].map(s => (
                     <div key={s.label} className="flex justify-between"><span className="text-muted text-[11px]">{s.label}</span><span className="font-semibold text-[11px]" style={{ color: s.color }}>{s.val}</span></div>
                   ))}
                 </div>
@@ -595,38 +591,37 @@ export function ContinentPage() {
       {showConfirm && selected && (
         <div className="modal-overlay">
           <div className="bg-panel border-2 rounded-2xl p-8 max-w-sm mx-4 text-center" style={{ borderColor: '#ffd700' }}>
-            <span style={{ fontSize: 40 }}>⚡</span>
+            <span className="text-[40px]">⚡</span>
             <h3 className="font-bold text-xl mt-3 mb-2 text-gold">입찰 확인</h3>
-            <p className="text-muted mb-5" style={{ fontSize: 13 }}>
+            <p className="text-muted mb-5 text-[13px]">
               영토 ({selected.coordX}, {selected.coordY}) · {continent.name}
             </p>
             <div className="bg-elevated rounded-xl py-4 mb-6 space-y-2">
               <div className="flex justify-between px-4">
-                <span className="text-muted" style={{ fontSize: 13 }}>입찰 금액</span>
-                <span className="font-bold text-gold" style={{ fontSize: 16 }}>{parseInt(bidInput).toLocaleString()} AP</span>
+                <span className="text-muted text-[13px]">입찰 금액</span>
+                <span className="font-bold text-gold text-base">{parseInt(bidInput).toLocaleString()} AP</span>
               </div>
               <div className="flex justify-between px-4">
-                <span className="text-muted" style={{ fontSize: 13 }}>현재가 대비</span>
-                <span className="text-gp" style={{ fontSize: 13 }}>+{(parseInt(bidInput) - auctionCurrentPrice).toLocaleString()} AP</span>
+                <span className="text-muted text-[13px]">현재가 대비</span>
+                <span className="text-gp text-[13px]">+{(parseInt(bidInput) - auctionCurrentPrice).toLocaleString()} AP</span>
               </div>
               <div className="flex justify-between px-4">
-                <span className="text-muted" style={{ fontSize: 13 }}>입찰 후 잔여</span>
-                <span className="text-foreground" style={{ fontSize: 13 }}>{(ap - parseInt(bidInput)).toLocaleString()} AP</span>
+                <span className="text-muted text-[13px]">입찰 후 잔여</span>
+                <span className="text-foreground text-[13px]">{(ap - parseInt(bidInput)).toLocaleString()} AP</span>
               </div>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 h-11 bg-elevated border border-outline rounded-xl text-muted"
-                style={{ fontSize: 14 }}
+                className="flex-1 h-11 bg-elevated border border-outline rounded-xl text-muted text-sm"
               >
                 취소
               </button>
               <button
                 onClick={() => void handleConfirmBid()}
                 disabled={isBidding}
-                className="flex-1 h-11 rounded-xl font-bold disabled:opacity-50"
-                style={{ fontSize: 14, background: '#ffd700', color: '#0a0e1a' }}
+                className="flex-1 h-11 rounded-xl font-bold text-sm disabled:opacity-50"
+                style={{ background: '#ffd700', color: '#0a0e1a' }}
               >
                 {isBidding ? '처리 중...' : '입찰하기'}
               </button>
