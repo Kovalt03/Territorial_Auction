@@ -369,8 +369,8 @@ export function ContinentPage() {
                         }}
                         onMouseEnter={() => setHoverCell({ x, y })}
                         onMouseLeave={() => setHoverCell(null)}
-                        className="relative flex items-center justify-center"
-                        style={{ width: visSize, height: visSize, background: bg, border: `1px solid ${border}`, borderRadius: 3, cursor: shown ? 'pointer' : 'default', boxShadow: isSelected ? '0 0 8px #00f5ff' : glow && shown ? `0 0 4px ${glow}60` : undefined, opacity: shown ? 1 : 0.15, transition: 'border-color 0.1s' }}
+                        className={`relative flex items-center justify-center ${shown ? '' : 'opacity-15'}`}
+                        style={{ width: visSize, height: visSize, background: bg, border: `1px solid ${border}`, borderRadius: 3, cursor: shown ? 'pointer' : 'default', boxShadow: isSelected ? '0 0 8px #00f5ff' : glow && shown ? `0 0 4px ${glow}60` : undefined, transition: 'border-color 0.1s' }}
                       >
                         {shown && building && <span style={{ fontSize: fs, lineHeight: 1, userSelect: 'none' }}>{building}</span>}
                         {shown && cell.status === 'auction' && !building && <div style={{ width: Math.max(4, fs - 4), height: Math.max(4, fs - 4), borderRadius: '50%', background: '#00f5ff', animation: 'pulse 1.2s infinite' }} />}

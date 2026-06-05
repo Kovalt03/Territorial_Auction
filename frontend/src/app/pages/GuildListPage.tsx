@@ -5,10 +5,11 @@ import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { useApp } from '../context/AppContext';
+import { useMyGuild } from '../hooks/useMyGuild';
 import {
-  fetchGuildList, fetchMyGuild, createGuild,
+  fetchGuildList, createGuild,
   joinGuild, cancelJoinGuild,
-  type GuildSummary, type MyGuild,
+  type GuildSummary,
 } from '../api/guild';
 import { ApiError } from '../api/client';
 
@@ -24,7 +25,7 @@ export function GuildListPage() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [myGuild, setMyGuild] = useState<MyGuild | null>(null);
+  const { myGuild } = useMyGuild(isLoggedIn);
 
   const [showCreate, setShowCreate] = useState(false);
   const [createName, setCreateName] = useState('');
@@ -48,11 +49,6 @@ export function GuildListPage() {
   }, [page, search]);
 
   useEffect(() => { loadList(); }, [loadList]);
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    fetchMyGuild().then(setMyGuild).catch(() => setMyGuild(null));
-  }, [isLoggedIn]);
 
   const handleSearch = () => { setSearch(searchInput); setPage(0); };
 

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { useApp } from '../context/AppContext';
-import { fetchMyGuild } from '../api/guild';
+import { useMyGuild } from '../hooks/useMyGuild';
 import { GNB } from '../components/GNB';
 import { MapCanvas } from '../components/MapCanvas';
 import { ChatPanel } from '../components/ChatPanel';
@@ -11,19 +11,12 @@ type ChatTab = 'world' | 'guild';
 export function WorldMapPage() {
   const [showChat, setShowChat] = useState(false);
   const [chatTab, setChatTab] = useState<ChatTab>('world');
-  const [myGuildId, setMyGuildId] = useState<number | null>(null);
   const { isLoggedIn } = useApp();
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    fetchMyGuild()
-      .then(g => setMyGuildId(g.guildId))
-      .catch(() => setMyGuildId(null));
-  }, [isLoggedIn]);
+  const { myGuild } = useMyGuild(isLoggedIn);
 
   const roomId = chatTab === 'world'
     ? 'room_world'
-    : myGuildId != null ? `room_guild_${myGuildId}` : null;
+    : myGuild != null ? `room_guild_${myGuild.guildId}` : null;
 
   return (
     <div className="flex flex-col h-screen bg-surface overflow-hidden">
@@ -61,8 +54,8 @@ export function WorldMapPage() {
               {([['world', '🌍 전체'], ['guild', '🏰 길드']] as [ChatTab, string][]).map(([tab, label]) => (
                 <button
                   key={tab}
-                  onClick={() => { if (tab === 'guild' && myGuildId == null) return; setChatTab(tab); }}
-                  disabled={tab === 'guild' && myGuildId == null}
+                  onClick={() => { if (tab === 'guild' && myGuild == null) return; setChatTab(tab); }}
+                  disabled={tab === 'guild' && myGuild == null}
                   className={`flex-1 py-2 text-[11px] transition-colors disabled:opacity-40 border-b-2 ${chatTab === tab ? 'text-primary border-primary' : 'text-muted border-transparent'}`}
                 >
                   {label}

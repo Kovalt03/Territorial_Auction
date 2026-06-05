@@ -5,11 +5,12 @@ import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
 import { ChatPanel } from '../components/ChatPanel';
 import { useApp } from '../context/AppContext';
+import { useMyGuild } from '../hooks/useMyGuild';
 import {
-  fetchGuildDetail, fetchMyGuild, fetchGuildApplications,
+  fetchGuildDetail, fetchGuildApplications,
   joinGuild, leaveGuild,
   approveApplication, rejectApplication, kickMember, transferMaster, updateGuild,
-  type GuildDetail, type MyGuild, type GuildApplication,
+  type GuildDetail, type GuildApplication,
 } from '../api/guild';
 
 type Tab = 'members' | 'applications' | 'settings' | 'chat';
@@ -22,8 +23,8 @@ export function GuildDetailPage() {
   // All hooks must be declared before any conditional return (React Hooks Rules)
   const guildId = Number(id ?? '0');
 
+  const { myGuild, refresh: refreshMyGuild } = useMyGuild(isLoggedIn);
   const [guild, setGuild] = useState<GuildDetail | null>(null);
-  const [myGuild, setMyGuild] = useState<MyGuild | null>(null);
   const [applications, setApplications] = useState<GuildApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('members');
@@ -60,11 +61,6 @@ export function GuildDetailPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    if (!isLoggedIn) return;
-    fetchMyGuild().then(setMyGuild).catch(() => setMyGuild(null));
-  }, [isLoggedIn]);
-
-  useEffect(() => {
     if (!isMaster) return;
     fetchGuildApplications(guildId)
       .then(res => setApplications(res.applications))
@@ -81,7 +77,7 @@ export function GuildDetailPage() {
         setTimeout(() => setActionDone(null), 3000);
       }
       await load();
-      fetchMyGuild().then(setMyGuild).catch(() => {});
+      refreshMyGuild();
     } catch {
       setActionError('작업에 실패했습니다. 다시 시도해주세요.');
     } finally {
