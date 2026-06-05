@@ -204,11 +204,7 @@ export function GuildListPage() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className="w-8 h-8 rounded text-xs transition-colors"
-                  style={p === page
-                    ? { background: '#00f5ff', color: '#0a0e1a', fontWeight: 700 }
-                    : { background: '#1a1f35', border: '1px solid #354064', color: '#8892b0' }
-                  }
+                  className={`w-8 h-8 rounded text-xs transition-colors ${p === page ? 'bg-primary text-surface font-bold' : 'bg-panel border border-outline text-dim'}`}
                 >
                   {p + 1}
                 </button>

@@ -108,11 +108,7 @@ export function ChargePage() {
                 <button
                   key={pm.id}
                   onClick={() => setSelectedPay(pm.id)}
-                  className="w-full h-12 rounded-xl flex items-center px-4 gap-3 transition-all"
-                  style={{
-                    background: '#2a3050',
-                    border: `1px solid ${selectedPay === pm.id ? '#00f5ff' : '#354064'}`,
-                  }}
+                  className={`w-full h-12 rounded-xl flex items-center px-4 gap-3 transition-all bg-elevated border ${selectedPay === pm.id ? 'border-primary' : 'border-outline'}`}
                 >
                   <span className="text-lg">{pm.icon}</span>
                   <span className="text-foreground text-sm">{pm.label}</span>

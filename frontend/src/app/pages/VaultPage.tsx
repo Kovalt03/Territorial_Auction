@@ -61,7 +61,7 @@ export function VaultPage() {
         <h1 className="text-foreground font-bold mb-5 text-[26px]">💰  글로벌 금고</h1>
 
         {error && (
-          <div className="bg-[#ffd70010] border border-[#ffd70040] rounded-xl px-4 py-2.5 mb-4">
+          <div className="bg-gold/10 border border-gold/25 rounded-xl px-4 py-2.5 mb-4">
             <span className="text-gold text-xs">⚠ {error}</span>
           </div>
         )}
@@ -154,24 +154,14 @@ export function VaultPage() {
                     <button
                       onClick={() => !isCooldown && handleOpenModal('TO_VAULT', t)}
                       disabled={isCooldown}
-                      className="flex-1 h-9 border rounded-lg text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{
-                        background: isCooldown ? '#2a3050' : '#00ff8820',
-                        borderColor: isCooldown ? '#354064' : '#00ff88',
-                        color: isCooldown ? '#7788a5' : '#00ff88',
-                      }}
+                      className={`flex-1 h-9 border rounded-lg text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isCooldown ? 'bg-elevated border-outline text-muted' : 'bg-gp/20 border-gp text-gp'}`}
                     >
                       영토 → 금고
                     </button>
                     <button
                       onClick={() => !isCooldown && handleOpenModal('FROM_VAULT', t)}
                       disabled={isCooldown || (vault?.storedGP ?? 0) === 0}
-                      className="flex-1 h-9 border rounded-lg text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{
-                        background: (isCooldown || !vault?.storedGP) ? '#2a3050' : '#00f5ff20',
-                        borderColor: (isCooldown || !vault?.storedGP) ? '#354064' : '#00f5ff',
-                        color: (isCooldown || !vault?.storedGP) ? '#7788a5' : '#00f5ff',
-                      }}
+                      className={`flex-1 h-9 border rounded-lg text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed ${(isCooldown || !vault?.storedGP) ? 'bg-elevated border-outline text-muted' : 'bg-primary/20 border-primary text-primary'}`}
                     >
                       금고 → 영토
                     </button>
