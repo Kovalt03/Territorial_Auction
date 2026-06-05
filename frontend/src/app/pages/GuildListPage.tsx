@@ -157,8 +157,7 @@ export function GuildListPage() {
                     onClick={() => navigate(`/app/guild/${g.guildId}`)}
                   >
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center font-bold flex-shrink-0 text-xl"
-                      style={{ background: '#00f5ff20', border: '2px solid #00f5ff', color: '#00f5ff' }}
+                      className="w-12 h-12 rounded-xl flex items-center justify-center font-bold flex-shrink-0 text-xl bg-[#00f5ff20] border-2 border-primary text-primary"
                     >
                       {g.guildName.charAt(0)}
                     </div>

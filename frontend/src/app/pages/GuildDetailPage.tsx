@@ -136,8 +136,7 @@ export function GuildDetailPage() {
           <div className="bg-panel border border-outline rounded-2xl p-6 mb-4">
             <div className="flex items-start gap-5">
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-3xl flex-shrink-0"
-                style={{ background: '#00f5ff20', border: '2px solid #00f5ff', color: '#00f5ff' }}
+                className="w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-3xl flex-shrink-0 bg-[#00f5ff20] border-2 border-primary text-primary"
               >
                 {guild.name.charAt(0)}
               </div>
@@ -199,8 +198,7 @@ export function GuildDetailPage() {
           {/* Chat tab */}
           {tab === 'chat' && isMember && (
             <div
-              className="bg-panel border border-outline rounded-2xl overflow-hidden flex flex-col"
-              style={{ height: '60vh' }}
+              className="bg-panel border border-outline rounded-2xl overflow-hidden flex flex-col h-[60vh]"
             >
               <ChatPanel roomId={`room_guild_${guildId}`} />
             </div>
@@ -212,8 +210,7 @@ export function GuildDetailPage() {
               {guild.members.map(m => (
                 <div key={m.userId} className="card px-4 py-3 flex items-center gap-3">
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center font-bold flex-shrink-0 text-sm"
-                    style={{ background: m.role === 'MASTER' ? '#ffd70020' : '#2a3050', color: m.role === 'MASTER' ? '#ffd700' : '#8892b0' }}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold flex-shrink-0 text-sm ${m.role === 'MASTER' ? 'bg-[#ffd70020] text-gold' : 'bg-elevated text-dim'}`}
                   >
                     {m.nickname.charAt(0).toUpperCase()}
                   </div>
