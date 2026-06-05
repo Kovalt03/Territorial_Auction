@@ -62,7 +62,7 @@ export function ChatPanel({ roomId }: Props) {
         {hasNext && (
           <button
             onClick={handleLoadMore}
-            className="w-full text-center text-[10px] text-muted hover:text-[#c0ccdd] py-1 transition-colors"
+            className="w-full text-center text-[10px] text-muted hover:text-foreground-soft py-1 transition-colors"
           >
             이전 메시지 더 보기
           </button>
@@ -74,24 +74,24 @@ export function ChatPanel({ roomId }: Props) {
           <div key={msg.messageId} className="text-xs">
             <span className="text-primary font-semibold">{msg.senderNickname}</span>
             <span className="text-muted"> {formatTime(msg.sentAt)}</span>
-            <p className="text-[#c0ccdd] mt-0.5 break-words">{msg.content}</p>
+            <p className="text-foreground-soft mt-0.5 break-words">{msg.content}</p>
           </div>
         ))}
         <div ref={bottomRef} />
       </div>
-      <div className="flex-shrink-0 p-3 border-t border-[#1a2438] flex gap-2">
+      <div className="flex-shrink-0 p-3 border-t border-outline-soft flex gap-2">
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && handleSend()}
           placeholder={isLoggedIn ? '메시지 입력...' : '로그인 후 이용 가능'}
           disabled={!isLoggedIn}
-          className="flex-1 h-8 bg-[#12192c] border border-[#1e2a3d] rounded-lg px-3 text-[#c0ccdd] outline-none focus:border-primary transition-colors text-xs disabled:opacity-50"
+          className="flex-1 h-8 bg-panel-deep border border-outline-soft rounded-lg px-3 text-foreground-soft outline-none focus:border-primary transition-colors text-xs disabled:opacity-50"
         />
         <button
           onClick={handleSend}
           disabled={!isLoggedIn || !input.trim()}
-          className="w-8 h-8 bg-primary rounded-lg text-[#060a14] font-bold flex items-center justify-center text-sm disabled:opacity-40"
+          className="w-8 h-8 bg-primary rounded-lg text-surface font-bold flex items-center justify-center text-sm disabled:opacity-40"
         >
           →
         </button>

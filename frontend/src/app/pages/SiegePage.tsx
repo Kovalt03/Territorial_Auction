@@ -210,12 +210,12 @@ export function SiegePage() {
                     style={{ accentColor: u.color }}
                   />
                 </div>
-                <div className="w-10 h-8 bg-[#12192c] border border-outline rounded-lg flex items-center justify-center">
+                <div className="w-10 h-8 bg-panel-deep border border-outline rounded-lg flex items-center justify-center">
                   <span className="text-[13px]" style={{ color: u.color }}>{units[u.key]}</span>
                 </div>
               </div>
             ))}
-            <div className="bg-[#12192c] rounded-xl p-3 mt-2">
+            <div className="bg-panel-deep rounded-xl p-3 mt-2">
               <div className="flex justify-between">
                 <span className="text-muted text-xs">총 유닛: {totalUnits}명</span>
                 <span className="text-danger font-bold text-xs">총 공격력: {attackPower}</span>

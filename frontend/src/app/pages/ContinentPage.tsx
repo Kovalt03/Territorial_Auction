@@ -267,7 +267,7 @@ export function ContinentPage() {
       <GNB />
 
       <div className="flex items-center gap-4 px-5 py-3 border-b flex-shrink-0" style={{ background: '#080e1c', borderColor: continent.color + '40' }}>
-        <button onClick={() => navigate('/app/map')} className="text-muted hover:text-[#c0ccdd] transition-colors flex-shrink-0 text-lg">←</button>
+        <button onClick={() => navigate('/app/map')} className="text-muted hover:text-foreground-soft transition-colors flex-shrink-0 text-lg">←</button>
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: continent.color + '25', border: `1.5px solid ${continent.color}60` }}>
           <div className="w-4 h-4 rounded-full" style={{ background: continent.color }} />
         </div>
@@ -277,7 +277,7 @@ export function ContinentPage() {
         </div>
         <div className="flex items-center gap-3 ml-6">
           {[{ label: '전체', val: cols * rows, color: '#c0ccdd' }, { label: '경매중', val: auctionCount, color: '#ffd700' }, { label: '내 영토', val: myCount, color: '#00ff88' }, { label: '타 점령', val: occupiedCount, color: '#8b50ff' }].map(s => (
-            <div key={s.label} className="bg-[#0d1628] rounded-lg px-3 py-1.5 text-center">
+            <div key={s.label} className="bg-panel-deep rounded-lg px-3 py-1.5 text-center">
               <p className="font-bold text-sm" style={{ color: s.color }}>{s.val}</p>
               <p className="text-muted text-[9px]">{s.label}</p>
             </div>
@@ -315,19 +315,19 @@ export function ContinentPage() {
           )}
 
           <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5">
-            <button onClick={() => setZoom(z => Math.min(4, z * 1.2))} className="w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-muted hover:text-white flex items-center justify-center text-sm">+</button>
-            <button onClick={() => setZoom(z => Math.max(0.35, z / 1.2))} className="w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-muted hover:text-white flex items-center justify-center text-sm">−</button>
-            <button onClick={() => { const { z, x, y } = getFitView(); setZoom(z); setPan({ x, y }); }} className="w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-muted hover:text-white flex items-center justify-center text-xs">⊡</button>
-            <div className="bg-[#10192e] border border-[#2a3a5a] rounded px-2 h-7 flex items-center"><span className="text-muted text-[10px]">줌 {Math.round(zoom * 100)}%</span></div>
+            <button onClick={() => setZoom(z => Math.min(4, z * 1.2))} className="w-7 h-7 bg-outline-soft border border-outline rounded text-muted hover:text-white flex items-center justify-center text-sm">+</button>
+            <button onClick={() => setZoom(z => Math.max(0.35, z / 1.2))} className="w-7 h-7 bg-outline-soft border border-outline rounded text-muted hover:text-white flex items-center justify-center text-sm">−</button>
+            <button onClick={() => { const { z, x, y } = getFitView(); setZoom(z); setPan({ x, y }); }} className="w-7 h-7 bg-outline-soft border border-outline rounded text-muted hover:text-white flex items-center justify-center text-xs">⊡</button>
+            <div className="bg-outline-soft border border-outline rounded px-2 h-7 flex items-center"><span className="text-muted text-[10px]">줌 {Math.round(zoom * 100)}%</span></div>
           </div>
 
-          <div className="absolute top-3 right-3 z-10 bg-[#080e1c99] border border-[#1a2438] rounded-xl px-3 py-2 flex flex-col gap-1.5">
+          <div className="absolute top-3 right-3 z-10 bg-[#080e1c99] border border-outline-soft rounded-xl px-3 py-2 flex flex-col gap-1.5">
             {(['S', 'A', 'B', 'C'] as Grade[]).map(g => (
               <div key={g} className="flex items-center gap-1.5"><span className="text-[11px]">{GRADE_EMOJI[g]}</span><span className="text-[9px]" style={{ color: GRADE_COLOR[g] }}>{g}급</span></div>
             ))}
           </div>
 
-          <div className="absolute bottom-3 left-3 z-10 text-[#2a3a5a] text-[10px]">스크롤로 줌 · 드래그로 이동 · 영토 클릭하여 상세 확인</div>
+          <div className="absolute bottom-3 left-3 z-10 text-outline text-[10px]">스크롤로 줌 · 드래그로 이동 · 영토 클릭하여 상세 확인</div>
 
           {grid.length > 0 && (
             <div
@@ -394,9 +394,9 @@ export function ContinentPage() {
           )}
         </div>
 
-        <div className="w-[260px] bg-[#080d1a] border-l border-[#1a2438] flex flex-col flex-shrink-0">
+        <div className="w-[260px] bg-surface border-l border-outline-soft flex flex-col flex-shrink-0">
           {/* Panel tabs */}
-          <div className="flex-shrink-0 flex border-b border-[#1a2438]">
+          <div className="flex-shrink-0 flex border-b border-outline-soft">
             {([['info', '📋 정보'], ['chat', '💬 채팅']] as ['info' | 'chat', string][]).map(([t, label]) => (
               <button
                 key={t}
@@ -437,7 +437,7 @@ export function ContinentPage() {
             />
           ) : (
             <div className="flex-1 flex flex-col">
-              <div className="px-4 py-4 border-b border-[#1a2438]">
+              <div className="px-4 py-4 border-b border-outline-soft">
                 <p className="font-bold mb-3 text-[13px]" style={{ color: continent.color }}>{continent.name}</p>
                 <div className="space-y-2">
                   {[{ label: '등급', val: continent.grade, color: GRADE_COLOR[continent.grade as Grade] || '#c0ccdd' }, { label: '경매 중', val: `${auctionCount}개`, color: '#ffd700' }, { label: '내 영토', val: `${myCount}개`, color: '#00ff88' }, { label: '점령됨', val: `${occupiedCount}개`, color: '#8b50ff' }, { label: '미점령', val: `${cols * rows - myCount - auctionCount - occupiedCount}개`, color: 'var(--color-muted)' }].map(s => (

@@ -233,7 +233,7 @@ export function MyPage() {
                     <button
                       key={t.territoryId}
                       onClick={() => navigate(`/app/territory/${t.territoryId}`)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-outline hover:bg-[#12192c] transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-outline hover:bg-panel-deep transition-colors text-left"
                     >
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0"
@@ -264,7 +264,7 @@ export function MyPage() {
                     <button
                       key={s.val}
                       onClick={() => setBidSort(s.val)}
-                      className={`px-2.5 h-7 rounded-lg text-[11px] font-semibold transition-colors border ${bidSort === s.val ? 'bg-primary text-surface border-primary' : 'bg-[#1a2438] text-muted border-outline'}`}
+                      className={`px-2.5 h-7 rounded-lg text-[11px] font-semibold transition-colors border ${bidSort === s.val ? 'bg-primary text-surface border-primary' : 'bg-outline-soft text-muted border-outline'}`}
                     >
                       {s.label}
                     </button>
@@ -281,7 +281,7 @@ export function MyPage() {
                     <button
                       key={b.auctionId}
                       onClick={() => navigate(`/app/territory/${b.territoryId}`)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-outline hover:bg-[#12192c] transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-outline hover:bg-panel-deep transition-colors text-left"
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[11px] flex-shrink-0 border ${b.isHighestBidder ? 'bg-gp/20 border-gp/60 text-gp' : 'bg-danger/20 border-danger/60 text-danger'}`}>
                         {b.isHighestBidder ? '↑' : '↓'}
@@ -301,7 +301,7 @@ export function MyPage() {
                         <p className="text-muted text-[11px]">
                           {b.continentName} · {b.isHighestBidder ? '최고가 유지' : '상회 입찰됨'}
                         </p>
-                        <p className="text-[#7788a5] text-[10px]">
+                        <p className="text-muted text-[10px]">
                           내 입찰 {b.myBidAmount.toLocaleString()} AP
                         </p>
                       </div>
