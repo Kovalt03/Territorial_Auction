@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 
-import { GNB } from '../components/GNB';
-import { Button } from '../components/Button';
-import { EmptyState } from '../components/EmptyState';
 import { useApp } from '../context/AppContext';
 import {
   fetchNotificationList, markNotificationRead, markAllNotificationsRead,
   type NotificationItem,
 } from '../api/notification';
+
+import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
+import { EmptyState } from '../components/EmptyState';
 
 const TYPE_ICON: Record<string, string> = {
   OUTBID: '⚡',
