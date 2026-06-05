@@ -24,6 +24,18 @@ export default defineConfig({
       '/images': process.env.API_TARGET ?? 'http://localhost:8080',
     },
   },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router'],
+          'vendor-stomp': ['@stomp/stompjs', 'sockjs-client'],
+          'vendor-recharts': ['recharts'],
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
