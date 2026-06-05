@@ -41,7 +41,7 @@ export function BidPanel({
     <div
       className="flex-1 rounded-xl p-3"
       style={{
-        background: isOutbid ? '#1a0a0a' : '#0d1628',
+        background: isOutbid ? '#1a0a0a' : 'var(--color-panel-deep)',
         border: `2px solid ${isOutbid ? '#ff4444' : gradeColor + '80'}`,
       }}
     >

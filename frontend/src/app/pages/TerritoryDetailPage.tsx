@@ -250,7 +250,7 @@ export function TerritoryDetailPage() {
                   onClick={() => setBidSort(s.val)}
                   className="flex-1 h-6 rounded-md text-[10px] font-semibold transition-colors"
                   style={{
-                    background: bidSort === s.val ? '#00f5ff' : '#1a2438',
+                    background: bidSort === s.val ? '#00f5ff' : 'var(--color-outline-soft)',
                     color: bidSort === s.val ? '#060a14' : '#7788a5',
                     border: `1px solid ${bidSort === s.val ? '#00f5ff' : '#2a3a5a'}`,
                   }}
@@ -266,14 +266,14 @@ export function TerritoryDetailPage() {
               const isLeading = b.isHighestBidder;
               const isLosing = !b.isHighestBidder;
               const isCurrent = b.territoryId === territoryId;
-              const borderColor = isLosing ? '#ff4444' : isLeading ? '#00ff88' : isCurrent ? '#00f5ff' : '#1e2a3d';
+              const borderColor = isLosing ? '#ff4444' : isLeading ? '#00ff88' : isCurrent ? '#00f5ff' : 'var(--color-outline-soft)';
               return (
                 <div
                   key={b.auctionId}
                   onClick={() => navigate(`/app/territory/${b.territoryId}`)}
                   className="rounded-xl p-3 cursor-pointer transition-all hover:brightness-110"
                   style={{
-                    background: isLeading ? '#0a1f12' : isCurrent ? '#1a2a3a' : '#12192c',
+                    background: isLeading ? '#0a1f12' : isCurrent ? 'var(--color-outline-soft)' : 'var(--color-panel-deep)',
                     border: `1px solid ${borderColor}`,
                   }}
                 >
@@ -358,8 +358,8 @@ export function TerritoryDetailPage() {
                   onClick={() => navigate(`/app/territory/${t.territoryId}`)}
                   className="rounded-xl p-3 cursor-pointer transition-all hover:brightness-110"
                   style={{
-                    background: isCurrent ? '#1a2a3a' : '#12192c',
-                    border: `1px solid ${isCurrent ? '#ffd700' : hasAuction ? '#ffd70040' : '#1e2a3d'}`,
+                    background: isCurrent ? 'var(--color-outline-soft)' : 'var(--color-panel-deep)',
+                    border: `1px solid ${isCurrent ? '#ffd700' : hasAuction ? '#ffd70040' : 'var(--color-outline-soft)'}`,
                   }}
                 >
                   <div className="flex items-center justify-between mb-1">

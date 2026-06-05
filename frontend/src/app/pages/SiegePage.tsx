@@ -144,7 +144,7 @@ export function SiegePage() {
                 onClick={() => setSelectedZone(z.id)}
                 className="w-full mb-2 rounded-xl p-3 text-left transition-all"
                 style={{
-                  background: selectedZone === z.id ? z.color + '20' : '#12192c',
+                  background: selectedZone === z.id ? z.color + '20' : 'var(--color-panel-deep)',
                   border: `1px solid ${selectedZone === z.id ? z.color : '#354064'}`,
                 }}
               >
@@ -173,7 +173,7 @@ export function SiegePage() {
                   onClick={() => setAttackType(t.id)}
                   className="rounded-xl p-3 text-left transition-all"
                   style={{
-                    background: attackType === t.id ? t.color + '20' : '#12192c',
+                    background: attackType === t.id ? t.color + '20' : 'var(--color-panel-deep)',
                     border: `1px solid ${attackType === t.id ? t.color : '#354064'}`,
                   }}
                 >

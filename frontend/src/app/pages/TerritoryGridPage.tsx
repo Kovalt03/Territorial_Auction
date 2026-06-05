@@ -280,7 +280,7 @@ export function TerritoryGridPage() {
                           ? '2px solid #00f5ff'
                           : isActionTarget
                             ? '1px dashed #00ff8880'
-                            : `1px solid ${cell.type !== 'empty' ? buildingColors[cell.type] + '80' : '#1a2a3a'}`,
+                            : `1px solid ${cell.type !== 'empty' ? buildingColors[cell.type] + '80' : 'var(--color-outline-soft)'}`,
                       boxShadow: isMoveSource ? '0 0 8px #ffd700' : isSelected ? '0 0 8px #00f5ff' : undefined,
                     }}
                   >
