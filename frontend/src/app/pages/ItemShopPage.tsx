@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { useItems } from '../hooks/useItems';
-import { purchaseItem, fetchInventory } from '../api/item';
+import { useInventory } from '../hooks/useInventory';
+import { purchaseItem } from '../api/item';
 import { fetchMyWallet } from '../api/user';
 import { GNB } from '../components/GNB';
 import { useApp } from '../context/AppContext';
-import type { ItemInfo, UserItemInfo } from '../types/item';
+import type { ItemInfo } from '../types/item';
 
 const ITEM_COLOR: Record<string, string> = {
   INVINCIBILITY:    '#00f5ff',
@@ -23,15 +24,7 @@ function itemIconUrl(itemType: string): string {
 }
 
 function InventoryTab() {
-  const [inventory, setInventory] = useState<UserItemInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetchInventory()
-      .then(res => setInventory(res.items))
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, []);
+  const { inventory, isLoading } = useInventory();
 
   if (isLoading) {
     return (
