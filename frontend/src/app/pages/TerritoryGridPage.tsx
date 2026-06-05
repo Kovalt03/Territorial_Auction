@@ -323,7 +323,7 @@ export function TerritoryGridPage() {
               { label: 'GP', val: gp.toLocaleString(), color: '#00ff88' },
               { label: '금고', val: '8,200', color: '#ffd700' },
             ].map(item => (
-              <div key={item.label} className="bg-[#12192c] rounded-lg p-3 flex items-center justify-between">
+              <div key={item.label} className="bg-panel-deep rounded-lg p-3 flex items-center justify-between">
                 <span className="text-muted text-[11px]">{item.label}</span>
                 <p className="font-bold text-base" style={{ color: item.color }}>{item.val}</p>
               </div>

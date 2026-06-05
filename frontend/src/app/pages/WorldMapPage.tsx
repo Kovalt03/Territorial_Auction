@@ -42,15 +42,15 @@ export function WorldMapPage() {
 
         {/* Chat slide-in panel */}
         {showChat && (
-          <div className="flex-shrink-0 w-[280px] bg-[#080d1a] border-l border-[#1a2438] flex flex-col">
+          <div className="flex-shrink-0 w-[280px] bg-surface border-l border-outline-soft flex flex-col">
             {/* Header */}
-            <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-[#1a2438]">
-              <span className="text-[#c0ccdd] font-semibold text-sm">💬 채팅</span>
-              <button onClick={() => setShowChat(false)} className="text-muted hover:text-[#c0ccdd] transition-colors">✕</button>
+            <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-outline-soft">
+              <span className="text-foreground-soft font-semibold text-sm">💬 채팅</span>
+              <button onClick={() => setShowChat(false)} className="text-muted hover:text-foreground-soft transition-colors">✕</button>
             </div>
 
             {/* Tabs */}
-            <div className="flex-shrink-0 flex border-b border-[#1a2438]">
+            <div className="flex-shrink-0 flex border-b border-outline-soft">
               {([['world', '🌍 전체'], ['guild', '🏰 길드']] as [ChatTab, string][]).map(([tab, label]) => (
                 <button
                   key={tab}

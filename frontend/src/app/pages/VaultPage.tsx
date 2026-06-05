@@ -132,13 +132,13 @@ export function VaultPage() {
           <div className="p-4 space-y-3">
             {isLoading ? (
               [1, 2, 3].map(i => (
-                <div key={i} className="bg-[#12192c] border border-outline rounded-xl p-4 h-20 animate-pulse" />
+                <div key={i} className="bg-panel-deep border border-outline rounded-xl p-4 h-20 animate-pulse" />
               ))
             ) : territories.length === 0 ? (
               <EmptyState message="보유한 영토가 없습니다." />
             ) : (
               territories.map(t => (
-                <div key={t.territoryId} className="bg-[#12192c] border border-outline rounded-xl p-4">
+                <div key={t.territoryId} className="bg-panel-deep border border-outline rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-foreground font-semibold text-sm">

@@ -57,10 +57,10 @@ export function ContinentSelectedPanel({
 
   return (
     <>
-      <div className="px-4 py-3 border-b border-[#1a2438] flex-shrink-0">
+      <div className="px-4 py-3 border-b border-outline-soft flex-shrink-0">
         <div className="flex items-start justify-between mb-2">
           <div>
-            <p className="text-[#c0ccdd] font-bold text-sm">영토 ({selected.coordX}, {selected.coordY})</p>
+            <p className="text-foreground-soft font-bold text-sm">영토 ({selected.coordX}, {selected.coordY})</p>
             <p className="text-muted text-[10px]">{continentName}</p>
           </div>
           <div className="px-2 py-0.5 rounded font-bold flex items-center gap-1 text-[10px]" style={{ color: GRADE_COLOR[selected.grade], background: GRADE_COLOR[selected.grade] + '20' }}>
@@ -83,7 +83,7 @@ export function ContinentSelectedPanel({
 
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
         {selected.status === 'idle' && (
-          <div className="bg-[#0d1628] border border-outline rounded-xl p-3 text-center">
+          <div className="bg-panel-deep border border-outline rounded-xl p-3 text-center">
             <p className="text-muted text-[11px]">현재 경매 없음</p>
             <p className="text-muted text-[9px] mt-1">토지세 미납 또는 공성전 후 자동 경매 예정</p>
           </div>
@@ -91,7 +91,7 @@ export function ContinentSelectedPanel({
 
         {selected.status === 'auction' && (
           <>
-            <div className="bg-[#0d1628] border border-gold/20 rounded-xl p-3">
+            <div className="bg-panel-deep border border-gold/20 rounded-xl p-3">
               <p className="text-muted text-[9px] mb-1">경매 종료까지</p>
               <p className="text-gold font-bold text-xl text-center tracking-wider tabular-nums">
                 {timeLeft || '--:--:--'}
@@ -99,7 +99,7 @@ export function ContinentSelectedPanel({
             </div>
 
             <div
-              className="bg-[#0d1628] border rounded-xl p-3"
+              className="bg-panel-deep border rounded-xl p-3"
               style={{ borderColor: isHighestBidder ? '#00ff8860' : '#354064' }}
             >
               <div className="flex items-center justify-between mb-1">
@@ -114,9 +114,9 @@ export function ContinentSelectedPanel({
                 {auctionCurrentPrice.toLocaleString()}
                 <span className="text-[11px] text-muted font-normal ml-1">AP</span>
               </p>
-              <div className="mt-2 pt-2 border-t border-[#1a2438] flex justify-between">
+              <div className="mt-2 pt-2 border-t border-outline-soft flex justify-between">
                 <span className="text-muted text-[9px]">최소 입찰가</span>
-                <span className="text-[#c0ccdd] text-[9px] font-semibold">{minBid.toLocaleString()} AP</span>
+                <span className="text-foreground-soft text-[9px] font-semibold">{minBid.toLocaleString()} AP</span>
               </div>
               <div className="flex justify-between mt-1">
                 <span className="text-muted text-[9px]">보유 AP</span>
@@ -124,7 +124,7 @@ export function ContinentSelectedPanel({
               </div>
             </div>
 
-            <div className="bg-[#0d1628] border border-gold/25 rounded-xl p-3">
+            <div className="bg-panel-deep border border-gold/25 rounded-xl p-3">
               <p className="text-gold font-bold mb-2 text-[11px]">⚡ 입찰하기</p>
               {bidSuccess ? (
                 <div className="text-center py-2">
@@ -138,7 +138,7 @@ export function ContinentSelectedPanel({
                       <button
                         key={inc}
                         onClick={() => onChangeBidInput(String((parseInt(bidInput) || minBid) + inc))}
-                        className="flex-1 h-6 rounded transition-colors hover:brightness-125 text-[9px] bg-[#1a2438] border border-outline text-[#c0ccdd]"
+                        className="flex-1 h-6 rounded transition-colors hover:brightness-125 text-[9px] bg-outline-soft border border-outline text-foreground-soft"
                       >
                         +{inc >= 1000 ? `${inc / 1000}K` : inc}
                       </button>
@@ -175,10 +175,10 @@ export function ContinentSelectedPanel({
                     return (
                       <div
                         key={i}
-                        className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 border ${isMe ? 'bg-gp/10 border-gp/40' : 'bg-[#0a1020] border-[#1a2438]'}`}
+                        className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 border ${isMe ? 'bg-gp/10 border-gp/40' : 'bg-[#0a1020] border-outline-soft'}`}
                       >
                         <div>
-                          <p className={`text-[10px] font-semibold ${isMe ? 'text-gp' : 'text-[#c0ccdd]'}`}>
+                          <p className={`text-[10px] font-semibold ${isMe ? 'text-gp' : 'text-foreground-soft'}`}>
                             {bid.bidderNickname ?? '익명'}{isMe && ' (나)'}
                           </p>
                           <p className="text-muted text-[8px]">{fmtBidTime(bid.bidAt)}</p>
@@ -194,7 +194,7 @@ export function ContinentSelectedPanel({
         )}
 
         {(selected.status === 'mine' || selected.status === 'occupied') && (
-          <div className="bg-[#0d1628] border border-outline rounded-xl p-3 text-center">
+          <div className="bg-panel-deep border border-outline rounded-xl p-3 text-center">
             <p className="text-muted text-[11px]">
               {selected.status === 'mine' ? '내 영토입니다' : `${selected.owner}의 영토입니다`}
             </p>
@@ -202,7 +202,7 @@ export function ContinentSelectedPanel({
         )}
       </div>
 
-      <div className="flex-shrink-0 p-3 space-y-2 border-t border-[#1a2438]">
+      <div className="flex-shrink-0 p-3 space-y-2 border-t border-outline-soft">
         <button
           onClick={() => navigate(`/app/territory/${selected.id}`)}
           className="w-full h-8 rounded-xl font-bold transition-all hover:brightness-110 text-[11px] text-surface"
@@ -229,12 +229,12 @@ export function ContinentSelectedPanel({
         {selected.id !== 0 && (
           <button
             onClick={() => onToggleWishlist(selected.id)}
-            className={`w-full h-8 rounded-xl font-bold text-[11px] transition-all hover:brightness-110 border ${isInWishlist ? 'bg-flare/15 border-flare/60 text-flare' : 'bg-[#1a2438] border-outline text-dim'}`}
+            className={`w-full h-8 rounded-xl font-bold text-[11px] transition-all hover:brightness-110 border ${isInWishlist ? 'bg-flare/15 border-flare/60 text-flare' : 'bg-outline-soft border-outline text-dim'}`}
           >
             {isInWishlist ? '♥ 관심 해제' : '♡ 관심 등록'}
           </button>
         )}
-        <button onClick={onDeselect} className="w-full h-7 bg-[#0d1628] border border-[#1a2438] rounded-xl text-muted text-[10px]">선택 해제</button>
+        <button onClick={onDeselect} className="w-full h-7 bg-panel-deep border border-outline-soft rounded-xl text-muted text-[10px]">선택 해제</button>
       </div>
     </>
   );

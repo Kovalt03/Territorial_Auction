@@ -187,7 +187,7 @@ export function RankingPage() {
               ) : (
                 rest.map((r, i) => (
                   <div key={r.rank}
-                    className={`grid px-4 py-3 border-b border-outline items-center hover:bg-[#12192c] transition-colors ${i % 2 === 0 ? 'bg-[#12192c] bg-opacity-30' : ''}`}
+                    className={`grid px-4 py-3 border-b border-outline items-center hover:bg-panel-deep transition-colors ${i % 2 === 0 ? 'bg-panel-deep bg-opacity-30' : ''}`}
                     style={{ gridTemplateColumns: '80px 1fr 1fr' }}>
                     <span className="text-foreground font-bold text-sm">{r.rank}위</span>
                     <div className="flex items-center gap-2">

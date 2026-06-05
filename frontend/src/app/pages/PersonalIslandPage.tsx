@@ -451,9 +451,9 @@ export function PersonalIslandPage() {
               <span className="text-muted text-[10px]">
                 {selectedCell ? `선택: (${selectedCell.x}, ${selectedCell.y}) - ${buildingNames[selectedCellData?.type || 'empty']}` : '셀을 클릭하여 선택'}
               </span>
-              <button onClick={() => setZoom(z => Math.min(5, z * 1.2))} className="w-6 h-6 bg-[#1a2438] border border-[#2a3a5a] rounded text-muted hover:text-white text-xs flex items-center justify-center">+</button>
-              <button onClick={() => setZoom(z => Math.max(0.3, z / 1.2))} className="w-6 h-6 bg-[#1a2438] border border-[#2a3a5a] rounded text-muted hover:text-white text-xs flex items-center justify-center">−</button>
-              <button onClick={() => { const { z, x, y } = getFitView(); setZoom(z); setPan({ x, y }); }} className="w-6 h-6 bg-[#1a2438] border border-[#2a3a5a] rounded text-muted hover:text-white text-xs flex items-center justify-center">⊡</button>
+              <button onClick={() => setZoom(z => Math.min(5, z * 1.2))} className="w-6 h-6 bg-outline-soft border border-outline rounded text-muted hover:text-white text-xs flex items-center justify-center">+</button>
+              <button onClick={() => setZoom(z => Math.max(0.3, z / 1.2))} className="w-6 h-6 bg-outline-soft border border-outline rounded text-muted hover:text-white text-xs flex items-center justify-center">−</button>
+              <button onClick={() => { const { z, x, y } = getFitView(); setZoom(z); setPan({ x, y }); }} className="w-6 h-6 bg-outline-soft border border-outline rounded text-muted hover:text-white text-xs flex items-center justify-center">⊡</button>
             </div>
           </div>
 
@@ -541,7 +541,7 @@ export function PersonalIslandPage() {
                 {buildings.map(b => {
                   const count = countBuildings(b.type);
                   return (
-                    <div key={b.type} className="bg-[#12192c] rounded-xl p-2.5 flex items-center gap-2">
+                    <div key={b.type} className="bg-panel-deep rounded-xl p-2.5 flex items-center gap-2">
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: b.color + '25', border: `1px solid ${b.color}50` }}>
                         <span className="text-base">{b.icon}</span>
                       </div>
@@ -559,10 +559,10 @@ export function PersonalIslandPage() {
             )}
             {activeTab === 'resources' && (
               <div className="p-3 space-y-3">
-                <div className="bg-[#12192c] rounded-xl p-3">
+                <div className="bg-panel-deep rounded-xl p-3">
                   <div className="flex justify-between"><span className="text-gold font-semibold text-xs">⚡ AP</span><span className="text-gold font-bold text-sm">{ap.toLocaleString()}</span></div>
                 </div>
-                <div className="bg-[#12192c] rounded-xl p-3">
+                <div className="bg-panel-deep rounded-xl p-3">
                   <div className="flex justify-between mb-1"><span className="text-gp font-semibold text-xs">💎 GP 생산</span><span className="text-gp font-bold text-sm">+{island?.productionRate ?? 0}/분</span></div>
                   <div className="space-y-1 mt-2">
                     {countBuildings('workshop') > 0
@@ -571,7 +571,7 @@ export function PersonalIslandPage() {
                     }
                   </div>
                 </div>
-                <div className="bg-[#12192c] rounded-xl p-3">
+                <div className="bg-panel-deep rounded-xl p-3">
                   <p className="text-[#ff44cc] font-semibold mb-2 text-xs">🔬 연구 현황</p>
                   <p className="text-muted text-[10px]">준비 중</p>
                 </div>
@@ -589,7 +589,7 @@ export function PersonalIslandPage() {
                 {!isMilitaryLoading && militaryData?.units.map(u => {
                   const meta = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
                   return (
-                    <div key={u.unitTypeId} className="bg-[#12192c] rounded-xl p-3">
+                    <div key={u.unitTypeId} className="bg-panel-deep rounded-xl p-3">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-base">{meta.icon}</span>
                         <div className="flex-1">

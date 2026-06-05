@@ -49,7 +49,7 @@ export function BidPanel({
         <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 rounded-lg bg-danger/15 border border-danger/40">
           <span className="text-xs">🔺</span>
           <div className="flex-1 min-w-0">
-            <p className="text-[#ff5555] font-bold text-[11px]">상회 입찰됨!</p>
+            <p className="text-danger font-bold text-[11px]">상회 입찰됨!</p>
             <p className="text-muted truncate text-[9px]">
               {myBid.toLocaleString()} → {currentBid.toLocaleString()} AP
             </p>
@@ -83,7 +83,7 @@ export function BidPanel({
           value={bidAmount}
           onChange={e => onChangeBidAmount(Number(e.target.value))}
           disabled={!auctionId}
-          className="flex-1 h-8 bg-[#1a2438] border border-outline rounded-lg px-2 text-[13px] text-foreground outline-none focus:border-primary transition-colors font-bold disabled:opacity-40"
+          className="flex-1 h-8 bg-outline-soft border border-outline rounded-lg px-2 text-[13px] text-foreground outline-none focus:border-primary transition-colors font-bold disabled:opacity-40"
         />
         <span className="text-muted text-[10px]">AP</span>
       </div>
@@ -94,7 +94,7 @@ export function BidPanel({
             key={add}
             onClick={() => onChangeBidAmount(bidAmount + add)}
             disabled={!auctionId}
-            className="flex-1 h-6 rounded text-[10px] text-[#c0ccdd] hover:text-white transition-colors disabled:opacity-40 bg-[#1e2a3d] border border-outline"
+            className="flex-1 h-6 rounded text-[10px] text-foreground-soft hover:text-white transition-colors disabled:opacity-40 bg-outline-soft border border-outline"
           >
             +{add >= 1000 ? `${add / 1000}K` : add}
           </button>
@@ -102,14 +102,14 @@ export function BidPanel({
         <button
           onClick={() => onChangeBidAmount(minBid)}
           disabled={!auctionId}
-          className="px-1.5 h-6 rounded text-[9px] text-muted hover:text-[#c0ccdd] transition-colors disabled:opacity-40 bg-[#1a2030] border border-elevated"
+          className="px-1.5 h-6 rounded text-[9px] text-muted hover:text-foreground-soft transition-colors disabled:opacity-40 bg-[#1a2030] border border-elevated"
         >
           초기화
         </button>
       </div>
 
       {bidError && (
-        <p className="text-[#ff5555] mb-1.5 text-[10px]">⚠ {bidError}</p>
+        <p className="text-danger mb-1.5 text-[10px]">⚠ {bidError}</p>
       )}
 
       <button

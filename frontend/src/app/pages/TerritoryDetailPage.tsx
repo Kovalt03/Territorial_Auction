@@ -220,8 +220,8 @@ export function TerritoryDetailPage() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* ── Left Panel ── Bidding list / Wishlist */}
-        <div className="w-[270px] bg-[#0d1220] border-r border-[#1e2a3d] flex flex-col flex-shrink-0">
-          <div className="flex border-b border-[#1e2a3d]">
+        <div className="w-[270px] bg-panel-deep border-r border-outline-soft flex flex-col flex-shrink-0">
+          <div className="flex border-b border-outline-soft">
             {([['bidding', '입찰 중', '#00f5ff', activeBids.length], ['wishlist', '관심 등록', '#ffd700', localWishlist.size]] as const).map(([tab, label, color, cnt]) => (
               <button
                 key={tab}
@@ -239,7 +239,7 @@ export function TerritoryDetailPage() {
           </div>
 
           {listTab === 'bidding' && activeBids.length > 0 && (
-            <div className="flex items-center gap-1 px-3 py-2 border-b border-[#1e2a3d]">
+            <div className="flex items-center gap-1 px-3 py-2 border-b border-outline-soft">
               {([
                 { val: 'time', label: '⏱' },
                 { val: 'ap', label: '💰' },
@@ -280,14 +280,14 @@ export function TerritoryDetailPage() {
                   {isLosing && (
                     <div className="flex items-center gap-1 mb-2 px-2 py-1 rounded-lg" style={{ background: '#ff222215', border: '1px solid #ff444440' }}>
                       <span className="text-[9px]">🔺</span>
-                      <span className="text-[#ff5555] font-bold text-[9px]">상회 입찰됨</span>
+                      <span className="text-danger font-bold text-[9px]">상회 입찰됨</span>
                       <span className="text-muted ml-auto text-[9px]">내 입찰 {b.myBidAmount.toLocaleString()}</span>
                     </div>
                   )}
                   {isLeading && (
                     <div className="flex items-center gap-1 mb-2 px-2 py-1 rounded-lg" style={{ background: '#00ff8815', border: '1px solid #00ff8840' }}>
                       <span className="text-[9px]">✓</span>
-                      <span className="text-[#00ff88] font-bold text-[9px]">최고 입찰 중</span>
+                      <span className="text-gp font-bold text-[9px]">최고 입찰 중</span>
                       <div className="ml-auto w-1.5 h-1.5 bg-gp rounded-full animate-pulse" />
                     </div>
                   )}
@@ -309,9 +309,9 @@ export function TerritoryDetailPage() {
                       {b.currentPrice.toLocaleString()} AP
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 pt-1.5 border-t border-[#1e2a3d]">
+                  <div className="flex items-center gap-1.5 pt-1.5 border-t border-outline-soft">
                     <div className="flex items-center gap-1 flex-1">
-                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isLosing ? 'bg-[#ff5555]' : 'bg-gp animate-pulse'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isLosing ? 'bg-danger' : 'bg-gp animate-pulse'}`} />
                       <span className="text-muted text-[9px]">내 입찰 {b.myBidAmount.toLocaleString()}</span>
                     </div>
                     {(() => {
@@ -337,7 +337,7 @@ export function TerritoryDetailPage() {
             {listTab === 'bidding' && activeBids.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-muted text-[13px]">입찰 중인 영토가 없습니다</p>
-                <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted text-[11px] hover:text-[#c0ccdd] transition-colors">
+                <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-outline-soft border border-outline rounded-lg text-muted text-[11px] hover:text-foreground-soft transition-colors">
                   지도로 이동 →
                 </button>
               </div>
@@ -376,7 +376,7 @@ export function TerritoryDetailPage() {
                     </div>
                     <button
                       onClick={e => { e.stopPropagation(); void toggleWishlist(t.territoryId); }}
-                      className="text-xs text-[#ff8c00] bg-transparent border-0 cursor-pointer p-0"
+                      className="text-xs text-flare bg-transparent border-0 cursor-pointer p-0"
                     >
                       ♥
                     </button>
@@ -384,8 +384,8 @@ export function TerritoryDetailPage() {
                   <p className="text-muted mb-2 text-[9px]">{t.continentName}</p>
                   {hasAuction ? (
                     <div className="flex items-center justify-between">
-                      <span className="text-[#ffd700] font-bold text-[9px]">경매 중</span>
-                      <span className="text-[#ffd700] font-bold text-[10px]">
+                      <span className="text-gold font-bold text-[9px]">경매 중</span>
+                      <span className="text-gold font-bold text-[10px]">
                         {t.auction!.currentPrice.toLocaleString()} AP
                       </span>
                     </div>
@@ -401,7 +401,7 @@ export function TerritoryDetailPage() {
             {listTab === 'wishlist' && !isLoadingWishlist && localWishlist.size === 0 && (
               <div className="text-center py-8">
                 <p className="text-muted text-[13px]">관심 등록된 영토가 없습니다</p>
-                <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-[#1a2a3a] border border-[#2a3a5a] rounded-lg text-muted text-[11px] hover:text-[#c0ccdd] transition-colors">
+                <button onClick={() => navigate('/app/map')} className="mt-3 px-4 py-1.5 bg-outline-soft border border-outline rounded-lg text-muted text-[11px] hover:text-foreground-soft transition-colors">
                   지도로 이동 →
                 </button>
               </div>
@@ -548,7 +548,7 @@ export function TerritoryDetailPage() {
                         <div className="bg-elevated px-3 py-2 border-b border-outline">
                           <span className="text-foreground font-semibold text-xs">입찰 이력</span>
                         </div>
-                        <div className="flex-1 overflow-y-auto divide-y divide-[#1e2a3d]">
+                        <div className="flex-1 overflow-y-auto divide-y divide-outline-soft">
                           {bids.slice().reverse().slice(0, 8).map((bid, i) => (
                             <div key={`${bid.bidAt}-${bid.bidderNickname ?? i}`} className="flex items-center justify-between px-3 py-2">
                               <div className="flex items-center gap-1.5">

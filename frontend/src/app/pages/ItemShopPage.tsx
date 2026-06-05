@@ -259,14 +259,14 @@ export function ItemShopPage() {
                 <button
                   onClick={() => setQty(q => Math.max(1, q - 1))}
                   disabled={qty <= 1}
-                  className="w-10 h-10 rounded-xl border border-outline text-foreground text-xl font-bold disabled:opacity-30 hover:border-[#00f5ff] transition-colors">
+                  className="w-10 h-10 rounded-xl border border-outline text-foreground text-xl font-bold disabled:opacity-30 hover:border-primary transition-colors">
                   −
                 </button>
                 <span className="text-foreground font-bold text-3xl w-12 text-center">{qty}</span>
                 <button
                   onClick={() => setQty(q => Math.min(max, q + 1))}
                   disabled={qty >= max}
-                  className="w-10 h-10 rounded-xl border border-outline text-foreground text-xl font-bold disabled:opacity-30 hover:border-[#00f5ff] transition-colors">
+                  className="w-10 h-10 rounded-xl border border-outline text-foreground text-xl font-bold disabled:opacity-30 hover:border-primary transition-colors">
                   +
                 </button>
               </div>

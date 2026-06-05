@@ -7,7 +7,7 @@ import { SUN_X, SUN_Y, type Particle, createParticles, updateParticles, drawFram
 
 const SVG_W = 1400;
 const SVG_H = 1100;
-const BTN = 'w-7 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white hover:border-[#00f5ff] transition-colors flex items-center justify-center text-sm';
+const BTN = 'w-7 h-7 bg-outline-soft border border-outline rounded text-muted hover:text-white hover:border-primary transition-colors flex items-center justify-center text-sm';
 
 interface MapState {
   zoom: number;
@@ -253,12 +253,12 @@ export function MapCanvas() {
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
         <button
           onClick={() => setIsPaused(p => !p)}
-          className="flex items-center gap-1.5 px-3 h-7 bg-[#10192e] border border-[#2a3a5a] rounded text-[#7788a5] hover:text-white hover:border-[#00f5ff] transition-colors text-xs"
+          className="flex items-center gap-1.5 px-3 h-7 bg-outline-soft border border-outline rounded text-muted hover:text-white hover:border-primary transition-colors text-xs"
         >
           {isPaused ? '▶ 재생' : '⏸ 일시정지'}
         </button>
       </div>
-      <div className="absolute bottom-3 left-3 z-10 text-[#2a3a5a] text-[10px] pointer-events-none select-none">
+      <div className="absolute bottom-3 left-3 z-10 text-outline text-[10px] pointer-events-none select-none">
         스크롤로 줌 · 드래그로 이동 · 행성 클릭으로 진입
       </div>
     </div>

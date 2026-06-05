@@ -18,8 +18,8 @@ export function TerritoryChat({ continentName, messages, input, onChangeInput, o
   }, [messages]);
 
   return (
-    <div className="bg-[#0d1220] border border-[#1e2a3d] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
-      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#12192c] border-b border-[#1e2a3d] flex-shrink-0">
+    <div className="bg-panel-deep border border-outline-soft rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-panel-deep border-b border-outline-soft flex-shrink-0">
         <span className="text-sm">💬</span>
         <span className="text-foreground font-semibold text-[13px]">{continentName} 채팅</span>
         <div className="flex items-center gap-1 ml-2">
@@ -40,7 +40,7 @@ export function TerritoryChat({ continentName, messages, input, onChangeInput, o
                 <span className="text-muted text-[10px]">{msg.user}</span>
               )}
               <div
-                className={`px-3 py-1.5 rounded-xl text-xs text-foreground border ${msg.mine ? 'bg-primary/20 border-primary/40' : 'bg-[#1a2438] border-outline'}`}
+                className={`px-3 py-1.5 rounded-xl text-xs text-foreground border ${msg.mine ? 'bg-primary/20 border-primary/40' : 'bg-outline-soft border-outline'}`}
                 style={{
                   borderBottomRightRadius: msg.mine ? 4 : undefined,
                   borderBottomLeftRadius: !msg.mine ? 4 : undefined,
@@ -54,13 +54,13 @@ export function TerritoryChat({ continentName, messages, input, onChangeInput, o
         ))}
         <div ref={chatEndRef} />
       </div>
-      <div className="flex items-center gap-2 px-3 py-2 border-t border-[#1e2a3d] flex-shrink-0">
+      <div className="flex items-center gap-2 px-3 py-2 border-t border-outline-soft flex-shrink-0">
         <input
           value={input}
           onChange={e => onChangeInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && onSend()}
           placeholder={`${continentName} 채팅 입력...`}
-          className="flex-1 h-8 bg-[#1a2438] border border-outline rounded-lg px-3 text-xs text-foreground outline-none focus:border-primary transition-colors"
+          className="flex-1 h-8 bg-outline-soft border border-outline rounded-lg px-3 text-xs text-foreground outline-none focus:border-primary transition-colors"
         />
         <button
           onClick={onSend}
