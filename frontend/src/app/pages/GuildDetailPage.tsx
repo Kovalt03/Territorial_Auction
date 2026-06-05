@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router';
 
 import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
-import { Badge } from '../components/Badge';
 import { ChatPanel } from '../components/ChatPanel';
 import { useApp } from '../context/AppContext';
 import {

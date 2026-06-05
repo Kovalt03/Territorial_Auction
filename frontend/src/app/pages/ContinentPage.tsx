@@ -282,8 +282,9 @@ export function ContinentPage() {
         </div>
         <div className="flex items-center gap-1.5 ml-auto">
           {[{ val: 'all', label: '전체', color: '#c0ccdd' }, { val: 'mine', label: '내 영토', color: '#00ff88' }, { val: 'auction', label: '경매중', color: '#ffd700' }, { val: 'occupied', label: '점령됨', color: '#8b50ff' }, { val: 'idle', label: '미점령', color: 'var(--color-muted)' }].map(f => (
-            <button key={f.val} onClick={() => setFilter(f.val as typeof filter)} className="px-2.5 h-7 rounded-lg transition-colors text-[10px]"
-              style={{ color: filter === f.val ? '#060a14' : f.color, background: filter === f.val ? f.color : f.color + '20', border: `1px solid ${f.color}60`, fontWeight: filter === f.val ? 700 : 400 }}>
+            <button key={f.val} onClick={() => setFilter(f.val as typeof filter)}
+              className={`px-2.5 h-7 rounded-lg transition-colors text-[10px] ${filter === f.val ? 'font-bold' : 'font-normal'}`}
+              style={{ color: filter === f.val ? '#060a14' : f.color, background: filter === f.val ? f.color : f.color + '20', border: `1px solid ${f.color}60` }}>
               {f.label}
             </button>
           ))}

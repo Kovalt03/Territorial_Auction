@@ -6,10 +6,6 @@ import { GNB } from '../components/GNB';
 import { MapCanvas } from '../components/MapCanvas';
 import { ChatPanel } from '../components/ChatPanel';
 
-// Re-export for backward compatibility
-export type { ContinentDef } from '../data/continents';
-export { CONTINENTS } from '../data/continents';
-
 type ChatTab = 'world' | 'guild';
 
 export function WorldMapPage() {
