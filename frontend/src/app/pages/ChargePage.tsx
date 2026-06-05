@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { GNB } from '../components/GNB';
-import { Button } from '../components/Button';
+import { useNavigate } from 'react-router';
+
 import { useApp } from '../context/AppContext';
 import { chargeAp } from '../api/user';
-import { useNavigate } from 'react-router';
+
+import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
 
 const packages = [
   { id: 0, ap: 5000, price: 5000, discount: 0, color: '#e0e8ff', borderColor: '#e0e8ff' },

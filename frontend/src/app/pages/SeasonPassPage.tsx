@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { GNB } from '../components/GNB';
-import { Button } from '../components/Button';
+
 import { useApp } from '../context/AppContext';
 import { purchaseSeasonPass } from '../api/season';
+
+import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
 
 const benefits = [
   { icon: '💎', title: '섬 GP +50%', desc: '영토 내 모든 GP 생산량 50% 증가' },

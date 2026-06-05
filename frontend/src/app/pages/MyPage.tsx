@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { GNB } from '../components/GNB';
-import { EmptyState } from '../components/EmptyState';
+
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+
 import { useApp } from '../context/AppContext';
 import { useMyBids } from '../hooks/useMyBids';
 import { useVault } from '../hooks/useVault';
 import { subscribeMultiple } from '../hooks/useStompClient';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+
+import { GNB } from '../components/GNB';
+import { EmptyState } from '../components/EmptyState';
+
 import { GRADE_COLOR } from '../types/grade';
 
 type ActivityTab = 'active' | 'mine' | 'history' | 'bids';

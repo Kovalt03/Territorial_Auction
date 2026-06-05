@@ -1,10 +1,13 @@
 import { useState } from 'react';
+
+import { useApp } from '../context/AppContext';
+import { useVault } from '../hooks/useVault';
+import { transferGP } from '../api/vault';
+
 import { GNB } from '../components/GNB';
 import { HealthBar } from '../components/HealthBar';
 import { EmptyState } from '../components/EmptyState';
-import { useVault } from '../hooks/useVault';
-import { transferGP } from '../api/vault';
-import { useApp } from '../context/AppContext';
+
 import type { MyTerritory } from '../types/vault';
 
 function formatCooldown(isoString: string) {

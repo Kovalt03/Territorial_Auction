@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import { signupApi, loginApi, checkUsernameApi, checkEmailApi } from '../api/auth';
 import { fetchMyProfile, fetchMyWallet } from '../api/user';
 import { ApiError } from '../api/client';
+
 import { GridBackground } from '../components/GridBackground';
 import { Button } from '../components/Button';
 

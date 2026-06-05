@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
-import { GNB } from '../components/GNB';
-import { Button } from '../components/Button';
+
 import { declareSiege } from '../api/siege';
 import { fetchTerritoryDetail } from '../api/map';
+
+import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
+
 import type { TerritoryDetailResponse } from '../types/territory';
 
 type AttackType = 'normal' | 'precision';
@@ -32,7 +34,6 @@ function Countdown({ seconds }: { seconds: number }) {
 }
 
 export function SiegePage() {
-  const navigate = useNavigate();
   const [selectedZone, setSelectedZone] = useState(3);
   const [attackType, setAttackType] = useState<AttackType>('normal');
   const [units, setUnits] = useState({ infantry: 10, archer: 5, knight: 2 });

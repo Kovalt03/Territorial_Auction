@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { useApp } from '../context/AppContext';
 import { loginApi } from '../api/auth';
 import { fetchMyProfile, fetchMyWallet } from '../api/user';
+
 import { GridBackground } from '../components/GridBackground';
 import { Button } from '../components/Button';
-import { useApp } from '../context/AppContext';
 
 export function LoginPage() {
   const navigate = useNavigate();
