@@ -42,7 +42,7 @@ export function IslandTrainUnitModal({
                     onClick={() => onSelectUnit(u.unitTypeId)}
                     className="rounded-xl p-2 flex flex-col items-center gap-1 transition-all"
                     style={{
-                      background: isSelected ? meta.color + '20' : '#12192c',
+                      background: isSelected ? meta.color + '20' : 'var(--color-panel-deep)',
                       border: `1.5px solid ${isSelected ? meta.color : '#354064'}`,
                       color: meta.color,
                     }}

@@ -492,7 +492,7 @@ export function PersonalIslandPage() {
                           ? '2px solid #00f5ff'
                           : isActionTarget
                             ? '1px dashed #00ff8880'
-                            : showZones ? `1px solid ${zoneBorder[zone]}30` : `1px solid ${cell.type !== 'empty' ? buildingColors[cell.type] + '60' : '#1a2a3a'}`,
+                            : showZones ? `1px solid ${zoneBorder[zone]}30` : `1px solid ${cell.type !== 'empty' ? buildingColors[cell.type] + '60' : 'var(--color-outline-soft)'}`,
                       boxShadow: isMoveSource ? '0 0 6px #ffd700' : isSelected ? '0 0 8px #00f5ff80' : cell.type === 'castle' ? '0 0 6px #ffd70040' : undefined,
                     }}
                   >

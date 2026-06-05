@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { GNB } from '../components/GNB';
-import { HealthBar } from '../components/HealthBar';
-import { EmptyState } from '../components/EmptyState';
+
 import { useApp } from '../context/AppContext';
 import { fetchTerritoryDetail } from '../api/map';
+
+import { GNB } from '../components/GNB';
+import { HealthBar } from '../components/HealthBar';
+
 import type { TerritoryDetailResponse } from '../types/territory';
+
+import { TerritoryGridBuildModal } from './TerritoryGridBuildModal';
+import { TerritoryGridBuildingActionPanel } from './TerritoryGridBuildingActionPanel';
+import { TerritoryGridInventoryModal } from './TerritoryGridInventoryModal';
 
 type BuildingType = 'castle' | 'workshop' | 'barracks' | 'storage' | 'wall' | 'tower' | 'empty';
 
@@ -274,7 +280,7 @@ export function TerritoryGridPage() {
                           ? '2px solid #00f5ff'
                           : isActionTarget
                             ? '1px dashed #00ff8880'
-                            : `1px solid ${cell.type !== 'empty' ? buildingColors[cell.type] + '80' : '#1a2a3a'}`,
+                            : `1px solid ${cell.type !== 'empty' ? buildingColors[cell.type] + '80' : 'var(--color-outline-soft)'}`,
                       boxShadow: isMoveSource ? '0 0 8px #ffd700' : isSelected ? '0 0 8px #00f5ff' : undefined,
                     }}
                   >
@@ -374,216 +380,42 @@ export function TerritoryGridPage() {
         </div>
       </div>
 
-      {/* ───── Build modal ───── */}
       {showBuild && (
-        <div className="modal-side-overlay">
-          <div className="modal-backdrop" onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} />
-          <div className="relative bg-panel border-[1.5px] border-primary w-[540px] flex flex-col overflow-hidden">
-            <div className="bg-elevated px-5 py-4 border-b-2 border-primary flex items-center justify-between">
-              <div>
-                <h3 className="text-foreground font-bold text-xl">🏗  건물 건설</h3>
-                <p className="text-muted text-xs">
-                  {selectedCell
-                    ? `위치: (${selectedCell.x}, ${selectedCell.y}) · Zone ${selectedCellData?.zone ?? '-'} · `
-                    : '빈 셀을 클릭하여 위치를 선택하세요 · '}
-                  보유 GP: {gp.toLocaleString()}
-                </p>
-              </div>
-              <button onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }} className="btn-close">✕</button>
-            </div>
-
-            <div className="bg-elevated border border-gold rounded-xl mx-4 mt-4 px-4 py-2.5">
-              <span className="text-gold text-[11px]">ℹ  성(Castle)은 Zone 1 핵심 구역에만 배치 가능합니다</span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 pb-4 mt-4 space-y-2">
-              {[
-                { type: 'castle' as BuildingType, name: '성 (Castle)', desc: '영토의 핵심 — HP 0 시 경매 전환', size: '2×2', zone: 'Zone 1 전용', cost: null, zoneRestricted: true },
-                { type: 'workshop' as BuildingType, name: '생산소 (Workshop)', desc: 'GP 생산 +20/분', size: '2×2', zone: '어디든', cost: '500 GP', zoneRestricted: false },
-                { type: 'barracks' as BuildingType, name: '병영 (Barracks)', desc: '유닛 생산 가능', size: '2×2', zone: '어디든', cost: '800 GP', zoneRestricted: false },
-                { type: 'storage' as BuildingType, name: '저장소 (Storage)', desc: '자원 1,000 GP 보관', size: '1×2', zone: '어디든', cost: '300 GP', zoneRestricted: false },
-                { type: 'wall' as BuildingType, name: '방벽 (Wall)', desc: 'Zone 방어력 +50', size: '1×1', zone: '어디든', cost: '100 GP', zoneRestricted: false },
-                { type: 'tower' as BuildingType, name: '방어탑 (Tower)', desc: '자동 방어 +자동 공격', size: '1×1', zone: '어디든', cost: '400 GP', zoneRestricted: false },
-              ].map(b => {
-                const isSel = selectedBuilding === b.type;
-                return (
-                  <div
-                    key={b.type}
-                    onClick={() => !b.zoneRestricted && setSelectedBuilding(b.type)}
-                    className="rounded-xl p-4 flex items-center gap-3 border transition-all"
-                    style={{
-                      background: isSel ? buildingColors[b.type] + '20' : '#2a3050',
-                      borderColor: isSel ? buildingColors[b.type] : buildingColors[b.type] + '60',
-                      opacity: b.zoneRestricted ? 0.4 : 1,
-                      cursor: b.zoneRestricted ? 'not-allowed' : 'pointer',
-                      boxShadow: isSel ? `0 0 8px ${buildingColors[b.type]}40` : undefined,
-                    }}
-                  >
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: buildingColors[b.type] + '30' }}>
-                      <span className="text-[22px]" style={{ color: buildingColors[b.type] }}>{buildingLabels[b.type]}</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-foreground font-semibold text-sm">{b.name}</p>
-                      <p className="text-muted text-[11px]">{b.desc}</p>
-                      <p className="text-muted text-[10px]">크기: {b.size}  ·  Zone: {b.zone}</p>
-                    </div>
-                    {b.zoneRestricted ? (
-                      <div className="bg-danger/10 border border-danger/25 rounded px-2 py-1">
-                        <span className="text-danger text-[10px]">Zone 제한</span>
-                      </div>
-                    ) : b.cost && (
-                      <div className="border rounded px-2 py-1" style={{ background: isSel ? buildingColors[b.type] + '30' : 'var(--color-panel)', borderColor: buildingColors[b.type] }}>
-                        <span className="text-xs" style={{ color: buildingColors[b.type] }}>{b.cost}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {buildError && (
-              <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-[#ff004420] border border-[#ff0044]">
-                <span className="text-danger text-xs">⚠ {buildError}</span>
-              </div>
-            )}
-
-            <div className="border-t border-outline p-4 flex gap-3">
-              <button
-                onClick={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }}
-                className="flex-1 h-14 bg-elevated border border-outline rounded-xl text-muted text-sm"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleBuild}
-                disabled={!selectedBuilding}
-                className="flex-1 h-14 rounded-xl font-bold transition-all text-sm"
-                style={{
-                  background: selectedBuilding ? '#00f5ff' : '#2a3050',
-                  color: selectedBuilding ? '#0a0e1a' : '#7788a5',
-                  border: selectedBuilding ? 'none' : '1px solid #354064',
-                  cursor: selectedBuilding ? 'pointer' : 'not-allowed',
-                }}
-              >
-                건설하기
-              </button>
-            </div>
-          </div>
-        </div>
+        <TerritoryGridBuildModal
+          selectedCell={selectedCell}
+          selectedZone={selectedCellData?.zone}
+          gp={gp}
+          selectedBuilding={selectedBuilding}
+          buildError={buildError}
+          buildingColors={buildingColors}
+          buildingLabels={buildingLabels}
+          onSelectBuilding={setSelectedBuilding}
+          onClose={() => { setShowBuild(false); setSelectedBuilding(null); setBuildError(''); }}
+          onBuild={handleBuild}
+        />
       )}
 
-      {/* ───── Building action panel ───── */}
       {showBuildingAction && selectedCell && selectedCellData && selectedCellData.type !== 'empty' && (
-        <div className="modal-sheet-overlay">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowBuildingAction(false)} />
-          <div className="modal-sheet-panel">
-            <div className="modal-header" style={{ background: buildingColors[selectedCellData.type] + '20', borderBottom: `2px solid ${buildingColors[selectedCellData.type]}` }}>
-              <div>
-                <h3 className="font-bold text-lg" style={{ color: buildingColors[selectedCellData.type] }}>
-                  {buildingNames[selectedCellData.type]}
-                </h3>
-                <p className="text-muted text-xs">
-                  위치: ({selectedCell.x}, {selectedCell.y}) · Zone {selectedCellData.zone} · Lv.{selectedCellData.level}
-                </p>
-              </div>
-              <button onClick={() => setShowBuildingAction(false)} className="btn-close">✕</button>
-            </div>
-
-            <div className="px-5 py-3 border-b border-outline">
-              <div className="flex justify-between mb-1">
-                <span className="text-muted text-[11px]">HP</span>
-                <span className="text-[11px]" style={{ color: buildingColors[selectedCellData.type] }}>{selectedCellData.hp} / {selectedCellData.maxHp}</span>
-              </div>
-              <HealthBar hp={selectedCellData.hp ?? 0} maxHp={selectedCellData.maxHp ?? 0} color={buildingColors[selectedCellData.type]} height="h-2" bg="bg-surface" />
-            </div>
-
-            <div className="p-4 flex gap-3">
-              <button
-                onClick={handleStartMove}
-                className="flex-1 h-12 rounded-xl font-semibold border transition-all hover:bg-[#ffd70015] text-[13px]"
-                style={{ color: '#ffd700', borderColor: '#ffd70060' }}
-              >
-                🔄 이동하기
-              </button>
-              <button
-                onClick={handleStoreBuilding}
-                disabled={selectedCellData.type === 'castle'}
-                className="flex-1 h-12 rounded-xl font-semibold border transition-all text-[13px]"
-                style={{
-                  color: selectedCellData.type === 'castle' ? '#354064' : '#8b50ff',
-                  borderColor: selectedCellData.type === 'castle' ? '#354064' : '#8b50ff60',
-                  cursor: selectedCellData.type === 'castle' ? 'not-allowed' : 'pointer',
-                  background: 'transparent',
-                }}
-                title={selectedCellData.type === 'castle' ? '성은 보관함에 담을 수 없습니다' : ''}
-              >
-                📦 보관함에 담기
-              </button>
-              <button
-                onClick={() => setShowBuildingAction(false)}
-                className="flex-1 h-12 bg-elevated border border-outline rounded-xl text-muted text-[13px]"
-              >
-                닫기
-              </button>
-            </div>
-            {selectedCellData.type === 'castle' && (
-              <p className="text-center text-muted pb-3 text-[11px]">성(Castle)은 영토의 핵심 건물로 보관함에 담을 수 없습니다</p>
-            )}
-          </div>
-        </div>
+        <TerritoryGridBuildingActionPanel
+          selectedCell={selectedCell}
+          cellData={selectedCellData}
+          buildingColors={buildingColors}
+          buildingNames={buildingNames}
+          onStartMove={handleStartMove}
+          onStoreBuilding={handleStoreBuilding}
+          onClose={() => setShowBuildingAction(false)}
+        />
       )}
 
-      {/* ───── Inventory modal ───── */}
       {showInventory && (
-        <div className="modal-center-overlay">
-          <div className="modal-backdrop" onClick={() => setShowInventory(false)} />
-          <div className="relative rounded-2xl overflow-hidden flex flex-col" style={{ width: 480, maxHeight: '70vh', background: '#1a1f35', border: '1.5px solid #8b50ff' }}>
-            <div className="modal-header-secondary" style={{ background: '#1a0a35' }}>
-              <div>
-                <h3 className="text-secondary font-bold text-xl">📦 보관함</h3>
-                <p className="text-muted text-xs">건물 {inventory.length}개 보관 중 · 배치하기를 눌러 그리드에 재배치</p>
-              </div>
-              <button onClick={() => setShowInventory(false)} className="btn-close">✕</button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4">
-              {inventory.length === 0 ? (
-                <EmptyState
-                  emoji="📭"
-                  message="보관함이 비어 있습니다"
-                  subMessage='건물 셀을 클릭한 뒤 "보관함에 담기"를 선택하세요'
-                  className="py-16"
-                />
-              ) : (
-                <div className="space-y-2">
-                  {inventory.map((item, idx) => {
-                    const color = buildingColors[item.type];
-                    return (
-                      <div key={idx} className="rounded-xl p-3 flex items-center gap-3" style={{ background: '#2a3050', border: `1px solid ${color}50` }}>
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color + '25', border: `1px solid ${color}60` }}>
-                          <span className="text-[22px]" style={{ color }}>{buildingLabels[item.type]}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm" style={{ color }}>{buildingNames[item.type]}</p>
-                          <p className="text-muted text-[11px]">Lv.{item.level}</p>
-                          <HealthBar hp={item.hp} maxHp={item.maxHp} color={color} height="h-1.5" className="mt-1" />
-                          <span className="text-muted text-[9px]">HP {item.hp}/{item.maxHp}</span>
-                        </div>
-                        <button
-                          onClick={() => { setDeployFromInventoryIdx(idx); setShowInventory(false); }}
-                          className="h-9 px-4 rounded-lg font-semibold transition-all hover:brightness-110 text-xs"
-                          style={{ background: color + '30', color, border: `1px solid ${color}` }}
-                        >
-                          배치하기
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <TerritoryGridInventoryModal
+          inventory={inventory}
+          buildingColors={buildingColors}
+          buildingLabels={buildingLabels}
+          buildingNames={buildingNames}
+          onDeploy={(idx) => { setDeployFromInventoryIdx(idx); setShowInventory(false); }}
+          onClose={() => setShowInventory(false)}
+        />
       )}
     </div>
   );

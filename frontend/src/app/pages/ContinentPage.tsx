@@ -38,7 +38,7 @@ const OWNER_PALETTE = ['#f06070', '#00f5ff', '#8b50ff', '#ffd700', '#ff8c00', '#
 
 function ownerColor(ownerId: number | null, fallback: string | null): string {
   if (fallback) return fallback;
-  if (ownerId == null) return '#1a2a3a';
+  if (ownerId == null) return 'var(--color-outline-soft)';
   return OWNER_PALETTE[ownerId % OWNER_PALETTE.length];
 }
 
@@ -66,7 +66,7 @@ function buildDisplayGrid(
       grid[gy][gx] = {
         x: gx, y: gy, coordX: t.coordX, coordY: t.coordY,
         status, owner: t.ownerNickname,
-        color: status === 'idle' ? '#1a2a3a' : ownerColor(t.ownerId, t.color),
+        color: status === 'idle' ? 'var(--color-outline-soft)' : ownerColor(t.ownerId, t.color),
         grade,
         currentBid: 0, gpPerMin: 0, defense: 0,
         id: t.id,
@@ -76,7 +76,7 @@ function buildDisplayGrid(
   return grid.map((row, y) =>
     row.map((cell, x) => cell ?? {
       x, y, coordX: x + minX, coordY: y + minY,
-      status: 'idle' as TStatus, owner: null, color: '#1a2a3a', grade: 'C' as Grade,
+      status: 'idle' as TStatus, owner: null, color: 'var(--color-outline-soft)', grade: 'C' as Grade,
       currentBid: 0, gpPerMin: 0, defense: 0, id: 0,
     })
   );
@@ -266,7 +266,7 @@ export function ContinentPage() {
     <div className="flex flex-col h-screen bg-surface overflow-hidden">
       <GNB />
 
-      <div className="flex items-center gap-4 px-5 py-3 border-b flex-shrink-0" style={{ background: '#080e1c', borderColor: continent.color + '40' }}>
+      <div className="flex items-center gap-4 px-5 py-3 border-b flex-shrink-0" style={{ background: 'var(--color-surface)', borderColor: continent.color + '40' }}>
         <button onClick={() => navigate('/app/map')} className="text-muted hover:text-foreground-soft transition-colors flex-shrink-0 text-lg">←</button>
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: continent.color + '25', border: `1.5px solid ${continent.color}60` }}>
           <div className="w-4 h-4 rounded-full" style={{ background: continent.color }} />
@@ -356,7 +356,7 @@ export function ContinentPage() {
                   return (
                     <div key={`${x}-${y}`} data-cell="true"
                       className="flex items-center justify-center"
-                      style={{ width: CELL, height: CELL, background: '#040810' }}
+                      style={{ width: CELL, height: CELL, background: 'var(--color-surface)' }}
                     >
                       <div
                         onClick={() => {
