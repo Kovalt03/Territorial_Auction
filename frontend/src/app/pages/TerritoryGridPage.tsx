@@ -254,7 +254,7 @@ export function TerritoryGridPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Grid */}
         <div className="flex-1 p-5 overflow-auto">
-          <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(10, 1fr)', maxWidth: 680, margin: '0 auto' }}>
+          <div className="grid gap-1 max-w-[680px] mx-auto" style={{ gridTemplateColumns: 'repeat(10, 1fr)' }}>
             {grid.map((row, y) =>
               row.map((cell, x) => {
                 const isSelected = selectedCell?.x === x && selectedCell?.y === y;

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 
 import { useApp } from '../context/AppContext';
@@ -15,6 +15,10 @@ import { GNB } from '../components/GNB';
 import { LineChart } from '../components/LineChart';
 import type { MyBidEntry } from '../types/auction';
 
+import { BidConfirmModal } from './BidConfirmModal';
+import { TerritoryChat, type ChatMsg } from './TerritoryChat';
+import { BidPanel } from './BidPanel';
+
 type ListTab = 'bidding' | 'wishlist';
 type ChartRange = '3일' | '7일' | '30일';
 
@@ -26,8 +30,6 @@ const RANGE_MS: Record<ChartRange, number> = {
   '7일': 7 * 86400_000,
   '30일': 30 * 86400_000,
 };
-
-interface ChatMsg { user: string; text: string; time: string; mine: boolean; }
 
 interface AuctionWsMessage {
   auctionId: number;
@@ -95,7 +97,6 @@ export function TerritoryDetailPage() {
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState('');
   const { wishlistIds: localWishlist, toggle: toggleWishlist } = useWishlist();
-  const chatEndRef = useRef<HTMLDivElement>(null);
   const stompPublish = useStompPublish();
 
   const chatRoomId = `room_territory_${territoryId}`;
@@ -145,10 +146,6 @@ export function TerritoryDetailPage() {
   useEffect(() => {
     setBidAmount(Math.max(Math.ceil(currentBid * 1.05), currentBid + 10));
   }, [currentBid]);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
 
   const [auctionHistory, setAuctionHistory] = useState<{ price: number; wonAt: string }[]>([]);
   useEffect(() => {
@@ -530,95 +527,21 @@ export function TerritoryDetailPage() {
 
                     {/* Bid panel + Bid history */}
                     <div className="flex gap-3">
-                      {/* Bid panel */}
-                      <div
-                        className="flex-1 rounded-xl p-3"
-                        style={{
-                          background: isOutbid ? '#1a0a0a' : '#0d1628',
-                          border: `2px solid ${isOutbid ? '#ff4444' : gradeColor + '80'}`,
-                        }}
-                      >
-                        {isOutbid && (
-                          <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 rounded-lg" style={{ background: '#ff222220', border: '1px solid #ff444450' }}>
-                            <span className="text-xs">🔺</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[#ff5555] font-bold text-[11px]">상회 입찰됨!</p>
-                              <p className="text-muted truncate text-[9px]">
-                                {myBid.toLocaleString()} → {currentBid.toLocaleString()} AP
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => setBidAmount(minBid)}
-                              className="px-2 h-6 rounded font-bold text-[9px] flex-shrink-0"
-                              style={{ background: '#ff4444', color: '#fff' }}
-                            >
-                              재입찰
-                            </button>
-                          </div>
-                        )}
-
-                        <p className="font-semibold mb-2 text-[11px]" style={{ color: isOutbid ? '#ff5555' : gradeColor }}>
-                          {!auctionId ? '경매 없음' : isOutbid ? '🔺 재입찰하기' : '⚡ 입찰하기'}
-                        </p>
-
-                        <div className="flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg" style={{ background: (isOutbid ? '#ff4444' : gradeColor) + '12', border: `1px solid ${isOutbid ? '#ff4444' : gradeColor}30` }}>
-                          <span className="text-muted text-[10px]">현재가</span>
-                          <span className="font-bold text-sm" style={{ color: isOutbid ? '#ff5555' : gradeColor }}>{currentBid.toLocaleString()} AP</span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <input
-                            type="number"
-                            value={bidAmount}
-                            onChange={e => setBidAmount(Number(e.target.value))}
-                            disabled={!auctionId}
-                            className="flex-1 h-8 bg-[#1a2438] border border-outline rounded-lg px-2 text-[13px] text-foreground outline-none focus:border-primary transition-colors font-bold disabled:opacity-40"
-                          />
-                          <span className="text-muted text-[10px]">AP</span>
-                        </div>
-
-                        <div className="flex gap-1 mb-2">
-                          {[500, 1000, 5000].map(add => (
-                            <button
-                              key={add}
-                              onClick={() => setBidAmount(v => v + add)}
-                              disabled={!auctionId}
-                              className="flex-1 h-6 rounded text-[10px] text-[#c0ccdd] hover:text-white transition-colors disabled:opacity-40"
-                              style={{ background: '#1e2a3d', border: '1px solid #354064' }}
-                            >
-                              +{add >= 1000 ? `${add / 1000}K` : add}
-                            </button>
-                          ))}
-                          <button
-                            onClick={() => setBidAmount(minBid)}
-                            disabled={!auctionId}
-                            className="px-1.5 h-6 rounded text-[9px] text-muted hover:text-[#c0ccdd] transition-colors disabled:opacity-40"
-                            style={{ background: '#1a2030', border: '1px solid #2a3050' }}
-                          >
-                            초기화
-                          </button>
-                        </div>
-
-                        {bidError && (
-                          <p className="text-[#ff5555] mb-1.5 text-[10px]">⚠ {bidError}</p>
-                        )}
-
-                        <button
-                          onClick={() => setShowConfirm(true)}
-                          disabled={!auctionId || isHighestBidder || bidAmount < minBid || ap < bidAmount || isBidding}
-                          className="w-full h-9 rounded-xl text-xs font-bold transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
-                          style={{
-                            background: auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#ff4444' : '#00f5ff') : '#2a3050',
-                            color: auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#fff' : '#060a14') : 'var(--color-muted)',
-                            border: `1px solid ${auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount ? (isOutbid ? '#ff4444' : '#00f5ff') : '#354064'}`,
-                          }}
-                        >
-                          {isBidding ? '처리 중...' : isOutbid ? '🔺 재입찰' : '⚡ 입찰'}
-                        </button>
-                        <p className="text-center mt-1 text-[9px]" style={{ color: !auctionId ? '#7788a5' : isHighestBidder ? '#00ff88' : bidAmount < minBid ? '#ff5555' : ap < bidAmount ? '#ff5555' : '#00ff88' }}>
-                          {!auctionId ? '현재 경매 없음' : isHighestBidder ? '✓ 최고 입찰 중' : bidAmount < minBid ? `최소 ${minBid.toLocaleString()}` : ap < bidAmount ? 'AP 부족' : `잔여 ${(ap - bidAmount).toLocaleString()}`}
-                        </p>
-                      </div>
+                      <BidPanel
+                        auctionId={auctionId}
+                        currentBid={currentBid}
+                        minBid={minBid}
+                        myBid={myBid}
+                        ap={ap}
+                        bidAmount={bidAmount}
+                        bidError={bidError}
+                        isOutbid={isOutbid}
+                        isHighestBidder={isHighestBidder}
+                        isBidding={isBidding}
+                        gradeColor={gradeColor}
+                        onChangeBidAmount={setBidAmount}
+                        onOpenConfirm={() => setShowConfirm(true)}
+                      />
 
                       {/* Bid history */}
                       <div className="flex-1 card overflow-hidden flex flex-col">
@@ -665,63 +588,13 @@ export function TerritoryDetailPage() {
                       </div>
                     </div>
 
-                    {/* Chat */}
-                    <div className="bg-[#0d1220] border border-[#1e2a3d] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
-                      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#12192c] border-b border-[#1e2a3d] flex-shrink-0">
-                        <span className="text-sm">💬</span>
-                        <span className="text-foreground font-semibold text-[13px]">{territory.continentName} 채팅</span>
-                        <div className="flex items-center gap-1 ml-2">
-                          <div className="w-1.5 h-1.5 bg-gp rounded-full animate-pulse" />
-                          <span className="text-muted text-[10px]">실시간</span>
-                        </div>
-                      </div>
-                      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
-                        {chatMessages.map((msg, i) => (
-                          <div key={i} className={`flex items-start gap-2 ${msg.mine ? 'flex-row-reverse' : ''}`}>
-                            {!msg.mine && (
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-[10px]" style={{ background: '#2a3050', color: '#00f5ff' }}>
-                                {msg.user[0]}
-                              </div>
-                            )}
-                            <div className={`max-w-[70%] ${msg.mine ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
-                              {!msg.mine && (
-                                <span className="text-muted text-[10px]">{msg.user}</span>
-                              )}
-                              <div
-                                className="px-3 py-1.5 rounded-xl text-xs text-foreground"
-                                style={{
-                                  background: msg.mine ? '#00f5ff20' : '#1a2438',
-                                  border: `1px solid ${msg.mine ? '#00f5ff40' : '#2a3050'}`,
-                                  borderBottomRightRadius: msg.mine ? 4 : undefined,
-                                  borderBottomLeftRadius: !msg.mine ? 4 : undefined,
-                                }}
-                              >
-                                {msg.text}
-                              </div>
-                              <span className="text-muted text-[9px]">{msg.time}</span>
-                            </div>
-                          </div>
-                        ))}
-                        <div ref={chatEndRef} />
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-2 border-t border-[#1e2a3d] flex-shrink-0">
-                        <input
-                          value={chatInput}
-                          onChange={e => setChatInput(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && handleSendChat()}
-                          placeholder={`${territory.continentName} 채팅 입력...`}
-                          className="flex-1 h-8 bg-[#1a2438] border border-outline rounded-lg px-3 text-xs text-foreground outline-none focus:border-primary transition-colors"
-                        />
-                        <button
-                          onClick={handleSendChat}
-                          disabled={!chatInput.trim()}
-                          className="h-8 px-3 rounded-lg text-xs font-semibold transition-all hover:brightness-110 disabled:opacity-40"
-                          style={{ background: '#00f5ff', color: '#060a14' }}
-                        >
-                          전송
-                        </button>
-                      </div>
-                    </div>
+                    <TerritoryChat
+                      continentName={territory.continentName}
+                      messages={chatMessages}
+                      input={chatInput}
+                      onChangeInput={setChatInput}
+                      onSend={handleSendChat}
+                    />
                   </div>
                 </div>
               </>
@@ -731,42 +604,18 @@ export function TerritoryDetailPage() {
       </div>
 
       {showConfirm && territory && (
-        <div className="modal-overlay">
-          <div className="bg-panel border-2 rounded-2xl p-8 max-w-sm mx-4 text-center" style={{ borderColor: isOutbid ? '#ff4444' : gradeColor }}>
-            <span className="text-[40px]">{isOutbid ? '🔺' : '⚡'}</span>
-            <h3 className="font-bold text-xl mt-3 mb-2" style={{ color: isOutbid ? '#ff5555' : gradeColor }}>
-              {isOutbid ? '재입찰 확인' : '입찰 확인'}
-            </h3>
-            <p className="text-muted mb-5 text-[13px]">
-              영토 ({territory.coordX}, {territory.coordY}) · {territory.continentName}
-            </p>
-            <div className="bg-elevated rounded-xl py-4 mb-6 space-y-2">
-              <div className="flex justify-between px-4">
-                <span className="text-muted text-[13px]">입찰 금액</span>
-                <span className="font-bold text-base" style={{ color: isOutbid ? '#ff5555' : gradeColor }}>{bidAmount.toLocaleString()} AP</span>
-              </div>
-              <div className="flex justify-between px-4">
-                <span className="text-muted text-[13px]">현재가 대비</span>
-                <span className="text-gp text-[13px]">+{(bidAmount - currentBid).toLocaleString()} AP</span>
-              </div>
-              <div className="flex justify-between px-4">
-                <span className="text-muted text-[13px]">입찰 후 잔여</span>
-                <span className="text-foreground text-[13px]">{(ap - bidAmount).toLocaleString()} AP</span>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowConfirm(false)}
-                className="flex-1 h-11 bg-elevated border border-outline rounded-xl text-muted text-sm">취소</button>
-              <button
-                onClick={() => void handleBid()}
-                disabled={isBidding}
-                className="flex-1 h-11 rounded-xl font-bold text-sm disabled:opacity-50"
-                style={{ background: isOutbid ? '#ff4444' : gradeColor, color: isOutbid ? '#fff' : '#0a0e1a' }}>
-                {isBidding ? '처리 중...' : isOutbid ? '재입찰하기' : '입찰하기'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <BidConfirmModal
+          territoryCoord={{ x: territory.coordX, y: territory.coordY }}
+          continentName={territory.continentName}
+          bidAmount={bidAmount}
+          currentBid={currentBid}
+          ap={ap}
+          isOutbid={isOutbid}
+          isBidding={isBidding}
+          gradeColor={gradeColor}
+          onCancel={() => setShowConfirm(false)}
+          onConfirm={() => void handleBid()}
+        />
       )}
     </div>
   );

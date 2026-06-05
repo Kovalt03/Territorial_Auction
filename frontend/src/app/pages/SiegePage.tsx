@@ -289,8 +289,8 @@ export function SiegePage() {
             <div className="bg-surface border border-outline rounded-xl p-4 flex-1">
               <p className="text-muted mb-3 text-xs">영토 내부 구조</p>
               <div
-                className="grid gap-1"
-                style={{ gridTemplateColumns: 'repeat(10, 1fr)', maxWidth: 340, margin: '0 auto' }}
+                className="grid gap-1 max-w-[340px] mx-auto"
+                style={{ gridTemplateColumns: 'repeat(10, 1fr)' }}
               >
                 {Array.from({ length: 100 }, (_, i) => {
                   const x = i % 10, y = Math.floor(i / 10);

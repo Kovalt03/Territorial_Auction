@@ -16,6 +16,9 @@ import type { Grade } from '../types/grade';
 import type { BidEntry, AuctionBidBroadcast } from '../types/auction';
 import { GRADE_COLOR } from '../types/grade';
 
+import { ContinentSelectedPanel } from './ContinentSelectedPanel';
+import { BidConfirmModal } from './BidConfirmModal';
+
 type TStatus = 'mine' | 'occupied' | 'auction' | 'idle';
 
 interface DisplayTerritory {
@@ -327,8 +330,14 @@ export function ContinentPage() {
           <div className="absolute bottom-3 left-3 z-10 text-[#2a3a5a] text-[10px]">스크롤로 줌 · 드래그로 이동 · 영토 클릭하여 상세 확인</div>
 
           {grid.length > 0 && (
-            <div style={{ position: 'absolute', top: 0, left: 0, transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0', willChange: 'transform', padding: 24 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridTemplateRows: `repeat(${rows}, ${CELL}px)`, gap: 1, position: 'relative' }}>
+            <div
+              className="absolute top-0 left-0 p-6"
+              style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0', willChange: 'transform' }}
+            >
+              <div
+                className="grid relative"
+                style={{ gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridTemplateRows: `repeat(${rows}, ${CELL}px)`, gap: 1 }}
+              >
                 {grid.map((row, y) => row.map((cell, x) => {
                   const isSelected = selected?.x === x && selected?.y === y;
                   const isHovered = hoverCell?.x === x && hoverCell?.y === y;
@@ -404,172 +413,28 @@ export function ContinentPage() {
             <ChatPanel roomId={`room_continent_${continentId}`} />
           )}
 
-          {/* Info panel */}
           {panelTab === 'info' && (selected ? (
-            <>
-              {/* Territory header */}
-              <div className="px-4 py-3 border-b border-[#1a2438] flex-shrink-0">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-[#c0ccdd] font-bold text-sm">영토 ({selected.coordX}, {selected.coordY})</p>
-                    <p className="text-muted text-[10px]">{continent.name}</p>
-                  </div>
-                  <div className="px-2 py-0.5 rounded font-bold flex items-center gap-1 text-[10px]" style={{ color: GRADE_COLOR[selected.grade], background: GRADE_COLOR[selected.grade] + '20' }}>
-                    <span>{GRADE_EMOJI[selected.grade]}</span><span>{selected.grade}급</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded-lg" style={{ background: selected.color + '18', border: `1px solid ${selected.color}50` }}>
-                  <span className="text-xl">{GRADE_EMOJI[selected.grade]}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-xs" style={{ color: selected.color }}>
-                      {selected.status === 'mine' ? '내 영토' : selected.status === 'occupied' ? `${selected.owner} 점령` : selected.status === 'auction' ? '경매 진행 중' : '미점령'}
-                    </p>
-                    <p className="text-muted text-[9px] truncate">{selected.owner || '점유자 없음'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Scrollable content */}
-              <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
-
-                {selected.status === 'idle' && (
-                  <div className="bg-[#0d1628] border border-[#354064] rounded-xl p-3 text-center">
-                    <p className="text-muted text-[11px]">현재 경매 없음</p>
-                    <p className="text-muted text-[9px] mt-1">토지세 미납 또는 공성전 후 자동 경매 예정</p>
-                  </div>
-                )}
-
-                {selected.status === 'auction' && (
-                  <>
-                    {/* Countdown */}
-                    <div className="bg-[#0d1628] border border-[#ffd70030] rounded-xl p-3">
-                      <p className="text-[#8892b0] text-[9px] mb-1">경매 종료까지</p>
-                      <p className="text-[#ffd700] font-bold text-xl text-center tracking-wider tabular-nums">
-                        {timeLeft || '--:--:--'}
-                      </p>
-                    </div>
-
-                    {/* Price info */}
-                    {(() => {
-                      const minBid = Math.max(Math.ceil(auctionCurrentPrice * 1.05), auctionCurrentPrice + 10);
-                      return (
-                        <>
-                          <div className="bg-[#0d1628] border border-[#354064] rounded-xl p-3" style={isHighestBidder ? { borderColor: '#00ff8860' } : undefined}>
-                            <div className="flex items-center justify-between mb-1">
-                              <p className="text-muted text-[9px]">현재 최고 입찰가</p>
-                              {isHighestBidder && (
-                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#00ff8820', color: '#00ff88', border: '1px solid #00ff8840' }}>
-                                  👑 최고 입찰자
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[#ffd700] font-bold text-lg leading-none">
-                              {auctionCurrentPrice.toLocaleString()}
-                              <span className="text-[11px] text-muted font-normal ml-1">AP</span>
-                            </p>
-                            <div className="mt-2 pt-2 border-t border-[#1a2438] flex justify-between">
-                              <span className="text-muted text-[9px]">최소 입찰가</span>
-                              <span className="text-[#c0ccdd] text-[9px] font-semibold">{minBid.toLocaleString()} AP</span>
-                            </div>
-                            <div className="flex justify-between mt-1">
-                              <span className="text-muted text-[9px]">보유 AP</span>
-                              <span className="text-[#00ff88] text-[9px] font-semibold">{ap.toLocaleString()} AP</span>
-                            </div>
-                          </div>
-
-                          {/* Bid form */}
-                          <div className="bg-[#0d1628] border border-[#ffd70040] rounded-xl p-3">
-                            <p className="text-[#ffd700] font-bold mb-2 text-[11px]">⚡ 입찰하기</p>
-                            {bidSuccess ? (
-                              <div className="text-center py-2">
-                                <p className="text-[#00ff88] font-bold text-xs">✓ 입찰 완료!</p>
-                                <p className="text-muted text-[10px] mt-0.5">잔여 AP: {ap.toLocaleString()}</p>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="flex gap-1 mb-2">
-                                  {[500, 1000, 5000].map(inc => (
-                                    <button key={inc} onClick={() => setBidInput(v => String((parseInt(v) || minBid) + inc))}
-                                      className="flex-1 h-6 rounded transition-colors hover:brightness-125 text-[9px]"
-                                      style={{ background: '#1a2438', border: '1px solid #354064', color: '#c0ccdd' }}>
-                                      +{inc >= 1000 ? `${inc / 1000}K` : inc}
-                                    </button>
-                                  ))}
-                                </div>
-                                <div className="flex gap-1.5 mb-1.5">
-                                  <input type="number" value={bidInput} onChange={e => setBidInput(e.target.value)}
-                                    placeholder={`${minBid.toLocaleString()}`}
-                                    className="flex-1 h-8 bg-[#060a14] border border-outline rounded-lg px-2 text-foreground outline-none focus:border-gold text-[11px]" />
-                                  <button onClick={handleBidSubmit}
-                                    disabled={!bidInput || !selectedAuctionId || isBidding || parseInt(bidInput) < minBid || parseInt(bidInput) > ap}
-                                    className="h-8 px-3 rounded-lg font-bold transition-all hover:brightness-110 disabled:opacity-40 text-[11px]"
-                                    style={{ background: '#ffd700', color: '#060a14' }}>
-                                    {isBidding ? '...' : '입찰'}
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </>
-                      );
-                    })()}
-
-                    {/* Bid history */}
-                    <div>
-                      <p className="text-muted text-[10px] mb-1.5">입찰 현황 ({bidHistory.length}건)</p>
-                      {bidHistory.length === 0 ? (
-                        <p className="text-muted text-[9px] text-center py-2">입찰 내역이 없습니다</p>
-                      ) : (
-                        <div className="space-y-1">
-                          {bidHistory.slice(0, 10).map((bid, i) => {
-                            const isMe = bid.bidderNickname === username;
-                            return (
-                              <div key={i} className="flex items-center justify-between rounded-lg px-2.5 py-1.5"
-                                style={{ background: isMe ? '#00ff8810' : '#0a1020', border: `1px solid ${isMe ? '#00ff8840' : '#1a2438'}` }}>
-                                <div>
-                                  <p className="text-[10px] font-semibold" style={{ color: isMe ? '#00ff88' : '#c0ccdd' }}>
-                                    {bid.bidderNickname ?? '익명'}{isMe && ' (나)'}
-                                  </p>
-                                  <p className="text-muted text-[8px]">{fmtBidTime(bid.bidAt)}</p>
-                                </div>
-                                <p className="text-[#ffd700] font-bold text-[10px]">{bid.price.toLocaleString()}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {(selected.status === 'mine' || selected.status === 'occupied') && (
-                  <div className="bg-[#0d1628] border border-[#354064] rounded-xl p-3 text-center">
-                    <p className="text-muted text-[11px]">
-                      {selected.status === 'mine' ? '내 영토입니다' : `${selected.owner}의 영토입니다`}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex-shrink-0 p-3 space-y-2 border-t border-[#1a2438]">
-                <button onClick={() => navigate(`/app/territory/${selected.id}`)} className="w-full h-8 rounded-xl font-bold transition-all hover:brightness-110 text-[11px]" style={{ background: continent.color, color: '#060a14' }}>영토 상세 보기</button>
-                {selected.status === 'occupied' && <button onClick={() => navigate('/app/siege')} className="w-full h-8 bg-[#ff303020] border border-[#ff3030] rounded-xl text-[#ff5050] font-bold text-[11px]">⚔ 공성전 선언</button>}
-                {selected.status === 'mine' && <button onClick={() => navigate(`/app/territory-grid/${selected.id}`)} className="w-full h-8 bg-[#00ff8820] border border-[#00ff8860] rounded-xl text-[#00ff88] font-bold text-[11px]">🏗 영토 내부 보기</button>}
-                {selected.id !== 0 && (
-                  <button
-                    onClick={() => void toggleWishlist(selected.id)}
-                    className="w-full h-8 rounded-xl font-bold text-[11px] transition-all hover:brightness-110"
-                    style={wishlistIds.has(selected.id)
-                      ? { background: '#ff8c0020', border: '1px solid #ff8c0060', color: '#ff8c00' }
-                      : { background: '#1a2438', border: '1px solid #354064', color: '#8892b0' }}
-                  >
-                    {wishlistIds.has(selected.id) ? '♥ 관심 해제' : '♡ 관심 등록'}
-                  </button>
-                )}
-                <button onClick={handleDeselect} className="w-full h-7 bg-[#0d1628] border border-[#1a2438] rounded-xl text-muted text-[10px]">선택 해제</button>
-              </div>
-            </>
+            <ContinentSelectedPanel
+              selected={selected}
+              continentName={continent.name}
+              continentColor={continent.color}
+              username={username ?? ''}
+              ap={ap}
+              auctionCurrentPrice={auctionCurrentPrice}
+              selectedAuctionId={selectedAuctionId}
+              timeLeft={timeLeft}
+              bidHistory={bidHistory}
+              bidInput={bidInput}
+              bidSuccess={bidSuccess}
+              isBidding={isBidding}
+              isHighestBidder={isHighestBidder}
+              onChangeBidInput={setBidInput}
+              onSubmitBid={handleBidSubmit}
+              wishlistIds={wishlistIds}
+              onToggleWishlist={(id) => void toggleWishlist(id)}
+              onDeselect={handleDeselect}
+              fmtBidTime={fmtBidTime}
+            />
           ) : (
             <div className="flex-1 flex flex-col">
               <div className="px-4 py-4 border-b border-[#1a2438]">
@@ -590,45 +455,18 @@ export function ContinentPage() {
       </div>
 
       {showConfirm && selected && (
-        <div className="modal-overlay">
-          <div className="bg-panel border-2 rounded-2xl p-8 max-w-sm mx-4 text-center" style={{ borderColor: '#ffd700' }}>
-            <span className="text-[40px]">⚡</span>
-            <h3 className="font-bold text-xl mt-3 mb-2 text-gold">입찰 확인</h3>
-            <p className="text-muted mb-5 text-[13px]">
-              영토 ({selected.coordX}, {selected.coordY}) · {continent.name}
-            </p>
-            <div className="bg-elevated rounded-xl py-4 mb-6 space-y-2">
-              <div className="flex justify-between px-4">
-                <span className="text-muted text-[13px]">입찰 금액</span>
-                <span className="font-bold text-gold text-base">{parseInt(bidInput).toLocaleString()} AP</span>
-              </div>
-              <div className="flex justify-between px-4">
-                <span className="text-muted text-[13px]">현재가 대비</span>
-                <span className="text-gp text-[13px]">+{(parseInt(bidInput) - auctionCurrentPrice).toLocaleString()} AP</span>
-              </div>
-              <div className="flex justify-between px-4">
-                <span className="text-muted text-[13px]">입찰 후 잔여</span>
-                <span className="text-foreground text-[13px]">{(ap - parseInt(bidInput)).toLocaleString()} AP</span>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 h-11 bg-elevated border border-outline rounded-xl text-muted text-sm"
-              >
-                취소
-              </button>
-              <button
-                onClick={() => void handleConfirmBid()}
-                disabled={isBidding}
-                className="flex-1 h-11 rounded-xl font-bold text-sm disabled:opacity-50"
-                style={{ background: '#ffd700', color: '#0a0e1a' }}
-              >
-                {isBidding ? '처리 중...' : '입찰하기'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <BidConfirmModal
+          territoryCoord={{ x: selected.coordX, y: selected.coordY }}
+          continentName={continent.name}
+          bidAmount={parseInt(bidInput)}
+          currentBid={auctionCurrentPrice}
+          ap={ap}
+          isOutbid={false}
+          isBidding={isBidding}
+          gradeColor="#ffd700"
+          onCancel={() => setShowConfirm(false)}
+          onConfirm={() => void handleConfirmBid()}
+        />
       )}
     </div>
   );
