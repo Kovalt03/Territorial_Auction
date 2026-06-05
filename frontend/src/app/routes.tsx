@@ -1,23 +1,29 @@
+import { lazy, type ComponentType } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
+
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { WorldMapPage } from './pages/WorldMapPage';
-import { ContinentPage } from './pages/ContinentPage';
-import { TerritoryDetailPage } from './pages/TerritoryDetailPage';
-import { MyPage } from './pages/MyPage';
-import { RankingPage } from './pages/RankingPage';
-import { ChargePage } from './pages/ChargePage';
-import { TerritoryGridPage } from './pages/TerritoryGridPage';
-import { SiegePage } from './pages/SiegePage';
-import { ItemShopPage } from './pages/ItemShopPage';
-import { SeasonPassPage } from './pages/SeasonPassPage';
-import { VaultPage } from './pages/VaultPage';
-import { PersonalIslandPage } from './pages/PersonalIslandPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { GuildListPage } from './pages/GuildListPage';
-import { GuildDetailPage } from './pages/GuildDetailPage';
-import { NotificationPage } from './pages/NotificationPage';
 import { PrivateRoute } from './components/PrivateRoute';
+
+const lazyPage = <K extends string>(loader: () => Promise<Record<K, ComponentType>>, key: K) =>
+  lazy(() => loader().then(m => ({ default: m[key] })));
+
+const WorldMapPage = lazyPage(() => import('./pages/WorldMapPage'), 'WorldMapPage');
+const ContinentPage = lazyPage(() => import('./pages/ContinentPage'), 'ContinentPage');
+const TerritoryDetailPage = lazyPage(() => import('./pages/TerritoryDetailPage'), 'TerritoryDetailPage');
+const MyPage = lazyPage(() => import('./pages/MyPage'), 'MyPage');
+const RankingPage = lazyPage(() => import('./pages/RankingPage'), 'RankingPage');
+const ChargePage = lazyPage(() => import('./pages/ChargePage'), 'ChargePage');
+const TerritoryGridPage = lazyPage(() => import('./pages/TerritoryGridPage'), 'TerritoryGridPage');
+const SiegePage = lazyPage(() => import('./pages/SiegePage'), 'SiegePage');
+const ItemShopPage = lazyPage(() => import('./pages/ItemShopPage'), 'ItemShopPage');
+const SeasonPassPage = lazyPage(() => import('./pages/SeasonPassPage'), 'SeasonPassPage');
+const VaultPage = lazyPage(() => import('./pages/VaultPage'), 'VaultPage');
+const PersonalIslandPage = lazyPage(() => import('./pages/PersonalIslandPage'), 'PersonalIslandPage');
+const SettingsPage = lazyPage(() => import('./pages/SettingsPage'), 'SettingsPage');
+const GuildListPage = lazyPage(() => import('./pages/GuildListPage'), 'GuildListPage');
+const GuildDetailPage = lazyPage(() => import('./pages/GuildDetailPage'), 'GuildDetailPage');
+const NotificationPage = lazyPage(() => import('./pages/NotificationPage'), 'NotificationPage');
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
