@@ -1,11 +1,11 @@
-import { lazy } from 'react';
+import { lazy, type ComponentType } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { PrivateRoute } from './components/PrivateRoute';
 
-const lazyPage = <K extends string>(loader: () => Promise<Record<K, React.ComponentType>>, key: K) =>
+const lazyPage = <K extends string>(loader: () => Promise<Record<K, ComponentType>>, key: K) =>
   lazy(() => loader().then(m => ({ default: m[key] })));
 
 const WorldMapPage = lazyPage(() => import('./pages/WorldMapPage'), 'WorldMapPage');
