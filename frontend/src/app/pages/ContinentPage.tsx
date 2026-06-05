@@ -330,8 +330,14 @@ export function ContinentPage() {
           <div className="absolute bottom-3 left-3 z-10 text-[#2a3a5a] text-[10px]">스크롤로 줌 · 드래그로 이동 · 영토 클릭하여 상세 확인</div>
 
           {grid.length > 0 && (
-            <div style={{ position: 'absolute', top: 0, left: 0, transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0', willChange: 'transform', padding: 24 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridTemplateRows: `repeat(${rows}, ${CELL}px)`, gap: 1, position: 'relative' }}>
+            <div
+              className="absolute top-0 left-0 p-6"
+              style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0', willChange: 'transform' }}
+            >
+              <div
+                className="grid relative"
+                style={{ gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridTemplateRows: `repeat(${rows}, ${CELL}px)`, gap: 1 }}
+              >
                 {grid.map((row, y) => row.map((cell, x) => {
                   const isSelected = selected?.x === x && selected?.y === y;
                   const isHovered = hoverCell?.x === x && hoverCell?.y === y;
