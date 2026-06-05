@@ -32,8 +32,8 @@ export function SettingsPage() {
     isAuctionStartEnabled: true,
     isMarketingEnabled: false,
   });
-  const [notifSaving, setNotifSaving] = useState(false);
-  const [notifSaved, setNotifSaved] = useState(false);
+  const [isNotifSaving, setIsNotifSaving] = useState(false);
+  const [isNotifSaved, setIsNotifSaved] = useState(false);
 
   useEffect(() => {
     fetchSettings()
@@ -44,36 +44,36 @@ export function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [pwLoading, setPwLoading] = useState(false);
+  const [isPwLoading, setIsPwLoading] = useState(false);
   const [pwError, setPwError] = useState('');
-  const [pwSuccess, setPwSuccess] = useState(false);
+  const [isPwSuccess, setIsPwSuccess] = useState(false);
 
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
   const handleToggle = (key: keyof NotificationSettings) => {
     setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
-    setNotifSaved(false);
+    setIsNotifSaved(false);
   };
 
   const handleSaveNotifications = async () => {
-    setNotifSaving(true);
+    setIsNotifSaving(true);
     try {
       await updateSettings(notifications);
-      setNotifSaved(true);
-      setTimeout(() => setNotifSaved(false), 2500);
+      setIsNotifSaved(true);
+      setTimeout(() => setIsNotifSaved(false), 2500);
     } catch {
       // keep current state on error
     } finally {
-      setNotifSaving(false);
+      setIsNotifSaving(false);
     }
   };
 
   const handleChangePassword = async () => {
     setPwError('');
-    setPwSuccess(false);
+    setIsPwSuccess(false);
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPwError('모든 항목을 입력해주세요.');
       return;
@@ -86,18 +86,18 @@ export function SettingsPage() {
       setPwError('새 비밀번호는 8자 이상이어야 합니다.');
       return;
     }
-    setPwLoading(true);
+    setIsPwLoading(true);
     try {
       await changePassword(currentPassword, newPassword);
-      setPwSuccess(true);
+      setIsPwSuccess(true);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setTimeout(() => setPwSuccess(false), 3000);
+      setTimeout(() => setIsPwSuccess(false), 3000);
     } catch {
       setPwError('비밀번호 변경에 실패했습니다. 현재 비밀번호를 확인해주세요.');
     } finally {
-      setPwLoading(false);
+      setIsPwLoading(false);
     }
   };
 
@@ -111,7 +111,7 @@ export function SettingsPage() {
       setDeleteError('"탈퇴합니다"를 정확히 입력해주세요.');
       return;
     }
-    setDeleteLoading(true);
+    setIsDeleteLoading(true);
     try {
       await deleteAccount(deletePassword);
       logout();
@@ -119,7 +119,7 @@ export function SettingsPage() {
     } catch {
       setDeleteError('계정 삭제에 실패했습니다. 비밀번호를 확인해주세요.');
     } finally {
-      setDeleteLoading(false);
+      setIsDeleteLoading(false);
     }
   };
 
@@ -224,12 +224,12 @@ export function SettingsPage() {
                 </div>
 
                 <Button
-                  variant={notifSaved ? 'ghost' : 'ghost'}
+                  variant={isNotifSaved ? 'ghost' : 'ghost'}
                   onClick={handleSaveNotifications}
-                  disabled={notifSaving}
-                  className={`mt-5 ${notifSaved ? 'text-gp border-gp bg-[#00ff8820]' : ''}`}
+                  disabled={isNotifSaving}
+                  className={`mt-5 ${isNotifSaved ? 'text-gp border-gp bg-[#00ff8820]' : ''}`}
                 >
-                  {notifSaving ? '저장 중...' : notifSaved ? '✓ 저장됨' : '변경사항 저장'}
+                  {isNotifSaving ? '저장 중...' : isNotifSaved ? '✓ 저장됨' : '변경사항 저장'}
                 </Button>
               </div>
             )}
@@ -267,17 +267,17 @@ export function SettingsPage() {
                   {pwError && (
                     <p className="mt-3 text-danger text-xs">⚠ {pwError}</p>
                   )}
-                  {pwSuccess && (
+                  {isPwSuccess && (
                     <p className="mt-3 text-gp text-xs">✓ 비밀번호가 성공적으로 변경되었습니다.</p>
                   )}
 
                   <Button
                     variant="ghost"
                     onClick={handleChangePassword}
-                    disabled={pwLoading}
+                    disabled={isPwLoading}
                     className="mt-5"
                   >
-                    {pwLoading ? '변경 중...' : '비밀번호 변경'}
+                    {isPwLoading ? '변경 중...' : '비밀번호 변경'}
                   </Button>
                 </div>
               </div>
@@ -350,10 +350,10 @@ export function SettingsPage() {
                   <Button
                     variant="danger"
                     onClick={handleDeleteAccount}
-                    disabled={deleteLoading || deleteConfirmText !== '탈퇴합니다' || !deletePassword}
+                    disabled={isDeleteLoading || deleteConfirmText !== '탈퇴합니다' || !deletePassword}
                     className="mt-5"
                   >
-                    {deleteLoading ? '처리 중...' : '계정 영구 삭제'}
+                    {isDeleteLoading ? '처리 중...' : '계정 영구 삭제'}
                   </Button>
                 </div>
               </div>

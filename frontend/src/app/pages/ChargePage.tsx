@@ -27,7 +27,7 @@ export function ChargePage() {
   const [selectedPkg, setSelectedPkg] = useState(2);
   const [selectedPay, setSelectedPay] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [chargeResult, setChargeResult] = useState<{ availableAP: number; chargedAmount: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +42,7 @@ export function ChargePage() {
       const result = await chargeAp(pkg.ap, paymentKey, orderId);
       syncAP(result.availableAP);
       setChargeResult({ availableAP: result.availableAP, chargedAmount: result.chargedAmount });
-      setSuccess(true);
+      setIsSuccess(true);
     } catch {
       setError('결제에 실패했습니다. 다시 시도해주세요.');
     } finally {
@@ -168,7 +168,7 @@ export function ChargePage() {
         </div>
       </div>
 
-      {success && chargeResult && (
+      {isSuccess && chargeResult && (
         <div className="modal-overlay">
           <div className="bg-panel border-2 border-primary rounded-2xl p-8 text-center max-w-sm mx-4">
             <div className="text-5xl mb-4">💎</div>
@@ -182,7 +182,7 @@ export function ChargePage() {
               <p className="text-gold font-bold text-[22px]">{chargeResult.availableAP.toLocaleString()} AP</p>
             </div>
             <Button
-              onClick={() => { setSuccess(false); navigate('/app/map'); }}
+              onClick={() => { setIsSuccess(false); navigate('/app/map'); }}
               size="lg"
               fullWidth
             >
