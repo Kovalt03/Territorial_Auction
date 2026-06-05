@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { GNB } from '../components/GNB';
-import { Button } from '../components/Button';
+import { useNavigate } from 'react-router';
+
 import { useApp } from '../context/AppContext';
 import { chargeAp } from '../api/user';
-import { useNavigate } from 'react-router';
+
+import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
 
 const packages = [
   { id: 0, ap: 5000, price: 5000, discount: 0, color: '#e0e8ff', borderColor: '#e0e8ff' },
@@ -25,7 +27,7 @@ export function ChargePage() {
   const [selectedPkg, setSelectedPkg] = useState(2);
   const [selectedPay, setSelectedPay] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [chargeResult, setChargeResult] = useState<{ availableAP: number; chargedAmount: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +42,7 @@ export function ChargePage() {
       const result = await chargeAp(pkg.ap, paymentKey, orderId);
       syncAP(result.availableAP);
       setChargeResult({ availableAP: result.availableAP, chargedAmount: result.chargedAmount });
-      setSuccess(true);
+      setIsSuccess(true);
     } catch {
       setError('결제에 실패했습니다. 다시 시도해주세요.');
     } finally {
@@ -108,11 +110,7 @@ export function ChargePage() {
                 <button
                   key={pm.id}
                   onClick={() => setSelectedPay(pm.id)}
-                  className="w-full h-12 rounded-xl flex items-center px-4 gap-3 transition-all"
-                  style={{
-                    background: '#2a3050',
-                    border: `1px solid ${selectedPay === pm.id ? '#00f5ff' : '#354064'}`,
-                  }}
+                  className={`w-full h-12 rounded-xl flex items-center px-4 gap-3 transition-all bg-elevated border ${selectedPay === pm.id ? 'border-primary' : 'border-outline'}`}
                 >
                   <span className="text-lg">{pm.icon}</span>
                   <span className="text-foreground text-sm">{pm.label}</span>
@@ -170,7 +168,7 @@ export function ChargePage() {
         </div>
       </div>
 
-      {success && chargeResult && (
+      {isSuccess && chargeResult && (
         <div className="modal-overlay">
           <div className="bg-panel border-2 border-primary rounded-2xl p-8 text-center max-w-sm mx-4">
             <div className="text-5xl mb-4">💎</div>
@@ -184,7 +182,7 @@ export function ChargePage() {
               <p className="text-gold font-bold text-[22px]">{chargeResult.availableAP.toLocaleString()} AP</p>
             </div>
             <Button
-              onClick={() => { setSuccess(false); navigate('/app/map'); }}
+              onClick={() => { setIsSuccess(false); navigate('/app/map'); }}
               size="lg"
               fullWidth
             >

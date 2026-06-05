@@ -1,8 +1,13 @@
 import { useState } from 'react';
-import { GNB } from '../components/GNB';
-import { Button } from '../components/Button';
+
 import { useApp } from '../context/AppContext';
 import { purchaseSeasonPass } from '../api/season';
+
+import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
+
+const PASS_PRICE_AP = 1000;
+const PASS_DURATION_DAYS = 30;
 
 const benefits = [
   { icon: '💎', title: '섬 GP +50%', desc: '영토 내 모든 GP 생산량 50% 증가' },
@@ -15,7 +20,7 @@ const benefits = [
 export function SeasonPassPage() {
   const { ap, hasPass, passEndDate, syncAP, syncPass } = useApp();
   const [showConfirm, setShowConfirm] = useState(false);
-  const [activated, setActivated] = useState(false);
+  const [isActivated, setIsActivated] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
@@ -30,9 +35,9 @@ export function SeasonPassPage() {
       const result = await purchaseSeasonPass();
       syncAP(result.remainingAP);
       syncPass(true, result.expiresAt);
-      setActivated(true);
+      setIsActivated(true);
       setShowConfirm(false);
-      setTimeout(() => setActivated(false), 3000);
+      setTimeout(() => setIsActivated(false), 3000);
     } catch {
       setPurchaseError('구매에 실패했습니다. 다시 시도해주세요.');
     } finally {
@@ -75,14 +80,14 @@ export function SeasonPassPage() {
               <div className="h-2 bg-elevated rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gold rounded-full transition-all"
-                  style={{ width: `${Math.max(5, (passDays / 30) * 100)}%` }}
+                  style={{ width: `${Math.max(5, (passDays / PASS_DURATION_DAYS) * 100)}%` }}
                 />
               </div>
               <Button
                 onClick={() => setShowConfirm(true)}
                 className="mt-4"
               >
-                + 30일 연장하기 (1,000 AP)
+                + {PASS_DURATION_DAYS}일 연장하기 ({PASS_PRICE_AP.toLocaleString()} AP)
               </Button>
             </div>
           ) : (
@@ -92,15 +97,15 @@ export function SeasonPassPage() {
               </p>
               <Button
                 onClick={() => setShowConfirm(true)}
-                disabled={ap < 1000}
+                disabled={ap < PASS_PRICE_AP}
                 size="xl"
                 fullWidth
               >
-                시즌 패스 구매 (1,000 AP)
+                시즌 패스 구매 ({PASS_PRICE_AP.toLocaleString()} AP)
               </Button>
-              {ap < 1000 && (
+              {ap < PASS_PRICE_AP && (
                 <p className="text-center text-danger mt-2 text-xs">
-                  AP 부족 — 현재 {ap.toLocaleString()} AP (필요: 1,000 AP)
+                  AP 부족 — 현재 {ap.toLocaleString()} AP (필요: {PASS_PRICE_AP.toLocaleString()} AP)
                 </p>
               )}
             </div>
@@ -132,7 +137,7 @@ export function SeasonPassPage() {
 
           <div className="bg-elevated border border-outline rounded-xl p-4">
             <p className="text-muted text-xs">
-              💡 중복 구매 시 남은 기간에 30일이 누적됩니다. 시즌 패스는 구매 즉시 활성화됩니다.
+              💡 중복 구매 시 남은 기간에 {PASS_DURATION_DAYS}일이 누적됩니다. 시즌 패스는 구매 즉시 활성화됩니다.
             </p>
           </div>
         </div>
@@ -147,15 +152,15 @@ export function SeasonPassPage() {
             </h3>
             <div className="bg-elevated rounded-xl py-4 mb-3">
               <p className="text-muted text-xs">차감 AP</p>
-              <p className="text-gold font-bold text-[28px]">1,000 AP</p>
+              <p className="text-gold font-bold text-[28px]">{PASS_PRICE_AP.toLocaleString()} AP</p>
               <p className="text-muted text-[11px]">
-                잔여: {ap.toLocaleString()} → {(ap - 1000).toLocaleString()} AP
+                잔여: {ap.toLocaleString()} → {(ap - PASS_PRICE_AP).toLocaleString()} AP
               </p>
             </div>
             {hasPass && (
               <div className="bg-elevated rounded-xl py-2 mb-5">
                 <p className="text-foreground text-[13px]">
-                  현재 D-{passDays} + 30일 = <span className="text-gold font-bold">D-{passDays + 30}</span>
+                  현재 D-{passDays} + {PASS_DURATION_DAYS}일 = <span className="text-gold font-bold">D-{passDays + PASS_DURATION_DAYS}</span>
                 </p>
               </div>
             )}
@@ -168,7 +173,7 @@ export function SeasonPassPage() {
                 className="btn-cancel">취소</button>
               <Button
                 onClick={() => void handleActivate()}
-                disabled={ap < 1000 || isProcessing}
+                disabled={ap < PASS_PRICE_AP || isProcessing}
                 className="flex-1"
               >
                 {isProcessing ? '처리 중...' : hasPass ? '연장하기' : '구매하기'}
@@ -178,7 +183,7 @@ export function SeasonPassPage() {
         </div>
       )}
 
-      {activated && (
+      {isActivated && (
         <div className="fixed bottom-6 right-6 bg-panel border-2 border-gold rounded-xl px-5 py-3 z-50 animate-bounce">
           <span className="text-gold font-bold text-sm">
             ⭐ 시즌 패스가 활성화되었습니다!

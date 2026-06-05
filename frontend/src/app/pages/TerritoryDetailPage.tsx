@@ -63,7 +63,7 @@ function getStatusColor(status: string | undefined, isMyTerritory: boolean): str
 export function TerritoryDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { ap, syncAP, userId, username, isLoggedIn } = useApp();
+  const { ap, syncAP, userId, isLoggedIn } = useApp();
 
   const territoryId = Number(id);
   const { territory, bids, isLoading, error, refreshBids, updateCurrentPrice } = useTerritoryDetail(territoryId);

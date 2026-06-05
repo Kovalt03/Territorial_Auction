@@ -1,16 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 
+import { useApp } from '../context/AppContext';
+import { useMyGuild } from '../hooks/useMyGuild';
+import {
+  fetchGuildList, createGuild,
+  joinGuild, cancelJoinGuild,
+  type GuildSummary,
+} from '../api/guild';
+import { ApiError } from '../api/client';
+
 import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
-import { useApp } from '../context/AppContext';
-import {
-  fetchGuildList, fetchMyGuild, createGuild,
-  joinGuild, cancelJoinGuild,
-  type GuildSummary, type MyGuild,
-} from '../api/guild';
-import { ApiError } from '../api/client';
 
 const PAGE_SIZE = 20;
 
@@ -24,7 +26,7 @@ export function GuildListPage() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [myGuild, setMyGuild] = useState<MyGuild | null>(null);
+  const { myGuild } = useMyGuild(isLoggedIn);
 
   const [showCreate, setShowCreate] = useState(false);
   const [createName, setCreateName] = useState('');
@@ -48,11 +50,6 @@ export function GuildListPage() {
   }, [page, search]);
 
   useEffect(() => { loadList(); }, [loadList]);
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    fetchMyGuild().then(setMyGuild).catch(() => setMyGuild(null));
-  }, [isLoggedIn]);
 
   const handleSearch = () => { setSearch(searchInput); setPage(0); };
 
@@ -161,8 +158,7 @@ export function GuildListPage() {
                     onClick={() => navigate(`/app/guild/${g.guildId}`)}
                   >
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center font-bold flex-shrink-0 text-xl"
-                      style={{ background: '#00f5ff20', border: '2px solid #00f5ff', color: '#00f5ff' }}
+                      className="w-12 h-12 rounded-xl flex items-center justify-center font-bold flex-shrink-0 text-xl bg-[#00f5ff20] border-2 border-primary text-primary"
                     >
                       {g.guildName.charAt(0)}
                     </div>
@@ -209,11 +205,7 @@ export function GuildListPage() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className="w-8 h-8 rounded text-xs transition-colors"
-                  style={p === page
-                    ? { background: '#00f5ff', color: '#0a0e1a', fontWeight: 700 }
-                    : { background: '#1a1f35', border: '1px solid #354064', color: '#8892b0' }
-                  }
+                  className={`w-8 h-8 rounded text-xs transition-colors ${p === page ? 'bg-primary text-surface font-bold' : 'bg-panel border border-outline text-dim'}`}
                 >
                   {p + 1}
                 </button>

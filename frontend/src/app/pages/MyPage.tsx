@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { GNB } from '../components/GNB';
-import { EmptyState } from '../components/EmptyState';
+
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+
 import { useApp } from '../context/AppContext';
 import { useMyBids } from '../hooks/useMyBids';
 import { useVault } from '../hooks/useVault';
 import { subscribeMultiple } from '../hooks/useStompClient';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+
+import { GNB } from '../components/GNB';
+import { EmptyState } from '../components/EmptyState';
+
 import { GRADE_COLOR } from '../types/grade';
 
 type ActivityTab = 'active' | 'mine' | 'history' | 'bids';
 type BidSort = 'time' | 'ap' | 'outbid';
+
+const URGENT_MS = 5 * 60 * 1000;
 
 function fmtTimeLeft(endAt: string, now: number): string {
   const diff = new Date(endAt).getTime() - now;
@@ -55,7 +61,6 @@ export function MyPage() {
       if (a.isHighestBidder !== b.isHighestBidder) return a.isHighestBidder ? 1 : -1;
       return 0;
     });
-    // 'time': 남은 시간 짧은 순
     return [...list].sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime());
   }
 
@@ -145,8 +150,7 @@ export function MyPage() {
           {/* Quick access */}
           <div className="space-y-3">
             <div
-              className="bg-panel border rounded-xl p-4 cursor-pointer hover:brightness-110 transition-all"
-              style={{ borderColor: hasPass ? '#ffd700' : '#354064' }}
+              className={`bg-panel border rounded-xl p-4 cursor-pointer hover:brightness-110 transition-all ${hasPass ? 'border-gold' : 'border-outline'}`}
               onClick={() => navigate('/app/season-pass')}
             >
               <div className="flex items-center gap-3">
@@ -198,18 +202,11 @@ export function MyPage() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className="flex-1 py-3 font-semibold text-[13px] transition-colors relative"
-                style={{
-                  color: tab === t.id ? '#00f5ff' : '#7788a5',
-                  background: tab === t.id ? '#00f5ff10' : 'transparent',
-                }}
+                className={`flex-1 py-3 font-semibold text-[13px] transition-colors relative ${tab === t.id ? 'text-primary bg-primary/10' : 'text-muted'}`}
               >
                 {t.label}
                 {t.count > 0 && (
-                  <span
-                    className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px]"
-                    style={{ background: tab === t.id ? '#00f5ff' : '#354064', color: tab === t.id ? '#0a0e1a' : '#7788a5' }}
-                  >
+                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${tab === t.id ? 'bg-primary text-surface' : 'bg-outline text-muted'}`}>
                     {t.count}
                   </span>
                 )}
@@ -267,12 +264,7 @@ export function MyPage() {
                     <button
                       key={s.val}
                       onClick={() => setBidSort(s.val)}
-                      className="px-2.5 h-7 rounded-lg text-[11px] font-semibold transition-colors"
-                      style={{
-                        background: bidSort === s.val ? '#00f5ff' : '#1a2438',
-                        color: bidSort === s.val ? '#060a14' : '#7788a5',
-                        border: `1px solid ${bidSort === s.val ? '#00f5ff' : '#354064'}`,
-                      }}
+                      className={`px-2.5 h-7 rounded-lg text-[11px] font-semibold transition-colors border ${bidSort === s.val ? 'bg-primary text-surface border-primary' : 'bg-[#1a2438] text-muted border-outline'}`}
                     >
                       {s.label}
                     </button>
@@ -291,14 +283,7 @@ export function MyPage() {
                       onClick={() => navigate(`/app/territory/${b.territoryId}`)}
                       className="w-full flex items-center gap-3 p-3 rounded-xl border border-outline hover:bg-[#12192c] transition-colors text-left"
                     >
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[11px] flex-shrink-0"
-                        style={{
-                          background: b.isHighestBidder ? '#00ff8820' : '#ff333320',
-                          border: `1px solid ${b.isHighestBidder ? '#00ff8860' : '#ff333360'}`,
-                          color: b.isHighestBidder ? '#00ff88' : '#ff3333',
-                        }}
-                      >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[11px] flex-shrink-0 border ${b.isHighestBidder ? 'bg-gp/20 border-gp/60 text-gp' : 'bg-danger/20 border-danger/60 text-danger'}`}>
                         {b.isHighestBidder ? '↑' : '↓'}
                       </div>
                       <div className="flex-1">
@@ -326,10 +311,7 @@ export function MyPage() {
                         </p>
                         <p className="text-muted text-[10px]">현재가</p>
                         {b.status === 'BIDDING' && (
-                          <p
-                            className="font-semibold text-[10px] mt-0.5 tabular-nums"
-                            style={{ color: (() => { const diff = new Date(b.endAt).getTime() - now; return diff < 300000 ? '#ff8c00' : '#8892b0'; })() }}
-                          >
+                          <p className={`font-semibold text-[10px] mt-0.5 tabular-nums ${new Date(b.endAt).getTime() - now < URGENT_MS ? 'text-flare' : 'text-dim'}`}>
                             {fmtTimeLeft(b.endAt, now)}
                           </p>
                         )}

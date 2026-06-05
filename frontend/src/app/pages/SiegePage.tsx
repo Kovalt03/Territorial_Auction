@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
-import { GNB } from '../components/GNB';
-import { Button } from '../components/Button';
+
 import { declareSiege } from '../api/siege';
 import { fetchTerritoryDetail } from '../api/map';
+
+import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
+
 import type { TerritoryDetailResponse } from '../types/territory';
 
 type AttackType = 'normal' | 'precision';
+
+const SIEGE_TIME_LIMIT_SEC = 7200;
+const UNIT_ATK = { infantry: 25, archer: 30, knight: 80 } as const;
 
 const zones = [
   { id: 1, name: 'Zone 1 — 핵심 (성)', hp: 420, maxHp: 600, color: '#ff3333' },
@@ -32,12 +37,11 @@ function Countdown({ seconds }: { seconds: number }) {
 }
 
 export function SiegePage() {
-  const navigate = useNavigate();
   const [selectedZone, setSelectedZone] = useState(3);
   const [attackType, setAttackType] = useState<AttackType>('normal');
   const [units, setUnits] = useState({ infantry: 10, archer: 5, knight: 2 });
   const [showConfirm, setShowConfirm] = useState(false);
-  const [siegeStarted, setSiegeStarted] = useState(false);
+  const [isSiegeStarted, setIsSiegeStarted] = useState(false);
   const [siegeError, setSiegeError] = useState<string | null>(null);
 
   const [targetInput, setTargetInput] = useState('');
@@ -68,7 +72,7 @@ export function SiegePage() {
 
   const zone = zones.find(z => z.id === selectedZone)!;
   const totalUnits = units.infantry + units.archer + units.knight;
-  const attackPower = units.infantry * 25 + units.archer * 30 + units.knight * 80;
+  const attackPower = units.infantry * UNIT_ATK.infantry + units.archer * UNIT_ATK.archer + units.knight * UNIT_ATK.knight;
 
   const handleStart = async () => {
     if (!targetTerritory) { setSiegeError('대상 영토를 먼저 검색해주세요.'); return; }
@@ -85,7 +89,7 @@ export function SiegePage() {
           { unitTypeId: 3, quantity: units.knight },
         ],
       });
-      setSiegeStarted(true);
+      setIsSiegeStarted(true);
     } catch {
       setSiegeError('공성전 선언에 실패했습니다. 조건을 확인하고 다시 시도해주세요.');
     }
@@ -185,9 +189,9 @@ export function SiegePage() {
           <div className="p-4 border-b border-outline flex-1">
             <p className="text-muted font-semibold mb-3 text-xs">유닛 배치</p>
             {[
-              { key: 'infantry' as keyof typeof units, label: '보병', icon: '🗡', max: 30, atk: 25, color: '#e0e8ff' },
-              { key: 'archer' as keyof typeof units, label: '궁수', icon: '🏹', max: 20, atk: 30, color: '#00ff88' },
-              { key: 'knight' as keyof typeof units, label: '기사', icon: '⚔', max: 10, atk: 80, color: '#ffd700' },
+              { key: 'infantry' as keyof typeof units, label: '보병', icon: '🗡', max: 30, atk: UNIT_ATK.infantry, color: '#e0e8ff' },
+              { key: 'archer' as keyof typeof units, label: '궁수', icon: '🏹', max: 20, atk: UNIT_ATK.archer, color: '#00ff88' },
+              { key: 'knight' as keyof typeof units, label: '기사', icon: '⚔', max: 10, atk: UNIT_ATK.knight, color: '#ffd700' },
             ].map(u => (
               <div key={u.key} className="flex items-center gap-3 mb-3">
                 <span className="text-lg">{u.icon}</span>
@@ -262,7 +266,7 @@ export function SiegePage() {
                 </div>
                 <div className="text-right">
                   <p className="text-gold font-bold text-lg">
-                    <Countdown seconds={7200} />
+                    <Countdown seconds={SIEGE_TIME_LIMIT_SEC} />
                   </p>
                   <p className="text-muted text-[11px]">공성 제한 시간</p>
                 </div>
@@ -314,13 +318,13 @@ export function SiegePage() {
             </div>
           </div>
 
-          {siegeStarted && (
+          {isSiegeStarted && (
             <div className="bg-[#2a0a0a] border-t-2 border-danger p-4">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 bg-danger rounded-full animate-pulse" />
                 <span className="text-danger font-bold text-sm">공성전 진행 중 — {zone.name} 공격 중</span>
                 <div className="ml-auto flex gap-2">
-                  <button onClick={() => setSiegeStarted(false)} className="h-8 px-4 bg-elevated border border-outline rounded-lg text-muted text-xs">
+                  <button onClick={() => setIsSiegeStarted(false)} className="h-8 px-4 bg-elevated border border-outline rounded-lg text-muted text-xs">
                     철수
                   </button>
                 </div>

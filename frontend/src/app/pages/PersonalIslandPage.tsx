@@ -121,7 +121,6 @@ export function PersonalIslandPage() {
       if (cell.type === 'empty') {
         const sourceCell = grid[moveSourceCell.y][moveSourceCell.x];
         if (!sourceCell.buildingId) { cancelModes(); return; }
-        const destZone = grid[y][x].zone;
         if (sourceCell.type === 'castle') {
           showToast('성은 이동할 수 없습니다');
           cancelModes();

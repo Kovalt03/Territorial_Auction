@@ -1,11 +1,13 @@
 import { useState } from 'react';
 
+import { useApp } from '../context/AppContext';
 import { useItems } from '../hooks/useItems';
 import { useInventory } from '../hooks/useInventory';
 import { purchaseItem } from '../api/item';
 import { fetchMyWallet } from '../api/user';
+
 import { GNB } from '../components/GNB';
-import { useApp } from '../context/AppContext';
+
 import type { ItemInfo } from '../types/item';
 
 const ITEM_COLOR: Record<string, string> = {

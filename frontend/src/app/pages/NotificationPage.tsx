@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 
-import { GNB } from '../components/GNB';
-import { Button } from '../components/Button';
-import { EmptyState } from '../components/EmptyState';
 import { useApp } from '../context/AppContext';
 import {
   fetchNotificationList, markNotificationRead, markAllNotificationsRead,
   type NotificationItem,
 } from '../api/notification';
+
+import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
+import { EmptyState } from '../components/EmptyState';
 
 const TYPE_ICON: Record<string, string> = {
   OUTBID: '⚡',
@@ -124,8 +125,8 @@ export function NotificationPage() {
                 <div
                   key={n.notificationId}
                   onClick={() => handleMarkRead(n)}
-                  className="bg-panel border rounded-xl px-4 py-3 flex items-start gap-3 cursor-pointer transition-all"
-                  style={{ borderColor: n.isRead ? '#354064' : TYPE_COLOR[n.type] ?? '#354064', opacity: n.isRead ? 0.7 : 1 }}
+                  className={`bg-panel border rounded-xl px-4 py-3 flex items-start gap-3 cursor-pointer transition-all ${n.isRead ? 'opacity-70' : ''}`}
+                  style={{ borderColor: n.isRead ? '#354064' : TYPE_COLOR[n.type] ?? '#354064' }}
                 >
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
