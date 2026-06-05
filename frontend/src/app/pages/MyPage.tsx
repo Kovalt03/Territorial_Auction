@@ -57,7 +57,6 @@ export function MyPage() {
       if (a.isHighestBidder !== b.isHighestBidder) return a.isHighestBidder ? 1 : -1;
       return 0;
     });
-    // 'time': 남은 시간 짧은 순
     return [...list].sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime());
   }
 

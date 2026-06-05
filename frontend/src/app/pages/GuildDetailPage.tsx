@@ -20,7 +20,6 @@ export function GuildDetailPage() {
   const navigate = useNavigate();
   const { isLoggedIn, userId } = useApp();
 
-  // All hooks must be declared before any conditional return (React Hooks Rules)
   const guildId = Number(id ?? '0');
 
   const { myGuild, refresh: refreshMyGuild } = useMyGuild(isLoggedIn);
@@ -34,7 +33,6 @@ export function GuildDetailPage() {
   const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   const [editDesc, setEditDesc] = useState('');
-  // recruitingStatus not in GuildDetailResponse — default OPEN, user sets explicitly
   const [editStatus, setEditStatus] = useState<'OPEN' | 'CLOSED'>('OPEN');
   const [isSaving, setIsSaving] = useState(false);
 

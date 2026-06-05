@@ -27,7 +27,6 @@ export function SettingsPage() {
     navigate('/login');
   };
 
-  // 알림 설정
   const [notifications, setNotifications] = useState<NotificationSettings>({
     isOutbidEnabled: true,
     isAuctionStartEnabled: true,
@@ -42,7 +41,6 @@ export function SettingsPage() {
       .catch(() => {});
   }, []);
 
-  // 비밀번호 변경
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -50,7 +48,6 @@ export function SettingsPage() {
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
 
-  // 계정 삭제
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
