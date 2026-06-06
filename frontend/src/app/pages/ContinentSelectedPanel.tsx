@@ -107,14 +107,21 @@ export function ContinentSelectedPanel({
           </div>
         )}
 
-        {selected.status === 'auction' && (
+        {selected.status === 'auction' && !selectedAuctionId && (
+          <div className="bg-panel-deep border border-outline rounded-xl p-3 text-center">
+            <p className="text-muted text-[11px]">경매 정보 불러오는 중...</p>
+            <p className="text-muted text-[9px] mt-1">로그인이 필요하거나 정보가 동기화되지 않았을 수 있습니다.</p>
+          </div>
+        )}
+
+        {selected.status === 'auction' && selectedAuctionId && (
           <>
-            <div className="bg-panel-deep border border-gold/20 rounded-xl p-3">
-              <p className="text-muted text-[9px] mb-1">경매 종료까지</p>
-              <p className="text-gold font-bold text-xl text-center tracking-wider tabular-nums">
-                {timeLeft || '--:--:--'}
-              </p>
-            </div>
+            {timeLeft && (
+              <div className="bg-panel-deep border border-gold/20 rounded-xl p-3">
+                <p className="text-muted text-[9px] mb-1">경매 종료까지</p>
+                <p className="text-gold font-bold text-xl text-center tracking-wider tabular-nums">{timeLeft}</p>
+              </div>
+            )}
 
             <div
               className="bg-panel-deep border rounded-xl p-3"
