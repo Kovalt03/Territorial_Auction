@@ -93,7 +93,7 @@ export function ContinentPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { continents } = useContinent();
-  const { ap, userId, username, spendAP, syncAP } = useApp();
+  const { ap, userId, username, syncAP } = useApp();
   const { wishlistIds, toggle: toggleWishlist } = useWishlist();
 
   const continentId = Number(id);
@@ -235,7 +235,8 @@ export function ContinentPage() {
     setIsBidding(true);
     try {
       const result = await placeBidApi(selectedAuctionId, amt);
-      spendAP(amt);
+      const wallet = await fetchMyWallet();
+      syncAP(wallet.availableAP);
       setShowConfirm(false);
       setBidSuccess(true);
       setTimeout(() => setBidSuccess(false), 2500);
