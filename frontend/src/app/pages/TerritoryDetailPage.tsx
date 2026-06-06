@@ -24,7 +24,6 @@ type ChartRange = '3일' | '7일' | '30일';
 
 const GRADE_COLOR: Record<string, string> = { S: '#ffd700', A: '#00f5ff', B: '#00ff88', C: '#8892b0' };
 
-
 const RANGE_MS: Record<ChartRange, number> = {
   '3일': 3 * 86400_000,
   '7일': 7 * 86400_000,

@@ -195,7 +195,6 @@ function drawContinent(
   ctx: CanvasRenderingContext2D,
   c: ContinentDef,
   isHovered: boolean,
-  t: number,
   particles: Particle[],
 ): void {
   // Path2D constructed per-frame using current position
@@ -346,7 +345,7 @@ export function drawFrame(
   drawSun(ctx, t);
   for (const c of continents) {
     drawContinent(
-      ctx, c, hoveredId === c.id, t,
+      ctx, c, hoveredId === c.id,
       particleMap.get(c.slotId) ?? [],
     );
   }

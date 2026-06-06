@@ -381,7 +381,7 @@ export function ContinentPage() {
                         className={`relative flex items-center justify-center ${shown ? '' : 'opacity-15'}`}
                         style={{ width: visSize, height: visSize, background: bg, border: `1px solid ${border}`, borderRadius: 3, cursor: shown ? 'pointer' : 'default', boxShadow: isSelected ? '0 0 8px #00f5ff' : glow && shown ? `0 0 4px ${glow}60` : undefined, transition: 'border-color 0.1s' }}
                       >
-                        {shown && building && <span style={{ fontSize: fs, lineHeight: 1, userSelect: 'none' }}>{building}</span>}
+                        {shown && building && <span className="leading-none select-none" style={{ fontSize: fs }}>{building}</span>}
                         {shown && cell.status === 'auction' && !building && <div style={{ width: Math.max(4, fs - 4), height: Math.max(4, fs - 4), borderRadius: '50%', background: '#00f5ff', animation: 'pulse 1.2s infinite' }} />}
                         {shown && cell.grade === 'S' && cell.status !== 'idle' && <div className="absolute top-0 left-0 w-0 h-0" style={{ borderLeft: '4px solid #ffd700', borderBottom: '4px solid transparent' }} />}
                         {shown && cell.status === 'mine' && <div className="absolute bottom-0 right-0 w-0 h-0" style={{ borderRight: '4px solid #00ff88', borderTop: '4px solid transparent' }} />}
