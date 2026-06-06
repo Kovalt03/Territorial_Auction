@@ -1,5 +1,9 @@
 import { useNavigate } from 'react-router';
 
+import { useTerritoryAuctionHistory } from '../hooks/useTerritoryAuctionHistory';
+
+import { TerritoryHistoryPanel } from '../components/TerritoryHistoryPanel';
+
 import type { Grade } from '../types/grade';
 import type { BidEntry } from '../types/auction';
 import { GRADE_COLOR } from '../types/grade';
@@ -54,6 +58,11 @@ export function ContinentSelectedPanel({
   const bidValue = parseInt(bidInput);
   const canBid = !!selectedAuctionId && !isBidding && !!bidInput && bidValue >= minBid && bidValue <= ap;
   const isInWishlist = wishlistIds.has(selected.id);
+  const gradeColor = GRADE_COLOR[selected.grade];
+
+  const { history: auctionHistory, isLoading: isHistoryLoading } = useTerritoryAuctionHistory(selected.id || null);
+  const lastWinner = auctionHistory[0];
+  const previousWinner = auctionHistory[1];
 
   return (
     <>
@@ -83,9 +92,18 @@ export function ContinentSelectedPanel({
 
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
         {selected.status === 'idle' && (
-          <div className="bg-panel-deep border border-outline rounded-xl p-3 text-center">
-            <p className="text-muted text-[11px]">현재 경매 없음</p>
-            <p className="text-muted text-[9px] mt-1">토지세 미납 또는 공성전 후 자동 경매 예정</p>
+          <div className="bg-panel-deep border border-outline rounded-xl p-3">
+            <p className="text-foreground-soft font-semibold text-[11px] text-center">⏳ 경매 시작 대기</p>
+            <p className="text-muted text-[9px] mt-1 text-center">토지세 미납 또는 공성전 후 자동 경매 예정</p>
+            {lastWinner && (
+              <div className="mt-2 pt-2 border-t border-outline-soft">
+                <p className="text-muted text-[9px]">최근 낙찰</p>
+                <div className="flex justify-between mt-0.5">
+                  <span className="text-foreground-soft text-[10px] font-semibold">{lastWinner.winnerNickname}</span>
+                  <span className="text-[10px] font-bold" style={{ color: gradeColor }}>{lastWinner.finalPrice.toLocaleString()} AP</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -194,11 +212,46 @@ export function ContinentSelectedPanel({
         )}
 
         {(selected.status === 'mine' || selected.status === 'occupied') && (
-          <div className="bg-panel-deep border border-outline rounded-xl p-3 text-center">
-            <p className="text-muted text-[11px]">
-              {selected.status === 'mine' ? '내 영토입니다' : `${selected.owner}의 영토입니다`}
+          <div className="bg-panel-deep border border-outline rounded-xl p-3">
+            <p className="text-foreground-soft font-semibold text-[11px] text-center">
+              {selected.status === 'mine' ? '✓ 내 영토 점유 중' : '⛔ 타인 점유 중'}
             </p>
+            <div className="mt-2 space-y-1">
+              <div className="flex justify-between">
+                <span className="text-muted text-[9px]">현재 점유자</span>
+                <span className="font-semibold text-[10px]" style={{ color: selected.status === 'mine' ? '#00ff88' : selected.color }}>
+                  {selected.owner ?? '없음'}
+                </span>
+              </div>
+              {lastWinner && (
+                <div className="flex justify-between">
+                  <span className="text-muted text-[9px]">점유 시작</span>
+                  <span className="text-foreground-soft text-[10px]">{new Date(lastWinner.wonAt).toLocaleDateString('ko-KR')}</span>
+                </div>
+              )}
+              {lastWinner && (
+                <div className="flex justify-between">
+                  <span className="text-muted text-[9px]">낙찰가</span>
+                  <span className="text-[10px] font-semibold" style={{ color: gradeColor }}>{lastWinner.finalPrice.toLocaleString()} AP</span>
+                </div>
+              )}
+              {previousWinner && (
+                <div className="flex justify-between pt-1 mt-1 border-t border-outline-soft">
+                  <span className="text-muted text-[9px]">이전 점유자</span>
+                  <span className="text-foreground-soft text-[10px]">{previousWinner.winnerNickname}</span>
+                </div>
+              )}
+            </div>
           </div>
+        )}
+
+        {selected.id !== 0 && (
+          <TerritoryHistoryPanel
+            history={auctionHistory}
+            isLoading={isHistoryLoading}
+            gradeColor={gradeColor}
+            compact
+          />
         )}
       </div>
 
