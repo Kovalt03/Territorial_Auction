@@ -50,7 +50,6 @@ export function PersonalIslandPage() {
   const [showInventory, setShowInventory] = useState(false);
   const [deployFromInventoryIdx, setDeployFromInventoryIdx] = useState<number | null>(null);
 
-
   // 유닛 훈련 모달
   const [showTrainModal, setShowTrainModal] = useState(false);
   const [trainUnitTypeId, setTrainUnitTypeId] = useState<number | null>(null);
@@ -237,7 +236,6 @@ export function PersonalIslandPage() {
       setIsHarvesting(false);
     }
   };
-
 
   const handleBuild = async () => {
     if (isBuildingRef.current) return;

@@ -14,6 +14,7 @@ import { useStompSubscribe, useStompPublish } from '../hooks/useStompClient';
 import { GNB } from '../components/GNB';
 import { LineChart } from '../components/LineChart';
 import type { MyBidEntry } from '../types/auction';
+import { GRADE_COLOR, type Grade } from '../types/grade';
 
 import { BidConfirmModal } from './BidConfirmModal';
 import { TerritoryChat, type ChatMsg } from './TerritoryChat';
@@ -21,9 +22,6 @@ import { BidPanel } from './BidPanel';
 
 type ListTab = 'bidding' | 'wishlist';
 type ChartRange = '3일' | '7일' | '30일';
-
-const GRADE_COLOR: Record<string, string> = { S: '#ffd700', A: '#00f5ff', B: '#00ff88', C: '#8892b0' };
-
 
 const RANGE_MS: Record<ChartRange, number> = {
   '3일': 3 * 86400_000,
@@ -71,7 +69,7 @@ export function TerritoryDetailPage() {
   const { territory, bids, isLoading, error, refreshBids, updateCurrentPrice } = useTerritoryDetail(territoryId);
   const { bids: myBids, refresh: refreshMyBids } = useMyBids();
 
-  const gradeColor = GRADE_COLOR[territory?.grade ?? 'B'] ?? '#00ff88';
+  const gradeColor = GRADE_COLOR[(territory?.grade ?? 'B') as Grade] ?? '#00ff88';
   const gridSize = territory?.gridSize ?? 8;
   const currentBid = territory?.auction?.currentPrice ?? 0;
   const auctionId = territory?.auction?.auctionId ?? null;
@@ -297,7 +295,7 @@ export function TerritoryDetailPage() {
                     </span>
                     <span
                       className="px-1.5 py-0.5 rounded font-bold text-[9px]"
-                      style={{ color: GRADE_COLOR[b.grade] ?? '#8892b0', background: (GRADE_COLOR[b.grade] ?? '#8892b0') + '20' }}
+                      style={{ color: GRADE_COLOR[b.grade as Grade] ?? '#8892b0', background: (GRADE_COLOR[b.grade as Grade] ?? '#8892b0') + '20' }}
                     >
                       {b.grade}급
                     </span>
@@ -369,7 +367,7 @@ export function TerritoryDetailPage() {
                       </span>
                       <span
                         className="px-1.5 py-0.5 rounded font-bold text-[9px]"
-                        style={{ color: GRADE_COLOR[t.grade] ?? '#8892b0', background: (GRADE_COLOR[t.grade] ?? '#8892b0') + '20' }}
+                        style={{ color: GRADE_COLOR[t.grade as Grade] ?? '#8892b0', background: (GRADE_COLOR[t.grade as Grade] ?? '#8892b0') + '20' }}
                       >
                         {t.grade}급
                       </span>
