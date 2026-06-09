@@ -87,7 +87,7 @@ export function subscribeMultiple(destinations: string[], callback: () => void):
     const client = getOrCreateClient();
     if (!client.connected) return;
     subs = destinations.map(dest => client.subscribe(dest, callback));
-  }).catch(() => {});
+  }).catch((e) => console.warn('[STOMP] subscribeMultiple connect failed', e));
 
   return () => {
     cancelled = true;

@@ -62,7 +62,7 @@ export function GuildDetailPage() {
     if (!isMaster) return;
     fetchGuildApplications(guildId)
       .then(res => setApplications(res.applications))
-      .catch(() => {});
+      .catch((e) => console.warn('[GuildDetailPage] applications load failed', e));
   }, [isMaster, guildId]);
 
   const executeAction = async (fn: () => Promise<unknown>, successMsg?: string) => {

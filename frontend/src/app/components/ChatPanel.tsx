@@ -24,7 +24,7 @@ export function ChatPanel({ roomId }: Props) {
         setMessages([...res.messages].reverse());
         setHasNext(res.hasNext);
       })
-      .catch(() => {});
+      .catch((e) => console.warn('[ChatPanel] history load failed', e));
   }, [roomId]);
 
   useStompSubscribe<ChatHistoryMessage>(
@@ -44,7 +44,7 @@ export function ChatPanel({ roomId }: Props) {
         setMessages(prev => [...[...res.messages].reverse(), ...prev]);
         setHasNext(res.hasNext);
       })
-      .catch(() => {});
+      .catch((e) => console.warn('[ChatPanel] paging failed', e));
   }, [roomId, messages]);
 
   const handleSend = () => {

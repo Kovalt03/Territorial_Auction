@@ -107,7 +107,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // 알림 카운트는 별도 fetch — 실패해도 로그인 상태에 영향 없음
         fetchNotificationList(0, 1)
           .then(notifs => setState(prev => ({ ...prev, notifications: notifs.unreadCount })))
-          .catch(() => {});
+          .catch((e) => console.warn('[AppContext] notification count fetch failed', e));
       })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) {

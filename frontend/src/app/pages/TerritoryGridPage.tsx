@@ -81,7 +81,7 @@ export function TerritoryGridPage() {
     if (!id || isNaN(numId)) return;
     fetchTerritoryDetail(numId)
       .then(setTerritoryDetail)
-      .catch(() => {});
+      .catch((e) => console.warn('[TerritoryGridPage] detail load failed', e));
   }, [id]);
 
   const [grid, setGrid] = useState(GRID_DATA);
