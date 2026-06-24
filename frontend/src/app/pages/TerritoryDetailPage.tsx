@@ -108,7 +108,7 @@ export function TerritoryDetailPage() {
       refreshMyBids();
       // 상대방이 입찰하면 내 locked AP가 환불되므로 지갑 즉시 갱신
       if (msg.bidderId !== userId) {
-        fetchMyWallet().then(wallet => syncAP(wallet.availableAP)).catch(() => {});
+        fetchMyWallet().then(wallet => syncAP(wallet.availableAP)).catch((e) => console.warn('[TerritoryDetailPage] wallet sync failed', e));
       }
     }
   }, [auctionId, refreshBids, updateCurrentPrice, refreshMyBids, userId, syncAP]);
@@ -133,7 +133,7 @@ export function TerritoryDetailPage() {
         });
         setChatMessages(msgs);
       })
-      .catch(() => {});
+      .catch((e) => console.warn('[TerritoryDetailPage] chat history load failed', e));
   }, [chatRoomId, userId]);
 
   useEffect(() => {
@@ -199,7 +199,7 @@ export function TerritoryDetailPage() {
     setIsLoadingWishlist(true);
     Promise.all([...localWishlist].map(id => fetchTerritoryDetail(id)))
       .then(results => setWishlistTerritories(results))
-      .catch(() => {})
+      .catch((e) => console.warn('[TerritoryDetailPage] wishlist territories load failed', e))
       .finally(() => setIsLoadingWishlist(false));
   }, [listTab, localWishlist]);
 

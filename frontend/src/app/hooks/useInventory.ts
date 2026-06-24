@@ -10,7 +10,7 @@ export function useInventory() {
   useEffect(() => {
     fetchInventory()
       .then(res => setInventory(res.items))
-      .catch(() => {})
+      .catch((e) => console.warn('[useInventory] fetch failed', e))
       .finally(() => setIsLoading(false));
   }, []);
 

@@ -130,10 +130,10 @@ export function ContinentPage() {
       setAuctionCurrentPrice(msg.currentPrice);
       setAuctionEndAt(msg.endAt);
       setBidInput(String(Math.max(Math.ceil(msg.currentPrice * 1.05), msg.currentPrice + 10)));
-      fetchAuctionBids(msg.auctionId).then(res => setBidHistory(res.bids)).catch(() => {});
+      fetchAuctionBids(msg.auctionId).then(res => setBidHistory(res.bids)).catch((e) => console.warn('[ContinentPage] bid history refresh failed', e));
       // 상대방이 입찰하면 내 locked AP가 환불되므로 지갑 즉시 갱신
       if (msg.bidderId !== userId) {
-        fetchMyWallet().then(wallet => syncAP(wallet.availableAP)).catch(() => {});
+        fetchMyWallet().then(wallet => syncAP(wallet.availableAP)).catch((e) => console.warn('[ContinentPage] wallet sync failed', e));
       }
     },
   );
@@ -188,7 +188,7 @@ export function ContinentPage() {
 
   useEffect(() => {
     if (!selectedAuctionId) { setBidHistory([]); return; }
-    fetchAuctionBids(selectedAuctionId).then(res => setBidHistory(res.bids)).catch(() => {});
+    fetchAuctionBids(selectedAuctionId).then(res => setBidHistory(res.bids)).catch((e) => console.warn('[ContinentPage] bid history load failed', e));
   }, [selectedAuctionId]);
 
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -243,7 +243,7 @@ export function ContinentPage() {
       setAuctionCurrentPrice(result.newPrice);
       setAuctionEndAt(result.endAt);
       setBidInput(String(Math.max(Math.ceil(result.newPrice * 1.05), result.newPrice + 10)));
-      fetchAuctionBids(selectedAuctionId).then(res => setBidHistory(res.bids)).catch(() => {});
+      fetchAuctionBids(selectedAuctionId).then(res => setBidHistory(res.bids)).catch((e) => console.warn('[ContinentPage] bid history refresh after bid failed', e));
     } catch {
       setShowConfirm(false);
     } finally {
@@ -374,7 +374,7 @@ export function ContinentPage() {
                                 const min = Math.max(Math.ceil(d.auction.currentPrice * 1.05), d.auction.currentPrice + 10);
                                 setBidInput(String(min));
                               }
-                            }).catch(() => {});
+                            }).catch((e) => console.warn('[ContinentPage] territory detail load failed', e));
                           }
                         }}
                         onMouseEnter={() => setHoverCell({ x, y })}

@@ -49,7 +49,7 @@ export function NotificationPage() {
         setNotifications(res.notifications);
         setHasMore(res.notifications.length === PAGE_SIZE);
       })
-      .catch(() => {})
+      .catch((e) => console.warn('[NotificationPage] list load failed', e))
       .finally(() => setIsLoading(false));
   }, []);
 

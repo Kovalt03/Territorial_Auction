@@ -38,7 +38,7 @@ export function SettingsPage() {
   useEffect(() => {
     fetchSettings()
       .then(data => setNotifications(data))
-      .catch(() => {});
+      .catch((e) => console.warn('[SettingsPage] settings load failed', e));
   }, []);
 
   const [currentPassword, setCurrentPassword] = useState('');

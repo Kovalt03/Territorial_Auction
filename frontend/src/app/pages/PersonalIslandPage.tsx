@@ -68,7 +68,7 @@ export function PersonalIslandPage() {
   }, []);
 
   const reloadInventory = useCallback(() => {
-    fetchBuildingInventory().then(setInventory).catch(() => {});
+    fetchBuildingInventory().then(setInventory).catch((e) => console.warn('[PersonalIslandPage] inventory reload failed', e));
   }, []);
 
   const handleUpgradeBuilding = async () => {
