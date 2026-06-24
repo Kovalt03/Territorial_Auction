@@ -35,9 +35,11 @@
   "seasonPassExemptBonus": 2,
   "effectiveExemptCount": 5,
   "finalDailyGP": 150,
-  "nextChargeAt": "2026-04-28T00:00:00Z"
+  "nextChargeAt": "2026-04-28T00:00:00"
 }
 ```
+
+> `nextChargeAt`은 `LocalDateTime`(KST, UTC 오프셋 `Z` 없음)으로 직렬화된다. 프론트는 로컬(KST) 시각으로 해석한다.
 
 | field | 타입 | 설명 | 출처 |
 |---|---|---|---|
@@ -92,7 +94,7 @@
 
 ## 납세 내역 조회
 
-**GET** `/api/v1/land-tax/logs?page={0}&size={10}&status={PAID|FAILED}`
+**GET** `/api/v1/land-tax/logs?page={0}&size={10}&status={PAID|FAILED|EXEMPT|EVICTED}`
 
 **Authorization**: Bearer `{{accessToken}}` (필수)
 
@@ -104,7 +106,7 @@
 |---|---|---|---|---|
 | `page` | Integer | N | 0 | 페이지 번호 (0-based) |
 | `size` | Integer | N | 10 | 페이지 크기 |
-| `status` | String | N | (전체) | `PAID` / `FAILED` — 생략 시 전체 조회 |
+| `status` | String | N | (전체) | `PAID` / `FAILED` / `EXEMPT` / `EVICTED` — 생략 시 전체 조회 |
 
 ### Response (200 OK)
 
@@ -114,17 +116,17 @@
   "logs": [
     {
       "logId": 33,
-      "chargedAt": "2026-04-08T00:00:00Z",
+      "chargedAt": "2026-04-08T00:00:00",
       "territoryCount": 8,
       "gpCharged": 150,
       "status": "PAID"
     },
     {
       "logId": 30,
-      "chargedAt": "2026-04-07T00:00:00Z",
+      "chargedAt": "2026-04-07T00:00:00",
       "territoryCount": 3,
       "gpCharged": 0,
-      "status": "PAID"
+      "status": "EXEMPT"
     }
   ]
 }
@@ -134,12 +136,13 @@
 |---|---|---|---|
 | `totalCount` | Long | 전체 납세 이력 수 | `land_tax_logs` COUNT |
 | `logs[].logId` | Long | 납세 이력 ID | `land_tax_logs.id` |
-| `logs[].chargedAt` | DateTime | 세금 부과 시각 | `land_tax_logs.charged_at` |
+| `logs[].chargedAt` | DateTime | 세금 부과 시각 (`LocalDateTime`, KST, `Z` 없음) | `land_tax_logs.charged_at` |
 | `logs[].territoryCount` | Integer | 부과 시점 보유 영토 수 | `land_tax_logs.territory_count` |
 | `logs[].gpCharged` | Integer | 차감된 GP (면제 시 0) | `land_tax_logs.gp_charged` |
-| `logs[].status` | String | `PAID` / `FAILED` | `land_tax_logs.status` |
+| `logs[].status` | String | `PAID` / `FAILED` / `EXEMPT` / `EVICTED` | `land_tax_logs.status` |
 
-> `FAILED`: GP 부족으로 차감 실패 → 유예 기간 시작 / `charged_at` 내림차순 정렬
+> 상태 의미 — `PAID`: 정상 납부 / `FAILED`: GP 부족으로 차감 실패 → 유예 기간 시작 / `EXEMPT`: 과세액 0(면제 구간) / `EVICTED`: 유예 기간 만료로 강제 경매 전환  
+> `charged_at` 내림차순 정렬
 
 ### 에러
 
