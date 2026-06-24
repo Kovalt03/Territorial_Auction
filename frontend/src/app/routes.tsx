@@ -19,6 +19,7 @@ const SiegePage = lazyPage(() => import('./pages/SiegePage'), 'SiegePage');
 const ItemShopPage = lazyPage(() => import('./pages/ItemShopPage'), 'ItemShopPage');
 const SeasonPassPage = lazyPage(() => import('./pages/SeasonPassPage'), 'SeasonPassPage');
 const VaultPage = lazyPage(() => import('./pages/VaultPage'), 'VaultPage');
+const TerritoryManagementPage = lazyPage(() => import('./pages/TerritoryManagementPage'), 'TerritoryManagementPage');
 const PersonalIslandPage = lazyPage(() => import('./pages/PersonalIslandPage'), 'PersonalIslandPage');
 const SettingsPage = lazyPage(() => import('./pages/SettingsPage'), 'SettingsPage');
 const GuildListPage = lazyPage(() => import('./pages/GuildListPage'), 'GuildListPage');
@@ -43,6 +44,8 @@ export const router = createBrowserRouter([
   { path: '/app/item-shop', element: <PrivateRoute><ItemShopPage /></PrivateRoute> },
   { path: '/app/season-pass', element: <PrivateRoute><SeasonPassPage /></PrivateRoute> },
   { path: '/app/vault', element: <PrivateRoute><VaultPage /></PrivateRoute> },
+  { path: '/app/territory-management', element: <PrivateRoute><TerritoryManagementPage /></PrivateRoute> },
+  { path: '/app/land-tax', element: <Navigate to="/app/territory-management?tab=tax" replace /> },
   { path: '/app/my-island', element: <PrivateRoute><PersonalIslandPage /></PrivateRoute> },
   { path: '/app/settings', element: <PrivateRoute><SettingsPage /></PrivateRoute> },
   { path: '*', element: <Navigate to="/login" replace /> },

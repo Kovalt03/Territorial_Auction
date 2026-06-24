@@ -81,6 +81,35 @@ export function GNB() {
 
           {/* Nav icons */}
           <div className="flex items-center gap-0.5">
+            {/* 영토 관리 드롭다운 */}
+            <div className="relative group h-14 flex items-center">
+              <button
+                className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg hover:bg-elevated transition-colors min-w-[52px] h-14"
+                title="영토 관리"
+              >
+                <span className="text-lg">🗺</span>
+                <span className={`text-[10px] leading-none ${location.pathname === '/app/territory-management' ? 'font-semibold text-primary' : 'font-normal text-muted'}`}>
+                  영토 관리
+                </span>
+              </button>
+              <div className="absolute right-0 top-full hidden group-hover:block bg-panel border border-outline rounded-lg shadow-lg overflow-hidden z-50 min-w-[150px]">
+                {[
+                  { label: '경매 진행', tab: 'active' },
+                  { label: '내 영토', tab: 'mine' },
+                  { label: '거래 내역', tab: 'history' },
+                  { label: '입찰 현황', tab: 'bids' },
+                  { label: '토지세', tab: 'tax' },
+                ].map(item => (
+                  <button
+                    key={item.tab}
+                    onClick={() => navigate(`/app/territory-management?tab=${item.tab}`)}
+                    className="w-full text-left px-3 py-2.5 text-xs text-foreground hover:bg-elevated transition-colors"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             {navItems.map(item => {
               const isActive = location.pathname === item.path;
               return (
