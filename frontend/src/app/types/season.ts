@@ -27,3 +27,58 @@ export interface PurchaseSeasonPassResponse {
     taxExemptBonus: number;
   };
 }
+
+export type RewardTrack = 'FREE' | 'PREMIUM';
+
+export interface SeasonRewardItem {
+  rewardId: number;
+  level: number;
+  track: RewardTrack;
+  rewardName: string;
+  isClaimed: boolean;
+  canClaim: boolean;
+}
+
+export interface SeasonProgress {
+  seasonId: number;
+  seasonName: string;
+  passType: 'FREE' | 'PREMIUM';
+  currentLevel: number;
+  currentXp: number;
+  nextLevelXp: number;
+  seasonEndsAt: string;
+  rewards: SeasonRewardItem[];
+}
+
+export type MissionPeriod = 'DAILY' | 'WEEKLY' | 'SEASON';
+
+export interface SeasonMission {
+  missionId: number;
+  code: string;
+  title: string;
+  description: string;
+  missionType: MissionPeriod;
+  goalCount: number;
+  completedCount: number;
+  xpReward: number;
+  isClaimed: boolean;
+  canClaim: boolean;
+}
+
+export interface MissionListResponse {
+  missions: SeasonMission[];
+}
+
+export interface ClaimMissionResponse {
+  missionId: number;
+  xpGranted: number;
+  newLevel: number;
+  newXp: number;
+}
+
+export interface ClaimRewardResponse {
+  rewardId: number;
+  rewardName: string;
+  track: RewardTrack;
+  claimedAt: string;
+}
