@@ -117,7 +117,11 @@
 | ✅ | 만료 알림 스케줄러 | — | 만료 3일 전·당일 알림 발송 (SeasonPassScheduler, be-25) |
 | ✅ | XP 적립 — 경매 낙찰 | — | `AuctionSettledEvent` 구독, +100 XP (be-32) |
 | ✅ | XP 적립 — 공성전 승리 | — | `SiegeVictoryEvent` 신규 이벤트, +50 XP (be-32) |
-| ✅ | DB 시드 데이터 | — | `season_pass_level_rewards` 6개 레벨 보상 삽입 (be-32) |
+| ✅ | 미션 목록 조회 | `GET /api/v1/season-pass/missions` | 진행도 포함 (`MissionService`, all-78) |
+| ✅ | 미션 보상 수령 | `POST /api/v1/season-pass/missions/{missionId}/claim` | 완료 미션만 수령, 중복 수령 409 (all-78) |
+| ✅ | 레벨 보상 수령 | `POST /api/v1/season-pass/rewards/{rewardId}/claim` | 무료/프리미엄 2트랙, 미보유 프리미엄 차단 (all-78) |
+| ✅ | 미션 진행 이벤트 구독 | — | `MissionEventListener`가 도메인 이벤트로 진행도 갱신 (all-78) |
+| ✅ | DB 시드 데이터 | — | `season_pass_level_rewards` 6개 레벨 보상 + `season_missions` 시드 (be-32, all-78) |
 
 ---
 
