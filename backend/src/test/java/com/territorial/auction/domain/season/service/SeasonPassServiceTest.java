@@ -199,9 +199,11 @@ class SeasonPassServiceTest {
             LocalDateTime beforePurchase = LocalDateTime.now();
 
             given(seasonPassRepository.findFirstByOrderByIdDesc()).willReturn(Optional.of(pass));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
                     .willReturn(Optional.empty());
+            given(seasonRepository.findActiveSeason(any()))
+                    .willReturn(Optional.of(buildSeason(1L, 1)));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
             given(userRepository.findById(1L)).willReturn(Optional.of(user));
             given(userSeasonPassRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
@@ -213,30 +215,26 @@ class SeasonPassServiceTest {
             then(redisTemplate).should().delete("season_pass:progress:1");
             assertThat(response.seasonPassId()).isEqualTo(1L);
             assertThat(response.costAP()).isEqualTo(100);
+            // 만료는 시즌 종료 시각(buildSeason: now+30일)에 종속된다
             assertThat(response.expiresAt()).isAfter(beforePurchase.plusDays(29));
         }
 
         @Test
-        @DisplayName("AP 충분 + 유효한 기존 패스 존재 - 만료일 연장 후 캐시 갱신")
-        void sufficientAp_existingValid_extendsExpiry() {
+        @DisplayName("AP 충분 + 유효한 기존 패스 존재 - SEASON_PASS_ALREADY_OWNED 예외")
+        void sufficientAp_existingValid_throwsAlreadyOwned() {
             SeasonPass pass = buildSeasonPass(1L, 100, 30);
-            Wallet wallet = walletWithAp(500);
             UserSeasonPass existingPass = Mockito.mock(UserSeasonPass.class);
             given(existingPass.getExpiresAt()).willReturn(LocalDateTime.now().plusDays(10));
 
             given(seasonPassRepository.findFirstByOrderByIdDesc()).willReturn(Optional.of(pass));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
                     .willReturn(Optional.of(existingPass));
-            given(existingPass.getSeasonPass()).willReturn(pass);
-            given(existingPass.getStartedAt()).willReturn(LocalDateTime.now().minusDays(20));
 
-            seasonPassService.purchase(1L);
-
-            then(wallet).should().spendAp(100);
-            then(existingPass).should().extend(30);
+            assertThatThrownBy(() -> seasonPassService.purchase(1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting(e -> ((CustomException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.SEASON_PASS_ALREADY_OWNED);
             then(userSeasonPassRepository).should(never()).save(any());
-            then(redisTemplate).should().delete("season_pass:progress:1");
         }
 
         @Test
@@ -246,6 +244,8 @@ class SeasonPassServiceTest {
             Wallet wallet = walletWithAp(100);
 
             given(seasonPassRepository.findFirstByOrderByIdDesc()).willReturn(Optional.of(pass));
+            given(seasonRepository.findActiveSeason(any()))
+                    .willReturn(Optional.of(buildSeason(1L, 1)));
             given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
 
             assertThatThrownBy(() -> seasonPassService.purchase(1L))
