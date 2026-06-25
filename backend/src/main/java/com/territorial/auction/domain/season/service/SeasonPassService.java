@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.season.service;
 
+import com.territorial.auction.domain.season.dto.ClaimRewardResponse;
 import com.territorial.auction.domain.season.dto.MySeasonPassResponse;
 import com.territorial.auction.domain.season.dto.PurchaseSeasonPassResponse;
 import com.territorial.auction.domain.season.dto.SeasonPassResponse;
@@ -7,6 +8,7 @@ import com.territorial.auction.domain.season.entity.Season;
 import com.territorial.auction.domain.season.entity.SeasonPass;
 import com.territorial.auction.domain.season.entity.SeasonPassLevelReward;
 import com.territorial.auction.domain.season.entity.SeasonPassProgress;
+import com.territorial.auction.domain.season.entity.SeasonPassRewardClaim;
 import com.territorial.auction.domain.season.entity.UserSeasonPass;
 import com.territorial.auction.domain.season.repository.SeasonPassLevelRewardRepository;
 import com.territorial.auction.domain.season.repository.SeasonPassProgressRepository;
@@ -23,7 +25,6 @@ import com.territorial.auction.global.exception.ErrorCode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -90,11 +91,23 @@ public class SeasonPassService {
         List<SeasonPassResponse.RewardItem> rewardItems =
                 allRewards.stream()
                         .map(
-                                r ->
-                                        new SeasonPassResponse.RewardItem(
-                                                r.getLevel(),
-                                                r.getRewardName(),
-                                                claimedIds.contains(r.getId())))
+                                r -> {
+                                    boolean isClaimed = claimedIds.contains(r.getId());
+                                    boolean isPremium =
+                                            r.getTrack()
+                                                    == SeasonPassLevelReward.RewardTrack.PREMIUM;
+                                    boolean canClaim =
+                                            currentLevel >= r.getLevel()
+                                                    && (!isPremium || hasPremiumPass)
+                                                    && !isClaimed;
+                                    return new SeasonPassResponse.RewardItem(
+                                            r.getId(),
+                                            r.getLevel(),
+                                            r.getTrack().name(),
+                                            r.getRewardName(),
+                                            isClaimed,
+                                            canClaim);
+                                })
                         .toList();
 
         SeasonPassResponse response =
@@ -147,40 +160,46 @@ public class SeasonPassService {
                 seasonPassRepository
                         .findFirstByOrderByIdDesc()
                         .orElseThrow(() -> new CustomException(ErrorCode.SEASON_PASS_NOT_FOUND));
+
+        boolean alreadyOwns =
+                userSeasonPassRepository
+                        .findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(userId)
+                        .filter(p -> p.getExpiresAt().isAfter(LocalDateTime.now()))
+                        .isPresent();
+        if (alreadyOwns) {
+            throw new CustomException(ErrorCode.SEASON_PASS_ALREADY_OWNED);
+        }
+
+        Season season =
+                seasonRepository
+                        .findActiveSeason(LocalDateTime.now())
+                        .orElseThrow(() -> new CustomException(ErrorCode.SEASON_NOT_FOUND));
         Wallet wallet =
                 walletRepository
                         .findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
         if (wallet.getAvailableAp() < pass.getCostAp()) {
             throw new CustomException(ErrorCode.INSUFFICIENT_AP);
         }
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         wallet.spendAp(pass.getCostAp());
 
-        Optional<UserSeasonPass> existingPass =
-                userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(userId);
-
-        UserSeasonPass userPass;
-        if (existingPass.isPresent()
-                && existingPass.get().getExpiresAt().isAfter(LocalDateTime.now())) {
-            existingPass.get().extend(pass.getDurationDays());
-            userPass = existingPass.get();
-        } else {
-            User user =
-                    userRepository
-                            .findById(userId)
-                            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-            LocalDateTime now = LocalDateTime.now();
-            userPass =
-                    userSeasonPassRepository.save(
-                            UserSeasonPass.builder()
-                                    .user(user)
-                                    .seasonPass(pass)
-                                    .startedAt(now)
-                                    .expiresAt(now.plusDays(pass.getDurationDays()))
-                                    .build());
-        }
+        LocalDateTime now = LocalDateTime.now();
+        // 패스는 현재 시즌에 종속 — 만료는 시즌 종료 시각. 시즌 종료 배치가 일괄 비활성화한다.
+        LocalDateTime expiresAt =
+                season.getEndedAt() != null ? season.getEndedAt() : now.plusDays(30);
+        UserSeasonPass userPass =
+                userSeasonPassRepository.save(
+                        UserSeasonPass.builder()
+                                .user(user)
+                                .seasonPass(pass)
+                                .startedAt(now)
+                                .expiresAt(expiresAt)
+                                .build());
 
         try {
             redisTemplate
@@ -194,5 +213,56 @@ public class SeasonPassService {
         }
 
         return PurchaseSeasonPassResponse.of(userPass, wallet.getAvailableAp());
+    }
+
+    @Transactional
+    public ClaimRewardResponse claimReward(Long userId, Long rewardId) {
+        SeasonPassLevelReward reward =
+                seasonPassLevelRewardRepository
+                        .findById(rewardId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.SEASON_REWARD_NOT_FOUND));
+
+        SeasonPassProgress progress =
+                seasonPassProgressRepository
+                        .findByUser_IdAndSeason_Id(userId, reward.getSeason().getId())
+                        .orElse(null);
+        int currentLevel = progress != null ? progress.getLevel() : 1;
+        if (currentLevel < reward.getLevel()) {
+            throw new CustomException(ErrorCode.REWARD_LEVEL_NOT_REACHED);
+        }
+
+        if (reward.getTrack() == SeasonPassLevelReward.RewardTrack.PREMIUM) {
+            boolean hasPremiumPass =
+                    userSeasonPassRepository
+                            .findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(userId)
+                            .filter(p -> p.getExpiresAt().isAfter(LocalDateTime.now()))
+                            .isPresent();
+            if (!hasPremiumPass) {
+                throw new CustomException(ErrorCode.REWARD_PREMIUM_REQUIRED);
+            }
+        }
+
+        if (seasonPassRewardClaimRepository.existsByUser_IdAndReward_Id(userId, rewardId)) {
+            throw new CustomException(ErrorCode.REWARD_ALREADY_CLAIMED);
+        }
+
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        seasonPassRewardClaimRepository.save(
+                SeasonPassRewardClaim.builder().user(user).reward(reward).build());
+
+        try {
+            redisTemplate.delete(CACHE_PROGRESS + userId);
+        } catch (Exception e) {
+            log.warn("보상 수령 후 진행도 캐시 무효화 실패. userId={}", userId);
+        }
+
+        return new ClaimRewardResponse(
+                reward.getId(),
+                reward.getRewardName(),
+                reward.getTrack().name(),
+                LocalDateTime.now());
     }
 }

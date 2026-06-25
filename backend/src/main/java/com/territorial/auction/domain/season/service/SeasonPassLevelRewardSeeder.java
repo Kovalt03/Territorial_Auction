@@ -72,6 +72,11 @@ public class SeasonPassLevelRewardSeeder implements ApplicationRunner {
                                     SeasonPassLevelReward.builder()
                                             .season(season)
                                             .level((Integer) row.get("level"))
+                                            .track(
+                                                    SeasonPassLevelReward.RewardTrack.valueOf(
+                                                            (String)
+                                                                    row.getOrDefault(
+                                                                            "track", "FREE")))
                                             .rewardName((String) row.get("rewardName"))
                                             .build())
                     .toList();

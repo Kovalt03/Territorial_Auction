@@ -36,35 +36,38 @@ public class SeasonXpService {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleAuctionWin(AuctionSettledEvent event) {
-        grantXp(event.userId(), event.seasonId(), SeasonPassPolicy.XP_AUCTION_WIN);
+        grantXpInternal(event.userId(), event.seasonId(), SeasonPassPolicy.XP_AUCTION_WIN);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleSiegeVictory(SiegeVictoryEvent event) {
-        grantXp(event.attackerId(), event.seasonId(), SeasonPassPolicy.XP_SIEGE_VICTORY);
+        grantXpInternal(event.attackerId(), event.seasonId(), SeasonPassPolicy.XP_SIEGE_VICTORY);
+    }
+
+    /** 미션 수령 등 직접 호출용 — 호출자 트랜잭션 내에서 XP 적립 후 진행도 반환. */
+    public SeasonPassProgress grantXpDirectly(Long userId, Long seasonId, int xpAmount) {
+        return grantXpInternal(userId, seasonId, xpAmount);
     }
 
     // 이벤트 리스너 컨텍스트 — 예외 대신 조용한 종료로 처리해야 하므로 if-isEmpty 패턴 의도적 사용
-    private void grantXp(Long userId, Long seasonId, int xpAmount) {
+    private SeasonPassProgress grantXpInternal(Long userId, Long seasonId, int xpAmount) {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             log.warn("시즌 패스 XP 적립 실패: 유저 없음. userId={}", userId);
-            return;
+            return null;
         }
         Optional<Season> seasonOpt = seasonRepository.findById(seasonId);
         if (seasonOpt.isEmpty()) {
             log.warn("시즌 패스 XP 적립 실패: 시즌 없음. seasonId={}", seasonId);
-            return;
+            return null;
         }
 
         User user = userOpt.get();
         Season season = seasonOpt.get();
 
-        // SeasonXpService는 seasonId 유효성을 재확인하기 위해 Season 엔티티가 필요하다.
-        // SiegeService에서 이미 확인한 seasonId라도 리스너가 Season 엔티티를 직접 써야 하므로 재조회한다.
         SeasonPassProgress progress = findOrCreateProgress(user, season);
-        if (progress == null) return;
+        if (progress == null) return null;
 
         progress.addXp(xpAmount, SeasonPassPolicy.XP_PER_LEVEL);
 
@@ -75,6 +78,7 @@ public class SeasonXpService {
         }
 
         log.info("시즌 패스 XP 적립. userId={}, seasonId={}, xpAmount={}", userId, seasonId, xpAmount);
+        return progress;
     }
 
     private SeasonPassProgress findOrCreateProgress(User user, Season season) {

@@ -1,15 +1,40 @@
 # 시즌 패스 레벨 보상 설정
-# 현재 활성 시즌에 적용됩니다. 레벨과 rewardName을 자유롭게 편집하세요.
+# 현재 활성 시즌에 적용됩니다. level, track(FREE/PREMIUM), rewardName을 자유롭게 편집하세요.
+# FREE 보상은 패스 없이도 레벨 도달 시 수령 가능, PREMIUM 보상은 패스 구매자만 수령.
 rewards:
   - level: 5
+    track: FREE
     rewardName: "병력 증강제 x1"
+  - level: 5
+    track: PREMIUM
+    rewardName: "공격권 x1"
   - level: 10
-    rewardName: "공격권 x2"
+    track: FREE
+    rewardName: "공격권 x1"
+  - level: 10
+    track: PREMIUM
+    rewardName: "병력 증강제 x2"
   - level: 15
-    rewardName: "병력 증강제 x3"
+    track: FREE
+    rewardName: "병력 증강제 x2"
+  - level: 15
+    track: PREMIUM
+    rewardName: "무적 방어막 x1"
   - level: 20
+    track: FREE
+    rewardName: "공격권 x2"
+  - level: 20
+    track: PREMIUM
     rewardName: "전설 영토 스킨"
   - level: 25
+    track: FREE
     rewardName: "무적 방어막 x1"
+  - level: 25
+    track: PREMIUM
+    rewardName: "정밀 공격권 x2"
   - level: 30
+    track: FREE
+    rewardName: "프리미엄 영토 스킨"
+  - level: 30
+    track: PREMIUM
     rewardName: "시즌 챔피언 칭호"

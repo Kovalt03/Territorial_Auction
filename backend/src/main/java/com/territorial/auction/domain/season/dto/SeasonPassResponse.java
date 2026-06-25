@@ -12,5 +12,11 @@ public record SeasonPassResponse(
         Integer nextLevelXp,
         LocalDateTime seasonEndsAt,
         List<RewardItem> rewards) {
-    public record RewardItem(Integer level, String rewardName, Boolean isClaimed) {}
+    public record RewardItem(
+            Long rewardId,
+            Integer level,
+            String track,
+            String rewardName,
+            Boolean isClaimed,
+            Boolean canClaim) {}
 }
