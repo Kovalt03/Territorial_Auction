@@ -3,10 +3,12 @@ package com.territorial.auction.domain.auth.service;
 import com.territorial.auction.domain.auth.dto.*;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.BuildingType;
+import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.entity.IslandGrade;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.user.entity.*;
@@ -35,6 +37,7 @@ public class AuthService {
     private final WalletRepository walletRepository;
     private final NotificationSettingRepository notificationSettingRepository;
     private final HomeIslandRepository homeIslandRepository;
+    private final GlobalVaultRepository globalVaultRepository;
     private final IslandGradeRepository islandGradeRepository;
     private final UserProfileRepository userProfileRepository;
     private final BuildingTypeRepository buildingTypeRepository;
@@ -63,6 +66,10 @@ public class AuthService {
         // Wallet 생성
         Wallet wallet = Wallet.builder().user(user).build();
         walletRepository.save(wallet);
+
+        // GlobalVault 생성
+        GlobalVault globalVault = GlobalVault.builder().user(user).build();
+        globalVaultRepository.save(globalVault);
 
         // Notification 생성
         NotificationSetting notificationSetting = NotificationSetting.builder().user(user).build();

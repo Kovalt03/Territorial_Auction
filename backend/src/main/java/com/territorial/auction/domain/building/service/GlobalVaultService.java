@@ -7,7 +7,9 @@ import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
+import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
@@ -26,9 +28,11 @@ public class GlobalVaultService {
     private final GlobalVaultRepository globalVaultRepository;
     private final TerritoryRepository territoryRepository;
     private final WalletRepository walletRepository;
+    private final UserRepository userRepository;
 
+    @Transactional
     public GlobalVaultResponse getVault(Long userId) {
-        GlobalVault vault = findVaultOrThrow(userId);
+        GlobalVault vault = findOrCreateVault(userId);
         LocalDateTime next = nextTransferAvailableAt(vault);
         boolean available = next == null || !LocalDateTime.now().isBefore(next);
         return new GlobalVaultResponse(
@@ -44,7 +48,7 @@ public class GlobalVaultService {
         Territory territory = findTerritoryOrThrow(request.sourceTerritoryId());
         validateTerritoryOwner(territory, userId);
 
-        GlobalVault vault = findVaultOrThrow(userId);
+        GlobalVault vault = findOrCreateVault(userId);
         validateCooldown(vault);
 
         Wallet wallet =
@@ -100,10 +104,16 @@ public class GlobalVaultService {
                 nextTransferAvailableAt(vault));
     }
 
-    private GlobalVault findVaultOrThrow(Long userId) {
-        return globalVaultRepository
-                .findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    private GlobalVault findOrCreateVault(Long userId) {
+        return globalVaultRepository.findById(userId).orElseGet(() -> createVault(userId));
+    }
+
+    private GlobalVault createVault(Long userId) {
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        return globalVaultRepository.save(GlobalVault.builder().user(user).build());
     }
 
     private Territory findTerritoryOrThrow(Long territoryId) {
