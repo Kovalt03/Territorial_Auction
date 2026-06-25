@@ -99,7 +99,7 @@ public class MapService {
 
         TerritoryDetailResponse.AuctionInfo auction =
                 auctionRepository
-                        .findByTerritoryId(territoryId)
+                        .findFirstByTerritoryIdAndSettledFalseOrderByEndAtDesc(territoryId)
                         .map(
                                 a ->
                                         new TerritoryDetailResponse.AuctionInfo(
