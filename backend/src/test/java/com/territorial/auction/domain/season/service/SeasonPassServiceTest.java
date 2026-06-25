@@ -137,8 +137,8 @@ class SeasonPassServiceTest {
         @DisplayName("유효한 시즌패스 존재 - 모든 필드 정확히 매핑")
         void validPass_allFieldsMappedCorrectly() {
             SeasonPass pass = buildSeasonPass(7L, 100, 30);
-            LocalDateTime startedAt = LocalDateTime.of(2026, 5, 1, 0, 0, 0);
-            LocalDateTime expiresAt = LocalDateTime.of(2026, 6, 1, 0, 0, 0);
+            LocalDateTime startedAt = LocalDateTime.now().minusDays(5);
+            LocalDateTime expiresAt = LocalDateTime.now().plusDays(25);
             UserSeasonPass userPass =
                     UserSeasonPass.builder()
                             .seasonPass(pass)
