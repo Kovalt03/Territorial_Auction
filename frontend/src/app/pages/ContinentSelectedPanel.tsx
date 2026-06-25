@@ -28,6 +28,8 @@ interface Props {
 
   auctionCurrentPrice: number;
   selectedAuctionId: number | null;
+  isAuctionLoading: boolean;
+  auctionError: string | null;
   timeLeft: string;
   bidHistory: BidEntry[];
 
@@ -47,7 +49,7 @@ interface Props {
 
 export function ContinentSelectedPanel({
   selected, continentName, continentColor, username, ap,
-  auctionCurrentPrice, selectedAuctionId, timeLeft, bidHistory,
+  auctionCurrentPrice, selectedAuctionId, isAuctionLoading, auctionError, timeLeft, bidHistory,
   bidInput, bidSuccess, isBidding, isHighestBidder,
   onChangeBidInput, onSubmitBid,
   wishlistIds, onToggleWishlist, onDeselect,
@@ -107,10 +109,22 @@ export function ContinentSelectedPanel({
           </div>
         )}
 
-        {selected.status === 'auction' && !selectedAuctionId && (
-          <div className="bg-panel-deep border border-outline rounded-xl p-3 text-center">
+        {selected.status === 'auction' && !selectedAuctionId && isAuctionLoading && (
+          <div className="bg-panel-deep border border-outline rounded-xl p-3 flex items-center justify-center gap-2">
+            <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <p className="text-muted text-[11px]">경매 정보 불러오는 중...</p>
-            <p className="text-muted text-[9px] mt-1">로그인이 필요하거나 정보가 동기화되지 않았을 수 있습니다.</p>
+          </div>
+        )}
+
+        {selected.status === 'auction' && !selectedAuctionId && !isAuctionLoading && auctionError && (
+          <div className="bg-danger/10 border border-danger/40 rounded-xl p-3 text-center">
+            <p className="text-danger text-[11px] font-semibold">⚠ {auctionError}</p>
+          </div>
+        )}
+
+        {selected.status === 'auction' && !selectedAuctionId && !isAuctionLoading && !auctionError && (
+          <div className="bg-panel-deep border border-outline rounded-xl p-3 text-center">
+            <p className="text-muted text-[11px]">진행 중인 경매 정보가 없습니다.</p>
           </div>
         )}
 
