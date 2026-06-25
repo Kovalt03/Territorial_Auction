@@ -9,6 +9,11 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SeasonPassLevelReward {
 
+    public enum RewardTrack {
+        FREE,
+        PREMIUM
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,13 +25,19 @@ public class SeasonPassLevelReward {
     @Column(nullable = false)
     private Integer level;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private RewardTrack track = RewardTrack.FREE;
+
     @Column(nullable = false, length = 100)
     private String rewardName;
 
     @Builder
-    public SeasonPassLevelReward(Season season, Integer level, String rewardName) {
+    public SeasonPassLevelReward(
+            Season season, Integer level, RewardTrack track, String rewardName) {
         this.season = season;
         this.level = level;
+        this.track = track != null ? track : RewardTrack.FREE;
         this.rewardName = rewardName;
     }
 }

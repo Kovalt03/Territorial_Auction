@@ -41,7 +41,7 @@ public class UserSeasonPass {
         this.expiresAt = expiresAt;
     }
 
-    public void extend(int days) {
-        this.expiresAt = this.expiresAt.plusDays(days);
+    public void deactivate() {
+        this.isActive = false;
     }
 }
