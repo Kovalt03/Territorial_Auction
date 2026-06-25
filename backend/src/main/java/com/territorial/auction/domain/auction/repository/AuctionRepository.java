@@ -14,7 +14,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
     Boolean existsByTerritoryId(Long territoryId);
 
-    Optional<Auction> findByTerritoryId(Long territoryId);
+    Optional<Auction> findFirstByTerritoryIdAndSettledFalseOrderByEndAtDesc(Long territoryId);
 
     @Query(
             value =

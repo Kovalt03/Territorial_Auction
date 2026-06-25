@@ -1,6 +1,6 @@
 # 구현 체크리스트
 
-> 마지막 갱신: 2026-05-26 (all-20 머지 반영)  
+> 마지막 갱신: 2026-06-24 (fe-75 영토 정보 패널 + 토지세 FE 기획 반영)  
 > 기준 브랜치: `dev`
 
 범례: ✅ 완료 · 🔄 일부 완료 · ⬜ 미구현
@@ -318,10 +318,93 @@
 | ✅ | 단건 읽음 처리 | `NotificationPage` | `decrementNotification` 연동 (fe-01) |
 | ✅ | 전체 읽음 처리 | `NotificationPage` | `resetNotifications` 연동 (fe-01) |
 
+### 인증
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 로그인 | `LoginPage` | |
+| ✅ | 회원가입 (중복 확인 포함) | `RegisterPage` | username·email·nickname 중복 검사 |
+
+### 맵 / 영토 / 경매
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 월드맵 그리드 (대륙 진입) | `WorldMapPage` | `MapCanvas` 캔버스 렌더링 |
+| ✅ | 대륙 상세 + 영토 선택 패널 | `ContinentPage` / `ContinentSelectedPanel` | 경매 입찰·거래 내역·가격 그래프·점유자 정보 (fe-75) |
+| ✅ | 영토 상세 + 대륙 채팅 | `TerritoryDetailPage` / `TerritoryChat` | |
+| ✅ | 경매 입찰 (실시간) | `BidPanel` / `BidConfirmModal` | `/sub/auction/{id}` 구독 |
+| ✅ | 영토 경매 이력·가격 그래프 | `TerritoryHistoryPanel` | `useTerritoryAuctionHistory` (fe-75) |
+
+### 영토 그리드 / 건물
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 영토 그리드 건물 배치·보관·액션 | `TerritoryGridPage` 외 3종 모달/패널 | 배치·이동·업그레이드·수리·보관 |
+
+### 개인섬
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 개인섬 건물 배치·유닛 훈련·보관함 | `PersonalIslandPage` 외 모달 | GP 생산·식량·주둔 유닛 표시 |
+| ⬜ | 연구 현황 | `PersonalIslandPage:574` | "준비 중" — 백엔드 연구 시스템 미구현 |
+| ⬜ | 섬 확장 탭 | `PersonalIslandPage:625` | "준비 중" — island_grades 리팩터링 연동(BE 보류) |
+
+### 공성전 / 아이템 / 시즌패스 / 금고
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 공성전 선언·목록·상세 | `SiegePage` | |
+| ✅ | 아이템샵 (구매·사용·보유) | `ItemShopPage` | |
+| ✅ | 시즌패스 현황·구매 | `SeasonPassPage` | |
+| ✅ | 글로벌 금고 자원 이전 | `VaultPage` | |
+
+### 마이페이지 / 설정 / 충전
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 마이페이지 — 프로필·자산 도넛·바로가기 | `MyPage` / `MyPageQuickLinks` | 활동 탭은 영토 관리로 이전, 바로가기에 영토 관리 카드 추가 |
+| ✅ | 설정 — 닉네임·비밀번호 변경, 알림 설정, 회원 탈퇴 | `SettingsPage` | |
+| 🔄 | AP 충전 | `ChargePage` | mock 결제키 (`mock-*`) — PG 연동 BE 선행 필요 |
+
+### 영토 관리 (Territory Management) — 신규 통합 페이지
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 단일 탭 페이지 (`?tab=` URL 보존) | `TerritoryManagementPage` | GNB "영토 관리" 클릭 시 경매 진행으로 이동 + hover 드롭다운에서 각 탭 deep-link |
+| ✅ | 경매 진행 / 입찰 현황 탭 | `MyBidActivityList` | `useMyBids` — 시간/AP/상회입찰 정렬, 활성 입찰 WS 구독 |
+| ✅ | 내 영토 탭 | `MyTerritoryList` | `useVault` 영토 목록 |
+| ✅ | 거래 내역 탭 | `MyTradeHistoryList` | `my-bids`의 종료(IDLE) 경매 = 낙찰/패찰 결과. BE 추가 없이 파생 |
+| ✅ | 토지세 탭 | `LandTaxView` | 단독 LandTaxPage 흡수, `/app/land-tax`는 리다이렉트 |
+
+### 랭킹
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 영토 보유 / 자산(AP 소비) 랭킹 | `RankingPage` | territory·assets 연동 (`useRanking`) |
+| ⬜ | 트로피 / 대륙 / 생산 랭킹 | `RankingPage:143` | "준비 중" — BE 엔드포인트 확인 필요 |
+
+### 길드
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 길드 목록 조회·검색·페이지네이션 | `GuildListPage` | (fe-01) |
+| ✅ | 길드 생성 모달 | `GuildListPage` | 409 중복 에러 처리 포함 (fe-01) |
+| ✅ | 가입 신청 / 신청 취소 | `GuildListPage` | (fe-01) |
+| ✅ | 길드 상세 (멤버·신청·설정 탭) | `GuildDetailPage` | (fe-01) |
+| ✅ | 가입 승인·거절, 멤버 추방, 길드장 이전 | `GuildDetailPage` | (fe-01) |
+| ✅ | 길드 정보 수정 (소개글·모집 상태) | `GuildDetailPage` | (fe-01) |
+
+### 알림
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 알림 목록 조회·무한스크롤 | `NotificationPage` | (fe-01) |
+| ✅ | 단건 읽음 처리 | `NotificationPage` | `decrementNotification` 연동 (fe-01) |
+| ✅ | 전체 읽음 처리 | `NotificationPage` | `resetNotifications` 연동 (fe-01) |
+
 ### 섬 / 보관함 (all-20)
 | 상태 | 항목 | 페이지 | 비고 |
 |---|---|---|---|
 | ✅ | 보관함 → 섬 배치 | 섬 관리 페이지 | API·타입·페이지 연동 완료 (all-20) |
+
+### 토지세 (Land Tax) — 신규
+| 상태 | 항목 | 페이지 | 비고 |
+|---|---|---|---|
+| ✅ | 토지세 현황 (요약 카드·누진세 구간·다음 납부 카운트다운) | `LandTaxStatusSection` | `/land-tax/status` 연동. 누진 하이라이트는 시즌패스 적용 후(실제 청구) 기준 |
+| ✅ | 납세 내역 (상태 필터·번호 페이지네이션) | `LandTaxLogList` | `/land-tax/logs` 연동. 필터 5종(전체/납부/미납/면제/강제처분) |
+| ✅ | 미납 유예·강제처분 경고 배너 | `LandTaxGraceBanner` | 최신 로그가 `FAILED`면 `chargedAt+24h` 카운트다운, `EVICTED`면 알림 안내 (BE 변경 없음) |
+| ✅ | 진입/통합 | `LandTaxView` (영토 관리 토지세 탭) | 영토 관리 페이지 탭으로 통합. GNB 드롭다운 `토지세` → `?tab=tax` |
+| — | 설계 보고서 | — | `report/design/2026-06-24-fe-land-tax.md` / API 문서 `docs/api/tax.md` 실제 구현 반영 갱신 |
 
 ---
 

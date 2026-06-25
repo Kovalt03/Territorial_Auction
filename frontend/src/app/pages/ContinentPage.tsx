@@ -11,6 +11,7 @@ import { useApp } from '../context/AppContext';
 import { fetchTerritoryDetail } from '../api/map';
 import { placeBidApi, fetchAuctionBids } from '../api/auction';
 import { fetchMyWallet } from '../api/user';
+import { ApiError } from '../api/client';
 import type { GridTerritoryDto } from '../types/map';
 import type { Grade } from '../types/grade';
 import type { BidEntry, AuctionBidBroadcast } from '../types/auction';
@@ -123,6 +124,8 @@ export function ContinentPage() {
   const isHighestBidder = bidHistory.length > 0 && bidHistory[0].bidderNickname === username;
   const [isBidding, setIsBidding] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isAuctionLoading, setIsAuctionLoading] = useState(false);
+  const [auctionError, setAuctionError] = useState<string | null>(null);
 
   useStompSubscribe<AuctionBidBroadcast>(
     selectedAuctionId ? `/sub/auction/${selectedAuctionId}` : null,
@@ -169,6 +172,7 @@ export function ContinentPage() {
     setSelected(null); setBidInput(''); setBidSuccess(false);
     setSelectedAuctionId(null); setAuctionCurrentPrice(0);
     setAuctionEndAt(null); setTimeLeft(''); setBidHistory([]);
+    setIsAuctionLoading(false); setAuctionError(null);
   }, [id]);
 
   useEffect(() => {
@@ -365,7 +369,9 @@ export function ContinentPage() {
                           setSelected(cell); setBidInput(''); setBidSuccess(false);
                           setSelectedAuctionId(null); setAuctionCurrentPrice(0);
                           setAuctionEndAt(null); setBidHistory([]);
+                          setAuctionError(null);
                           if (cell.status === 'auction' && cell.id) {
+                            setIsAuctionLoading(true);
                             fetchTerritoryDetail(cell.id).then(d => {
                               if (d.auction) {
                                 setSelectedAuctionId(d.auction.auctionId);
@@ -374,7 +380,12 @@ export function ContinentPage() {
                                 const min = Math.max(Math.ceil(d.auction.currentPrice * 1.05), d.auction.currentPrice + 10);
                                 setBidInput(String(min));
                               }
-                            }).catch((e) => console.warn('[ContinentPage] territory detail load failed', e));
+                            }).catch((e) => {
+                              setAuctionError(e instanceof ApiError && e.status >= 400 && e.status < 500 ? e.message : '경매 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+                              console.warn('[ContinentPage] territory detail load failed', e);
+                            }).finally(() => setIsAuctionLoading(false));
+                          } else {
+                            setIsAuctionLoading(false);
                           }
                         }}
                         onMouseEnter={() => setHoverCell({ x, y })}
@@ -423,6 +434,8 @@ export function ContinentPage() {
               ap={ap}
               auctionCurrentPrice={auctionCurrentPrice}
               selectedAuctionId={selectedAuctionId}
+              isAuctionLoading={isAuctionLoading}
+              auctionError={auctionError}
               timeLeft={timeLeft}
               bidHistory={bidHistory}
               bidInput={bidInput}
