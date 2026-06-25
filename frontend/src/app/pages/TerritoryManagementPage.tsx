@@ -8,6 +8,7 @@ import { subscribeMultiple } from '../hooks/useStompClient';
 import { GNB } from '../components/GNB';
 import { MyBidActivityList } from './MyBidActivityList';
 import { MyTerritoryList } from './MyTerritoryList';
+import { MyTradeHistoryList } from './MyTradeHistoryList';
 import { LandTaxView } from './LandTaxView';
 
 type Tab = 'active' | 'mine' | 'history' | 'bids' | 'tax';
@@ -37,6 +38,7 @@ export function TerritoryManagementPage() {
   }, []);
 
   const activeBids = myBids.filter(b => b.status === 'BIDDING');
+  const endedBids = myBids.filter(b => b.status !== 'BIDDING');
 
   const activeBidAuctionIds = activeBids.map(b => b.auctionId).join(',');
   useEffect(() => {
@@ -56,7 +58,7 @@ export function TerritoryManagementPage() {
   const counts: Record<Tab, number> = {
     active: activeBids.length,
     mine: territories.length,
-    history: 0,
+    history: endedBids.length,
     bids: myBids.length,
     tax: 0,
   };
@@ -93,9 +95,7 @@ export function TerritoryManagementPage() {
         ) : (
           <div className="card p-4">
             {tab === 'history' ? (
-              <div className="text-center py-8">
-                <p className="text-muted text-sm">서비스 준비 중입니다</p>
-              </div>
+              <MyTradeHistoryList bids={endedBids} isLoading={bidsLoading} />
             ) : tab === 'mine' ? (
               <MyTerritoryList territories={territories} isLoading={territoriesLoading} />
             ) : (

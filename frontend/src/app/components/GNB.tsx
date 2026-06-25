@@ -84,6 +84,7 @@ export function GNB() {
             {/* 영토 관리 드롭다운 */}
             <div className="relative group h-14 flex items-center">
               <button
+                onClick={() => navigate('/app/territory-management')}
                 className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg hover:bg-elevated transition-colors min-w-[52px] h-14"
                 title="영토 관리"
               >
