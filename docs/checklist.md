@@ -363,10 +363,10 @@
 ### 영토 관리 (Territory Management) — 신규 통합 페이지
 | 상태 | 항목 | 페이지 | 비고 |
 |---|---|---|---|
-| ✅ | 단일 탭 페이지 (`?tab=` URL 보존) | `TerritoryManagementPage` | GNB "영토 관리" 드롭다운에서 각 탭으로 deep-link |
+| ✅ | 단일 탭 페이지 (`?tab=` URL 보존) | `TerritoryManagementPage` | GNB "영토 관리" 클릭 시 경매 진행으로 이동 + hover 드롭다운에서 각 탭 deep-link |
 | ✅ | 경매 진행 / 입찰 현황 탭 | `MyBidActivityList` | `useMyBids` — 시간/AP/상회입찰 정렬, 활성 입찰 WS 구독 |
 | ✅ | 내 영토 탭 | `MyTerritoryList` | `useVault` 영토 목록 |
-| ⬜ | 거래 내역 탭 | `TerritoryManagementPage` | "서비스 준비 중" — BE 미구현 |
+| ✅ | 거래 내역 탭 | `MyTradeHistoryList` | `my-bids`의 종료(IDLE) 경매 = 낙찰/패찰 결과. BE 추가 없이 파생 |
 | ✅ | 토지세 탭 | `LandTaxView` | 단독 LandTaxPage 흡수, `/app/land-tax`는 리다이렉트 |
 
 ### 랭킹
