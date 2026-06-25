@@ -12,18 +12,28 @@ export function useVault() {
 
   const load = useCallback(async () => {
     setIsLoading(true);
-    try {
-      const [vaultData, territoryData] = await Promise.all([
-        fetchGlobalVault(),
-        fetchMyTerritories(),
-      ]);
-      setVault(vaultData);
-      setTerritories(territoryData.territories);
-    } catch (err) {
-      if (!(err instanceof ApiError && err.status === 401)) setError('금고 데이터를 불러올 수 없습니다.');
-    } finally {
-      setIsLoading(false);
+    const [vaultResult, territoryResult] = await Promise.allSettled([
+      fetchGlobalVault(),
+      fetchMyTerritories(),
+    ]);
+
+    if (vaultResult.status === 'fulfilled') {
+      setVault(vaultResult.value);
+      setError(null);
+    } else if (!(vaultResult.reason instanceof ApiError && vaultResult.reason.status === 401)) {
+      setError('금고 데이터를 불러올 수 없습니다.');
+      console.warn('[useVault] global vault fetch failed', vaultResult.reason);
     }
+
+    if (territoryResult.status === 'fulfilled') {
+      setTerritories(territoryResult.value.territories);
+    } else if (
+      !(territoryResult.reason instanceof ApiError && territoryResult.reason.status === 401)
+    ) {
+      console.warn('[useVault] my territories fetch failed', territoryResult.reason);
+    }
+
+    setIsLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
