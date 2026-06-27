@@ -8,7 +8,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
+import com.territorial.auction.domain.item.entity.Item;
+import com.territorial.auction.domain.item.entity.UserItem;
+import com.territorial.auction.domain.item.repository.ItemRepository;
+import com.territorial.auction.domain.item.repository.UserItemRepository;
 import com.territorial.auction.domain.season.dto.MySeasonPassResponse;
+import com.territorial.auction.domain.season.dto.PurchaseLevelResponse;
 import com.territorial.auction.domain.season.dto.PurchaseSeasonPassResponse;
 import com.territorial.auction.domain.season.dto.SeasonPassResponse;
 import com.territorial.auction.domain.season.entity.Season;
@@ -58,6 +63,8 @@ class SeasonPassServiceTest {
     @Mock private SeasonPassRewardClaimRepository seasonPassRewardClaimRepository;
     @Mock private UserRepository userRepository;
     @Mock private WalletRepository walletRepository;
+    @Mock private ItemRepository itemRepository;
+    @Mock private UserItemRepository userItemRepository;
     @Mock private RedisTemplate<String, Object> redisTemplate;
     @Mock private ValueOperations<String, Object> valueOps;
 
@@ -266,6 +273,252 @@ class SeasonPassServiceTest {
         }
     }
 
+    // ─── purchaseLevel() ──────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("purchaseLevel()")
+    class PurchaseLevel {
+
+        @Test
+        @DisplayName("AP 충분 + 최고 레벨 미만 - AP 차감 후 레벨 +1, XP 0")
+        void sufficientAp_levelsUp() {
+            User user = Mockito.mock(User.class);
+            Season season = buildSeason(1L, 1);
+            SeasonPassProgress progress =
+                    SeasonPassProgress.builder().user(user).season(season).build();
+            ReflectionTestUtils.setField(progress, "level", 5);
+            ReflectionTestUtils.setField(progress, "xp", 300);
+            Wallet wallet = Wallet.builder().user(user).build();
+            ReflectionTestUtils.setField(wallet, "availableAp", 1000);
+
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.of(season));
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(seasonPassProgressRepository.findByUser_IdAndSeason_Id(any(), any()))
+                    .willReturn(Optional.of(progress));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            PurchaseLevelResponse response = seasonPassService.purchaseLevel(1L);
+
+            assertThat(response.currentLevel()).isEqualTo(6);
+            assertThat(response.currentXp()).isZero();
+            assertThat(response.costAP()).isEqualTo(500);
+            assertThat(response.remainingAP()).isEqualTo(500);
+            then(redisTemplate).should().delete("season_pass:progress:1");
+        }
+
+        @Test
+        @DisplayName("AP 부족 - INSUFFICIENT_AP 예외, 레벨 변동 없음")
+        void insufficientAp_throwsException() {
+            User user = Mockito.mock(User.class);
+            Season season = buildSeason(1L, 1);
+            SeasonPassProgress progress =
+                    SeasonPassProgress.builder().user(user).season(season).build();
+            ReflectionTestUtils.setField(progress, "level", 5);
+            Wallet wallet = walletWithAp(100);
+
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.of(season));
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(seasonPassProgressRepository.findByUser_IdAndSeason_Id(any(), any()))
+                    .willReturn(Optional.of(progress));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            assertThatThrownBy(() -> seasonPassService.purchaseLevel(1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting(e -> ((CustomException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.INSUFFICIENT_AP);
+            assertThat(progress.getLevel()).isEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("최고 레벨 도달 - SEASON_LEVEL_MAX_REACHED 예외, AP 미차감")
+        void maxLevel_throwsException() {
+            User user = Mockito.mock(User.class);
+            Season season = buildSeason(1L, 1);
+            SeasonPassProgress progress =
+                    SeasonPassProgress.builder().user(user).season(season).build();
+            ReflectionTestUtils.setField(progress, "level", 30);
+
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.of(season));
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(seasonPassProgressRepository.findByUser_IdAndSeason_Id(any(), any()))
+                    .willReturn(Optional.of(progress));
+
+            assertThatThrownBy(() -> seasonPassService.purchaseLevel(1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting(e -> ((CustomException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.SEASON_LEVEL_MAX_REACHED);
+            then(walletRepository).should(never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("진행 중인 시즌 없음 - SEASON_NOT_FOUND 예외")
+        void noActiveSeason_throwsException() {
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> seasonPassService.purchaseLevel(1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting(e -> ((CustomException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.SEASON_NOT_FOUND);
+        }
+    }
+
+    // ─── claimReward() ────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("claimReward()")
+    class ClaimReward {
+
+        private SeasonPassProgress progressAtLevel(User user, Season season, int level) {
+            SeasonPassProgress progress =
+                    SeasonPassProgress.builder().user(user).season(season).build();
+            ReflectionTestUtils.setField(progress, "level", level);
+            return progress;
+        }
+
+        @Test
+        @DisplayName("ITEM 보상 - 인벤토리에 아이템 지급(신규 UserItem 저장) + 수령 기록")
+        void itemReward_grantsItem() {
+            User user = Mockito.mock(User.class);
+            Season season = buildSeason(1L, 1);
+            SeasonPassLevelReward reward =
+                    SeasonPassLevelReward.builder()
+                            .season(season)
+                            .level(5)
+                            .track(SeasonPassLevelReward.RewardTrack.FREE)
+                            .rewardName("일반 공격권 x2")
+                            .rewardKind(SeasonPassLevelReward.RewardKind.ITEM)
+                            .itemType(Item.ItemType.ATTACK_NORMAL)
+                            .quantity(2)
+                            .build();
+            ReflectionTestUtils.setField(reward, "id", 1L);
+            Item item = Item.builder().name("일반 공격권").itemType(Item.ItemType.ATTACK_NORMAL).build();
+            ReflectionTestUtils.setField(item, "id", 2L);
+
+            given(seasonPassLevelRewardRepository.findById(1L)).willReturn(Optional.of(reward));
+            given(seasonPassProgressRepository.findByUser_IdAndSeason_Id(1L, 1L))
+                    .willReturn(Optional.of(progressAtLevel(user, season, 5)));
+            given(seasonPassRewardClaimRepository.existsByUser_IdAndReward_Id(1L, 1L))
+                    .willReturn(false);
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(itemRepository.findByItemType(Item.ItemType.ATTACK_NORMAL))
+                    .willReturn(Optional.of(item));
+            given(userItemRepository.findByUser_IdAndItem_Id(any(), any()))
+                    .willReturn(Optional.empty());
+
+            seasonPassService.claimReward(1L, 1L);
+
+            then(seasonPassRewardClaimRepository).should().save(any());
+            then(userItemRepository).should().save(any(UserItem.class));
+        }
+
+        @Test
+        @DisplayName("ITEM 보상 - 기존 보유 시 수량 증가")
+        void itemReward_incrementsExisting() {
+            User user = Mockito.mock(User.class);
+            Season season = buildSeason(1L, 1);
+            SeasonPassLevelReward reward =
+                    SeasonPassLevelReward.builder()
+                            .season(season)
+                            .level(5)
+                            .track(SeasonPassLevelReward.RewardTrack.FREE)
+                            .rewardName("무적권 x3")
+                            .rewardKind(SeasonPassLevelReward.RewardKind.ITEM)
+                            .itemType(Item.ItemType.INVINCIBILITY)
+                            .quantity(3)
+                            .build();
+            ReflectionTestUtils.setField(reward, "id", 1L);
+            Item item =
+                    Item.builder().name("무적 시간 추가권").itemType(Item.ItemType.INVINCIBILITY).build();
+            ReflectionTestUtils.setField(item, "id", 2L);
+            UserItem existing =
+                    UserItem.builder()
+                            .user(user)
+                            .item(item)
+                            .quantity(1)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+
+            given(seasonPassLevelRewardRepository.findById(1L)).willReturn(Optional.of(reward));
+            given(seasonPassProgressRepository.findByUser_IdAndSeason_Id(1L, 1L))
+                    .willReturn(Optional.of(progressAtLevel(user, season, 10)));
+            given(seasonPassRewardClaimRepository.existsByUser_IdAndReward_Id(1L, 1L))
+                    .willReturn(false);
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(itemRepository.findByItemType(Item.ItemType.INVINCIBILITY))
+                    .willReturn(Optional.of(item));
+            given(userItemRepository.findByUser_IdAndItem_Id(any(), any()))
+                    .willReturn(Optional.of(existing));
+
+            seasonPassService.claimReward(1L, 1L);
+
+            assertThat(existing.getQuantity()).isEqualTo(4);
+            then(userItemRepository).should(never()).save(any());
+        }
+
+        @Test
+        @DisplayName("GP 보상 - 지갑에 GP 지급")
+        void gpReward_grantsGp() {
+            User user = Mockito.mock(User.class);
+            Season season = buildSeason(1L, 1);
+            SeasonPassLevelReward reward =
+                    SeasonPassLevelReward.builder()
+                            .season(season)
+                            .level(10)
+                            .track(SeasonPassLevelReward.RewardTrack.FREE)
+                            .rewardName("GP 500")
+                            .rewardKind(SeasonPassLevelReward.RewardKind.GP)
+                            .quantity(500)
+                            .build();
+            ReflectionTestUtils.setField(reward, "id", 1L);
+            Wallet wallet = Wallet.builder().user(user).build();
+            ReflectionTestUtils.setField(wallet, "availableGp", 100);
+
+            given(seasonPassLevelRewardRepository.findById(1L)).willReturn(Optional.of(reward));
+            given(seasonPassProgressRepository.findByUser_IdAndSeason_Id(1L, 1L))
+                    .willReturn(Optional.of(progressAtLevel(user, season, 10)));
+            given(seasonPassRewardClaimRepository.existsByUser_IdAndReward_Id(1L, 1L))
+                    .willReturn(false);
+            given(user.getId()).willReturn(1L);
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            seasonPassService.claimReward(1L, 1L);
+
+            assertThat(wallet.getAvailableGp()).isEqualTo(600);
+            then(itemRepository).should(never()).findByItemType(any());
+        }
+
+        @Test
+        @DisplayName("이미 수령한 보상 - REWARD_ALREADY_CLAIMED, 지급 없음")
+        void alreadyClaimed_throwsAndDoesNotGrant() {
+            User user = Mockito.mock(User.class);
+            Season season = buildSeason(1L, 1);
+            SeasonPassLevelReward reward =
+                    SeasonPassLevelReward.builder()
+                            .season(season)
+                            .level(5)
+                            .track(SeasonPassLevelReward.RewardTrack.FREE)
+                            .rewardName("일반 공격권 x1")
+                            .rewardKind(SeasonPassLevelReward.RewardKind.ITEM)
+                            .itemType(Item.ItemType.ATTACK_NORMAL)
+                            .quantity(1)
+                            .build();
+            ReflectionTestUtils.setField(reward, "id", 1L);
+
+            given(seasonPassLevelRewardRepository.findById(1L)).willReturn(Optional.of(reward));
+            given(seasonPassProgressRepository.findByUser_IdAndSeason_Id(1L, 1L))
+                    .willReturn(Optional.of(progressAtLevel(user, season, 5)));
+            given(seasonPassRewardClaimRepository.existsByUser_IdAndReward_Id(1L, 1L))
+                    .willReturn(true);
+
+            assertThatThrownBy(() -> seasonPassService.claimReward(1L, 1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting(e -> ((CustomException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.REWARD_ALREADY_CLAIMED);
+            then(userItemRepository).should(never()).save(any());
+        }
+    }
+
     // ─── getProgress() ────────────────────────────────────────────────────────
 
     @Nested
@@ -276,7 +529,8 @@ class SeasonPassServiceTest {
         @DisplayName("캐시 히트 - DB 조회 없이 캐시 반환")
         void cacheHit_returnsCachedResponse() {
             SeasonPassResponse cached =
-                    new SeasonPassResponse(1L, "Season 1", "FREE", 1, 0, 1000, null, List.of());
+                    new SeasonPassResponse(
+                            1L, "Season 1", "FREE", 1, 0, 1000, 1000, 500, null, List.of());
             given(valueOps.get("season_pass:progress:1")).willReturn(cached);
 
             SeasonPassResponse response = seasonPassService.getProgress(1L);
