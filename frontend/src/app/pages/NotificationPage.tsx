@@ -9,6 +9,7 @@ import {
 import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
 import { EmptyState } from '../components/EmptyState';
+import { LoadingState } from '../components/LoadingState';
 
 const TYPE_ICON: Record<string, string> = {
   OUTBID: '⚡',
@@ -116,7 +117,7 @@ export function NotificationPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center text-muted py-20 text-sm">불러오는 중...</div>
+            <LoadingState className="py-20" />
           ) : notifications.length === 0 ? (
             <EmptyState message="알림이 없습니다." className="py-20" />
           ) : (

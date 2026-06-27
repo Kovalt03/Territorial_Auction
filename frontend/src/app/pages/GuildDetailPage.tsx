@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
 import { ChatPanel } from '../components/ChatPanel';
+import { LoadingState } from '../components/LoadingState';
 import { useApp } from '../context/AppContext';
 import { useMyGuild } from '../hooks/useMyGuild';
 import {
@@ -101,7 +102,7 @@ export function GuildDetailPage() {
     return (
       <div className="flex flex-col h-screen bg-surface">
         <GNB />
-        <div className="flex-1 flex items-center justify-center text-muted text-sm">불러오는 중...</div>
+        <LoadingState className="flex-1" />
       </div>
     );
   }
