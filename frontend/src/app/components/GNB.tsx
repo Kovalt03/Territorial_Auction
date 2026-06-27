@@ -2,21 +2,20 @@ import { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useApp } from '../context/AppContext';
 import { useStompSubscribe } from '../hooks/useStompClient';
+import { NotificationBell } from './NotificationBell';
 
 const navItems = [
-  { icon: '🔔', label: '알림', path: '/app/notifications' },
+  { icon: '🏝', label: '나의섬', path: '/app/my-island' },
   { icon: '⚔️', label: '길드', path: '/app/guild' },
   { icon: '🛍', label: '아이템샵', path: '/app/item-shop' },
   { icon: '⭐', label: '시즌패스', path: '/app/season-pass' },
   { icon: '🏆', label: '랭킹', path: '/app/ranking' },
-  { icon: '🏝', label: '나의섬', path: '/app/my-island' },
-  { icon: '👤', label: '마이페이지', path: '/app/mypage' },
 ];
 
 export function GNB() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { ap, gp, hasPass, passEndDate, notifications, isLoggedIn, userId, incrementNotification } = useApp();
+  const { ap, gp, hasPass, passEndDate, isLoggedIn, userId, incrementNotification } = useApp();
 
   const handleWsNotification = useCallback(() => {
     incrementNotification();
@@ -124,15 +123,11 @@ export function GNB() {
                   <span className={`text-[10px] leading-none ${isActive ? 'font-semibold text-primary' : 'font-normal text-muted'}`}>
                     {item.label}
                   </span>
-                  {item.label === '알림' && notifications > 0 && (
-                    <div className="absolute top-1 right-1 w-4 h-4 bg-ap rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-[9px]">{notifications}</span>
-                    </div>
-                  )}
                   {isActive && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />}
                 </button>
               );
             })}
+            <NotificationBell />
           </div>
 
           {/* Settings */}
