@@ -11,7 +11,6 @@ const lazyPage = <K extends string>(loader: () => Promise<Record<K, ComponentTyp
 const WorldMapPage = lazyPage(() => import('./pages/WorldMapPage'), 'WorldMapPage');
 const ContinentPage = lazyPage(() => import('./pages/ContinentPage'), 'ContinentPage');
 const TerritoryDetailPage = lazyPage(() => import('./pages/TerritoryDetailPage'), 'TerritoryDetailPage');
-const MyPage = lazyPage(() => import('./pages/MyPage'), 'MyPage');
 const RankingPage = lazyPage(() => import('./pages/RankingPage'), 'RankingPage');
 const ChargePage = lazyPage(() => import('./pages/ChargePage'), 'ChargePage');
 const TerritoryGridPage = lazyPage(() => import('./pages/TerritoryGridPage'), 'TerritoryGridPage');
@@ -36,7 +35,6 @@ export const router = createBrowserRouter([
   { path: '/app/ranking', Component: RankingPage },
   { path: '/app/guild', Component: GuildListPage },
   { path: '/app/guild/:id', element: <PrivateRoute><GuildDetailPage /></PrivateRoute> },
-  { path: '/app/mypage', element: <PrivateRoute><MyPage /></PrivateRoute> },
   { path: '/app/notifications', element: <PrivateRoute><NotificationPage /></PrivateRoute> },
   { path: '/app/charge', element: <PrivateRoute><ChargePage /></PrivateRoute> },
   { path: '/app/territory-grid/:id', element: <PrivateRoute><TerritoryGridPage /></PrivateRoute> },
