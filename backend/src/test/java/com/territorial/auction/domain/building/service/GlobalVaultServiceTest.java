@@ -13,6 +13,7 @@ import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
+import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
@@ -36,6 +37,7 @@ class GlobalVaultServiceTest {
     @Mock private GlobalVaultRepository globalVaultRepository;
     @Mock private TerritoryRepository territoryRepository;
     @Mock private WalletRepository walletRepository;
+    @Mock private UserRepository userRepository;
 
     private User user;
     private Wallet wallet;
@@ -111,9 +113,26 @@ class GlobalVaultServiceTest {
         }
 
         @Test
-        @DisplayName("금고 없음 → USER_NOT_FOUND")
-        void vaultNotFound() {
+        @DisplayName("금고 없음 + 유저 존재 → 기본 금고 신규 생성하여 반환")
+        void vaultMissing_createsDefault() {
+            GlobalVault created = GlobalVault.builder().user(user).build();
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.empty());
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+            given(globalVaultRepository.save(org.mockito.ArgumentMatchers.any(GlobalVault.class)))
+                    .willReturn(created);
+
+            GlobalVaultResponse response = globalVaultService.getVault(1L);
+
+            assertThat(response.storedGP()).isEqualTo(0);
+            assertThat(response.capacity()).isEqualTo(500);
+            assertThat(response.isTransferAvailable()).isTrue();
+        }
+
+        @Test
+        @DisplayName("금고·유저 모두 없음 → USER_NOT_FOUND")
+        void vaultAndUserMissing() {
             given(globalVaultRepository.findById(99L)).willReturn(Optional.empty());
+            given(userRepository.findById(99L)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> globalVaultService.getVault(99L))
                     .isInstanceOf(CustomException.class)

@@ -11,9 +11,11 @@ import com.territorial.auction.domain.auth.dto.SignupRequest;
 import com.territorial.auction.domain.auth.dto.SignupResponse;
 import com.territorial.auction.domain.auth.dto.TokenPair;
 import com.territorial.auction.domain.building.entity.BuildingType;
+import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.user.entity.NotificationSetting;
@@ -49,6 +51,7 @@ class AuthServiceTest {
     @Mock private WalletRepository walletRepository;
     @Mock private NotificationSettingRepository notificationSettingRepository;
     @Mock private HomeIslandRepository homeIslandRepository;
+    @Mock private GlobalVaultRepository globalVaultRepository;
     @Mock private IslandGradeRepository islandGradeRepository;
     @Mock private UserProfileRepository userProfileRepository;
     @Mock private BuildingTypeRepository buildingTypeRepository;
@@ -95,7 +98,7 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("가입 성공 시 Wallet/NotificationSetting/HomeIsland/UserProfile 자동 생성")
+        @DisplayName("가입 성공 시 Wallet/GlobalVault/NotificationSetting/HomeIsland/UserProfile 자동 생성")
         void signup_createsRelatedRecords() {
             SignupRequest request =
                     new SignupRequest("testuser", "user@example.com", "password1!", "닉네임");
@@ -124,6 +127,7 @@ class AuthServiceTest {
             authService.signup(request);
 
             then(walletRepository).should().save(any(Wallet.class));
+            then(globalVaultRepository).should().save(any(GlobalVault.class));
             then(notificationSettingRepository).should().save(any(NotificationSetting.class));
             then(homeIslandRepository).should().save(any(HomeIsland.class));
             then(userProfileRepository).should().save(any(UserProfile.class));

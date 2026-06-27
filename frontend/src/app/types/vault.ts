@@ -21,4 +21,6 @@ export interface MyTerritory {
   grade: string;
   position: { x: number; y: number };
   continentName: string;
+  occupiedAt: string | null;
+  occupiedUntil: string | null;
 }
