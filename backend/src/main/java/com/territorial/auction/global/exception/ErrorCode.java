@@ -119,6 +119,7 @@ public enum ErrorCode {
     REWARD_LEVEL_NOT_REACHED(HttpStatus.BAD_REQUEST, "아직 해당 레벨에 도달하지 않았습니다."),
     REWARD_ALREADY_CLAIMED(HttpStatus.CONFLICT, "이미 수령한 보상입니다."),
     REWARD_PREMIUM_REQUIRED(HttpStatus.FORBIDDEN, "프리미엄 패스가 필요한 보상입니다."),
+    SEASON_LEVEL_MAX_REACHED(HttpStatus.CONFLICT, "이미 최고 레벨에 도달했습니다."),
 
     // Item
     ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "아이템을 찾을 수 없습니다."),

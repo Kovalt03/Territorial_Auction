@@ -2,6 +2,8 @@ package com.territorial.auction.domain.season.entity;
 
 import com.territorial.auction.domain.season.SeasonPassPolicy;
 import com.territorial.auction.domain.user.entity.User;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -36,6 +38,15 @@ public class SeasonPassProgress {
         this.user = user;
         this.season = season;
         this.level = 1;
+        this.xp = 0;
+    }
+
+    /** AP를 지불해 즉시 1레벨 상승. 잔여 XP는 초기화. */
+    public void levelUpByPurchase() {
+        if (this.level >= SeasonPassPolicy.MAX_LEVEL) {
+            throw new CustomException(ErrorCode.SEASON_LEVEL_MAX_REACHED);
+        }
+        this.level++;
         this.xp = 0;
     }
 

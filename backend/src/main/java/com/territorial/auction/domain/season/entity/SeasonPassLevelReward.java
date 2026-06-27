@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.season.entity;
 
+import com.territorial.auction.domain.item.entity.Item;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,6 +13,11 @@ public class SeasonPassLevelReward {
     public enum RewardTrack {
         FREE,
         PREMIUM
+    }
+
+    public enum RewardKind {
+        ITEM,
+        GP
     }
 
     @Id
@@ -32,12 +38,34 @@ public class SeasonPassLevelReward {
     @Column(nullable = false, length = 100)
     private String rewardName;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private RewardKind rewardKind = RewardKind.ITEM;
+
+    // ITEM 보상일 때 지급할 아이템 타입. GP 보상이면 null.
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private Item.ItemType itemType;
+
+    // ITEM: 지급 개수, GP: 지급 GP 수량
+    @Column(nullable = false)
+    private Integer quantity = 1;
+
     @Builder
     public SeasonPassLevelReward(
-            Season season, Integer level, RewardTrack track, String rewardName) {
+            Season season,
+            Integer level,
+            RewardTrack track,
+            String rewardName,
+            RewardKind rewardKind,
+            Item.ItemType itemType,
+            Integer quantity) {
         this.season = season;
         this.level = level;
         this.track = track != null ? track : RewardTrack.FREE;
         this.rewardName = rewardName;
+        this.rewardKind = rewardKind != null ? rewardKind : RewardKind.ITEM;
+        this.itemType = itemType;
+        this.quantity = quantity != null ? quantity : 1;
     }
 }
