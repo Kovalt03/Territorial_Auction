@@ -10,6 +10,8 @@ public record SeasonPassResponse(
         Integer currentLevel,
         Integer currentXp,
         Integer nextLevelXp,
+        Integer passCostAp,
+        Integer levelUpCostAp,
         LocalDateTime seasonEndsAt,
         List<RewardItem> rewards) {
     public record RewardItem(

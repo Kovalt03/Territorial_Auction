@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.season.service;
 
+import com.territorial.auction.domain.item.entity.Item;
 import com.territorial.auction.domain.season.SeasonPassPolicy;
 import com.territorial.auction.domain.season.entity.Season;
 import com.territorial.auction.domain.season.entity.SeasonPassLevelReward;
@@ -78,8 +79,19 @@ public class SeasonPassLevelRewardSeeder implements ApplicationRunner {
                                                                     row.getOrDefault(
                                                                             "track", "FREE")))
                                             .rewardName((String) row.get("rewardName"))
+                                            .rewardKind(
+                                                    SeasonPassLevelReward.RewardKind.valueOf(
+                                                            (String)
+                                                                    row.getOrDefault(
+                                                                            "rewardKind", "ITEM")))
+                                            .itemType(parseItemType((String) row.get("itemType")))
+                                            .quantity((Integer) row.getOrDefault("quantity", 1))
                                             .build())
                     .toList();
         }
+    }
+
+    private Item.ItemType parseItemType(String value) {
+        return value == null ? null : Item.ItemType.valueOf(value);
     }
 }

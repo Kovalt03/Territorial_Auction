@@ -1,7 +1,13 @@
 package com.territorial.auction.domain.season.service;
 
+import com.territorial.auction.domain.item.entity.Item;
+import com.territorial.auction.domain.item.entity.UserItem;
+import com.territorial.auction.domain.item.repository.ItemRepository;
+import com.territorial.auction.domain.item.repository.UserItemRepository;
+import com.territorial.auction.domain.season.SeasonPassPolicy;
 import com.territorial.auction.domain.season.dto.ClaimRewardResponse;
 import com.territorial.auction.domain.season.dto.MySeasonPassResponse;
+import com.territorial.auction.domain.season.dto.PurchaseLevelResponse;
 import com.territorial.auction.domain.season.dto.PurchaseSeasonPassResponse;
 import com.territorial.auction.domain.season.dto.SeasonPassResponse;
 import com.territorial.auction.domain.season.entity.Season;
@@ -51,6 +57,8 @@ public class SeasonPassService {
     private final SeasonPassRewardClaimRepository seasonPassRewardClaimRepository;
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
+    private final ItemRepository itemRepository;
+    private final UserItemRepository userItemRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
     public SeasonPassResponse getProgress(Long userId) {
@@ -110,6 +118,12 @@ public class SeasonPassService {
                                 })
                         .toList();
 
+        int passCostAp =
+                seasonPassRepository
+                        .findFirstByOrderByIdDesc()
+                        .map(SeasonPass::getCostAp)
+                        .orElse(0);
+
         SeasonPassResponse response =
                 new SeasonPassResponse(
                         season.getId(),
@@ -118,6 +132,8 @@ public class SeasonPassService {
                         currentLevel,
                         currentXp,
                         XP_PER_LEVEL,
+                        passCostAp,
+                        SeasonPassPolicy.LEVEL_UP_COST_AP,
                         season.getEndedAt(),
                         rewardItems);
 
@@ -216,6 +232,63 @@ public class SeasonPassService {
     }
 
     @Transactional
+    public PurchaseLevelResponse purchaseLevel(Long userId) {
+        Season season =
+                seasonRepository
+                        .findActiveSeason(LocalDateTime.now())
+                        .orElseThrow(() -> new CustomException(ErrorCode.SEASON_NOT_FOUND));
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        SeasonPassProgress progress = findOrCreateProgress(user, season);
+        if (progress.getLevel() >= SeasonPassPolicy.MAX_LEVEL) {
+            throw new CustomException(ErrorCode.SEASON_LEVEL_MAX_REACHED);
+        }
+
+        Wallet wallet =
+                walletRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        int cost = SeasonPassPolicy.LEVEL_UP_COST_AP;
+        if (wallet.getAvailableAp() < cost) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_AP);
+        }
+
+        wallet.spendAp(cost);
+        progress.levelUpByPurchase();
+        invalidateProgressCache(userId);
+
+        log.info(
+                "시즌 패스 레벨 구매. userId={}, newLevel={}, costAp={}",
+                userId,
+                progress.getLevel(),
+                cost);
+        return new PurchaseLevelResponse(
+                progress.getLevel(), progress.getXp(), cost, wallet.getAvailableAp());
+    }
+
+    private SeasonPassProgress findOrCreateProgress(User user, Season season) {
+        return seasonPassProgressRepository
+                .findByUser_IdAndSeason_Id(user.getId(), season.getId())
+                .orElseGet(
+                        () ->
+                                seasonPassProgressRepository.save(
+                                        SeasonPassProgress.builder()
+                                                .user(user)
+                                                .season(season)
+                                                .build()));
+    }
+
+    private void invalidateProgressCache(Long userId) {
+        try {
+            redisTemplate.delete(CACHE_PROGRESS + userId);
+        } catch (Exception e) {
+            log.warn("시즌 패스 진행도 캐시 무효화 실패. userId={}", userId);
+        }
+    }
+
+    @Transactional
     public ClaimRewardResponse claimReward(Long userId, Long rewardId) {
         SeasonPassLevelReward reward =
                 seasonPassLevelRewardRepository
@@ -253,16 +326,52 @@ public class SeasonPassService {
         seasonPassRewardClaimRepository.save(
                 SeasonPassRewardClaim.builder().user(user).reward(reward).build());
 
-        try {
-            redisTemplate.delete(CACHE_PROGRESS + userId);
-        } catch (Exception e) {
-            log.warn("보상 수령 후 진행도 캐시 무효화 실패. userId={}", userId);
-        }
+        grantReward(user, reward);
+        invalidateProgressCache(userId);
 
         return new ClaimRewardResponse(
                 reward.getId(),
                 reward.getRewardName(),
                 reward.getTrack().name(),
                 LocalDateTime.now());
+    }
+
+    private void grantReward(User user, SeasonPassLevelReward reward) {
+        switch (reward.getRewardKind()) {
+            case GP -> grantGp(user.getId(), reward.getQuantity());
+            case ITEM -> grantItem(user, reward.getItemType(), reward.getQuantity());
+        }
+        log.info(
+                "시즌 패스 보상 지급. userId={}, kind={}, reward={}",
+                user.getId(),
+                reward.getRewardKind(),
+                reward.getRewardName());
+    }
+
+    private void grantGp(Long userId, int amount) {
+        Wallet wallet =
+                walletRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        wallet.addGp(amount);
+    }
+
+    private void grantItem(User user, Item.ItemType itemType, int quantity) {
+        Item item =
+                itemRepository
+                        .findByItemType(itemType)
+                        .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
+        userItemRepository
+                .findByUser_IdAndItem_Id(user.getId(), item.getId())
+                .ifPresentOrElse(
+                        existing -> existing.add(quantity),
+                        () ->
+                                userItemRepository.save(
+                                        UserItem.builder()
+                                                .user(user)
+                                                .item(item)
+                                                .quantity(quantity)
+                                                .createdAt(LocalDateTime.now())
+                                                .build()));
     }
 }

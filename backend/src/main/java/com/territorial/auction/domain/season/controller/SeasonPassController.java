@@ -4,6 +4,7 @@ import com.territorial.auction.domain.season.dto.ClaimMissionResponse;
 import com.territorial.auction.domain.season.dto.ClaimRewardResponse;
 import com.territorial.auction.domain.season.dto.MissionListResponse;
 import com.territorial.auction.domain.season.dto.MySeasonPassResponse;
+import com.territorial.auction.domain.season.dto.PurchaseLevelResponse;
 import com.territorial.auction.domain.season.dto.PurchaseSeasonPassResponse;
 import com.territorial.auction.domain.season.dto.SeasonPassResponse;
 import com.territorial.auction.domain.season.service.MissionService;
@@ -44,6 +45,12 @@ public class SeasonPassController {
             @AuthenticationPrincipal Long userId) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(seasonPassService.purchase(userId)));
+    }
+
+    @PostMapping("/level-up")
+    public ResponseEntity<ApiResponse<PurchaseLevelResponse>> purchaseLevel(
+            @AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(ApiResponse.ok(seasonPassService.purchaseLevel(userId)));
     }
 
     @GetMapping("/missions")
