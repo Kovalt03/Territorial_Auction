@@ -17,6 +17,20 @@ Authorization: Bearer {{accessToken}}
 POST {{baseUrl}}/api/v1/season-pass/purchase
 Authorization: Bearer {{accessToken}}
 
+### 레벨 즉시 구매 (AP 차감 후 레벨 +1)
+# 가격은 GET /season-pass 응답의 levelUpCostAp 참고
+POST {{baseUrl}}/api/v1/season-pass/level-up
+Authorization: Bearer {{accessToken}}
+
+### 레벨 즉시 구매 — AP 부족 (400 에러 확인)
+POST {{baseUrl}}/api/v1/season-pass/level-up
+Authorization: Bearer {{accessToken}}
+
+### 레벨 즉시 구매 — 최고 레벨 도달 (409 에러 확인)
+# level=30 계정으로 요청
+POST {{baseUrl}}/api/v1/season-pass/level-up
+Authorization: Bearer {{accessToken}}
+
 ### 미션 목록 조회 (진행도 포함)
 GET {{baseUrl}}/api/v1/season-pass/missions
 Authorization: Bearer {{accessToken}}

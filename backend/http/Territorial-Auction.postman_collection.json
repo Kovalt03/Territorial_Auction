@@ -1124,6 +1124,30 @@
           }
         },
         {
+          "name": "레벨 즉시 구매",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/season-pass/level-up",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "season-pass",
+                "level-up"
+              ]
+            }
+          }
+        },
+        {
           "name": "미션 목록 조회",
           "request": {
             "method": "GET",
