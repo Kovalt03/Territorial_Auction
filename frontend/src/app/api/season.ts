@@ -4,6 +4,7 @@ import type {
   ClaimRewardResponse,
   MissionListResponse,
   MySeasonPassResponse,
+  PurchaseLevelResponse,
   PurchaseSeasonPassResponse,
   SeasonProgress,
 } from '../types/season';
@@ -14,6 +15,10 @@ export function fetchMySeasonPass() {
 
 export function purchaseSeasonPass() {
   return apiClient.post<PurchaseSeasonPassResponse>('/season-pass/purchase', {});
+}
+
+export function purchaseSeasonLevel() {
+  return apiClient.post<PurchaseLevelResponse>('/season-pass/level-up', {});
 }
 
 export function fetchSeasonProgress() {

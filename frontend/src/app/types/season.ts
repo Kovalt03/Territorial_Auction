@@ -46,8 +46,17 @@ export interface SeasonProgress {
   currentLevel: number;
   currentXp: number;
   nextLevelXp: number;
+  passCostAp: number;
+  levelUpCostAp: number;
   seasonEndsAt: string;
   rewards: SeasonRewardItem[];
+}
+
+export interface PurchaseLevelResponse {
+  currentLevel: number;
+  currentXp: number;
+  costAP: number;
+  remainingAP: number;
 }
 
 export type MissionPeriod = 'DAILY' | 'WEEKLY' | 'SEASON';
