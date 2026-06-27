@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useApp } from '../context/AppContext';
+import { useMyBids } from '../hooks/useMyBids';
+import { useVault } from '../hooks/useVault';
 import { logoutApi } from '../api/auth';
 import { fetchSettings, updateSettings, changePassword, deleteAccount } from '../api/user';
 import { GNB } from '../components/GNB';
@@ -12,7 +14,10 @@ type Section = 'notifications' | 'security' | 'account';
 
 export function SettingsPage() {
   const navigate = useNavigate();
-  const { logout } = useApp();
+  const { logout, username } = useApp();
+  const { bids: myBids } = useMyBids();
+  const { territories } = useVault();
+  const activeBids = myBids.filter(b => b.status === 'BIDDING');
   const [activeSection, setActiveSection] = useState<Section>('notifications');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -169,6 +174,31 @@ export function SettingsPage() {
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-[560px]">
+
+            {/* 프로필 카드 */}
+            <div className="card p-5 mb-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-2xl flex-shrink-0 bg-[#00f5ff20] border-2 border-primary text-primary">
+                  {(username || '게스트').charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-foreground font-bold text-lg">{username || '게스트'}</p>
+                  <p className="text-muted text-xs">플레이어</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: '영토', val: territories.length, color: '#00f5ff' },
+                  { label: '입찰', val: myBids.length, color: '#ffd700' },
+                  { label: '경매중', val: activeBids.length, color: '#ff8c00' },
+                ].map(s => (
+                  <div key={s.label} className="bg-elevated rounded-xl p-2 text-center">
+                    <p className="font-bold text-sm" style={{ color: s.color }}>{s.val}</p>
+                    <p className="text-muted text-[10px]">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* 알림 설정 */}
             {activeSection === 'notifications' && (
