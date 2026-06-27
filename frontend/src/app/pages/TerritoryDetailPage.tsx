@@ -86,6 +86,8 @@ export function TerritoryDetailPage() {
   const [wishlistTerritories, setWishlistTerritories] = useState<TerritoryDetailResponse[]>([]);
   const [isLoadingWishlist, setIsLoadingWishlist] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const isAuctionEnded =
+    !!territory?.auction && new Date(territory.auction.endAt).getTime() <= now;
   const [bidAmount, setBidAmount] = useState(currentBid + 100);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isBidding, setIsBidding] = useState(false);
@@ -161,7 +163,7 @@ export function TerritoryDetailPage() {
   }, [auctionHistory, chartRange]);
 
   const handleBid = async () => {
-    if (!auctionId) return;
+    if (!auctionId || isAuctionEnded) return;
     setIsBidding(true);
     setBidError(null);
     try {
@@ -536,6 +538,7 @@ export function TerritoryDetailPage() {
                         isOutbid={isOutbid}
                         isHighestBidder={isHighestBidder}
                         isBidding={isBidding}
+                        isAuctionEnded={isAuctionEnded}
                         gradeColor={gradeColor}
                         onChangeBidAmount={setBidAmount}
                         onOpenConfirm={() => setShowConfirm(true)}

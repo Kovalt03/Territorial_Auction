@@ -58,7 +58,9 @@ export function ContinentSelectedPanel({
   const navigate = useNavigate();
   const minBid = Math.max(Math.ceil(auctionCurrentPrice * 1.05), auctionCurrentPrice + 10);
   const bidValue = parseInt(bidInput);
-  const canBid = !!selectedAuctionId && !isBidding && !!bidInput && bidValue >= minBid && bidValue <= ap;
+  const isAuctionEnded = timeLeft === '종료됨';
+  const canBid =
+    !!selectedAuctionId && !isBidding && !isAuctionEnded && !!bidInput && bidValue >= minBid && bidValue <= ap;
   const isInWishlist = wishlistIds.has(selected.id);
   const gradeColor = GRADE_COLOR[selected.grade];
 
@@ -131,9 +133,17 @@ export function ContinentSelectedPanel({
         {selected.status === 'auction' && selectedAuctionId && (
           <>
             {timeLeft && (
-              <div className="bg-panel-deep border border-gold/20 rounded-xl p-3">
-                <p className="text-muted text-[9px] mb-1">경매 종료까지</p>
-                <p className="text-gold font-bold text-xl text-center tracking-wider tabular-nums">{timeLeft}</p>
+              <div
+                className="bg-panel-deep border rounded-xl p-3"
+                style={{ borderColor: isAuctionEnded ? '#ff333340' : '#ffd70033' }}
+              >
+                <p className="text-muted text-[9px] mb-1">{isAuctionEnded ? '경매 상태' : '경매 종료까지'}</p>
+                <p
+                  className="font-bold text-xl text-center tracking-wider tabular-nums"
+                  style={{ color: isAuctionEnded ? '#ff3333' : '#ffd700' }}
+                >
+                  {isAuctionEnded ? '경매 종료됨' : timeLeft}
+                </p>
               </div>
             )}
 
@@ -165,7 +175,12 @@ export function ContinentSelectedPanel({
 
             <div className="bg-panel-deep border border-gold/25 rounded-xl p-3">
               <p className="text-gold font-bold mb-2 text-[11px]">⚡ 입찰하기</p>
-              {bidSuccess ? (
+              {isAuctionEnded ? (
+                <div className="text-center py-2">
+                  <p className="text-danger font-bold text-xs">🔒 경매가 종료되었습니다</p>
+                  <p className="text-muted text-[10px] mt-0.5">낙찰 정산을 기다리는 중입니다</p>
+                </div>
+              ) : bidSuccess ? (
                 <div className="text-center py-2">
                   <p className="text-gp font-bold text-xs">✓ 입찰 완료!</p>
                   <p className="text-muted text-[10px] mt-0.5">잔여 AP: {ap.toLocaleString()}</p>

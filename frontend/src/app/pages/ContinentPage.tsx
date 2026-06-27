@@ -236,6 +236,10 @@ export function ContinentPage() {
   const handleConfirmBid = async () => {
     const amt = parseInt(bidInput);
     if (!amt || !selectedAuctionId || isBidding) return;
+    if (auctionEndAt && new Date(auctionEndAt).getTime() <= Date.now()) {
+      setShowConfirm(false);
+      return;
+    }
     setIsBidding(true);
     try {
       const result = await placeBidApi(selectedAuctionId, amt);

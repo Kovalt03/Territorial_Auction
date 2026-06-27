@@ -9,6 +9,7 @@ interface Props {
   isOutbid: boolean;
   isHighestBidder: boolean;
   isBidding: boolean;
+  isAuctionEnded: boolean;
   gradeColor: string;
   onChangeBidAmount: (v: number) => void;
   onOpenConfirm: () => void;
@@ -18,21 +19,23 @@ const QUICK_ADD = [500, 1000, 5000];
 
 export function BidPanel({
   auctionId, currentBid, minBid, myBid, ap,
-  bidAmount, bidError, isOutbid, isHighestBidder, isBidding, gradeColor,
+  bidAmount, bidError, isOutbid, isHighestBidder, isBidding, isAuctionEnded, gradeColor,
   onChangeBidAmount, onOpenConfirm,
 }: Props) {
-  const canBid = !!auctionId && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount;
+  const canBid = !!auctionId && !isAuctionEnded && !isHighestBidder && bidAmount >= minBid && ap >= bidAmount;
   const ctaBg = canBid ? (isOutbid ? '#ff4444' : '#00f5ff') : '#2a3050';
   const ctaText = canBid ? (isOutbid ? '#fff' : '#060a14') : 'var(--color-muted)';
   const ctaBorder = canBid ? (isOutbid ? '#ff4444' : '#00f5ff') : '#354064';
 
   const helpText = !auctionId ? '현재 경매 없음'
+    : isAuctionEnded ? '🔒 경매 종료됨'
     : isHighestBidder ? '✓ 최고 입찰 중'
     : bidAmount < minBid ? `최소 ${minBid.toLocaleString()}`
     : ap < bidAmount ? 'AP 부족'
     : `잔여 ${(ap - bidAmount).toLocaleString()}`;
 
   const helpColor = !auctionId ? '#7788a5'
+    : isAuctionEnded ? '#ff5555'
     : isHighestBidder ? '#00ff88'
     : bidAmount < minBid || ap < bidAmount ? '#ff5555'
     : '#00ff88';
@@ -82,7 +85,7 @@ export function BidPanel({
           type="number"
           value={bidAmount}
           onChange={e => onChangeBidAmount(Number(e.target.value))}
-          disabled={!auctionId}
+          disabled={!auctionId || isAuctionEnded}
           className="flex-1 h-8 bg-outline-soft border border-outline rounded-lg px-2 text-[13px] text-foreground outline-none focus:border-primary transition-colors font-bold disabled:opacity-40"
         />
         <span className="text-muted text-[10px]">AP</span>
@@ -93,7 +96,7 @@ export function BidPanel({
           <button
             key={add}
             onClick={() => onChangeBidAmount(bidAmount + add)}
-            disabled={!auctionId}
+            disabled={!auctionId || isAuctionEnded}
             className="flex-1 h-6 rounded text-[10px] text-foreground-soft hover:text-white transition-colors disabled:opacity-40 bg-outline-soft border border-outline"
           >
             +{add >= 1000 ? `${add / 1000}K` : add}
@@ -101,7 +104,7 @@ export function BidPanel({
         ))}
         <button
           onClick={() => onChangeBidAmount(minBid)}
-          disabled={!auctionId}
+          disabled={!auctionId || isAuctionEnded}
           className="px-1.5 h-6 rounded text-[9px] text-muted hover:text-foreground-soft transition-colors disabled:opacity-40 bg-[#1a2030] border border-elevated"
         >
           초기화
@@ -118,7 +121,7 @@ export function BidPanel({
         className="w-full h-9 rounded-xl text-xs font-bold transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed border"
         style={{ background: ctaBg, color: ctaText, borderColor: ctaBorder }}
       >
-        {isBidding ? '처리 중...' : isOutbid ? '🔺 재입찰' : '⚡ 입찰'}
+        {isAuctionEnded ? '🔒 경매 종료' : isBidding ? '처리 중...' : isOutbid ? '🔺 재입찰' : '⚡ 입찰'}
       </button>
       <p className="text-center mt-1 text-[9px]" style={{ color: helpColor }}>
         {helpText}
