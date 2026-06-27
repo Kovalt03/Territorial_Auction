@@ -14,4 +14,6 @@ public interface SeasonPassRewardClaimRepository
                     + " WHERE c.user.id = :userId AND c.reward.season.id = :seasonId")
     Set<Long> findClaimedRewardIdsByUserIdAndSeasonId(
             @Param("userId") Long userId, @Param("seasonId") Long seasonId);
+
+    boolean existsByUser_IdAndReward_Id(Long userId, Long rewardId);
 }

@@ -8,6 +8,7 @@ import com.territorial.auction.domain.season.entity.UserTrophy;
 import com.territorial.auction.domain.season.entity.UserTrophy.League;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.season.repository.SeasonRewardRepository;
+import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.user.repository.WalletRepository;
 import java.time.LocalDateTime;
@@ -39,6 +40,7 @@ public class SeasonEndBatchService {
     private final SeasonRewardRepository seasonRewardRepository;
     private final WalletRepository walletRepository;
     private final AttackTokenRepository attackTokenRepository;
+    private final UserSeasonPassRepository userSeasonPassRepository;
 
     @Transactional
     public void runIfSeasonEnded() {
@@ -52,8 +54,13 @@ public class SeasonEndBatchService {
         List<UserTrophy> trophies = userTrophyRepository.findAllBySeasonId(season.getId());
         issueRewards(season, trophies);
         resetTrophies(season, trophies);
+        int deactivated = userSeasonPassRepository.deactivateAllActive();
         season.markProcessed();
-        log.info("시즌 종료 배치 완료. seasonId={}, 대상 유저 수={}", season.getId(), trophies.size());
+        log.info(
+                "시즌 종료 배치 완료. seasonId={}, 대상 유저 수={}, 패스 일괄 종료={}",
+                season.getId(),
+                trophies.size(),
+                deactivated);
     }
 
     private void issueRewards(Season season, List<UserTrophy> trophies) {

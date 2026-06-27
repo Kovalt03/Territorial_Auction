@@ -15,6 +15,7 @@ import com.territorial.auction.domain.season.entity.UserTrophy;
 import com.territorial.auction.domain.season.entity.UserTrophy.League;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.season.repository.SeasonRewardRepository;
+import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
@@ -42,6 +43,7 @@ class SeasonEndBatchServiceTest {
     @Mock private SeasonRewardRepository seasonRewardRepository;
     @Mock private WalletRepository walletRepository;
     @Mock private AttackTokenRepository attackTokenRepository;
+    @Mock private UserSeasonPassRepository userSeasonPassRepository;
 
     private Season season;
     private User user;
