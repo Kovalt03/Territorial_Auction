@@ -1,20 +1,21 @@
 import { useEffect, useRef } from 'react';
 
-import type { SeasonRewardItem } from '../types/season';
+import type { SeasonRewardItem, RewardTrack } from '../types/season';
 
-interface CardProps {
-  reward: SeasonRewardItem;
-  currentLevel: number;
+interface CellProps {
+  reward: SeasonRewardItem | undefined;
   hasPass: boolean;
   claimingId: number | null;
   onClaim: (rewardId: number) => void;
 }
 
-function RewardCard({ reward, currentLevel, hasPass, claimingId, onClaim }: CardProps) {
+function RewardCell({ reward, hasPass, claimingId, onClaim }: CellProps) {
+  if (!reward) {
+    return <div className="w-32 h-24 rounded-xl border border-dashed border-outline/40" />;
+  }
   const isPremium = reward.track === 'PREMIUM';
   const color = isPremium ? '#ffd700' : '#00f5ff';
   const premiumLocked = isPremium && !hasPass;
-  const reached = currentLevel >= reward.level;
 
   let status = 'Lv.미달';
   if (reward.isClaimed) status = '✓ 완료';
@@ -27,25 +28,15 @@ function RewardCard({ reward, currentLevel, hasPass, claimingId, onClaim }: Card
     <button
       onClick={() => active && onClaim(reward.rewardId)}
       disabled={!active}
-      className="snap-center shrink-0 w-28 h-36 rounded-xl border p-2.5 flex flex-col text-left transition-all disabled:cursor-default"
+      className="w-32 h-24 rounded-xl border p-2.5 flex flex-col justify-between text-left transition-all disabled:cursor-default"
       style={{
         borderColor: reward.canClaim ? color : '#354064',
         background: reward.isClaimed ? color + '20' : reward.canClaim ? color + '12' : '#1a1f35',
         opacity: reward.isClaimed || (!reward.canClaim && !premiumLocked) ? 0.6 : 1,
       }}
     >
-      <div className="flex items-center justify-between">
-        <span
-          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${reached ? 'bg-gold text-surface' : 'bg-elevated text-muted'}`}
-        >
-          Lv.{reward.level}
-        </span>
-        <span className="text-[10px]" style={{ color }}>
-          {isPremium ? '🟡 프리미엄' : '🔵 무료'}
-        </span>
-      </div>
       <p
-        className="mt-2 flex-1 text-[12px] font-medium leading-snug"
+        className="text-[12px] font-medium leading-snug line-clamp-2"
         style={{ color: reward.canClaim || reward.isClaimed ? color : '#8892b0' }}
       >
         {reward.rewardName}
@@ -65,12 +56,10 @@ interface Props {
   onClaim: (rewardId: number) => void;
 }
 
-const TRACK_ORDER = { FREE: 0, PREMIUM: 1 } as const;
-
 export function SeasonRewardTrack({ rewards, currentLevel, hasPass, claimingId, onClaim }: Props) {
-  const sorted = [...rewards].sort(
-    (a, b) => a.level - b.level || TRACK_ORDER[a.track] - TRACK_ORDER[b.track],
-  );
+  const levels = [...new Set(rewards.map(r => r.level))].sort((a, b) => a - b);
+  const find = (level: number, track: RewardTrack) =>
+    rewards.find(r => r.level === level && r.track === track);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -93,17 +82,39 @@ export function SeasonRewardTrack({ rewards, currentLevel, hasPass, claimingId, 
         <span className="text-foreground font-semibold text-[13px]">레벨 보상 트랙</span>
         <span className="text-muted text-[10px]">🟡 프리미엄 · 🔵 무료</span>
       </div>
-      <div ref={scrollRef} className="p-4 flex gap-3 overflow-x-auto snap-x snap-mandatory">
-        {sorted.map(reward => (
-          <RewardCard
-            key={reward.rewardId}
-            reward={reward}
-            currentLevel={currentLevel}
-            hasPass={hasPass}
-            claimingId={claimingId}
-            onClaim={onClaim}
-          />
-        ))}
+      <div className="flex">
+        {/* 트랙 라벨 (고정) */}
+        <div className="flex-shrink-0 flex flex-col gap-1.5 py-4 pl-4 pr-2">
+          <span className="h-24 flex items-center text-gold font-bold text-[11px]">🟡 프리미엄</span>
+          <span className="h-6 flex items-center text-muted text-[10px]">레벨</span>
+          <span className="h-24 flex items-center text-primary font-bold text-[11px]">🔵 무료</span>
+        </div>
+        {/* 스크롤 영역 */}
+        <div ref={scrollRef} className="flex-1 overflow-x-auto py-4 pr-4">
+          <div className="flex gap-3 min-w-max">
+            {levels.map(level => (
+              <div key={level} className="flex flex-col items-center gap-1.5">
+                <RewardCell
+                  reward={find(level, 'PREMIUM')}
+                  hasPass={hasPass}
+                  claimingId={claimingId}
+                  onClaim={onClaim}
+                />
+                <div
+                  className={`h-6 flex items-center px-2.5 rounded-full text-[10px] font-bold ${currentLevel >= level ? 'bg-gold text-surface' : 'bg-elevated text-muted'}`}
+                >
+                  Lv.{level}
+                </div>
+                <RewardCell
+                  reward={find(level, 'FREE')}
+                  hasPass={hasPass}
+                  claimingId={claimingId}
+                  onClaim={onClaim}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
