@@ -4,14 +4,12 @@ import { useTerritoryHoldRanking, useAuctionSpendRanking, useTrophyRanking } fro
 import { GNB } from '../components/GNB';
 import type { TerritoryHoldRankEntry, AuctionSpendRankEntry, TrophyRankEntry } from '../types/ranking';
 
-type Category = 'territory' | 'assets' | 'trophy' | 'continent' | 'production';
+type Category = 'territory' | 'assets' | 'trophy';
 
 const categoryLabel: Record<Category, { label: string; icon: string }> = {
   territory: { label: '영토 왕', icon: '🏰' },
   assets: { label: '경매 지출왕', icon: '💸' },
   trophy: { label: '트로피 랭킹', icon: '🏆' },
-  continent: { label: '행성 지배자', icon: '👑' },
-  production: { label: '생산 효율왕', icon: '⚙️' },
 };
 
 const RANK_COLORS = ['#ffd700', '#8892b0', '#ff8c00'];
@@ -97,12 +95,10 @@ export function RankingPage() {
   const { data: spendData, isLoading: spendLoading } = useAuctionSpendRanking();
   const { data: trophyData, isLoading: trophyLoading } = useTrophyRanking();
 
-  const isApiCategory = category === 'territory' || category === 'assets' || category === 'trophy';
   const isLoading =
     category === 'territory' ? holdLoading
     : category === 'assets' ? spendLoading
-    : category === 'trophy' ? trophyLoading
-    : false;
+    : trophyLoading;
 
   const entries: NormalizedEntry[] = (() => {
     if (category === 'territory' && holdData) return normalizeTerritoryHold(holdData.rankings);
@@ -137,12 +133,7 @@ export function RankingPage() {
           ))}
         </div>
 
-        {!isApiCategory ? (
-          <div className="flex items-center justify-center h-48 card">
-            <p className="text-muted text-sm">준비 중입니다</p>
-          </div>
-        ) : (
-          <>
+        <>
             {isLoading ? (
               <div className="flex items-end justify-center gap-4 mb-6">
                 {[130, 160, 110].map((h, i) => (
@@ -221,8 +212,7 @@ export function RankingPage() {
                 </div>
               );
             })()}
-          </>
-        )}
+        </>
       </div>
     </div>
   );
