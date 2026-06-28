@@ -3,6 +3,7 @@ package com.territorial.auction.domain.ranking.controller;
 import com.territorial.auction.domain.ranking.dto.AuctionSpendRankingResponse;
 import com.territorial.auction.domain.ranking.dto.MyRankingResponse;
 import com.territorial.auction.domain.ranking.dto.TerritoryHoldRankingResponse;
+import com.territorial.auction.domain.ranking.dto.TrophyRankingResponse;
 import com.territorial.auction.domain.ranking.service.RankingService;
 import com.territorial.auction.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,15 @@ public class RankingController {
             @RequestParam(defaultValue = "50") int size) {
         return ResponseEntity.ok(
                 ApiResponse.ok(rankingService.getAuctionSpendRanking(userId, page, size)));
+    }
+
+    @GetMapping("/trophy")
+    public ResponseEntity<ApiResponse<TrophyRankingResponse>> getTrophyRanking(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(rankingService.getTrophyRanking(userId, page, size)));
     }
 
     @GetMapping("/me")

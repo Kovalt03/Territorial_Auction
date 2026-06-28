@@ -8,13 +8,16 @@ import com.territorial.auction.domain.ranking.dto.MyRankingResponse;
 import com.territorial.auction.domain.ranking.dto.MyRankingResponse.AuctionSpendSummary;
 import com.territorial.auction.domain.ranking.dto.MyRankingResponse.TerritoryHoldSummary;
 import com.territorial.auction.domain.ranking.dto.TerritoryHoldRankingResponse;
+import com.territorial.auction.domain.ranking.dto.TrophyRankingResponse;
 import com.territorial.auction.domain.ranking.entity.SeasonTerritoryHold;
 import com.territorial.auction.domain.ranking.event.AuctionSettledEvent;
 import com.territorial.auction.domain.ranking.event.TerritoryHoldClosedEvent;
 import com.territorial.auction.domain.ranking.event.TerritoryHoldStartedEvent;
 import com.territorial.auction.domain.ranking.repository.SeasonTerritoryHoldRepository;
 import com.territorial.auction.domain.season.entity.Season;
+import com.territorial.auction.domain.season.entity.UserTrophy;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
+import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.global.exception.CustomException;
@@ -32,6 +35,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
@@ -60,6 +65,7 @@ public class RankingService {
     private final TerritoryRepository territoryRepository;
     private final StringRedisTemplate stringRedisTemplate;
     private final UserRepository userRepository;
+    private final UserTrophyRepository userTrophyRepository;
 
     @Cacheable(
             value = "ranking",
@@ -124,6 +130,53 @@ public class RankingService {
                 rankings,
                 myRank,
                 myScore,
+                LocalDateTime.now());
+    }
+
+    // 트로피는 user_trophies 테이블 기준(유저당 1행, 시즌 간 소프트 리셋)으로 직접 조회한다.
+    // 트로피 변동 시점에 캐시를 무효화할 트리거가 없어 @Cacheable은 적용하지 않는다.
+    public TrophyRankingResponse getTrophyRanking(Long userId, int page, int size) {
+        int effectiveSize = Math.min(size, MAX_SIZE);
+        Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
+        Long seasonId = seasonOpt.map(Season::getId).orElse(null);
+        Integer seasonNumber = seasonOpt.map(Season::getSeasonNumber).orElse(null);
+
+        Page<UserTrophy> trophyPage =
+                userTrophyRepository.findAllByOrderByScoreDesc(PageRequest.of(page, effectiveSize));
+        long start = (long) page * effectiveSize;
+        List<TrophyRankingResponse.RankEntry> rankings = new ArrayList<>();
+        int index = 0;
+        for (UserTrophy trophy : trophyPage.getContent()) {
+            rankings.add(
+                    new TrophyRankingResponse.RankEntry(
+                            (int) (start + index + 1),
+                            trophy.getUser().getId(),
+                            trophy.getUser().getNickname(),
+                            trophy.getScore(),
+                            trophy.getLeague().name()));
+            index++;
+        }
+
+        Integer myRank = null;
+        Long myScore = null;
+        String myLeague = null;
+        if (userId != null) {
+            UserTrophy mine = userTrophyRepository.findById(userId).orElse(null);
+            if (mine != null) {
+                myScore = (long) mine.getScore();
+                myLeague = mine.getLeague().name();
+                myRank = (int) userTrophyRepository.countByScoreGreaterThan(mine.getScore()) + 1;
+            }
+        }
+
+        return new TrophyRankingResponse(
+                seasonId,
+                seasonNumber,
+                "TROPHY",
+                rankings,
+                myRank,
+                myScore,
+                myLeague,
                 LocalDateTime.now());
     }
 
