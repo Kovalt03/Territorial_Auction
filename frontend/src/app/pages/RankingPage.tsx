@@ -26,7 +26,7 @@ function normalizeTerritoryHold(entries: TerritoryHoldRankEntry[]): NormalizedEn
   return entries.map(e => ({
     rank: e.rank,
     nickname: e.nickname,
-    valueLabel: `${e.score}개`,
+    valueLabel: `${e.score.toLocaleString()} 점`,
   }));
 }
 
@@ -177,7 +177,7 @@ export function RankingPage() {
                 style={{ gridTemplateColumns: '80px 1fr 1fr' }}>
                 <span>순위</span>
                 <span>플레이어</span>
-                <span>{category === 'territory' ? '점유 영토' : category === 'trophy' ? '트로피 점수' : '총 지출'}</span>
+                <span>{category === 'territory' ? '영토 점수' : category === 'trophy' ? '트로피 점수' : '총 지출'}</span>
               </div>
               {isLoading ? (
                 <LoadingRows />
@@ -207,7 +207,7 @@ export function RankingPage() {
               const myScore = myData?.myScore;
               if (!myRank) return null;
               const myValueLabel = category === 'territory'
-                ? `${myScore ?? 0}개`
+                ? `${(myScore ?? 0).toLocaleString()} 점`
                 : category === 'trophy'
                 ? `${(myScore ?? 0).toLocaleString()} 점`
                 : `${(myScore ?? 0).toLocaleString()} AP`;
