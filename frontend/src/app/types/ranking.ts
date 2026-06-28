@@ -32,3 +32,22 @@ export interface AuctionSpendRankingResponse {
   myScore: number | null;
   updatedAt: string;
 }
+
+export interface TrophyRankEntry {
+  rank: number;
+  userId: number;
+  nickname: string;
+  score: number;
+  league: string;
+}
+
+export interface TrophyRankingResponse {
+  seasonId: number | null;
+  seasonNumber: number | null;
+  type: string;
+  rankings: TrophyRankEntry[];
+  myRank: number | null;
+  myScore: number | null;
+  myLeague: string | null;
+  updatedAt: string;
+}

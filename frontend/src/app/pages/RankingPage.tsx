@@ -1,19 +1,14 @@
 import { useState } from 'react';
 
-import { useTerritoryHoldRanking, useAuctionSpendRanking } from '../hooks/useRanking';
+import { useTerritoryHoldRanking, useAuctionSpendRanking, useTrophyRanking } from '../hooks/useRanking';
 import { GNB } from '../components/GNB';
-import type { TerritoryHoldRankEntry, AuctionSpendRankEntry } from '../types/ranking';
+import type { TerritoryHoldRankEntry, AuctionSpendRankEntry, TrophyRankEntry } from '../types/ranking';
 
-type Period = 'realtime' | 'weekly' | 'monthly' | 'all';
 type Category = 'territory' | 'assets' | 'trophy' | 'continent' | 'production';
-
-const periodLabel: Record<Period, string> = {
-  realtime: '실시간', weekly: '주간', monthly: '월간', all: '전체 기간',
-};
 
 const categoryLabel: Record<Category, { label: string; icon: string }> = {
   territory: { label: '영토 왕', icon: '🏰' },
-  assets: { label: '자산가', icon: '💰' },
+  assets: { label: '경매 지출왕', icon: '💸' },
   trophy: { label: '트로피 랭킹', icon: '🏆' },
   continent: { label: '행성 지배자', icon: '👑' },
   production: { label: '생산 효율왕', icon: '⚙️' },
@@ -40,6 +35,14 @@ function normalizeAuctionSpend(entries: AuctionSpendRankEntry[]): NormalizedEntr
     rank: e.rank,
     nickname: e.nickname,
     valueLabel: `${e.totalSpentAP.toLocaleString()} AP`,
+  }));
+}
+
+function normalizeTrophy(entries: TrophyRankEntry[]): NormalizedEntry[] {
+  return entries.map(e => ({
+    rank: e.rank,
+    nickname: e.nickname,
+    valueLabel: `${e.score.toLocaleString()} 점`,
   }));
 }
 
@@ -88,18 +91,23 @@ function LoadingRows() {
 }
 
 export function RankingPage() {
-  const [period, setPeriod] = useState<Period>('realtime');
   const [category, setCategory] = useState<Category>('territory');
 
   const { data: holdData, isLoading: holdLoading } = useTerritoryHoldRanking();
   const { data: spendData, isLoading: spendLoading } = useAuctionSpendRanking();
+  const { data: trophyData, isLoading: trophyLoading } = useTrophyRanking();
 
-  const isApiCategory = category === 'territory' || category === 'assets';
-  const isLoading = category === 'territory' ? holdLoading : category === 'assets' ? spendLoading : false;
+  const isApiCategory = category === 'territory' || category === 'assets' || category === 'trophy';
+  const isLoading =
+    category === 'territory' ? holdLoading
+    : category === 'assets' ? spendLoading
+    : category === 'trophy' ? trophyLoading
+    : false;
 
   const entries: NormalizedEntry[] = (() => {
     if (category === 'territory' && holdData) return normalizeTerritoryHold(holdData.rankings);
     if (category === 'assets' && spendData) return normalizeAuctionSpend(spendData.rankings);
+    if (category === 'trophy' && trophyData) return normalizeTrophy(trophyData.rankings);
     return [];
   })();
 
@@ -118,15 +126,6 @@ export function RankingPage() {
 
       <div className="page-body">
         <h1 className="text-foreground font-bold mb-4 text-[26px]">🏆  랭킹 리더보드</h1>
-
-        <div className="bg-elevated border border-outline rounded-xl p-1 flex gap-1 mb-4 w-fit">
-          {(Object.keys(periodLabel) as Period[]).map(p => (
-            <button key={p} onClick={() => setPeriod(p)}
-              className={`px-5 py-2 rounded-lg transition-all font-semibold text-[13px] ${period === p ? 'bg-primary text-surface' : 'text-muted hover:text-foreground'}`}>
-              {periodLabel[p]}
-            </button>
-          ))}
-        </div>
 
         <div className="bg-panel border border-outline flex mb-5">
           {(Object.keys(categoryLabel) as Category[]).map(c => (
@@ -178,7 +177,7 @@ export function RankingPage() {
                 style={{ gridTemplateColumns: '80px 1fr 1fr' }}>
                 <span>순위</span>
                 <span>플레이어</span>
-                <span>{category === 'territory' ? '점유 영토' : '총 지출'}</span>
+                <span>{category === 'territory' ? '점유 영토' : category === 'trophy' ? '트로피 점수' : '총 지출'}</span>
               </div>
               {isLoading ? (
                 <LoadingRows />
@@ -203,11 +202,14 @@ export function RankingPage() {
             </div>
 
             {(() => {
-              const myRank = category === 'territory' ? holdData?.myRank : spendData?.myRank;
-              const myScore = category === 'territory' ? holdData?.myScore : spendData?.myScore;
+              const myData = category === 'territory' ? holdData : category === 'trophy' ? trophyData : spendData;
+              const myRank = myData?.myRank;
+              const myScore = myData?.myScore;
               if (!myRank) return null;
               const myValueLabel = category === 'territory'
                 ? `${myScore ?? 0}개`
+                : category === 'trophy'
+                ? `${(myScore ?? 0).toLocaleString()} 점`
                 : `${(myScore ?? 0).toLocaleString()} AP`;
               return (
                 <div className="mt-3 card px-4 py-3 flex items-center justify-between border-primary">
