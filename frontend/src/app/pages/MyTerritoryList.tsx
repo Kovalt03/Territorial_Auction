@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 
 import { EmptyState } from '../components/EmptyState';
+import { LoadingState } from '../components/LoadingState';
 
 import { GRADE_COLOR } from '../types/grade';
 import type { MyTerritory } from '../types/vault';
@@ -26,7 +27,7 @@ function formatDuration(ms: number): string {
 export function MyTerritoryList({ territories, isLoading }: Props) {
   const navigate = useNavigate();
 
-  if (isLoading) return <div className="text-center py-8 text-muted text-sm">불러오는 중...</div>;
+  if (isLoading) return <LoadingState />;
   if (territories.length === 0) return <EmptyState message="보유한 영토가 없습니다" />;
 
   const now = Date.now();

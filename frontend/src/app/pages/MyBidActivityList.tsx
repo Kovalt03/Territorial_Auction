@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { EmptyState } from '../components/EmptyState';
+import { LoadingState } from '../components/LoadingState';
 
 import { GRADE_COLOR } from '../types/grade';
 import type { MyBidEntry } from '../types/auction';
@@ -45,7 +46,7 @@ export function MyBidActivityList({ bids, isLoading, now }: Props) {
     return new Date(a.endAt).getTime() - new Date(b.endAt).getTime();
   });
 
-  if (isLoading) return <div className="text-center py-8 text-muted text-sm">불러오는 중...</div>;
+  if (isLoading) return <LoadingState />;
   if (bids.length === 0) return <EmptyState message="데이터가 없습니다" />;
 
   return (

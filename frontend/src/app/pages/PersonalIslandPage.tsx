@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { GNB } from '../components/GNB';
+import { LoadingState } from '../components/LoadingState';
 import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
 import { useMilitary } from '../hooks/useMilitary';
@@ -583,7 +584,7 @@ export function PersonalIslandPage() {
                     <span className="text-[10px] text-gold">🌾 식량 {militaryData.availableFood.toLocaleString()}</span>
                   )}
                 </div>
-                {isMilitaryLoading && <p className="text-muted text-xs text-center py-4">불러오는 중...</p>}
+                {isMilitaryLoading && <LoadingState className="py-4" />}
                 {!isMilitaryLoading && militaryData?.units.map(u => {
                   const meta = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
                   return (

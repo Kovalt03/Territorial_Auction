@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 
 import { EmptyState } from '../components/EmptyState';
+import { LoadingState } from '../components/LoadingState';
 
 import { GRADE_COLOR } from '../types/grade';
 import type { MyBidEntry } from '../types/auction';
@@ -15,7 +16,7 @@ export function MyTradeHistoryList({ bids, isLoading }: Props) {
 
   const sorted = [...bids].sort((a, b) => new Date(b.endAt).getTime() - new Date(a.endAt).getTime());
 
-  if (isLoading) return <div className="text-center py-8 text-muted text-sm">불러오는 중...</div>;
+  if (isLoading) return <LoadingState />;
   if (bids.length === 0) return <EmptyState message="거래 내역이 없습니다" />;
 
   return (

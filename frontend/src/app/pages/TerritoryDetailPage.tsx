@@ -13,6 +13,7 @@ import { useWishlist } from '../hooks/useWishlist';
 import { useStompSubscribe, useStompPublish } from '../hooks/useStompClient';
 import { GNB } from '../components/GNB';
 import { LineChart } from '../components/LineChart';
+import { LoadingState } from '../components/LoadingState';
 import type { MyBidEntry } from '../types/auction';
 import { GRADE_COLOR, type Grade } from '../types/grade';
 
@@ -343,11 +344,7 @@ export function TerritoryDetailPage() {
               </div>
             )}
 
-            {listTab === 'wishlist' && isLoadingWishlist && (
-              <div className="text-center py-8">
-                <p className="text-muted text-xs">불러오는 중...</p>
-              </div>
-            )}
+            {listTab === 'wishlist' && isLoadingWishlist && <LoadingState />}
 
             {listTab === 'wishlist' && !isLoadingWishlist && wishlistTerritories.map(t => {
               const isCurrent = t.territoryId === territoryId;
@@ -413,11 +410,7 @@ export function TerritoryDetailPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 flex flex-col overflow-hidden p-5">
 
-            {isLoading && (
-              <div className="flex-1 flex items-center justify-center">
-                <p className="text-primary text-sm">영토 정보 불러오는 중...</p>
-              </div>
-            )}
+            {isLoading && <LoadingState message="영토 정보 불러오는 중..." className="flex-1" />}
 
             {error && !isLoading && (
               <div className="flex-1 flex items-center justify-center">

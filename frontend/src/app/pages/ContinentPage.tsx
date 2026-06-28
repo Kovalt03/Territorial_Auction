@@ -7,6 +7,7 @@ import { useStompSubscribe } from '../hooks/useStompClient';
 import { useWishlist } from '../hooks/useWishlist';
 import { GNB } from '../components/GNB';
 import { ChatPanel } from '../components/ChatPanel';
+import { LoadingState } from '../components/LoadingState';
 import { useApp } from '../context/AppContext';
 import { fetchTerritoryDetail } from '../api/map';
 import { placeBidApi, fetchAuctionBids } from '../api/auction';
@@ -310,7 +311,7 @@ export function ContinentPage() {
 
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center z-20 bg-[#040810b0]">
-              <p className="text-primary font-semibold text-sm">지도 불러오는 중...</p>
+              <LoadingState message="지도 불러오는 중..." />
             </div>
           )}
 

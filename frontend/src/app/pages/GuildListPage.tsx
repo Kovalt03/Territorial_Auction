@@ -13,6 +13,7 @@ import { ApiError } from '../api/client';
 import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
+import { LoadingState } from '../components/LoadingState';
 
 const PAGE_SIZE = 20;
 
@@ -143,7 +144,7 @@ export function GuildListPage() {
 
           {/* List */}
           {isLoading ? (
-            <div className="text-center text-muted py-20 text-sm">불러오는 중...</div>
+            <LoadingState className="py-20" />
           ) : guilds.length === 0 ? (
             <div className="text-center text-muted py-20 text-sm">검색 결과가 없습니다.</div>
           ) : (

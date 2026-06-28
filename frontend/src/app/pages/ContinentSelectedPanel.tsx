@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useTerritoryAuctionHistory } from '../hooks/useTerritoryAuctionHistory';
 
 import { TerritoryHistoryPanel } from '../components/TerritoryHistoryPanel';
+import { LoadingState } from '../components/LoadingState';
 
 import type { Grade } from '../types/grade';
 import type { BidEntry } from '../types/auction';
@@ -112,9 +113,8 @@ export function ContinentSelectedPanel({
         )}
 
         {selected.status === 'auction' && !selectedAuctionId && isAuctionLoading && (
-          <div className="bg-panel-deep border border-outline rounded-xl p-3 flex items-center justify-center gap-2">
-            <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-muted text-[11px]">경매 정보 불러오는 중...</p>
+          <div className="bg-panel-deep border border-outline rounded-xl p-3">
+            <LoadingState message="경매 정보 불러오는 중..." className="py-2" />
           </div>
         )}
 

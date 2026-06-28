@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+import { LoadingState } from './LoadingState';
+
 interface Props {
   delayMs?: number;
 }
@@ -16,7 +18,7 @@ export function DelayedFallback({ delayMs = 200 }: Props) {
 
   return (
     <div className="page-root">
-      <div className="flex-1 flex items-center justify-center text-muted text-sm">불러오는 중...</div>
+      <LoadingState className="flex-1" />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { ApiError } from '../api/client';
 
 import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
+import { LoadingState } from '../components/LoadingState';
 import { SeasonPassHeader } from './SeasonPassHeader';
 import { SeasonRewardTrack } from './SeasonRewardTrack';
 import { SeasonMissionPanel } from './SeasonMissionPanel';
@@ -92,7 +93,7 @@ export function SeasonPassPage() {
       <div className="page-body">
         <div className="max-w-3xl mx-auto">
           {isLoading ? (
-            <div className="card p-10 text-center text-muted text-sm">불러오는 중...</div>
+            <LoadingState className="card p-10" />
           ) : error ? (
             <div className="card p-6 text-center">
               <p className="text-danger text-sm">⚠ {error}</p>
