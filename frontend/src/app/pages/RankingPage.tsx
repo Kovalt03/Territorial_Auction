@@ -144,7 +144,7 @@ export function RankingPage() {
         ) : (
           <>
             {isLoading ? (
-              <div className="flex items-end justify-center gap-4 mb-6" style={{ height: 280 }}>
+              <div className="flex items-end justify-center gap-4 mb-6">
                 {[130, 160, 110].map((h, i) => (
                   <div key={i} className="flex flex-col items-center gap-2 animate-pulse">
                     <div className="w-14 h-14 rounded-full bg-elevated" />
@@ -157,7 +157,7 @@ export function RankingPage() {
                 <p className="text-muted text-sm">랭킹 데이터가 없습니다</p>
               </div>
             ) : (
-              <div className="flex items-end justify-center gap-4 mb-6 relative" style={{ height: 280 }}>
+              <div className="flex items-end justify-center gap-4 mb-6 relative">
                 {podiumOrder.map((entry, i) => (
                   <PodiumCard
                     key={entry.rank}
