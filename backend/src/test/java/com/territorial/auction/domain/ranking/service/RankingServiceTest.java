@@ -13,13 +13,16 @@ import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.ranking.dto.AuctionSpendRankingResponse;
 import com.territorial.auction.domain.ranking.dto.MyRankingResponse;
 import com.territorial.auction.domain.ranking.dto.TerritoryHoldRankingResponse;
+import com.territorial.auction.domain.ranking.dto.TrophyRankingResponse;
 import com.territorial.auction.domain.ranking.entity.SeasonTerritoryHold;
 import com.territorial.auction.domain.ranking.event.AuctionSettledEvent;
 import com.territorial.auction.domain.ranking.event.TerritoryHoldClosedEvent;
 import com.territorial.auction.domain.ranking.event.TerritoryHoldStartedEvent;
 import com.territorial.auction.domain.ranking.repository.SeasonTerritoryHoldRepository;
 import com.territorial.auction.domain.season.entity.Season;
+import com.territorial.auction.domain.season.entity.UserTrophy;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
+import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import java.time.LocalDateTime;
@@ -35,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -50,6 +54,7 @@ class RankingServiceTest {
     @Mock private TerritoryRepository territoryRepository;
     @Mock private StringRedisTemplate stringRedisTemplate;
     @Mock private UserRepository userRepository;
+    @Mock private UserTrophyRepository userTrophyRepository;
     @Mock private ZSetOperations<String, String> zSetOperations;
     @Mock private ValueOperations<String, String> valueOperations;
 
@@ -176,6 +181,56 @@ class RankingServiceTest {
                     rankingService.getAuctionSpendRanking(null, 0, 10);
 
             assertThat(response.seasonId()).isNull();
+            assertThat(response.rankings()).isEmpty();
+            assertThat(response.myRank()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("GetTrophyRanking")
+    class GetTrophyRanking {
+
+        private UserTrophy trophyWithScore(int score, UserTrophy.League league) {
+            UserTrophy trophy = UserTrophy.builder().user(user).season(season).build();
+            ReflectionTestUtils.setField(trophy, "score", score);
+            ReflectionTestUtils.setField(trophy, "league", league);
+            return trophy;
+        }
+
+        @Test
+        @DisplayName("트로피 보유 유저 존재 → 점수 내림차순 랭킹 + 내 순위 반환")
+        void success_withTrophies() {
+            given(seasonRepository.findActiveSeason(any(LocalDateTime.class)))
+                    .willReturn(Optional.of(season));
+            UserTrophy trophy = trophyWithScore(1200, UserTrophy.League.GOLD);
+            given(userTrophyRepository.findAllByOrderByScoreDesc(any()))
+                    .willReturn(new PageImpl<>(List.of(trophy)));
+            given(userTrophyRepository.findById(10L)).willReturn(Optional.of(trophy));
+            given(userTrophyRepository.countByScoreGreaterThan(1200)).willReturn(0L);
+
+            TrophyRankingResponse response = rankingService.getTrophyRanking(10L, 0, 10);
+
+            assertThat(response.rankings()).hasSize(1);
+            assertThat(response.rankings().get(0).rank()).isEqualTo(1);
+            assertThat(response.rankings().get(0).userId()).isEqualTo(10L);
+            assertThat(response.rankings().get(0).score()).isEqualTo(1200);
+            assertThat(response.rankings().get(0).league()).isEqualTo("GOLD");
+            assertThat(response.myRank()).isEqualTo(1);
+            assertThat(response.myScore()).isEqualTo(1200L);
+            assertThat(response.myLeague()).isEqualTo("GOLD");
+        }
+
+        @Test
+        @DisplayName("내 트로피 없음 → myRank null, 랭킹은 반환")
+        void noMyTrophy() {
+            given(seasonRepository.findActiveSeason(any(LocalDateTime.class)))
+                    .willReturn(Optional.of(season));
+            given(userTrophyRepository.findAllByOrderByScoreDesc(any()))
+                    .willReturn(new PageImpl<>(List.of()));
+            given(userTrophyRepository.findById(10L)).willReturn(Optional.empty());
+
+            TrophyRankingResponse response = rankingService.getTrophyRanking(10L, 0, 10);
+
             assertThat(response.rankings()).isEmpty();
             assertThat(response.myRank()).isNull();
         }

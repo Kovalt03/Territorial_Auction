@@ -1,5 +1,9 @@
 import { apiClient } from './client';
-import type { TerritoryHoldRankingResponse, AuctionSpendRankingResponse } from '../types/ranking';
+import type {
+  TerritoryHoldRankingResponse,
+  AuctionSpendRankingResponse,
+  TrophyRankingResponse,
+} from '../types/ranking';
 
 export function fetchTerritoryHoldRanking(page = 0, size = 50) {
   return apiClient.get<TerritoryHoldRankingResponse>(
@@ -11,4 +15,8 @@ export function fetchAuctionSpendRanking(page = 0, size = 50) {
   return apiClient.get<AuctionSpendRankingResponse>(
     `/rankings/auction-spend?page=${page}&size=${size}`,
   );
+}
+
+export function fetchTrophyRanking(page = 0, size = 50) {
+  return apiClient.get<TrophyRankingResponse>(`/rankings/trophy?page=${page}&size=${size}`);
 }
