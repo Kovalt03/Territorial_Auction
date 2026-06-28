@@ -207,6 +207,7 @@
 |---|---|---|---|
 | ✅ | 시즌 영토 등급 보유 랭킹 | `GET /api/v1/rankings/territory-hold` | Redis Sorted Set, 주기적 배치 집계 |
 | ✅ | 시즌 경매 AP 소비 랭킹 | `GET /api/v1/rankings/auction-spend` | Redis Sorted Set, 낙찰마다 즉시 갱신 |
+| ✅ | 트로피 랭킹 | `GET /api/v1/rankings/trophy` | user_trophies 점수 내림차순 DB 조회, 내 순위 포함 |
 | ✅ | 내 랭킹 조회 | `GET /api/v1/rankings/me` | 두 카테고리 모두 포함 |
 
 ---
@@ -377,8 +378,8 @@
 ### 랭킹
 | 상태 | 항목 | 페이지 | 비고 |
 |---|---|---|---|
-| ✅ | 영토 보유 / 자산(AP 소비) 랭킹 | `RankingPage` | territory·assets 연동 (`useRanking`) |
-| ⬜ | 트로피 / 대륙 / 생산 랭킹 | `RankingPage:143` | "준비 중" — BE 엔드포인트 확인 필요 |
+| ✅ | 영토 보유 / 경매 지출 / 트로피 랭킹 | `RankingPage` | territory·assets·trophy 연동 (`useRanking`). 동작 안 하던 기간 탭 제거, '자산가'→'경매 지출왕' 라벨 수정 |
+| ⬜ | 대륙 / 생산 랭킹 | `RankingPage` | "준비 중" — BE 엔드포인트 미구현 |
 
 ### 길드
 | 상태 | 항목 | 페이지 | 비고 |
