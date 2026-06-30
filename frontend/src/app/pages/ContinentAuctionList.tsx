@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useContinentAuctions } from '../hooks/useContinentAuctions';
 
@@ -30,19 +30,31 @@ function compareAuctions(a: AuctionItem, b: AuctionItem, sort: SortKey): number 
   return sort === 'grade-desc' ? diff : -diff;
 }
 
-function remainingLabel(endAt: string): { text: string; color: string } {
-  const diff = new Date(endAt).getTime() - Date.now();
+function formatCountdown(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+function remainingLabel(endAt: string, now: number): { text: string; color: string } {
+  const diff = new Date(endAt).getTime() - now;
   if (diff <= 0) return { text: '종료', color: 'var(--color-muted)' };
-  if (diff < CLOSING_SOON_MS) return { text: '마감 임박', color: '#ff8c00' };
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return { text: `${mins}분`, color: '#ffd700' };
-  return { text: `${Math.floor(mins / 60)}시간`, color: '#ffd700' };
+  return { text: formatCountdown(diff), color: diff < CLOSING_SOON_MS ? '#ff8c00' : '#ffd700' };
 }
 
 export function ContinentAuctionList({ continentId, onSelect }: Props) {
   const { data, isLoading, error } = useContinentAuctions(continentId);
   const [sort, setSort] = useState<SortKey>('end-asc');
   const [page, setPage] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const auctions = data?.auctions ?? [];
   const sorted = [...auctions].sort((a, b) => compareAuctions(a, b, sort));
@@ -76,7 +88,7 @@ export function ContinentAuctionList({ continentId, onSelect }: Props) {
       ) : (
         <>
           {rows.map(t => {
-            const remaining = remainingLabel(t.endAt);
+            const remaining = remainingLabel(t.endAt, now);
             return (
               <button
                 key={t.auctionId}
@@ -86,7 +98,7 @@ export function ContinentAuctionList({ continentId, onSelect }: Props) {
                 <span className="leading-none" style={{ fontSize: 11 }}>{GRADE_EMOJI[t.grade as Grade] ?? '🔹'}</span>
                 <span className="text-[11px] font-semibold" style={{ color: GRADE_COLOR[t.grade as Grade] }}>{t.grade}</span>
                 <span className="text-muted text-[10px]">({t.coordX}, {t.coordY})</span>
-                <span className="ml-auto text-[10px] font-medium" style={{ color: remaining.color }}>{remaining.text}</span>
+                <span className="ml-auto text-[10px] font-medium tabular-nums" style={{ color: remaining.color }}>{remaining.text}</span>
               </button>
             );
           })}
