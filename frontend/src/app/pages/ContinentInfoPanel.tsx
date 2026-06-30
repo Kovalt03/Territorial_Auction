@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 
 import { useContinentRanking } from '../hooks/useContinentRanking';
 
+import { ContinentAuctionList } from './ContinentAuctionList';
+
 import type { Grade } from '../types/grade';
 import { GRADE_COLOR } from '../types/grade';
 
@@ -75,15 +77,7 @@ export function ContinentInfoPanel({
         </div>
       </div>
 
-      <Section title="🔥 경매 중인 영토" count={auctionList.length}>
-        {auctionList.length === 0 ? (
-          <p className="text-muted text-[10px] px-2 py-1">진행 중인 경매가 없습니다</p>
-        ) : (
-          auctionList.map(t => (
-            <TerritoryRow key={t.id} t={t} label="경매중" labelColor="#ffd700" onSelect={onSelect} />
-          ))
-        )}
-      </Section>
+      <ContinentAuctionList auctions={auctionList} onSelect={onSelect} />
 
       <Section title="⭐ 내 관심 영토" count={wishlist.length}>
         {wishlist.length === 0 ? (
