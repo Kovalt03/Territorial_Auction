@@ -360,6 +360,10 @@ export function ContinentPage() {
             {(['S', 'A', 'B', 'C'] as Grade[]).map(g => (
               <div key={g} className="flex items-center gap-1.5"><span className="text-[11px]">{GRADE_EMOJI[g]}</span><span className="text-[9px]" style={{ color: GRADE_COLOR[g] }}>{g}급</span></div>
             ))}
+            <div className="flex items-center gap-1.5 mt-0.5 pt-1 border-t border-outline-soft">
+              <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ border: '1px solid #00f5ff', background: '#00f5ff22' }} />
+              <span className="text-[9px] text-primary">경매중</span>
+            </div>
           </div>
 
           <div className="absolute bottom-3 left-3 z-10 text-outline text-[10px]">스크롤로 줌 · 드래그로 이동 · 영토 클릭하여 상세 확인</div>
@@ -381,13 +385,13 @@ export function ContinentPage() {
                   if (!shown) { bg = '#080c18'; border = '#0d1420'; }
                   else if (cell.status === 'mine') { bg = cell.color + '50'; border = cell.color + 'cc'; glow = cell.color; }
                   else if (cell.status === 'occupied') { bg = cell.color + '35'; border = cell.color + '80'; }
-                  else if (cell.status === 'auction') { bg = '#00f5ff18'; border = '#00f5ff50'; }
+                  else if (cell.status === 'auction') { bg = GRADE_COLOR[cell.grade] + '22'; border = '#00f5ff'; glow = '#00f5ff'; }
                   else { bg = '#0d1420'; border = '#141e30'; }
                   if (isSelected) border = '#00f5ff';
                   if (isHovered && !isSelected) border = '#ffffff60';
                   const visSize = shown ? GRADE_CELL[cell.grade] : 10;
                   const fs = GRADE_FONT[cell.grade];
-                  const building = (cell.status === 'mine' || cell.status === 'occupied') ? GRADE_EMOJI[cell.grade] : '';
+                  const building = (cell.status === 'mine' || cell.status === 'occupied' || cell.status === 'auction') ? GRADE_EMOJI[cell.grade] : '';
                   return (
                     <div key={`${x}-${y}`} data-cell="true"
                       className="flex items-center justify-center"
@@ -401,7 +405,7 @@ export function ContinentPage() {
                         style={{ width: visSize, height: visSize, background: bg, border: `1px solid ${border}`, borderRadius: 3, cursor: shown ? 'pointer' : 'default', boxShadow: isSelected ? '0 0 8px #00f5ff' : glow && shown ? `0 0 4px ${glow}60` : undefined, transition: 'border-color 0.1s' }}
                       >
                         {shown && building && <span className="leading-none select-none" style={{ fontSize: fs }}>{building}</span>}
-                        {shown && cell.status === 'auction' && !building && <div style={{ width: Math.max(4, fs - 4), height: Math.max(4, fs - 4), borderRadius: '50%', background: '#00f5ff', animation: 'pulse 1.2s infinite' }} />}
+                        {shown && cell.status === 'auction' && <div className="absolute -top-0.5 -right-0.5" style={{ width: 5, height: 5, borderRadius: '50%', background: '#00f5ff', animation: 'pulse 1.2s infinite' }} />}
                         {shown && cell.grade === 'S' && cell.status !== 'idle' && <div className="absolute top-0 left-0 w-0 h-0" style={{ borderLeft: '4px solid #ffd700', borderBottom: '4px solid transparent' }} />}
                         {shown && cell.status === 'mine' && <div className="absolute bottom-0 right-0 w-0 h-0" style={{ borderRight: '4px solid #00ff88', borderTop: '4px solid transparent' }} />}
                       </div>
