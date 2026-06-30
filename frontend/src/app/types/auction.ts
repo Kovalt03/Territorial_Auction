@@ -56,3 +56,23 @@ export interface AuctionBidBroadcast {
   bidAt: string;
   endAt: string;
 }
+
+export interface AuctionItem {
+  auctionId: number;
+  territoryId: number;
+  coordX: number;
+  coordY: number;
+  continentName: string;
+  grade: string;
+  currentPrice: number;
+  currentBidderNickname: string | null;
+  endAt: string;
+  status: string;
+}
+
+export interface AuctionListResponse {
+  totalCount: number;
+  page: number;
+  size: number;
+  auctions: AuctionItem[];
+}

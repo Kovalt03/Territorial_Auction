@@ -60,7 +60,6 @@ export function ContinentInfoPanel({
   continentId, continentName, continentColor, continentTrophyReq, continentDesc,
   territories, wishlistIds, onSelect,
 }: Props) {
-  const auctionList = territories.filter(t => t.status === 'auction');
   const wishlist = territories.filter(t => t.id !== 0 && wishlistIds.has(t.id));
   const { data: ranking, isLoading: isRankingLoading, error: rankingError } = useContinentRanking(continentId);
 
@@ -77,7 +76,7 @@ export function ContinentInfoPanel({
         </div>
       </div>
 
-      <ContinentAuctionList auctions={auctionList} onSelect={onSelect} />
+      <ContinentAuctionList continentId={continentId} onSelect={onSelect} />
 
       <Section title="⭐ 내 관심 영토" count={wishlist.length}>
         {wishlist.length === 0 ? (
