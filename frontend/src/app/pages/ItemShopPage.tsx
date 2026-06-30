@@ -54,10 +54,9 @@ function InventoryTab() {
         const color = itemColor(item.itemType);
         return (
           <div key={item.userItemId} className="bg-panel border rounded-2xl p-4 flex items-center gap-4"
-            style={{ borderColor: color + '60' }}>
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: color + '20', border: `1px solid ${color}` }}>
-              <img src={itemIconUrl(item.itemType)} alt={item.itemName} className="w-7 h-7 object-contain" />
+            style={{ borderColor: color + '33' }}>
+            <div className="w-12 h-12 flex-shrink-0">
+              <img src={itemIconUrl(item.itemType)} alt={item.itemName} className="w-full h-full object-contain" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-foreground font-bold text-sm">{item.itemName}</p>
@@ -139,10 +138,10 @@ export function ItemShopPage() {
         </div>
 
         {/* 탭 */}
-        <div className="flex gap-1 bg-elevated border border-outline rounded-xl p-1 mb-5">
+        <div className="flex gap-1 bg-panel-deep border border-outline-soft rounded-xl p-1 mb-5">
           {(['shop', 'inventory'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t ? 'bg-elevated text-foreground' : 'text-muted'}`}>
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t ? 'bg-elevated text-foreground shadow-sm' : 'text-muted hover:text-foreground-soft'}`}>
               {t === 'shop' ? '🛒 샵' : '📦 보유 아이템'}
             </button>
           ))}
@@ -183,12 +182,12 @@ export function ItemShopPage() {
               const color = itemColor(item.itemType);
               const isExhausted = item.dailyLimit != null && item.myInventory >= item.dailyLimit;
               return (
-                <div key={item.itemId} className="bg-panel border rounded-2xl overflow-hidden"
-                  style={{ borderColor: color + '80' }}>
-                  <div className="p-5 flex items-start gap-4">
-                    <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: color + '20', border: `1px solid ${color}` }}>
-                      <img src={item.iconUrl} alt={item.name} className="w-9 h-9 object-contain" />
+                <div key={item.itemId}
+                  className="bg-panel border rounded-2xl p-4 flex flex-col transition-all hover:brightness-[1.05]"
+                  style={{ borderColor: color + '33' }}>
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="relative w-14 h-14 flex-shrink-0">
+                      <img src={item.iconUrl} alt={item.name} className="w-full h-full object-contain" />
                       {item.myInventory > 0 && (
                         <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center"
                           style={{ background: color, color: '#0a0e1a' }}>
@@ -196,40 +195,40 @@ export function ItemShopPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-foreground font-bold mb-1 text-base">{item.name}</h3>
-                      <p className="text-muted mb-2 text-[13px]">{item.description}</p>
-                      {item.dailyLimit != null && (
-                        <div className="bg-elevated border border-outline rounded px-2 py-1 inline-block mb-2">
-                          <span className="text-gold text-[11px]">
-                            일 {item.dailyLimit}회 한도 ({item.myInventory}/{item.dailyLimit})
-                          </span>
-                        </div>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <h3 className="text-foreground font-bold text-[15px] leading-tight">{item.name}</h3>
+                      <p className="text-muted text-xs mt-1 leading-snug">{item.description}</p>
+                    </div>
+                    {item.dailyLimit != null && (
+                      <span className="flex-shrink-0 bg-elevated rounded-md px-2 py-1 text-[10px] font-medium"
+                        style={{ color: isExhausted ? '#7788a5' : color }}>
+                        일 {item.myInventory}/{item.dailyLimit}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-auto flex items-center justify-between gap-2 pt-3 border-t border-outline-soft">
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      {item.costAP != null && (
+                        <span className="font-extrabold text-lg leading-none" style={{ color }}>
+                          {item.costAP.toLocaleString()}<span className="text-[11px] font-bold ml-0.5">AP</span>
+                        </span>
                       )}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {item.costAP != null && (
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-                            style={{ background: color + '20', border: `1px solid ${color}` }}>
-                            <span className="font-bold text-base" style={{ color }}>{item.costAP} AP</span>
-                          </div>
-                        )}
-                        {item.costGP != null && (
-                          <>
-                            {item.costAP != null && <span className="text-muted text-xs">또는</span>}
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-                              style={{ background: '#00f5ff20', border: '1px solid #00f5ff' }}>
-                              <span className="font-bold text-primary text-base">{item.costGP} GP</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                      {item.costGP != null && (
+                        <>
+                          {item.costAP != null && <span className="text-muted text-[11px]">또는</span>}
+                          <span className="font-extrabold text-lg leading-none text-gp">
+                            {item.costGP.toLocaleString()}<span className="text-[11px] font-bold ml-0.5">GP</span>
+                          </span>
+                        </>
+                      )}
                     </div>
                     <button
                       onClick={() => openConfirm(item)}
                       disabled={isExhausted || isPurchasing}
-                      className="h-10 px-5 rounded-xl font-bold text-sm text-surface transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ background: color }}>
-                      구매
+                      className="flex-shrink-0 h-9 px-5 rounded-lg font-bold text-[13px] transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                      style={{ background: color, color: '#0a0e1a' }}>
+                      {isExhausted ? '완료' : '구매'}
                     </button>
                   </div>
                 </div>
