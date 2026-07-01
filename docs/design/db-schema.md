@@ -19,6 +19,7 @@
 | `nickname` | `VARCHAR(30)` | NOT NULL, UNIQUE | |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT now() | |
 | `status` | `VARCHAR(10)` | NOT NULL, DEFAULT 'ACTIVE' | ACTIVE / WITHDRAWN / SUSPENDED |
+| `role` | `VARCHAR(10)` | NOT NULL, DEFAULT 'USER' | USER / ADMIN — 관리자 페이지 접근 권한 |
 
 #### wallets
 
@@ -498,6 +499,26 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `defender_units_lost` | `INTEGER` | | |
 | `looted_gp` | `INTEGER` | DEFAULT 0 | 약탈량 |
 | `result_type` | `VARCHAR(15)` | | LOOT / DEBUFF / AUCTION |
+
+---
+
+### 🛡️ Admin Domain
+
+#### admin_audit_logs
+
+관리자의 모든 쓰기 작업 이력. 설계: [admin-dashboard](./admin-dashboard.md).
+
+| column | 자료형 | 조건 | 설명 |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | PK | |
+| `admin_user_id` | `BIGINT` | NOT NULL, FK → users.id | 작업 관리자 |
+| `action` | `VARCHAR(50)` | NOT NULL | USER_SUSPEND / WALLET_ADJUST / AUCTION_FORCE_END / SEASON_CREATE / TERRITORY_GRADE_CHANGE 등 |
+| `target_type` | `VARCHAR(20)` | NOT NULL | USER / AUCTION / TERRITORY / SEASON / ITEM |
+| `target_id` | `BIGINT` | | 대상 엔티티 ID |
+| `detail_json` | `TEXT` | | 변경 전/후 값 및 사유(JSON) |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT now() | |
+
+> **경매 비활성화 플래그**: F-17.7 채택 시 `territories`에 `auction_enabled BOOLEAN NOT NULL DEFAULT true` 추가 예정 ([OQ-6](./admin-dashboard.md#10-미결-사항-open-questions)).
 
 ---
 

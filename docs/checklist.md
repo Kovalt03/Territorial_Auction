@@ -219,6 +219,29 @@
 
 ---
 
+### Admin (관리자 페이지) — ⬜ 미구현
+
+> 설계: [admin-dashboard](./design/admin-dashboard.md) · API: [admin.md](./api/admin.md)
+
+| 상태 | 기능 | 엔드포인트 | 비고 |
+|---|---|---|---|
+| ⬜ | 인프라: role·JWT·SecurityConfig·AdminAuditLogger | — | Phase 1 선행 |
+| ⬜ | ⭐ 대륙 영토 구성 현황·등급 분포 일괄 조정 | `GET /admin/continents`, `PATCH /{id}/grade-distribution` | **Phase 1 핵심** |
+| ⬜ | 영토 개별 등급 변경·경매 활성/비활성 | `PATCH /territories/{id}/grade`, `/auction-enabled` | Phase 1 |
+| ⬜ | 유저 목록·상세 | `GET /api/v1/admin/users`, `/{id}` | Phase 1 |
+| ⬜ | 계정 정지/해제 | `PATCH /api/v1/admin/users/{id}/status` | Phase 1 |
+| ⬜ | 재화·트로피 조정 | `POST /wallet/adjust`, `PATCH /trophy` | Phase 2 |
+| ⬜ | 아이템 지급 | `POST /admin/users/{id}/items/grant` | Phase 3 |
+| ⬜ | 경매 목록·강제 종료 | `GET /admin/auctions`, `POST /{id}/force-end` | Phase 2 · SETTLE/CANCEL 정책 |
+| ⬜ | 경매 강제 시작 | `POST /territories/{id}/start-auction` | Phase 2 |
+| ⬜ | 시즌 생성·시작/종료 | `GET/POST/PATCH /admin/seasons` | Phase 2 |
+| ⬜ | 아이템 가격·한도·구매이력 | `PATCH /admin/items/{id}`, `GET /item-purchases` | Phase 3 |
+| ⬜ | 지표 대시보드 | `GET /admin/dashboard/summary` | Phase 3 |
+| ⬜ | 감사 로그 열람 | `GET /admin/audit-logs` | Phase 1 |
+| ⬜ | 채팅 로그 열람/삭제 | `GET /admin/chat/...`, `DELETE /chat/messages/{id}` | Phase 3 |
+
+---
+
 ## WebSocket / STOMP (실시간)
 
 ### 기반 설정
