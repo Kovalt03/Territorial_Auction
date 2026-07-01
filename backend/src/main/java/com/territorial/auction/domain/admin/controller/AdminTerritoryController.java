@@ -8,6 +8,7 @@ import com.territorial.auction.global.common.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,8 +31,10 @@ public class AdminTerritoryController {
 
     @PatchMapping("/territories/{territoryId}/grade")
     public ResponseEntity<ApiResponse<AdminTerritoryResponse>> changeGrade(
-            @PathVariable Long territoryId, @RequestBody @Valid AdminChangeGradeRequest request) {
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long territoryId,
+            @RequestBody @Valid AdminChangeGradeRequest request) {
         return ResponseEntity.ok(
-                ApiResponse.ok(adminTerritoryService.changeGrade(territoryId, request)));
+                ApiResponse.ok(adminTerritoryService.changeGrade(userId, territoryId, request)));
     }
 }

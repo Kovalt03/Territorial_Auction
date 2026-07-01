@@ -31,6 +31,7 @@ class AdminTerritoryServiceTest {
     @Mock private TerritoryRepository territoryRepository;
     @Mock private TerritoryGradeRepository territoryGradeRepository;
     @Mock private ContinentRepository continentRepository;
+    @Mock private AdminAuditLogger adminAuditLogger;
 
     private TerritoryGrade grade(String g) {
         return TerritoryGrade.builder()
@@ -57,7 +58,7 @@ class AdminTerritoryServiceTest {
         given(territoryGradeRepository.findByGrade("S")).willReturn(Optional.of(grade("S")));
 
         AdminTerritoryResponse response =
-                adminTerritoryService.changeGrade(100L, new AdminChangeGradeRequest("S", "조정"));
+                adminTerritoryService.changeGrade(1L, 100L, new AdminChangeGradeRequest("S", "조정"));
 
         assertThat(response.grade()).isEqualTo("S");
         assertThat(t.getGrade().getGrade()).isEqualTo("S");
@@ -71,7 +72,7 @@ class AdminTerritoryServiceTest {
         assertThatThrownBy(
                         () ->
                                 adminTerritoryService.changeGrade(
-                                        999L, new AdminChangeGradeRequest("S", "조정")))
+                                        1L, 999L, new AdminChangeGradeRequest("S", "조정")))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.TERRITORY_NOT_FOUND);
@@ -87,7 +88,7 @@ class AdminTerritoryServiceTest {
         assertThatThrownBy(
                         () ->
                                 adminTerritoryService.changeGrade(
-                                        100L, new AdminChangeGradeRequest("Z", "조정")))
+                                        1L, 100L, new AdminChangeGradeRequest("Z", "조정")))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.TERRITORY_GRADE_NOT_FOUND);
