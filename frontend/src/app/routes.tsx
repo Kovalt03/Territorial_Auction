@@ -3,7 +3,9 @@ import { createBrowserRouter, Navigate } from 'react-router';
 
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { AdminLoginPage } from './pages/AdminLoginPage';
 import { PrivateRoute } from './components/PrivateRoute';
+import { AdminRoute } from './components/AdminRoute';
 
 const lazyPage = <K extends string>(loader: () => Promise<Record<K, ComponentType>>, key: K) =>
   lazy(() => loader().then(m => ({ default: m[key] })));
@@ -24,6 +26,7 @@ const SettingsPage = lazyPage(() => import('./pages/SettingsPage'), 'SettingsPag
 const GuildListPage = lazyPage(() => import('./pages/GuildListPage'), 'GuildListPage');
 const GuildDetailPage = lazyPage(() => import('./pages/GuildDetailPage'), 'GuildDetailPage');
 const NotificationPage = lazyPage(() => import('./pages/NotificationPage'), 'NotificationPage');
+const AdminContinentPage = lazyPage(() => import('./pages/AdminContinentPage'), 'AdminContinentPage');
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
@@ -46,5 +49,8 @@ export const router = createBrowserRouter([
   { path: '/app/land-tax', element: <Navigate to="/app/territory-management?tab=tax" replace /> },
   { path: '/app/my-island', element: <PrivateRoute><PersonalIslandPage /></PrivateRoute> },
   { path: '/app/settings', element: <PrivateRoute><SettingsPage /></PrivateRoute> },
+  { path: '/admin/login', Component: AdminLoginPage },
+  { path: '/admin', element: <Navigate to="/admin/continents" replace /> },
+  { path: '/admin/continents', element: <AdminRoute><AdminContinentPage /></AdminRoute> },
   { path: '*', element: <Navigate to="/login" replace /> },
 ]);
