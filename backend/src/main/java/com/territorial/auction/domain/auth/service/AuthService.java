@@ -106,6 +106,9 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash()))
             throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
 
+        // 관리자 계정은 강화된 관리자 로그인(/api/v1/admin/auth/login)만 허용
+        if (user.isAdmin()) throw new CustomException(ErrorCode.ADMIN_LOGIN_REQUIRED);
+
         // Access/Refresh 토큰 발급 (role 포함)
         String accessToken =
                 jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());

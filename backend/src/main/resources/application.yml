@@ -49,5 +49,9 @@ jwt:
   access-token-expiry: 1800000    # 30분 (ms)
   refresh-token-expiry: 1209600000 # 14일 (ms)
 
+admin:
+  # 관리자 로그인 허용 IP. 비워두면 모든 IP 허용(개발). 운영에서는 화이트리스트 지정.
+  ip-allowlist: ${ADMIN_IP_ALLOWLIST:}
+
 server:
   port: 8080

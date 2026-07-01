@@ -20,6 +20,13 @@ public enum ErrorCode {
     WITHDRAWN_USER(HttpStatus.FORBIDDEN, "탈퇴한 사용자입니다."),
     SUSPENDED_USER(HttpStatus.FORBIDDEN, "정지된 사용자입니다."),
 
+    // Admin Auth
+    ADMIN_LOGIN_REQUIRED(HttpStatus.FORBIDDEN, "관리자 계정은 관리자 로그인을 사용해야 합니다."),
+    NOT_ADMIN_ACCOUNT(HttpStatus.FORBIDDEN, "관리자 계정이 아닙니다."),
+    ADMIN_IP_NOT_ALLOWED(HttpStatus.FORBIDDEN, "허용되지 않은 접근 위치입니다."),
+    INVALID_TOTP_CODE(HttpStatus.UNAUTHORIZED, "인증 코드가 올바르지 않습니다."),
+    TOTP_NOT_ENROLLED(HttpStatus.FORBIDDEN, "2차 인증이 등록되지 않았습니다."),
+
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "이미 사용 중인 아이디입니다."),
