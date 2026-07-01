@@ -37,6 +37,10 @@ public class User {
     @Column(nullable = false, length = 10)
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private UserRole role = UserRole.USER;
+
     @Builder
     public User(String username, String email, String passwordHash, String nickname) {
         this.username = username;
@@ -47,6 +51,10 @@ public class User {
 
     public void updateStatus(UserStatus status) {
         this.status = status;
+    }
+
+    public void updateRole(UserRole role) {
+        this.role = role;
     }
 
     public void updateNickname(String nickname) {

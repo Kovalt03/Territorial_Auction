@@ -74,6 +74,7 @@ public class SecurityConfig {
                                     .requestMatchers("/api/v1/military/**").authenticated()
                                     .requestMatchers("/api/v1/siege/**").authenticated()
                                     .requestMatchers("/api/v1/users/me/wishlist/**").authenticated()
+                                    .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                                     .anyRequest().authenticated())
                         // spotless:on
                 .oauth2Login(

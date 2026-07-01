@@ -20,18 +20,26 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
     }
 
+    private static final String ROLE_CLAIM = "role";
+    private static final String DEFAULT_ROLE = "USER";
+
     public String createAccessToken(Long userId) {
-        return buildToken(userId, jwtProperties.accessTokenExpiry());
+        return createAccessToken(userId, DEFAULT_ROLE);
+    }
+
+    public String createAccessToken(Long userId, String role) {
+        return buildToken(userId, role, jwtProperties.accessTokenExpiry());
     }
 
     public String createRefreshToken(Long userId) {
-        return buildToken(userId, jwtProperties.refreshTokenExpiry());
+        return buildToken(userId, DEFAULT_ROLE, jwtProperties.refreshTokenExpiry());
     }
 
-    private String buildToken(Long userId, long expiryMs) {
+    private String buildToken(Long userId, String role, long expiryMs) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
+                .claim(ROLE_CLAIM, role)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expiryMs))
                 .signWith(getSigningKey())
@@ -40,6 +48,12 @@ public class JwtTokenProvider {
 
     public Long getUserId(String token) {
         return Long.parseLong(getClaims(token).getSubject());
+    }
+
+    // 과거 발급 토큰(role claim 없음) 하위호환을 위해 기본값 USER 반환
+    public String getRole(String token) {
+        Object role = getClaims(token).get(ROLE_CLAIM);
+        return role != null ? role.toString() : DEFAULT_ROLE;
     }
 
     public long getRemainingMs(String token) {

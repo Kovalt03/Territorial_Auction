@@ -106,8 +106,9 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash()))
             throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
 
-        // Access/Refresh 토큰 발급
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId());
+        // Access/Refresh 토큰 발급 (role 포함)
+        String accessToken =
+                jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
         // Redis 저장
@@ -124,8 +125,12 @@ public class AuthService {
         if (!refreshTokenService.isValid(userId, refreshToken))
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
 
-        // 새 토큰 발급
-        String accessToken = jwtTokenProvider.createAccessToken(userId);
+        // role 유지를 위해 유저 조회 후 토큰 재발급
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        String accessToken = jwtTokenProvider.createAccessToken(userId, user.getRole().name());
         String newRefreshToken = jwtTokenProvider.createRefreshToken(userId);
 
         // Redis 갱신

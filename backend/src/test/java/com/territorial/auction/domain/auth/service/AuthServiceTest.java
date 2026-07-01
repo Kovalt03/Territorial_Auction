@@ -205,7 +205,7 @@ class AuthServiceTest {
             given(userRepository.findByEmail("user@example.com"))
                     .willReturn(Optional.of(activeUser()));
             given(passwordEncoder.matches("password1!", "encoded")).willReturn(true);
-            given(jwtTokenProvider.createAccessToken(1L)).willReturn("access-token");
+            given(jwtTokenProvider.createAccessToken(1L, "USER")).willReturn("access-token");
             given(jwtTokenProvider.createRefreshToken(1L)).willReturn("refresh-token");
 
             TokenPair tokenPair = authService.login(request);
