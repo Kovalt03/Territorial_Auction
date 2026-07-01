@@ -76,5 +76,6 @@ Authorization: Bearer {accessToken}
 | [guild.md](./guild.md) | 길드 | 7 |
 | [season.md](./season.md) | 시즌 패스 | 3 |
 | [tax.md](./tax.md) | 토지세 | 2 |
+| [admin.md](./admin.md) | 관리자 페이지 (유저·경매·시즌·아이템 운영, ROLE_ADMIN) ⬜ | 22 |
 | [websocket/](./websocket/README.md) | WebSocket (STOMP) — chat ✅ / auction·map·notification ⬜ | — |
 | [errors.md](./errors.md) | 에러 코드 레퍼런스 | — |
