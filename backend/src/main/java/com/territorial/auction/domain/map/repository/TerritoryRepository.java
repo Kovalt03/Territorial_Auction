@@ -39,6 +39,12 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
                     + "GROUP BY t.continent.id, g.grade, t.status")
     List<Object[]> aggregateCompositionGroupByContinent();
 
+    // 관리자 영토 목록(그리드용): 등급·소유자 fetch, 좌표순
+    @Query(
+            "SELECT t FROM Territory t JOIN FETCH t.grade LEFT JOIN FETCH t.owner "
+                    + "WHERE t.continent.id = :continentId ORDER BY t.coordY, t.coordX")
+    List<Territory> findAllByContinentIdWithDetails(@Param("continentId") Long continentId);
+
     @Query(
             "SELECT t.continent.id, COUNT(t) FROM Territory t WHERE t.status = :status GROUP BY t.continent.id")
     List<Object[]> countByStatusGroupByContinent(@Param("status") Territory.TerritoryStatus status);

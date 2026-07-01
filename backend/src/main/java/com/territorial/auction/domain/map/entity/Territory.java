@@ -61,6 +61,11 @@ public class Territory {
         this.currentColor = colorCode;
     }
 
+    // 관리자 등급 변경. 다음 경매 시작가·생산량에 반영된다.
+    public void changeGrade(TerritoryGrade grade) {
+        this.grade = grade;
+    }
+
     public void startBidding() {
         this.status = TerritoryStatus.BIDDING;
         this.nextAuctionAt = null;
