@@ -1,16 +1,27 @@
 package com.territorial.auction.domain.admin.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 import com.territorial.auction.domain.admin.dto.AdminContinentCompositionResponse;
 import com.territorial.auction.domain.admin.dto.AdminContinentCompositionResponse.ContinentComposition;
+import com.territorial.auction.domain.admin.dto.AdminGradeDistributionRequest;
 import com.territorial.auction.domain.map.entity.Continent;
 import com.territorial.auction.domain.map.entity.Territory;
+import com.territorial.auction.domain.map.entity.TerritoryGrade;
 import com.territorial.auction.domain.map.repository.ContinentRepository;
+import com.territorial.auction.domain.map.repository.TerritoryGradeRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +37,8 @@ class AdminContinentServiceTest {
 
     @Mock private ContinentRepository continentRepository;
     @Mock private TerritoryRepository territoryRepository;
+    @Mock private TerritoryGradeRepository territoryGradeRepository;
+    @Mock private AdminAuditLogger adminAuditLogger;
 
     private Continent continent(long id, String name, Integer minTrophy) {
         Continent c =
@@ -36,6 +49,21 @@ class AdminContinentServiceTest {
                         .build();
         ReflectionTestUtils.setField(c, "id", id);
         return c;
+    }
+
+    private TerritoryGrade grade(String g) {
+        return TerritoryGrade.builder()
+                .grade(g)
+                .productionMultiplier(BigDecimal.ONE)
+                .auctionPriceMultiplier(BigDecimal.ONE)
+                .preBuiltCount(0)
+                .spawnRate(BigDecimal.ONE)
+                .gridSize(10)
+                .build();
+    }
+
+    private Territory territory(int x, int y, String g) {
+        return Territory.builder().coordX(x).coordY(y).grade(grade(g)).build();
     }
 
     @Test
@@ -77,5 +105,45 @@ class AdminContinentServiceTest {
         assertThat(empty.totalTerritories()).isZero();
         assertThat(empty.gradeBreakdown()).isEmpty();
         assertThat(empty.biddingCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("등급 분포 일괄 조정 → 목표 분포로 재배정 + 감사 로그")
+    void applyGradeDistribution_success() {
+        given(continentRepository.findById(1L))
+                .willReturn(java.util.Optional.of(continent(1L, "글리치", 0)));
+        given(territoryRepository.findAllByContinentIdWithDetails(1L))
+                .willReturn(
+                        List.of(territory(0, 0, "C"), territory(1, 0, "C"), territory(2, 0, "C")));
+        given(territoryGradeRepository.findAll())
+                .willReturn(List.of(grade("S"), grade("A"), grade("C")));
+
+        ContinentComposition result =
+                adminContinentService.applyGradeDistribution(
+                        1L, 1L, new AdminGradeDistributionRequest(Map.of("S", 1, "A", 2), "조정"));
+
+        assertThat(result.gradeBreakdown()).containsEntry("S", 1L).containsEntry("A", 2L);
+        then(adminAuditLogger)
+                .should()
+                .record(eq(1L), eq("CONTINENT_GRADE_DISTRIBUTION"), eq("CONTINENT"), eq(1L), any());
+    }
+
+    @Test
+    @DisplayName("분포 합계가 총 영토 수와 불일치 → GRADE_DISTRIBUTION_MISMATCH")
+    void applyGradeDistribution_mismatch() {
+        given(continentRepository.findById(1L))
+                .willReturn(java.util.Optional.of(continent(1L, "글리치", 0)));
+        given(territoryRepository.findAllByContinentIdWithDetails(1L))
+                .willReturn(List.of(territory(0, 0, "C")));
+
+        assertThatThrownBy(
+                        () ->
+                                adminContinentService.applyGradeDistribution(
+                                        1L,
+                                        1L,
+                                        new AdminGradeDistributionRequest(Map.of("S", 5), "x")))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.GRADE_DISTRIBUTION_MISMATCH);
     }
 }
