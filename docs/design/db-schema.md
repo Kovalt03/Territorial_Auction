@@ -518,7 +518,7 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `detail_json` | `TEXT` | | 변경 전/후 값 및 사유(JSON) |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT now() | |
 
-> **경매 비활성화 플래그**: F-17.7 채택 시 `territories`에 `auction_enabled BOOLEAN NOT NULL DEFAULT true` 추가 예정 ([OQ-6](./admin-dashboard.md#9-미결-사항-open-questions)).
+> **경매 비활성화 플래그**: F-17.7 채택 시 `territories`에 `auction_enabled BOOLEAN NOT NULL DEFAULT true` 추가 예정 ([OQ-6](./admin-dashboard.md#10-미결-사항-open-questions)).
 
 ---
 

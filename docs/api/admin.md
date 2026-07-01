@@ -36,6 +36,9 @@
 
 | Method | Endpoint | 기능 | 감사로그 | 구현 |
 |---|---|---|---|---|
+| GET | `/api/v1/admin/continents` | [대륙 영토 구성 현황 ⭐](#대륙-영토-구성-현황) | — | ⬜ |
+| GET | `/api/v1/admin/continents/{continentId}/territories` | [대륙 영토 목록](#대륙-영토-목록) | — | ⬜ |
+| PATCH | `/api/v1/admin/continents/{continentId}/grade-distribution` | [등급 분포 일괄 조정 ⭐](#등급-분포-일괄-조정) | ✅ | ⬜ |
 | GET | `/api/v1/admin/users` | [유저 목록·검색](#유저-목록검색) | — | ⬜ |
 | GET | `/api/v1/admin/users/{userId}` | [유저 상세](#유저-상세) | — | ⬜ |
 | PATCH | `/api/v1/admin/users/{userId}/status` | [계정 정지/해제](#계정-정지해제) | ✅ | ⬜ |
@@ -58,6 +61,58 @@
 | GET | `/api/v1/admin/audit-logs` | [감사 로그 조회](#감사-로그-조회) | — | ⬜ |
 | GET | `/api/v1/admin/chat/rooms/{roomId}/messages` | [채팅 로그 조회](#채팅-로그-조회) | — | ⬜ |
 | DELETE | `/api/v1/admin/chat/messages/{messageId}` | [채팅 메시지 삭제](#채팅-메시지-삭제) | ✅ | ⬜ |
+
+---
+
+## 대륙 영토 구성 관리 ⭐ (핵심)
+
+각 대륙(행성)이 몇 개의 영토를 어느 등급 분포로 운영하는지 조회·조정. 경매 공급·밸런스의 핵심 레버이자 성능 실험의 조건 설정 도구. 설계: [admin-dashboard §2.2 / §5.4](../design/admin-dashboard.md).
+
+### 대륙 영토 구성 현황
+**GET** `/api/v1/admin/continents`
+
+전체 대륙별 등급 분포·총 영토 수·경매 활성 수 집계.
+
+Response 200:
+```json
+{
+  "status": 200, "message": "OK",
+  "data": {
+    "continents": [
+      {
+        "continentId": 1, "name": "글리치", "minTrophyRequired": 0,
+        "totalTerritories": 50,
+        "gradeBreakdown": { "S": 4, "A": 10, "B": 20, "C": 16 },
+        "auctionEnabledCount": 8,
+        "biddingCount": 5, "occupiedCount": 30, "idleCount": 15
+      }
+    ]
+  }
+}
+```
+
+### 대륙 영토 목록
+**GET** `/api/v1/admin/continents/{continentId}/territories?grade={}&status={}`
+
+대륙 내 영토를 좌표·등급·상태·경매활성 여부로 반환(그리드 뷰용). `grade`/`status` 필터 선택.
+
+### 등급 분포 일괄 조정
+**PATCH** `/api/v1/admin/continents/{continentId}/grade-distribution`
+
+대륙의 목표 등급 분포를 지정하면 영토 등급을 일괄 재배정한다.
+
+Request:
+```json
+{
+  "distribution": { "S": 4, "A": 10, "B": 20, "C": 16 },
+  "reason": "글리치 밸런스 조정"
+}
+```
+- `distribution` 합계는 대륙 총 영토 수와 일치해야 한다(개수 고정 재배정). 불일치 시 `400`. 개수 증감 허용 여부는 [OQ-12](../design/admin-dashboard.md#10-미결-사항-open-questions).
+- BIDDING 중인 영토의 즉시 반영 범위는 [OQ-4](../design/admin-dashboard.md#10-미결-사항-open-questions).
+- 변경 전/후 분포를 감사 로그 + 실험 조건 스냅샷으로 기록.
+
+Response 200 — `{ continentId, before, after, changedCount }`.
 
 ---
 
@@ -147,7 +202,7 @@ Request:
 ```json
 { "mode": "SETTLE", "reason": "가격 조작 의심" }
 ```
-- `mode`: `SETTLE`(현재 최고가로 즉시 낙찰) | `CANCEL`(낙찰 없이 종료, 입찰 잠금 AP 전액 환불) — **정책 확정 필요([OQ-2](../design/admin-dashboard.md#9-미결-사항-open-questions))**
+- `mode`: `SETTLE`(현재 최고가로 즉시 낙찰) | `CANCEL`(낙찰 없이 종료, 입찰 잠금 AP 전액 환불) — **정책 확정 필요([OQ-2](../design/admin-dashboard.md#10-미결-사항-open-questions))**
 - 이미 종료된 경매면 `409`.
 
 Response 200 — `{ auctionId, mode, winnerId, finalPrice, refundedUserIds }`.
@@ -165,13 +220,13 @@ Request: `{ "reason": "이벤트 조기 오픈" }`
 
 Request: `{ "enabled": false, "reason": "분쟁 지역 경매 일시 중단" }`
 - `enabled=false` → 스케줄러 `createAuctions()`가 해당 영토를 재경매하지 않음.
-- **신규 플래그 `territories.auction_enabled` 도입 전제([OQ-6](../design/admin-dashboard.md#9-미결-사항-open-questions))**
+- **신규 플래그 `territories.auction_enabled` 도입 전제([OQ-6](../design/admin-dashboard.md#10-미결-사항-open-questions))**
 
 ### 영토 등급 변경
 **PATCH** `/api/v1/admin/territories/{territoryId}/grade`
 
 Request: `{ "grade": "S", "reason": "밸런스 조정" }`
-- `Territory.grade`(FK) 변경. 다음 경매 시작가·생산량에 반영. 소급 적용 범위는 [OQ-4](../design/admin-dashboard.md#9-미결-사항-open-questions).
+- `Territory.grade`(FK) 변경. 다음 경매 시작가·생산량에 반영. 소급 적용 범위는 [OQ-4](../design/admin-dashboard.md#10-미결-사항-open-questions).
 
 ---
 
@@ -204,7 +259,7 @@ Request: `{ "endedAt": "2026-07-15T00:00:00Z", "reason": "조기 종료" }`
 ### 아이템 가격·한도 수정
 **PATCH** `/api/v1/admin/items/{itemId}`
 
-Request: `{ "costAP": 250, "dailyLimit": 5, "reason": "밸런스 패치" }` — 적용 시점 정책은 [OQ-10](../design/admin-dashboard.md#9-미결-사항-open-questions).
+Request: `{ "costAP": 250, "dailyLimit": 5, "reason": "밸런스 패치" }` — 적용 시점 정책은 [OQ-10](../design/admin-dashboard.md#10-미결-사항-open-questions).
 
 ### 아이템 구매 이력
 **GET** `/api/v1/admin/item-purchases?userId={}&itemType={}&from={}&to={}&page=0&size=20`
@@ -228,7 +283,7 @@ Response 200:
   }
 }
 ```
-- `dau` 정의(로그인 vs API 호출)는 [OQ-5](../design/admin-dashboard.md#9-미결-사항-open-questions). 최근활동 컬럼 필요.
+- `dau` 정의(로그인 vs API 호출)는 [OQ-5](../design/admin-dashboard.md#10-미결-사항-open-questions). 최근활동 컬럼 필요.
 
 ### 감사 로그 조회
 **GET** `/api/v1/admin/audit-logs?adminUserId={}&action={}&from={}&to={}&page=0&size=20`
