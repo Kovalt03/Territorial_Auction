@@ -1,9 +1,12 @@
 package com.territorial.auction.domain.ranking.service;
 
+import com.territorial.auction.domain.map.entity.Continent;
 import com.territorial.auction.domain.map.entity.Territory;
+import com.territorial.auction.domain.map.repository.ContinentRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.ranking.dto.AuctionSpendRankingResponse;
 import com.territorial.auction.domain.ranking.dto.AuctionSpendRankingResponse.RankEntry;
+import com.territorial.auction.domain.ranking.dto.ContinentRankingResponse;
 import com.territorial.auction.domain.ranking.dto.MyRankingResponse;
 import com.territorial.auction.domain.ranking.dto.MyRankingResponse.AuctionSpendSummary;
 import com.territorial.auction.domain.ranking.dto.MyRankingResponse.TerritoryHoldSummary;
@@ -63,6 +66,7 @@ public class RankingService {
     private final SeasonTerritoryHoldRepository seasonTerritoryHoldRepository;
     private final SeasonRepository seasonRepository;
     private final TerritoryRepository territoryRepository;
+    private final ContinentRepository continentRepository;
     private final StringRedisTemplate stringRedisTemplate;
     private final UserRepository userRepository;
     private final UserTrophyRepository userTrophyRepository;
@@ -177,6 +181,34 @@ public class RankingService {
                 myRank,
                 myScore,
                 myLeague,
+                LocalDateTime.now());
+    }
+
+    // 대륙은 입장 트로피 기준의 티어다. 따라서 대륙 랭킹은 해당 대륙의 트로피 밴드
+    // [이 대륙 minTrophyRequired, 다음 등급 대륙 minTrophyRequired) 안에 드는
+    // 유저들의 트로피 점수 순위로 출력한다.
+    public ContinentRankingResponse getContinentRanking(
+            Long userId, Long continentId, int page, int size) {
+        Continent continent = findContinentOrThrow(continentId);
+        int lower = continent.getMinTrophyRequired() != null ? continent.getMinTrophyRequired() : 0;
+        int upper = resolveUpperBound(lower);
+
+        int effectiveSize = Math.min(size, MAX_SIZE);
+        List<UserTrophy> trophies =
+                userTrophyRepository.findInScoreBandOrderByScoreDesc(
+                        lower, upper, PageRequest.of(page, effectiveSize));
+        UserTrophy myTrophy =
+                userId != null ? userTrophyRepository.findById(userId).orElse(null) : null;
+        Optional<Season> seasonOpt = seasonRepository.findActiveSeason(LocalDateTime.now());
+
+        return new ContinentRankingResponse(
+                continentId,
+                seasonOpt.map(Season::getId).orElse(null),
+                seasonOpt.map(Season::getSeasonNumber).orElse(null),
+                "CONTINENT_TROPHY",
+                buildBandTrophyEntries(trophies, (long) page * effectiveSize),
+                calculateBandRank(myTrophy, lower, upper),
+                bandScore(myTrophy, lower, upper),
                 LocalDateTime.now());
     }
 
@@ -310,6 +342,51 @@ public class RankingService {
     private Long getMyScore(String key, String userIdStr) {
         Double score = stringRedisTemplate.opsForZSet().score(key, userIdStr);
         return score != null ? score.longValue() : null;
+    }
+
+    private Continent findContinentOrThrow(Long continentId) {
+        return continentRepository
+                .findById(continentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CONTINENT_NOT_FOUND));
+    }
+
+    private int resolveUpperBound(int lower) {
+        Integer nextMin = continentRepository.findNextMinTrophyAbove(lower);
+        return nextMin != null ? nextMin : Integer.MAX_VALUE;
+    }
+
+    private List<ContinentRankingResponse.RankEntry> buildBandTrophyEntries(
+            List<UserTrophy> trophies, long start) {
+        List<ContinentRankingResponse.RankEntry> entries = new ArrayList<>();
+        int index = 0;
+        for (UserTrophy trophy : trophies) {
+            entries.add(
+                    new ContinentRankingResponse.RankEntry(
+                            (int) (start + index + 1),
+                            trophy.getUser().getId(),
+                            trophy.getUser().getNickname(),
+                            trophy.getScore()));
+            index++;
+        }
+        return entries;
+    }
+
+    private boolean isInBand(UserTrophy trophy, int lower, int upper) {
+        return trophy != null && trophy.getScore() >= lower && trophy.getScore() < upper;
+    }
+
+    private Integer calculateBandRank(UserTrophy trophy, int lower, int upper) {
+        if (!isInBand(trophy, lower, upper)) {
+            return null;
+        }
+        return (int)
+                        userTrophyRepository.countByScoreGreaterThanAndScoreLessThan(
+                                trophy.getScore(), upper)
+                + 1;
+    }
+
+    private Long bandScore(UserTrophy trophy, int lower, int upper) {
+        return isInBand(trophy, lower, upper) ? (long) trophy.getScore() : null;
     }
 
     private Map<Long, Long> calculateScoresByUser(List<SeasonTerritoryHold> holds) {

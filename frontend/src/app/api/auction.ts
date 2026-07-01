@@ -1,5 +1,11 @@
 import { apiClient } from './client';
-import type { AuctionBidsResponse, PlaceBidResponse, MyBidsResponse, TerritoryAuctionHistoryResponse } from '../types/auction';
+import type { AuctionBidsResponse, PlaceBidResponse, MyBidsResponse, TerritoryAuctionHistoryResponse, AuctionListResponse } from '../types/auction';
+
+export function fetchAuctionList(continentId: number) {
+  return apiClient.get<AuctionListResponse>(
+    `/auctions?continentId=${continentId}&status=BIDDING&size=100`,
+  );
+}
 
 export function fetchAuctionBids(auctionId: number) {
   return apiClient.get<AuctionBidsResponse>(`/auctions/${auctionId}/bids`);

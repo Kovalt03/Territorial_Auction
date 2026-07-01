@@ -51,3 +51,21 @@ export interface TrophyRankingResponse {
   myLeague: string | null;
   updatedAt: string;
 }
+
+export interface ContinentRankEntry {
+  rank: number;
+  userId: number;
+  nickname: string;
+  score: number;
+}
+
+export interface ContinentRankingResponse {
+  continentId: number;
+  seasonId: number | null;
+  seasonNumber: number | null;
+  type: string;
+  rankings: ContinentRankEntry[];
+  myRank: number | null;
+  myScore: number | null;
+  updatedAt: string;
+}

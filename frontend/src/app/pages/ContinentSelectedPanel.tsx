@@ -72,6 +72,9 @@ export function ContinentSelectedPanel({
   return (
     <>
       <div className="px-4 py-3 border-b border-outline-soft flex-shrink-0">
+        <button onClick={onDeselect} className="flex items-center gap-1 text-muted hover:text-foreground-soft text-[10px] mb-2 transition-colors">
+          <span>←</span><span>전체 정보</span>
+        </button>
         <div className="flex items-start justify-between mb-2">
           <div>
             <p className="text-foreground-soft font-bold text-sm">영토 ({selected.coordX}, {selected.coordY})</p>

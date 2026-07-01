@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.ranking.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -8,9 +9,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import com.territorial.auction.domain.map.entity.Continent;
 import com.territorial.auction.domain.map.entity.Territory;
+import com.territorial.auction.domain.map.repository.ContinentRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.ranking.dto.AuctionSpendRankingResponse;
+import com.territorial.auction.domain.ranking.dto.ContinentRankingResponse;
 import com.territorial.auction.domain.ranking.dto.MyRankingResponse;
 import com.territorial.auction.domain.ranking.dto.TerritoryHoldRankingResponse;
 import com.territorial.auction.domain.ranking.dto.TrophyRankingResponse;
@@ -25,6 +29,8 @@ import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -55,6 +61,7 @@ class RankingServiceTest {
     @Mock private StringRedisTemplate stringRedisTemplate;
     @Mock private UserRepository userRepository;
     @Mock private UserTrophyRepository userTrophyRepository;
+    @Mock private ContinentRepository continentRepository;
     @Mock private ZSetOperations<String, String> zSetOperations;
     @Mock private ValueOperations<String, String> valueOperations;
 
@@ -233,6 +240,103 @@ class RankingServiceTest {
 
             assertThat(response.rankings()).isEmpty();
             assertThat(response.myRank()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("GetContinentRanking")
+    class GetContinentRanking {
+
+        private UserTrophy trophyWithScore(int score, UserTrophy.League league) {
+            UserTrophy trophy = UserTrophy.builder().user(user).season(season).build();
+            ReflectionTestUtils.setField(trophy, "score", score);
+            ReflectionTestUtils.setField(trophy, "league", league);
+            return trophy;
+        }
+
+        private Continent continent(long id, int minTrophy) {
+            Continent continent =
+                    Continent.builder()
+                            .name("글리치")
+                            .themeColor("#8b50ff")
+                            .minTrophyRequired(minTrophy)
+                            .build();
+            ReflectionTestUtils.setField(continent, "id", id);
+            return continent;
+        }
+
+        @Test
+        @DisplayName("대륙 트로피 밴드 내 유저 → 트로피 점수 순위 + 내 순위 반환")
+        void success_withBand() {
+            given(continentRepository.findById(5L)).willReturn(Optional.of(continent(5L, 1000)));
+            given(continentRepository.findNextMinTrophyAbove(1000)).willReturn(2000);
+            UserTrophy trophy = trophyWithScore(1500, UserTrophy.League.GOLD);
+            given(userTrophyRepository.findInScoreBandOrderByScoreDesc(eq(1000), eq(2000), any()))
+                    .willReturn(List.of(trophy));
+            given(userTrophyRepository.findById(10L)).willReturn(Optional.of(trophy));
+            given(userTrophyRepository.countByScoreGreaterThanAndScoreLessThan(1500, 2000))
+                    .willReturn(0L);
+            given(seasonRepository.findActiveSeason(any(LocalDateTime.class)))
+                    .willReturn(Optional.of(season));
+
+            ContinentRankingResponse response = rankingService.getContinentRanking(10L, 5L, 0, 10);
+
+            assertThat(response.continentId()).isEqualTo(5L);
+            assertThat(response.type()).isEqualTo("CONTINENT_TROPHY");
+            assertThat(response.rankings()).hasSize(1);
+            assertThat(response.rankings().get(0).rank()).isEqualTo(1);
+            assertThat(response.rankings().get(0).userId()).isEqualTo(10L);
+            assertThat(response.rankings().get(0).nickname()).isEqualTo("테스터");
+            assertThat(response.rankings().get(0).score()).isEqualTo(1500);
+            assertThat(response.myRank()).isEqualTo(1);
+            assertThat(response.myScore()).isEqualTo(1500L);
+        }
+
+        @Test
+        @DisplayName("최상위 대륙(다음 등급 없음) → 상한 무제한으로 조회")
+        void success_topTier() {
+            given(continentRepository.findById(8L)).willReturn(Optional.of(continent(8L, 5000)));
+            given(continentRepository.findNextMinTrophyAbove(5000)).willReturn(null);
+            given(
+                            userTrophyRepository.findInScoreBandOrderByScoreDesc(
+                                    eq(5000), eq(Integer.MAX_VALUE), any()))
+                    .willReturn(List.of());
+            given(seasonRepository.findActiveSeason(any(LocalDateTime.class)))
+                    .willReturn(Optional.of(season));
+
+            ContinentRankingResponse response = rankingService.getContinentRanking(null, 8L, 0, 10);
+
+            assertThat(response.rankings()).isEmpty();
+            assertThat(response.myRank()).isNull();
+        }
+
+        @Test
+        @DisplayName("내 트로피가 대륙 밴드 밖 → myRank null, 랭킹은 반환")
+        void myTrophyOutOfBand() {
+            given(continentRepository.findById(5L)).willReturn(Optional.of(continent(5L, 1000)));
+            given(continentRepository.findNextMinTrophyAbove(1000)).willReturn(2000);
+            given(userTrophyRepository.findInScoreBandOrderByScoreDesc(eq(1000), eq(2000), any()))
+                    .willReturn(List.of());
+            given(userTrophyRepository.findById(10L))
+                    .willReturn(Optional.of(trophyWithScore(500, UserTrophy.League.BRONZE)));
+            given(seasonRepository.findActiveSeason(any(LocalDateTime.class)))
+                    .willReturn(Optional.of(season));
+
+            ContinentRankingResponse response = rankingService.getContinentRanking(10L, 5L, 0, 10);
+
+            assertThat(response.myRank()).isNull();
+            assertThat(response.myScore()).isNull();
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 대륙 → CONTINENT_NOT_FOUND 예외")
+        void continentNotFound() {
+            given(continentRepository.findById(999L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> rankingService.getContinentRanking(10L, 999L, 0, 10))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.CONTINENT_NOT_FOUND);
         }
     }
 

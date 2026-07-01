@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.ranking.controller;
 
 import com.territorial.auction.domain.ranking.dto.AuctionSpendRankingResponse;
+import com.territorial.auction.domain.ranking.dto.ContinentRankingResponse;
 import com.territorial.auction.domain.ranking.dto.MyRankingResponse;
 import com.territorial.auction.domain.ranking.dto.TerritoryHoldRankingResponse;
 import com.territorial.auction.domain.ranking.dto.TrophyRankingResponse;
@@ -43,6 +44,17 @@ public class RankingController {
             @RequestParam(defaultValue = "50") int size) {
         return ResponseEntity.ok(
                 ApiResponse.ok(rankingService.getTrophyRanking(userId, page, size)));
+    }
+
+    @GetMapping("/continent/{continentId}")
+    public ResponseEntity<ApiResponse<ContinentRankingResponse>> getContinentRanking(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long continentId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(
+                        rankingService.getContinentRanking(userId, continentId, page, size)));
     }
 
     @GetMapping("/me")

@@ -19,6 +19,7 @@ import type { BidEntry, AuctionBidBroadcast } from '../types/auction';
 import { GRADE_COLOR } from '../types/grade';
 
 import { ContinentSelectedPanel } from './ContinentSelectedPanel';
+import { ContinentInfoPanel } from './ContinentInfoPanel';
 import { BidConfirmModal } from './BidConfirmModal';
 
 type TStatus = 'mine' | 'occupied' | 'auction' | 'idle';
@@ -228,6 +229,30 @@ export function ContinentPage() {
   };
   const handleMouseUp = () => setIsDragging(false);
 
+  const handleSelectCell = (cell: DisplayTerritory) => {
+    setSelected(cell); setBidInput(''); setBidSuccess(false);
+    setSelectedAuctionId(null); setAuctionCurrentPrice(0);
+    setAuctionEndAt(null); setBidHistory([]);
+    setAuctionError(null);
+    if (cell.status === 'auction' && cell.id) {
+      setIsAuctionLoading(true);
+      fetchTerritoryDetail(cell.id).then(d => {
+        if (d.auction) {
+          setSelectedAuctionId(d.auction.auctionId);
+          setAuctionCurrentPrice(d.auction.currentPrice);
+          setAuctionEndAt(d.auction.endAt);
+          const min = Math.max(Math.ceil(d.auction.currentPrice * 1.05), d.auction.currentPrice + 10);
+          setBidInput(String(min));
+        }
+      }).catch((e) => {
+        setAuctionError(e instanceof ApiError && e.status >= 400 && e.status < 500 ? e.message : '경매 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+        console.warn('[ContinentPage] territory detail load failed', e);
+      }).finally(() => setIsAuctionLoading(false));
+    } else {
+      setIsAuctionLoading(false);
+    }
+  };
+
   const handleBidSubmit = () => {
     const amt = parseInt(bidInput);
     if (!amt || !selectedAuctionId || isBidding) return;
@@ -335,6 +360,10 @@ export function ContinentPage() {
             {(['S', 'A', 'B', 'C'] as Grade[]).map(g => (
               <div key={g} className="flex items-center gap-1.5"><span className="text-[11px]">{GRADE_EMOJI[g]}</span><span className="text-[9px]" style={{ color: GRADE_COLOR[g] }}>{g}급</span></div>
             ))}
+            <div className="flex items-center gap-1.5 mt-0.5 pt-1 border-t border-outline-soft">
+              <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ border: '1px solid #00f5ff', background: '#00f5ff22' }} />
+              <span className="text-[9px] text-primary">경매중</span>
+            </div>
           </div>
 
           <div className="absolute bottom-3 left-3 z-10 text-outline text-[10px]">스크롤로 줌 · 드래그로 이동 · 영토 클릭하여 상세 확인</div>
@@ -356,50 +385,27 @@ export function ContinentPage() {
                   if (!shown) { bg = '#080c18'; border = '#0d1420'; }
                   else if (cell.status === 'mine') { bg = cell.color + '50'; border = cell.color + 'cc'; glow = cell.color; }
                   else if (cell.status === 'occupied') { bg = cell.color + '35'; border = cell.color + '80'; }
-                  else if (cell.status === 'auction') { bg = '#00f5ff18'; border = '#00f5ff50'; }
+                  else if (cell.status === 'auction') { bg = GRADE_COLOR[cell.grade] + '22'; border = '#00f5ff'; glow = '#00f5ff'; }
                   else { bg = '#0d1420'; border = '#141e30'; }
                   if (isSelected) border = '#00f5ff';
                   if (isHovered && !isSelected) border = '#ffffff60';
                   const visSize = shown ? GRADE_CELL[cell.grade] : 10;
                   const fs = GRADE_FONT[cell.grade];
-                  const building = (cell.status === 'mine' || cell.status === 'occupied') ? GRADE_EMOJI[cell.grade] : '';
+                  const building = (cell.status === 'mine' || cell.status === 'occupied' || cell.status === 'auction') ? GRADE_EMOJI[cell.grade] : '';
                   return (
                     <div key={`${x}-${y}`} data-cell="true"
                       className="flex items-center justify-center"
                       style={{ width: CELL, height: CELL, background: 'var(--color-surface)' }}
                     >
                       <div
-                        onClick={() => {
-                          if (!shown) return;
-                          setSelected(cell); setBidInput(''); setBidSuccess(false);
-                          setSelectedAuctionId(null); setAuctionCurrentPrice(0);
-                          setAuctionEndAt(null); setBidHistory([]);
-                          setAuctionError(null);
-                          if (cell.status === 'auction' && cell.id) {
-                            setIsAuctionLoading(true);
-                            fetchTerritoryDetail(cell.id).then(d => {
-                              if (d.auction) {
-                                setSelectedAuctionId(d.auction.auctionId);
-                                setAuctionCurrentPrice(d.auction.currentPrice);
-                                setAuctionEndAt(d.auction.endAt);
-                                const min = Math.max(Math.ceil(d.auction.currentPrice * 1.05), d.auction.currentPrice + 10);
-                                setBidInput(String(min));
-                              }
-                            }).catch((e) => {
-                              setAuctionError(e instanceof ApiError && e.status >= 400 && e.status < 500 ? e.message : '경매 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
-                              console.warn('[ContinentPage] territory detail load failed', e);
-                            }).finally(() => setIsAuctionLoading(false));
-                          } else {
-                            setIsAuctionLoading(false);
-                          }
-                        }}
+                        onClick={() => { if (shown) handleSelectCell(cell); }}
                         onMouseEnter={() => setHoverCell({ x, y })}
                         onMouseLeave={() => setHoverCell(null)}
                         className={`relative flex items-center justify-center ${shown ? '' : 'opacity-15'}`}
                         style={{ width: visSize, height: visSize, background: bg, border: `1px solid ${border}`, borderRadius: 3, cursor: shown ? 'pointer' : 'default', boxShadow: isSelected ? '0 0 8px #00f5ff' : glow && shown ? `0 0 4px ${glow}60` : undefined, transition: 'border-color 0.1s' }}
                       >
                         {shown && building && <span className="leading-none select-none" style={{ fontSize: fs }}>{building}</span>}
-                        {shown && cell.status === 'auction' && !building && <div style={{ width: Math.max(4, fs - 4), height: Math.max(4, fs - 4), borderRadius: '50%', background: '#00f5ff', animation: 'pulse 1.2s infinite' }} />}
+                        {shown && cell.status === 'auction' && <div className="absolute -top-0.5 -right-0.5" style={{ width: 5, height: 5, borderRadius: '50%', background: '#00f5ff', animation: 'pulse 1.2s infinite' }} />}
                         {shown && cell.grade === 'S' && cell.status !== 'idle' && <div className="absolute top-0 left-0 w-0 h-0" style={{ borderLeft: '4px solid #ffd700', borderBottom: '4px solid transparent' }} />}
                         {shown && cell.status === 'mine' && <div className="absolute bottom-0 right-0 w-0 h-0" style={{ borderRight: '4px solid #00ff88', borderTop: '4px solid transparent' }} />}
                       </div>
@@ -455,20 +461,16 @@ export function ContinentPage() {
               fmtBidTime={fmtBidTime}
             />
           ) : (
-            <div className="flex-1 flex flex-col">
-              <div className="px-4 py-4 border-b border-outline-soft">
-                <p className="font-bold mb-3 text-[13px]" style={{ color: continent.color }}>{continent.name}</p>
-                <div className="space-y-2">
-                  {[{ label: '등급', val: continent.grade, color: GRADE_COLOR[continent.grade as Grade] || '#c0ccdd' }, { label: '경매 중', val: `${auctionCount}개`, color: '#ffd700' }, { label: '내 영토', val: `${myCount}개`, color: '#00ff88' }, { label: '점령됨', val: `${occupiedCount}개`, color: '#8b50ff' }, { label: '미점령', val: `${cols * rows - myCount - auctionCount - occupiedCount}개`, color: 'var(--color-muted)' }].map(s => (
-                    <div key={s.label} className="flex justify-between"><span className="text-muted text-[11px]">{s.label}</span><span className="font-semibold text-[11px]" style={{ color: s.color }}>{s.val}</span></div>
-                  ))}
-                </div>
-              </div>
-              <div className="p-3">
-                <p className="text-muted text-center mb-2 text-[10px]">영토를 클릭하여 상세 정보 확인</p>
-                <button onClick={() => navigate('/app/territory/1')} className="w-full h-9 rounded-xl font-bold hover:brightness-110 text-xs" style={{ background: continent.color, color: '#060a14' }}>경매 영토 보기</button>
-              </div>
-            </div>
+            <ContinentInfoPanel
+              continentId={continentId}
+              continentName={continent.name}
+              continentColor={continent.color}
+              continentTrophyReq={continent.trophyReq}
+              continentDesc={continent.desc}
+              territories={allTerritories}
+              wishlistIds={wishlistIds}
+              onSelect={(id) => { const cell = allTerritories.find(t => t.id === id); if (cell) handleSelectCell(cell); }}
+            />
           ))}
         </div>
       </div>
