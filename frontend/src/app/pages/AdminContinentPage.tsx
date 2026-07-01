@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router';
 import { fetchAdminContinents, fetchAdminTerritories, changeTerritoryGrade } from '../api/admin';
 import { ApiError } from '../api/client';
 
+import { GradeDistributionEditor } from './GradeDistributionEditor';
+
 import type { AdminContinentComposition, AdminTerritory } from '../types/admin';
 
 const GRADES = ['S', 'A', 'B', 'C', 'D'];
@@ -52,6 +54,7 @@ export function AdminContinentPage() {
     } finally { setIsSaving(false); }
   };
 
+  const selectedContinent = continents.find(c => c.continentId === selectedId);
   const xs = territories.map(t => t.coordX);
   const ys = territories.map(t => t.coordY);
   const minX = territories.length ? Math.min(...xs) : 0;
@@ -105,7 +108,15 @@ export function AdminContinentPage() {
         </div>
 
         {/* 편집 패널 */}
-        <div className="w-64 border-l border-outline p-4 flex-shrink-0">
+        <div className="w-64 border-l border-outline p-4 flex-shrink-0 overflow-y-auto">
+          {selectedContinent && (
+            <GradeDistributionEditor
+              continentId={selectedContinent.continentId}
+              total={selectedContinent.totalTerritories}
+              initial={selectedContinent.gradeBreakdown}
+              onApplied={() => { loadContinents(); loadTerritories(selectedContinent.continentId); }}
+            />
+          )}
           {!selected ? (
             <p className="text-muted text-xs">영토를 클릭해 값을 조정하세요.</p>
           ) : (

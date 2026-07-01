@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import type {
   AdminContinentCompositionResponse,
+  AdminContinentComposition,
   AdminTerritoryListResponse,
   AdminTerritory,
   AdminLoginResponse,
@@ -32,4 +33,15 @@ export function changeTerritoryGrade(territoryId: number, grade: string, reason:
     grade,
     reason,
   });
+}
+
+export function applyGradeDistribution(
+  continentId: number,
+  distribution: Record<string, number>,
+  reason: string,
+) {
+  return apiClient.patch<AdminContinentComposition>(
+    `/admin/continents/${continentId}/grade-distribution`,
+    { distribution, reason },
+  );
 }
