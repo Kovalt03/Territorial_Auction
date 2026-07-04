@@ -97,7 +97,7 @@ export function AdminUserDetailPage() {
 
       <section className="bg-panel border border-outline rounded-xl p-4 mb-4">
         <h3 className="font-bold text-sm mb-2">재화 조정</h3>
-        <WalletAdjustForm userId={numericId} onAdjusted={setDetail} />
+        <WalletAdjustForm userId={numericId} currentAp={detail.availableAp} currentGp={detail.availableGp} onAdjusted={setDetail} />
       </section>
 
       <section className="bg-panel border border-outline rounded-xl p-4 mb-4">

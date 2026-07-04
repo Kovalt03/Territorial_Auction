@@ -105,8 +105,11 @@ function TerritoryList({ items }: { items: AdminUserTerritory[] }) {
       {items.map(t => (
         <div key={t.territoryId} className="flex items-center justify-between bg-elevated rounded-md px-3 py-2 text-[11px]">
           <Coord name={t.continentName} x={t.coordX} y={t.coordY} grade={t.grade} />
-          <span className="text-muted">
-            {t.status}{t.occupiedUntil ? ` · ~${t.occupiedUntil.slice(0, 10)}` : ''}
+          <span className="text-right">
+            <span className="text-muted">{t.status}</span>
+            {t.occupiedUntil && (
+              <span className="block text-[10px] text-dim">점유 만료 {t.occupiedUntil.slice(0, 16).replace('T', ' ')}</span>
+            )}
           </span>
         </div>
       ))}
