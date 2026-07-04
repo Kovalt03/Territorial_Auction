@@ -9,6 +9,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
+import com.territorial.auction.domain.admin.repository.AdminSettingRepository;
 import com.territorial.auction.domain.auction.AuctionPolicy;
 import com.territorial.auction.domain.auction.entity.Auction;
 import com.territorial.auction.domain.auction.entity.AuctionBid;
@@ -55,6 +56,7 @@ class AuctionLifecycleServiceTest {
     @Mock private TerritoryRepository territoryRepository;
     @Mock private WalletRepository walletRepository;
     @Mock private SeasonRepository seasonRepository;
+    @Mock private AdminSettingRepository adminSettingRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private SimpMessagingTemplate messagingTemplate;
 
@@ -253,6 +255,12 @@ class AuctionLifecycleServiceTest {
     @Nested
     @DisplayName("createPendingAuctions()")
     class CreatePendingAuctions {
+
+        @BeforeEach
+        void enableGlobalAuction() {
+            // 전역 경매 스위치 미설정 → 활성으로 간주
+            given(adminSettingRepository.findBySettingKey(any())).willReturn(Optional.empty());
+        }
 
         @Test
         @DisplayName("경매 생성 대기 영토가 없으면 아무 작업도 하지 않음")
