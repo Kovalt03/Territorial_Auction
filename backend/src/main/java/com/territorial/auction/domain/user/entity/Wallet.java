@@ -1,5 +1,7 @@
 package com.territorial.auction.domain.user.entity;
 
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
@@ -65,6 +67,21 @@ public class Wallet {
 
     public void addAp(int amount) {
         this.availableAp += amount;
+    }
+
+    // 관리자 재화 조정: delta는 증감 모두 허용, 결과가 음수면 거부한다.
+    public void adjustAvailableAp(int delta) {
+        if (this.availableAp + delta < 0) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_AP);
+        }
+        this.availableAp += delta;
+    }
+
+    public void adjustAvailableGp(int delta) {
+        if (this.availableGp + delta < 0) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_GP);
+        }
+        this.availableGp += delta;
     }
 
     public void spendGp(int amount) {
