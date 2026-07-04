@@ -1,8 +1,10 @@
 package com.territorial.auction.domain.admin.controller;
 
+import com.territorial.auction.domain.admin.dto.AdminBulkResultResponse;
 import com.territorial.auction.domain.admin.dto.AdminContinentCompositionResponse;
 import com.territorial.auction.domain.admin.dto.AdminContinentCompositionResponse.ContinentComposition;
 import com.territorial.auction.domain.admin.dto.AdminGradeDistributionRequest;
+import com.territorial.auction.domain.admin.dto.AdminToggleAuctionRequest;
 import com.territorial.auction.domain.admin.service.AdminContinentService;
 import com.territorial.auction.global.common.ApiResponse;
 import jakarta.validation.Valid;
@@ -36,6 +38,17 @@ public class AdminContinentController {
         return ResponseEntity.ok(
                 ApiResponse.ok(
                         adminContinentService.applyGradeDistribution(
+                                userId, continentId, request)));
+    }
+
+    @PatchMapping("/{continentId}/auction")
+    public ResponseEntity<ApiResponse<AdminBulkResultResponse>> changeContinentAuction(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long continentId,
+            @RequestBody @Valid AdminToggleAuctionRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(
+                        adminContinentService.changeContinentAuction(
                                 userId, continentId, request)));
     }
 }

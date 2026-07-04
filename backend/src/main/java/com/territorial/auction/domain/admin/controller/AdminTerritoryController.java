@@ -1,5 +1,9 @@
 package com.territorial.auction.domain.admin.controller;
 
+import com.territorial.auction.domain.admin.dto.AdminBulkForceStartRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkGradeRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkResultResponse;
+import com.territorial.auction.domain.admin.dto.AdminBulkTerritoryAuctionRequest;
 import com.territorial.auction.domain.admin.dto.AdminChangeGradeRequest;
 import com.territorial.auction.domain.admin.dto.AdminTerritoryListResponse;
 import com.territorial.auction.domain.admin.dto.AdminTerritoryResponse;
@@ -55,5 +59,29 @@ public class AdminTerritoryController {
             @AuthenticationPrincipal Long userId, @PathVariable Long territoryId) {
         return ResponseEntity.ok(
                 ApiResponse.ok(adminTerritoryService.forceStartAuction(userId, territoryId)));
+    }
+
+    @PatchMapping("/territories/bulk/grade")
+    public ResponseEntity<ApiResponse<AdminBulkResultResponse>> bulkChangeGrade(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody @Valid AdminBulkGradeRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminTerritoryService.bulkChangeGrade(userId, request)));
+    }
+
+    @PatchMapping("/territories/bulk/auction")
+    public ResponseEntity<ApiResponse<AdminBulkResultResponse>> bulkChangeAuction(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody @Valid AdminBulkTerritoryAuctionRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminTerritoryService.bulkChangeAuction(userId, request)));
+    }
+
+    @PostMapping("/territories/bulk/force-start")
+    public ResponseEntity<ApiResponse<AdminBulkResultResponse>> bulkForceStart(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody @Valid AdminBulkForceStartRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminTerritoryService.bulkForceStart(userId, request)));
     }
 }
