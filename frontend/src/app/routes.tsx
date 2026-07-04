@@ -29,6 +29,8 @@ const NotificationPage = lazyPage(() => import('./pages/NotificationPage'), 'Not
 const AdminLayout = lazyPage(() => import('./pages/AdminLayout'), 'AdminLayout');
 const AdminContinentPage = lazyPage(() => import('./pages/AdminContinentPage'), 'AdminContinentPage');
 const AdminAuctionPage = lazyPage(() => import('./pages/AdminAuctionPage'), 'AdminAuctionPage');
+const AdminUserListPage = lazyPage(() => import('./pages/AdminUserListPage'), 'AdminUserListPage');
+const AdminUserDetailPage = lazyPage(() => import('./pages/AdminUserDetailPage'), 'AdminUserDetailPage');
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
@@ -59,6 +61,8 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/admin/continents" replace /> },
       { path: 'continents', element: <AdminContinentPage /> },
       { path: 'auctions', element: <AdminAuctionPage /> },
+      { path: 'users', element: <AdminUserListPage /> },
+      { path: 'users/:id', element: <AdminUserDetailPage /> },
     ],
   },
   { path: '*', element: <Navigate to="/login" replace /> },

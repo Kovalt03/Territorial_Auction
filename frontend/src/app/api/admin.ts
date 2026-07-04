@@ -5,6 +5,9 @@ import type {
   AdminTerritoryListResponse,
   AdminTerritory,
   AdminAuctionSetting,
+  AdminUserListResponse,
+  AdminUserDetail,
+  UserStatus,
   AdminLoginResponse,
   TotpSetupResponse,
 } from '../types/admin';
@@ -67,4 +70,39 @@ export function fetchAuctionSetting() {
 
 export function setAuctionSetting(enabled: boolean) {
   return apiClient.patch<AdminAuctionSetting>('/admin/settings/auction', { enabled });
+}
+
+export function fetchAdminUsers(params: {
+  keyword?: string;
+  status?: UserStatus;
+  page: number;
+  size: number;
+}) {
+  const qs = new URLSearchParams();
+  if (params.keyword) qs.set('keyword', params.keyword);
+  if (params.status) qs.set('status', params.status);
+  qs.set('page', String(params.page));
+  qs.set('size', String(params.size));
+  return apiClient.get<AdminUserListResponse>(`/admin/users?${qs.toString()}`);
+}
+
+export function fetchAdminUser(userId: number) {
+  return apiClient.get<AdminUserDetail>(`/admin/users/${userId}`);
+}
+
+export function changeUserStatus(userId: number, status: UserStatus, reason: string) {
+  return apiClient.patch<AdminUserDetail>(`/admin/users/${userId}/status`, { status, reason });
+}
+
+export function adjustUserWallet(
+  userId: number,
+  apDelta: number,
+  gpDelta: number,
+  reason: string,
+) {
+  return apiClient.post<AdminUserDetail>(`/admin/users/${userId}/wallet/adjust`, {
+    apDelta,
+    gpDelta,
+    reason,
+  });
 }

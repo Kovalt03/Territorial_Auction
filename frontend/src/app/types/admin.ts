@@ -30,6 +30,34 @@ export interface AdminAuctionSetting {
 export type StatusFilter = 'ALL' | 'BIDDING' | 'OCCUPIED' | 'IDLE';
 export type GradeFilter = 'ALL' | 'S' | 'A' | 'B' | 'C' | 'D';
 
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'WITHDRAWN';
+export type UserStatusFilter = 'ALL' | UserStatus;
+
+export interface AdminUser {
+  userId: number;
+  username: string;
+  nickname: string;
+  email: string;
+  status: UserStatus;
+  role: 'USER' | 'ADMIN';
+  createdAt: string;
+}
+
+export interface AdminUserListResponse {
+  totalCount: number;
+  page: number;
+  size: number;
+  users: AdminUser[];
+}
+
+export interface AdminUserDetail extends AdminUser {
+  availableAp: number;
+  lockedAp: number;
+  availableGp: number;
+  availableFood: number;
+  territoryCount: number;
+}
+
 export interface AdminTerritoryListResponse {
   territories: AdminTerritory[];
 }

@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router';
 const TABS = [
   { to: '/admin/continents', label: '영토 구성' },
   { to: '/admin/auctions', label: '경매 관리' },
+  { to: '/admin/users', label: '사용자 관리' },
 ];
 
 export function AdminLayout() {
