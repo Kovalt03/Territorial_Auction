@@ -1,8 +1,10 @@
 package com.territorial.auction.domain.admin.service;
 
+import com.territorial.auction.domain.admin.dto.AdminBulkResultResponse;
 import com.territorial.auction.domain.admin.dto.AdminContinentCompositionResponse;
 import com.territorial.auction.domain.admin.dto.AdminContinentCompositionResponse.ContinentComposition;
 import com.territorial.auction.domain.admin.dto.AdminGradeDistributionRequest;
+import com.territorial.auction.domain.admin.dto.AdminToggleAuctionRequest;
 import com.territorial.auction.domain.map.entity.Continent;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.entity.TerritoryGrade;
@@ -76,6 +78,29 @@ public class AdminContinentService {
                         "reason",
                         request.reason() != null ? request.reason() : ""));
         return toComposition(continent, composeFrom(territories));
+    }
+
+    // 대륙(행성) 전체 영토의 경매 활성/비활성을 한 번에 변경한다.
+    @Transactional
+    public AdminBulkResultResponse changeContinentAuction(
+            Long adminUserId, Long continentId, AdminToggleAuctionRequest request) {
+        if (!continentRepository.existsById(continentId)) {
+            throw new CustomException(ErrorCode.CONTINENT_NOT_FOUND);
+        }
+        int affected =
+                territoryRepository.updateAuctionEnabledByContinentId(
+                        continentId, request.enabled());
+        adminAuditLogger.record(
+                adminUserId,
+                "CONTINENT_AUCTION_TOGGLE",
+                "CONTINENT",
+                continentId,
+                Map.of(
+                        "enabled",
+                        request.enabled(),
+                        "reason",
+                        request.reason() != null ? request.reason() : ""));
+        return new AdminBulkResultResponse(affected);
     }
 
     private void validateDistribution(Map<String, Integer> distribution, int total) {

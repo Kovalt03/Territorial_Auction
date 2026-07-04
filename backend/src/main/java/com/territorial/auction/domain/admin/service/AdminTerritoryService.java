@@ -1,5 +1,9 @@
 package com.territorial.auction.domain.admin.service;
 
+import com.territorial.auction.domain.admin.dto.AdminBulkForceStartRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkGradeRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkResultResponse;
+import com.territorial.auction.domain.admin.dto.AdminBulkTerritoryAuctionRequest;
 import com.territorial.auction.domain.admin.dto.AdminChangeGradeRequest;
 import com.territorial.auction.domain.admin.dto.AdminTerritoryListResponse;
 import com.territorial.auction.domain.admin.dto.AdminTerritoryResponse;
@@ -17,6 +21,7 @@ import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -119,6 +124,90 @@ public class AdminTerritoryService {
                         "auctionId", auction.getId(),
                         "startingPrice", auction.getCurrentPrice()));
         return AdminTerritoryResponse.from(territory);
+    }
+
+    // 선택된 여러 영토의 등급을 일괄 변경 (all-or-nothing).
+    @Transactional
+    public AdminBulkResultResponse bulkChangeGrade(
+            Long adminUserId, AdminBulkGradeRequest request) {
+        TerritoryGrade grade =
+                territoryGradeRepository
+                        .findByGrade(request.grade())
+                        .orElseThrow(
+                                () -> new CustomException(ErrorCode.TERRITORY_GRADE_NOT_FOUND));
+        List<Long> territoryIds = request.territoryIds().stream().distinct().toList();
+        for (Long territoryId : territoryIds) {
+            Territory territory = findTerritoryOrThrow(territoryId);
+            String before = territory.getGrade().getGrade();
+            territory.changeGrade(grade);
+            adminAuditLogger.record(
+                    adminUserId,
+                    "TERRITORY_GRADE_CHANGE_BULK",
+                    "TERRITORY",
+                    territoryId,
+                    Map.of(
+                            "before", before,
+                            "after", request.grade(),
+                            "reason", nullSafe(request.reason())));
+        }
+        return new AdminBulkResultResponse(territoryIds.size());
+    }
+
+    // 선택된 여러 영토의 경매 활성/비활성을 일괄 변경 (all-or-nothing).
+    @Transactional
+    public AdminBulkResultResponse bulkChangeAuction(
+            Long adminUserId, AdminBulkTerritoryAuctionRequest request) {
+        List<Long> territoryIds = request.territoryIds().stream().distinct().toList();
+        for (Long territoryId : territoryIds) {
+            Territory territory = findTerritoryOrThrow(territoryId);
+            boolean before = territory.getAuctionEnabled();
+            territory.changeAuctionEnabled(request.enabled());
+            adminAuditLogger.record(
+                    adminUserId,
+                    "TERRITORY_AUCTION_TOGGLE_BULK",
+                    "TERRITORY",
+                    territoryId,
+                    Map.of(
+                            "before", before,
+                            "after", request.enabled(),
+                            "reason", nullSafe(request.reason())));
+        }
+        return new AdminBulkResultResponse(territoryIds.size());
+    }
+
+    // 선택된 여러 영토 중 IDLE인 것만 즉시 경매 시작 (best-effort, 시작 개수 반환).
+    @Transactional
+    public AdminBulkResultResponse bulkForceStart(
+            Long adminUserId, AdminBulkForceStartRequest request) {
+        LocalDateTime now = LocalDateTime.now();
+        List<Long> territoryIds = request.territoryIds().stream().distinct().toList();
+        int started = 0;
+        for (Long territoryId : territoryIds) {
+            Territory territory = findTerritoryOrThrow(territoryId);
+            if (territory.getStatus() != Territory.TerritoryStatus.IDLE) {
+                continue;
+            }
+            Auction auction = createAuction(territory, now);
+            territory.startBidding();
+            adminAuditLogger.record(
+                    adminUserId,
+                    "TERRITORY_AUCTION_FORCE_START_BULK",
+                    "TERRITORY",
+                    territoryId,
+                    Map.of(
+                            "auctionId",
+                            auction.getId(),
+                            "startingPrice",
+                            auction.getCurrentPrice()));
+            started++;
+        }
+        return new AdminBulkResultResponse(started);
+    }
+
+    private Territory findTerritoryOrThrow(Long territoryId) {
+        return territoryRepository
+                .findById(territoryId)
+                .orElseThrow(() -> new CustomException(ErrorCode.TERRITORY_NOT_FOUND));
     }
 
     private void validateIdle(Territory territory) {
