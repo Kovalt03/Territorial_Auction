@@ -14,6 +14,8 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
 
     long countByOwnerId(Long ownerId);
 
+    List<Territory> findAllByStatusAndNextAuctionAtIsNull(Territory.TerritoryStatus status);
+
     long countByOwner_IdIn(List<Long> ownerIds);
 
     @Query("SELECT t FROM Territory t JOIN FETCH t.continent JOIN FETCH t.grade")
@@ -74,6 +76,7 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
                     + " JOIN FETCH t.grade"
                     + " JOIN FETCH t.continent"
                     + " WHERE t.status = :status"
+                    + " AND t.auctionEnabled = true"
                     + " AND t.nextAuctionAt IS NOT NULL"
                     + " AND t.nextAuctionAt <= :now")
     List<Territory> findAllReadyForAuction(
