@@ -26,7 +26,9 @@ const SettingsPage = lazyPage(() => import('./pages/SettingsPage'), 'SettingsPag
 const GuildListPage = lazyPage(() => import('./pages/GuildListPage'), 'GuildListPage');
 const GuildDetailPage = lazyPage(() => import('./pages/GuildDetailPage'), 'GuildDetailPage');
 const NotificationPage = lazyPage(() => import('./pages/NotificationPage'), 'NotificationPage');
+const AdminLayout = lazyPage(() => import('./pages/AdminLayout'), 'AdminLayout');
 const AdminContinentPage = lazyPage(() => import('./pages/AdminContinentPage'), 'AdminContinentPage');
+const AdminAuctionPage = lazyPage(() => import('./pages/AdminAuctionPage'), 'AdminAuctionPage');
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
@@ -50,7 +52,14 @@ export const router = createBrowserRouter([
   { path: '/app/my-island', element: <PrivateRoute><PersonalIslandPage /></PrivateRoute> },
   { path: '/app/settings', element: <PrivateRoute><SettingsPage /></PrivateRoute> },
   { path: '/admin/login', Component: AdminLoginPage },
-  { path: '/admin', element: <Navigate to="/admin/continents" replace /> },
-  { path: '/admin/continents', element: <AdminRoute><AdminContinentPage /></AdminRoute> },
+  {
+    path: '/admin',
+    element: <AdminRoute><AdminLayout /></AdminRoute>,
+    children: [
+      { index: true, element: <Navigate to="/admin/continents" replace /> },
+      { path: 'continents', element: <AdminContinentPage /> },
+      { path: 'auctions', element: <AdminAuctionPage /> },
+    ],
+  },
   { path: '*', element: <Navigate to="/login" replace /> },
 ]);

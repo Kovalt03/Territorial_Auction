@@ -1,0 +1,47 @@
+import { NavLink, Outlet, useNavigate } from 'react-router';
+
+const TABS = [
+  { to: '/admin/continents', label: '영토 구성' },
+  { to: '/admin/auctions', label: '경매 관리' },
+];
+
+export function AdminLayout() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    navigate('/admin/login');
+  };
+
+  return (
+    <div className="h-screen flex flex-col bg-surface text-foreground">
+      <header className="flex items-center justify-between px-5 py-3 border-b border-outline">
+        <div className="flex items-center gap-6">
+          <h1 className="font-bold text-sm">🛡️ 관리자</h1>
+          <nav className="flex gap-1">
+            {TABS.map(t => (
+              <NavLink
+                key={t.to}
+                to={t.to}
+                className={({ isActive }) =>
+                  `px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                    isActive ? 'bg-elevated text-foreground' : 'text-muted hover:text-foreground-soft'
+                  }`
+                }
+              >
+                {t.label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+        <button onClick={handleLogout} className="text-muted text-xs hover:text-foreground-soft">
+          로그아웃
+        </button>
+      </header>
+
+      <div className="flex-1 overflow-hidden">
+        <Outlet />
+      </div>
+    </div>
+  );
+}

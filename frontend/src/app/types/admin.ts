@@ -20,7 +20,15 @@ export interface AdminTerritory {
   grade: string;
   status: string;
   ownerNickname: string | null;
+  auctionEnabled: boolean;
 }
+
+export interface AdminAuctionSetting {
+  auctionEnabled: boolean;
+}
+
+export type StatusFilter = 'ALL' | 'BIDDING' | 'OCCUPIED' | 'IDLE';
+export type GradeFilter = 'ALL' | 'S' | 'A' | 'B' | 'C' | 'D';
 
 export interface AdminTerritoryListResponse {
   territories: AdminTerritory[];

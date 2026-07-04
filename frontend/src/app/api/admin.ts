@@ -4,6 +4,7 @@ import type {
   AdminContinentComposition,
   AdminTerritoryListResponse,
   AdminTerritory,
+  AdminAuctionSetting,
   AdminLoginResponse,
   TotpSetupResponse,
 } from '../types/admin';
@@ -44,4 +45,26 @@ export function applyGradeDistribution(
     `/admin/continents/${continentId}/grade-distribution`,
     { distribution, reason },
   );
+}
+
+export function changeTerritoryAuction(territoryId: number, enabled: boolean, reason: string) {
+  return apiClient.patch<AdminTerritory>(`/admin/territories/${territoryId}/auction`, {
+    enabled,
+    reason,
+  });
+}
+
+export function forceStartAuction(territoryId: number) {
+  return apiClient.post<AdminTerritory>(
+    `/admin/territories/${territoryId}/auction/force-start`,
+    {},
+  );
+}
+
+export function fetchAuctionSetting() {
+  return apiClient.get<AdminAuctionSetting>('/admin/settings/auction');
+}
+
+export function setAuctionSetting(enabled: boolean) {
+  return apiClient.patch<AdminAuctionSetting>('/admin/settings/auction', { enabled });
 }
