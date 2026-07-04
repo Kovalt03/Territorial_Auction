@@ -8,9 +8,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import com.territorial.auction.domain.admin.dto.AdminBulkResultResponse;
 import com.territorial.auction.domain.admin.dto.AdminContinentCompositionResponse;
 import com.territorial.auction.domain.admin.dto.AdminContinentCompositionResponse.ContinentComposition;
 import com.territorial.auction.domain.admin.dto.AdminGradeDistributionRequest;
+import com.territorial.auction.domain.admin.dto.AdminToggleAuctionRequest;
 import com.territorial.auction.domain.map.entity.Continent;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.entity.TerritoryGrade;
@@ -145,5 +147,35 @@ class AdminContinentServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.GRADE_DISTRIBUTION_MISMATCH);
+    }
+
+    @Test
+    @DisplayName("대륙 경매 전체 비활성화 → 영향 받은 영토 수 반환")
+    void changeContinentAuction_success() {
+        given(continentRepository.existsById(1L)).willReturn(true);
+        given(territoryRepository.updateAuctionEnabledByContinentId(1L, false)).willReturn(300);
+
+        AdminBulkResultResponse res =
+                adminContinentService.changeContinentAuction(
+                        10L, 1L, new AdminToggleAuctionRequest(false, "행성 점검"));
+
+        assertThat(res.affected()).isEqualTo(300);
+        then(adminAuditLogger)
+                .should()
+                .record(eq(10L), eq("CONTINENT_AUCTION_TOGGLE"), eq("CONTINENT"), eq(1L), any());
+    }
+
+    @Test
+    @DisplayName("없는 대륙 경매 토글 → CONTINENT_NOT_FOUND")
+    void changeContinentAuction_notFound() {
+        given(continentRepository.existsById(9L)).willReturn(false);
+
+        assertThatThrownBy(
+                        () ->
+                                adminContinentService.changeContinentAuction(
+                                        10L, 9L, new AdminToggleAuctionRequest(false, "x")))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.CONTINENT_NOT_FOUND);
     }
 }
