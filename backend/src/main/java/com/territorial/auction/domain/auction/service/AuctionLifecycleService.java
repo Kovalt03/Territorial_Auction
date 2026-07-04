@@ -1,5 +1,7 @@
 package com.territorial.auction.domain.auction.service;
 
+import com.territorial.auction.domain.admin.entity.AdminSetting;
+import com.territorial.auction.domain.admin.repository.AdminSettingRepository;
 import com.territorial.auction.domain.auction.AuctionPolicy;
 import com.territorial.auction.domain.auction.dto.AuctionResultAlert;
 import com.territorial.auction.domain.auction.entity.Auction;
@@ -42,6 +44,7 @@ public class AuctionLifecycleService {
     private final TerritoryRepository territoryRepository;
     private final WalletRepository walletRepository;
     private final SeasonRepository seasonRepository;
+    private final AdminSettingRepository adminSettingRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -106,6 +109,9 @@ public class AuctionLifecycleService {
     /** nextAuctionAt이 도달한 IDLE 영토에 신규 경매 생성 */
     @Transactional
     public void createPendingAuctions() {
+        if (!isGlobalAuctionEnabled()) {
+            return;
+        }
         LocalDateTime now = LocalDateTime.now();
         List<Territory> ready =
                 territoryRepository.findAllReadyForAuction(Territory.TerritoryStatus.IDLE, now);
@@ -119,6 +125,14 @@ public class AuctionLifecycleService {
     }
 
     // ── private ───────────────────────────────────────────────────────────────
+
+    // 전역 마스터 스위치. 설정 행이 없으면 활성으로 간주한다.
+    private boolean isGlobalAuctionEnabled() {
+        return adminSettingRepository
+                .findBySettingKey(AdminSetting.KEY_AUCTION_ENABLED)
+                .map(s -> Boolean.parseBoolean(s.getSettingValue()))
+                .orElse(true);
+    }
 
     private void settleAuction(Auction auction, LocalDateTime now) {
         Territory territory = auction.getTerritory();

@@ -49,5 +49,13 @@ jwt:
   access-token-expiry: 1800000    # 30분 (ms)
   refresh-token-expiry: 1209600000 # 14일 (ms)
 
+admin:
+  # 관리자 로그인 허용 IP. 비워두면 모든 IP 허용(개발). 운영에서는 화이트리스트 지정.
+  ip-allowlist: ${ADMIN_IP_ALLOWLIST:}
+  # 관리자 시드 계정. email/password 가 모두 설정된 경우에만 부트스트랩(운영은 미설정 권장).
+  seed:
+    email: ${ADMIN_SEED_EMAIL:}
+    password: ${ADMIN_SEED_PASSWORD:}
+
 server:
   port: 8080

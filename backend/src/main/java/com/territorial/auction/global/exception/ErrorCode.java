@@ -20,6 +20,13 @@ public enum ErrorCode {
     WITHDRAWN_USER(HttpStatus.FORBIDDEN, "탈퇴한 사용자입니다."),
     SUSPENDED_USER(HttpStatus.FORBIDDEN, "정지된 사용자입니다."),
 
+    // Admin Auth
+    ADMIN_LOGIN_REQUIRED(HttpStatus.FORBIDDEN, "관리자 계정은 관리자 로그인을 사용해야 합니다."),
+    NOT_ADMIN_ACCOUNT(HttpStatus.FORBIDDEN, "관리자 계정이 아닙니다."),
+    ADMIN_IP_NOT_ALLOWED(HttpStatus.FORBIDDEN, "허용되지 않은 접근 위치입니다."),
+    INVALID_TOTP_CODE(HttpStatus.UNAUTHORIZED, "인증 코드가 올바르지 않습니다."),
+    TOTP_NOT_ENROLLED(HttpStatus.FORBIDDEN, "2차 인증이 등록되지 않았습니다."),
+
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "이미 사용 중인 아이디입니다."),
@@ -34,6 +41,9 @@ public enum ErrorCode {
     TILE_NOT_FOUND(HttpStatus.NOT_FOUND, "타일을 찾을 수 없습니다."),
     CONTINENT_NOT_FOUND(HttpStatus.NOT_FOUND, "대륙을 찾을 수 없습니다."),
     TERRITORY_NOT_FOUND(HttpStatus.NOT_FOUND, "영토를 찾을 수 없습니다."),
+    TERRITORY_NOT_IDLE(HttpStatus.CONFLICT, "IDLE 상태의 영토만 경매를 시작할 수 있습니다."),
+    TERRITORY_GRADE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 등급을 찾을 수 없습니다."),
+    GRADE_DISTRIBUTION_MISMATCH(HttpStatus.BAD_REQUEST, "등급 분포 합계가 대륙의 총 영토 수와 일치하지 않습니다."),
     NOT_TERRITORY_OWNER(HttpStatus.FORBIDDEN, "해당 영토의 점유자가 아닙니다."),
     TERRITORY_NOT_OCCUPIED(HttpStatus.BAD_REQUEST, "점유 중인 영토가 아닙니다."),
     COLOR_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "색상 변경 횟수를 초과했습니다."),

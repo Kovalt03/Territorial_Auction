@@ -43,6 +43,10 @@ public class Territory {
     @Column(nullable = false)
     private Integer baseProductionRate = 1;
 
+    // 관리자가 경매 대상에서 제외한 영토는 IDLE이어도 신규 경매가 생성되지 않는다.
+    @Column(nullable = false)
+    private Boolean auctionEnabled = true;
+
     private LocalDateTime lastProducedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -59,6 +63,20 @@ public class Territory {
 
     public void updateColor(String colorCode) {
         this.currentColor = colorCode;
+    }
+
+    // 관리자 등급 변경. 다음 경매 시작가·생산량에 반영된다.
+    public void changeGrade(TerritoryGrade grade) {
+        this.grade = grade;
+    }
+
+    public void changeAuctionEnabled(boolean enabled) {
+        this.auctionEnabled = enabled;
+    }
+
+    // IDLE 영토를 경매 순환에 편입: 다음 경매 예약 시각만 설정(상태는 유지).
+    public void scheduleNextAuction(LocalDateTime nextAuctionAt) {
+        this.nextAuctionAt = nextAuctionAt;
     }
 
     public void startBidding() {

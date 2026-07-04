@@ -14,6 +14,8 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
 
     long countByOwnerId(Long ownerId);
 
+    List<Territory> findAllByStatusAndNextAuctionAtIsNull(Territory.TerritoryStatus status);
+
     long countByOwner_IdIn(List<Long> ownerIds);
 
     @Query("SELECT t FROM Territory t JOIN FETCH t.continent JOIN FETCH t.grade")
@@ -31,6 +33,19 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
 
     @Query("SELECT t.continent.id, COUNT(t) FROM Territory t GROUP BY t.continent.id")
     List<Object[]> countGroupByContinent();
+
+    // 관리자 대륙 구성 현황: 대륙 × 등급 × 상태 집계 → [continentId, grade, status, count]
+    @Query(
+            "SELECT t.continent.id, g.grade, t.status, COUNT(t) "
+                    + "FROM Territory t JOIN t.grade g "
+                    + "GROUP BY t.continent.id, g.grade, t.status")
+    List<Object[]> aggregateCompositionGroupByContinent();
+
+    // 관리자 영토 목록(그리드용): 등급·소유자 fetch, 좌표순
+    @Query(
+            "SELECT t FROM Territory t JOIN FETCH t.grade LEFT JOIN FETCH t.owner "
+                    + "WHERE t.continent.id = :continentId ORDER BY t.coordY, t.coordX")
+    List<Territory> findAllByContinentIdWithDetails(@Param("continentId") Long continentId);
 
     @Query(
             "SELECT t.continent.id, COUNT(t) FROM Territory t WHERE t.status = :status GROUP BY t.continent.id")
@@ -61,6 +76,7 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
                     + " JOIN FETCH t.grade"
                     + " JOIN FETCH t.continent"
                     + " WHERE t.status = :status"
+                    + " AND t.auctionEnabled = true"
                     + " AND t.nextAuctionAt IS NOT NULL"
                     + " AND t.nextAuctionAt <= :now")
     List<Territory> findAllReadyForAuction(

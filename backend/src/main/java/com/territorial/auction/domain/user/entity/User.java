@@ -37,6 +37,14 @@ public class User {
     @Column(nullable = false, length = 10)
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private UserRole role = UserRole.USER;
+
+    // 관리자 2FA(TOTP) 시크릿. 관리자 미등록 상태에서는 null.
+    @Column(length = 64)
+    private String totpSecret;
+
     @Builder
     public User(String username, String email, String passwordHash, String nickname) {
         this.username = username;
@@ -47,6 +55,22 @@ public class User {
 
     public void updateStatus(UserStatus status) {
         this.status = status;
+    }
+
+    public void updateRole(UserRole role) {
+        this.role = role;
+    }
+
+    public void enrollTotp(String totpSecret) {
+        this.totpSecret = totpSecret;
+    }
+
+    public boolean isTotpEnrolled() {
+        return this.totpSecret != null;
+    }
+
+    public boolean isAdmin() {
+        return this.role == UserRole.ADMIN;
     }
 
     public void updateNickname(String nickname) {
