@@ -1,6 +1,9 @@
 package com.territorial.auction.domain.admin.service;
 
 import com.territorial.auction.domain.admin.dto.AdminAdjustWalletRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkAdjustWalletRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkChangeStatusRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkResultResponse;
 import com.territorial.auction.domain.admin.dto.AdminChangeUserStatusRequest;
 import com.territorial.auction.domain.admin.dto.AdminUserDetailResponse;
 import com.territorial.auction.domain.admin.dto.AdminUserListResponse;
@@ -87,6 +90,60 @@ public class AdminUserService {
         detail.put("reason", request.reason());
         adminAuditLogger.record(adminUserId, "WALLET_ADJUST", "USER", userId, detail);
         return toDetail(user, wallet);
+    }
+
+    // 선택된 여러 유저의 재화를 일괄 조정. 한 명이라도 실패하면 전체 롤백(all-or-nothing).
+    @Transactional
+    public AdminBulkResultResponse bulkAdjustWallet(
+            Long adminUserId, AdminBulkAdjustWalletRequest request) {
+        int apDelta = request.apDelta() != null ? request.apDelta() : 0;
+        int gpDelta = request.gpDelta() != null ? request.gpDelta() : 0;
+        if (apDelta == 0 && gpDelta == 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+        List<Long> userIds = request.userIds().stream().distinct().toList();
+        for (Long userId : userIds) {
+            Wallet wallet =
+                    walletRepository
+                            .findByIdWithLock(userId)
+                            .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
+            if (apDelta != 0) wallet.adjustAvailableAp(apDelta);
+            if (gpDelta != 0) wallet.adjustAvailableGp(gpDelta);
+
+            Map<String, Object> detail = new HashMap<>();
+            detail.put("apDelta", apDelta);
+            detail.put("gpDelta", gpDelta);
+            detail.put("reason", request.reason());
+            adminAuditLogger.record(adminUserId, "WALLET_ADJUST_BULK", "USER", userId, detail);
+        }
+        return new AdminBulkResultResponse(userIds.size());
+    }
+
+    // 선택된 여러 유저의 상태를 일괄 변경. all-or-nothing.
+    @Transactional
+    public AdminBulkResultResponse bulkChangeStatus(
+            Long adminUserId, AdminBulkChangeStatusRequest request) {
+        List<Long> userIds = request.userIds().stream().distinct().toList();
+        for (Long userId : userIds) {
+            User user = findUserOrThrow(userId);
+            validateStatusChange(user, request.status());
+
+            UserStatus before = user.getStatus();
+            user.updateStatus(request.status());
+            adminAuditLogger.record(
+                    adminUserId,
+                    "USER_STATUS_CHANGE_BULK",
+                    "USER",
+                    userId,
+                    Map.of(
+                            "before",
+                            before,
+                            "after",
+                            request.status(),
+                            "reason",
+                            request.reason()));
+        }
+        return new AdminBulkResultResponse(userIds.size());
     }
 
     private void validateStatusChange(User user, UserStatus status) {
