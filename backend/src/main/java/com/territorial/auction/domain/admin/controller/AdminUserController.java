@@ -1,6 +1,9 @@
 package com.territorial.auction.domain.admin.controller;
 
 import com.territorial.auction.domain.admin.dto.AdminAdjustWalletRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkAdjustWalletRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkChangeStatusRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkResultResponse;
 import com.territorial.auction.domain.admin.dto.AdminChangeUserStatusRequest;
 import com.territorial.auction.domain.admin.dto.AdminUserDetailResponse;
 import com.territorial.auction.domain.admin.dto.AdminUserListResponse;
@@ -61,5 +64,21 @@ public class AdminUserController {
             @RequestBody @Valid AdminAdjustWalletRequest request) {
         return ResponseEntity.ok(
                 ApiResponse.ok(adminUserService.adjustWallet(adminUserId, userId, request)));
+    }
+
+    @PostMapping("/bulk/wallet-adjust")
+    public ResponseEntity<ApiResponse<AdminBulkResultResponse>> bulkAdjustWallet(
+            @AuthenticationPrincipal Long adminUserId,
+            @RequestBody @Valid AdminBulkAdjustWalletRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminUserService.bulkAdjustWallet(adminUserId, request)));
+    }
+
+    @PostMapping("/bulk/status")
+    public ResponseEntity<ApiResponse<AdminBulkResultResponse>> bulkChangeStatus(
+            @AuthenticationPrincipal Long adminUserId,
+            @RequestBody @Valid AdminBulkChangeStatusRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminUserService.bulkChangeStatus(adminUserId, request)));
     }
 }

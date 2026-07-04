@@ -8,6 +8,9 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 import com.territorial.auction.domain.admin.dto.AdminAdjustWalletRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkAdjustWalletRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkChangeStatusRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkResultResponse;
 import com.territorial.auction.domain.admin.dto.AdminChangeUserStatusRequest;
 import com.territorial.auction.domain.admin.dto.AdminUserDetailResponse;
 import com.territorial.auction.domain.admin.dto.AdminUserListResponse;
@@ -230,6 +233,85 @@ class AdminUserServiceTest {
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INVALID_INPUT);
             then(walletRepository).should(never()).findByIdWithLock(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("bulk 조작")
+    class BulkOps {
+
+        @Test
+        @DisplayName("여러 유저 재화 일괄 조정 성공 → affected 반환")
+        void bulkAdjustWallet_success() {
+            User u1 = user(1L, UserStatus.ACTIVE, UserRole.USER);
+            User u2 = user(2L, UserStatus.ACTIVE, UserRole.USER);
+            given(walletRepository.findByIdWithLock(1L))
+                    .willReturn(Optional.of(wallet(u1, 1000, 0)));
+            given(walletRepository.findByIdWithLock(2L))
+                    .willReturn(Optional.of(wallet(u2, 1000, 0)));
+
+            AdminBulkResultResponse res =
+                    adminUserService.bulkAdjustWallet(
+                            10L,
+                            new AdminBulkAdjustWalletRequest(List.of(1L, 2L), -100, 50, "이벤트"));
+
+            assertThat(res.affected()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("한 명이라도 잔액 부족 → INSUFFICIENT_AP (전체 롤백)")
+        void bulkAdjustWallet_oneInsufficient() {
+            User u1 = user(1L, UserStatus.ACTIVE, UserRole.USER);
+            User u2 = user(2L, UserStatus.ACTIVE, UserRole.USER);
+            given(walletRepository.findByIdWithLock(1L))
+                    .willReturn(Optional.of(wallet(u1, 1000, 0)));
+            given(walletRepository.findByIdWithLock(2L)).willReturn(Optional.of(wallet(u2, 50, 0)));
+
+            assertThatThrownBy(
+                            () ->
+                                    adminUserService.bulkAdjustWallet(
+                                            10L,
+                                            new AdminBulkAdjustWalletRequest(
+                                                    List.of(1L, 2L), -100, 0, "x")))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INSUFFICIENT_AP);
+        }
+
+        @Test
+        @DisplayName("여러 유저 상태 일괄 변경 성공")
+        void bulkChangeStatus_success() {
+            given(userRepository.findById(1L))
+                    .willReturn(Optional.of(user(1L, UserStatus.ACTIVE, UserRole.USER)));
+            given(userRepository.findById(2L))
+                    .willReturn(Optional.of(user(2L, UserStatus.ACTIVE, UserRole.USER)));
+
+            AdminBulkResultResponse res =
+                    adminUserService.bulkChangeStatus(
+                            10L,
+                            new AdminBulkChangeStatusRequest(
+                                    List.of(1L, 2L), UserStatus.SUSPENDED, "제재"));
+
+            assertThat(res.affected()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("대상에 관리자 포함 시 정지 → CANNOT_SUSPEND_ADMIN")
+        void bulkChangeStatus_containsAdmin() {
+            given(userRepository.findById(1L))
+                    .willReturn(Optional.of(user(1L, UserStatus.ACTIVE, UserRole.USER)));
+            given(userRepository.findById(2L))
+                    .willReturn(Optional.of(user(2L, UserStatus.ACTIVE, UserRole.ADMIN)));
+
+            assertThatThrownBy(
+                            () ->
+                                    adminUserService.bulkChangeStatus(
+                                            10L,
+                                            new AdminBulkChangeStatusRequest(
+                                                    List.of(1L, 2L), UserStatus.SUSPENDED, "x")))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.CANNOT_SUSPEND_ADMIN);
         }
     }
 }

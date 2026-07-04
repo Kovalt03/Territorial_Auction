@@ -50,6 +50,10 @@ export interface AdminUserListResponse {
   users: AdminUser[];
 }
 
+export interface AdminBulkResult {
+  affected: number;
+}
+
 export interface AdminUserDetail extends AdminUser {
   availableAp: number;
   lockedAp: number;
