@@ -7,10 +7,12 @@ import type { AdminUserDetail } from '../types/admin';
 
 interface Props {
   userId: number;
+  currentAp: number;
+  currentGp: number;
   onAdjusted: (detail: AdminUserDetail) => void;
 }
 
-export function WalletAdjustForm({ userId, onAdjusted }: Props) {
+export function WalletAdjustForm({ userId, currentAp, currentGp, onAdjusted }: Props) {
   const [ap, setAp] = useState('');
   const [gp, setGp] = useState('');
   const [reason, setReason] = useState('');
@@ -19,7 +21,11 @@ export function WalletAdjustForm({ userId, onAdjusted }: Props) {
 
   const apDelta = Number(ap) || 0;
   const gpDelta = Number(gp) || 0;
-  const disabled = isSaving || (apDelta === 0 && gpDelta === 0) || !reason.trim();
+  const newAp = currentAp + apDelta;
+  const newGp = currentGp + gpDelta;
+  const wouldGoNegative = newAp < 0 || newGp < 0;
+  const disabled =
+    isSaving || (apDelta === 0 && gpDelta === 0) || !reason.trim() || wouldGoNegative;
 
   const handleSubmit = async () => {
     if (disabled) return;
@@ -52,6 +58,14 @@ export function WalletAdjustForm({ userId, onAdjusted }: Props) {
             className="w-full bg-elevated border border-outline rounded-md px-2 h-9 text-foreground text-xs outline-none focus:border-primary" />
         </label>
       </div>
+      {(apDelta !== 0 || gpDelta !== 0) && (
+        <div className="bg-panel-deep rounded-md px-2 py-1.5 mb-2 text-[11px] space-y-0.5">
+          {apDelta !== 0 && <DeltaRow label="AP" current={currentAp} next={newAp} delta={apDelta} />}
+          {gpDelta !== 0 && <DeltaRow label="GP" current={currentGp} next={newGp} delta={gpDelta} />}
+          {wouldGoNegative && <p className="text-danger">잔액이 음수가 되어 적용할 수 없습니다.</p>}
+        </div>
+      )}
+
       <input value={reason} onChange={e => setReason(e.target.value)} placeholder="사유 (필수)"
         className="w-full bg-elevated border border-outline rounded-md px-2 h-9 text-foreground text-xs outline-none focus:border-primary mb-2" />
       {error && <p className="text-danger text-[11px] mb-2">{error}</p>}
@@ -60,5 +74,22 @@ export function WalletAdjustForm({ userId, onAdjusted }: Props) {
         {isSaving ? '적용 중...' : '재화 조정 적용'}
       </button>
     </div>
+  );
+}
+
+function DeltaRow({ label, current, next, delta }: { label: string; current: number; next: number; delta: number }) {
+  const up = delta > 0;
+  return (
+    <p className="flex items-center gap-1.5">
+      <span className="text-dim w-6">{label}</span>
+      <span className="text-muted">{current.toLocaleString()}</span>
+      <span className="text-dim">→</span>
+      <span className="font-bold" style={{ color: next < 0 ? 'var(--color-danger)' : 'var(--color-foreground)' }}>
+        {next.toLocaleString()}
+      </span>
+      <span className="font-semibold" style={{ color: up ? 'var(--color-gp)' : 'var(--color-flare)' }}>
+        ({up ? '+' : ''}{delta.toLocaleString()})
+      </span>
+    </p>
   );
 }

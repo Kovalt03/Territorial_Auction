@@ -2,7 +2,7 @@ import { apiClient } from './client';
 
 export interface NotificationItem {
   notificationId: number;
-  type: 'OUTBID' | 'AUCTION_WIN' | 'AUCTION_LOSE' | 'SIEGE_ALERT' | 'SIEGE_RESULT' | 'TAX_CHARGED' | 'INCOME';
+  type: 'OUTBID' | 'AUCTION_WIN' | 'AUCTION_LOSE' | 'SIEGE_ALERT' | 'SIEGE_RESULT' | 'TAX_CHARGED' | 'INCOME' | 'ADMIN_NOTICE';
   message: string;
   isRead: boolean;
   createdAt: string;

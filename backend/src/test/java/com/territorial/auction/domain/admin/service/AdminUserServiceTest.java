@@ -74,7 +74,7 @@ class AdminUserServiceTest {
         void getUsers_mapsToEnvelope() {
             User u = user(1L, UserStatus.ACTIVE, UserRole.USER);
             PageRequest pageable = PageRequest.of(0, 20);
-            given(userRepository.searchForAdmin(null, null, pageable))
+            given(userRepository.searchForAdmin(null, "", pageable))
                     .willReturn(new PageImpl<>(List.of(u), pageable, 1));
 
             AdminUserListResponse res = adminUserService.getUsers(null, null, pageable);
