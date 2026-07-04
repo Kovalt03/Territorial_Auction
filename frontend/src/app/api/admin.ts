@@ -7,6 +7,7 @@ import type {
   AdminAuctionSetting,
   AdminUserListResponse,
   AdminUserDetail,
+  AdminBulkResult,
   AdminUserBidListResponse,
   AdminUserActiveBid,
   AdminUserTerritoryListResponse,
@@ -108,6 +109,24 @@ export function adjustUserWallet(
     gpDelta,
     reason,
   });
+}
+
+export function bulkAdjustWallet(
+  userIds: number[],
+  apDelta: number,
+  gpDelta: number,
+  reason: string,
+) {
+  return apiClient.post<AdminBulkResult>('/admin/users/bulk/wallet-adjust', {
+    userIds,
+    apDelta,
+    gpDelta,
+    reason,
+  });
+}
+
+export function bulkChangeUserStatus(userIds: number[], status: UserStatus, reason: string) {
+  return apiClient.post<AdminBulkResult>('/admin/users/bulk/status', { userIds, status, reason });
 }
 
 export function fetchUserBids(userId: number, page: number, size = 20) {
