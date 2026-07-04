@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { bulkAdjustWallet, bulkChangeUserStatus } from '../api/admin';
+import { bulkAdjustWallet, bulkChangeUserStatus, bulkSendNotification } from '../api/admin';
 import { ApiError } from '../api/client';
 
 import type { AdminBulkResult } from '../types/admin';
@@ -15,6 +15,7 @@ export function BulkUserActionBar({ userIds, onDone, onClear }: Props) {
   const [ap, setAp] = useState('');
   const [gp, setGp] = useState('');
   const [reason, setReason] = useState('');
+  const [notice, setNotice] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -29,6 +30,21 @@ export function BulkUserActionBar({ userIds, onDone, onClear }: Props) {
       const r = await fn();
       onDone(`${label} 완료 — ${r.affected}명`);
       setAp(''); setGp(''); setReason('');
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : '처리에 실패했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sendNotice = async () => {
+    if (busy) return;
+    if (!notice.trim()) { setError('메시지를 입력하세요.'); return; }
+    setBusy(true); setError(null);
+    try {
+      const r = await bulkSendNotification(userIds, notice.trim());
+      onDone(`알림 발송 완료 — ${r.affected}명`);
+      setNotice('');
     } catch (e) {
       setError(e instanceof ApiError ? e.message : '처리에 실패했습니다.');
     } finally {
@@ -63,6 +79,13 @@ export function BulkUserActionBar({ userIds, onDone, onClear }: Props) {
         onClick={() => void run(() => bulkChangeUserStatus(userIds, 'ACTIVE', reason.trim()), '활성화')}
         className="h-8 px-3 rounded-md border border-gp text-gp font-bold hover:bg-elevated disabled:opacity-40">
         활성화
+      </button>
+
+      <span className="w-px h-5 bg-outline mx-1" />
+      <input value={notice} onChange={e => setNotice(e.target.value)} placeholder="알림 메시지" className={`${input} w-44`} />
+      <button disabled={busy || !notice.trim()} onClick={() => void sendNotice()}
+        className="h-8 px-3 rounded-md border border-primary text-primary font-bold hover:bg-elevated disabled:opacity-40">
+        알림 발송
       </button>
 
       {error && <span className="text-danger">{error}</span>}

@@ -129,6 +129,10 @@ export function bulkChangeUserStatus(userIds: number[], status: UserStatus, reas
   return apiClient.post<AdminBulkResult>('/admin/users/bulk/status', { userIds, status, reason });
 }
 
+export function bulkSendNotification(userIds: number[], message: string) {
+  return apiClient.post<AdminBulkResult>('/admin/users/bulk/notifications', { userIds, message });
+}
+
 export function fetchUserBids(userId: number, page: number, size = 20) {
   return apiClient.get<AdminUserBidListResponse>(
     `/admin/users/${userId}/bids?page=${page}&size=${size}`,
