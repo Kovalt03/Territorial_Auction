@@ -57,6 +57,7 @@ public class NotificationLog {
         INCOME,
         SEASON_PASS_EXPIRING,
         TAX_FAIL_WARNING,
-        TAX_EVICTION
+        TAX_EVICTION,
+        ADMIN_NOTICE
     }
 }
