@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT          NOT NULL,
     nickname      VARCHAR(30)   NOT NULL UNIQUE,
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    status        VARCHAR(10)   NOT NULL DEFAULT 'ACTIVE'
+    status        VARCHAR(10)   NOT NULL DEFAULT 'ACTIVE',
+    role          VARCHAR(10)   NOT NULL DEFAULT 'USER'
 );
 
 -- user_profiles
@@ -72,8 +73,16 @@ CREATE TABLE IF NOT EXISTS territories (
     occupied_until      TIMESTAMPTZ,
     status              VARCHAR(10) NOT NULL,
     base_production_rate INTEGER    NOT NULL DEFAULT 1,
+    auction_enabled     BOOLEAN     NOT NULL DEFAULT TRUE,
     last_produced_at    TIMESTAMPTZ,
     grade_id            BIGINT      REFERENCES territory_grades(id)
+);
+
+-- admin_settings (관리자 전역 설정 key-value)
+CREATE TABLE IF NOT EXISTS admin_settings (
+    id            BIGSERIAL    PRIMARY KEY,
+    setting_key   VARCHAR(50)  NOT NULL UNIQUE,
+    setting_value VARCHAR(255) NOT NULL
 );
 
 -- bonus_tiles
