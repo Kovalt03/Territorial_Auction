@@ -1,5 +1,7 @@
 package com.territorial.auction.domain.admin.service;
 
+import com.territorial.auction.domain.admin.dto.AdminBulkNotificationRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkResultResponse;
 import com.territorial.auction.domain.admin.dto.AdminSendNotificationRequest;
 import com.territorial.auction.domain.admin.dto.AdminUserActiveBidListResponse;
 import com.territorial.auction.domain.admin.dto.AdminUserActiveBidResponse;
@@ -81,6 +83,27 @@ public class AdminUserActivityService {
                 "USER",
                 userId,
                 Map.of("message", request.message()));
+    }
+
+    // 선택된 여러 유저에게 알림 일괄 발송. 발송 전 전원 존재를 검증(부분 발송 방지).
+    @Transactional
+    public AdminBulkResultResponse bulkSendNotification(
+            Long adminUserId, AdminBulkNotificationRequest request) {
+        List<Long> userIds = request.userIds().stream().distinct().toList();
+        if (userRepository.findAllById(userIds).size() != userIds.size()) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+        for (Long userId : userIds) {
+            notificationService.sendNotification(
+                    userId, NotificationType.ADMIN_NOTICE, request.message());
+            adminAuditLogger.record(
+                    adminUserId,
+                    "USER_NOTIFICATION_SEND_BULK",
+                    "USER",
+                    userId,
+                    Map.of("message", request.message()));
+        }
+        return new AdminBulkResultResponse(userIds.size());
     }
 
     private void validateUserExists(Long userId) {
