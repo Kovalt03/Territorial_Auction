@@ -12,11 +12,11 @@ import { LoadingState } from './LoadingState';
 
 const TYPE_ICON: Record<string, string> = {
   OUTBID: '⚡', AUCTION_WIN: '🏆', AUCTION_LOSE: '❌', SIEGE_ALERT: '⚔️',
-  SIEGE_RESULT: '🛡️', TAX_CHARGED: '💰', INCOME: '💎',
+  SIEGE_RESULT: '🛡️', TAX_CHARGED: '💰', INCOME: '💎', ADMIN_NOTICE: '📢',
 };
 const TYPE_COLOR: Record<string, string> = {
   OUTBID: '#ff8c00', AUCTION_WIN: '#ffd700', AUCTION_LOSE: '#ff3333', SIEGE_ALERT: '#ff3333',
-  SIEGE_RESULT: '#8b50ff', TAX_CHARGED: '#ff8c00', INCOME: '#00ff88',
+  SIEGE_RESULT: '#8b50ff', TAX_CHARGED: '#ff8c00', INCOME: '#00ff88', ADMIN_NOTICE: '#00f5ff',
 };
 const PREVIEW_SIZE = 8;
 

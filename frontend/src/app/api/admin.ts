@@ -7,6 +7,9 @@ import type {
   AdminAuctionSetting,
   AdminUserListResponse,
   AdminUserDetail,
+  AdminUserBidListResponse,
+  AdminUserActiveBid,
+  AdminUserTerritoryListResponse,
   UserStatus,
   AdminLoginResponse,
   TotpSetupResponse,
@@ -105,4 +108,26 @@ export function adjustUserWallet(
     gpDelta,
     reason,
   });
+}
+
+export function fetchUserBids(userId: number, page: number, size = 20) {
+  return apiClient.get<AdminUserBidListResponse>(
+    `/admin/users/${userId}/bids?page=${page}&size=${size}`,
+  );
+}
+
+export function fetchUserActiveBids(userId: number) {
+  return apiClient.get<{ activeBids: AdminUserActiveBid[] }>(
+    `/admin/users/${userId}/active-bids`,
+  );
+}
+
+export function fetchUserTerritories(userId: number, page: number, size = 20) {
+  return apiClient.get<AdminUserTerritoryListResponse>(
+    `/admin/users/${userId}/territories?page=${page}&size=${size}`,
+  );
+}
+
+export function sendUserNotification(userId: number, message: string) {
+  return apiClient.post<null>(`/admin/users/${userId}/notifications`, { message });
 }

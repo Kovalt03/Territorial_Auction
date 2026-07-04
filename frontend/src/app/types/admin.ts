@@ -58,6 +58,56 @@ export interface AdminUserDetail extends AdminUser {
   territoryCount: number;
 }
 
+export interface AdminUserBid {
+  auctionId: number;
+  territoryId: number;
+  coordX: number;
+  coordY: number;
+  continentName: string;
+  grade: string;
+  myBidPrice: number;
+  currentPrice: number;
+  bidAt: string;
+  ongoing: boolean;
+}
+
+export interface AdminUserBidListResponse {
+  totalCount: number;
+  page: number;
+  size: number;
+  bids: AdminUserBid[];
+}
+
+export interface AdminUserActiveBid {
+  auctionId: number;
+  territoryId: number;
+  coordX: number;
+  coordY: number;
+  continentName: string;
+  grade: string;
+  myBidPrice: number;
+  currentPrice: number;
+  topBidder: boolean;
+  endAt: string;
+}
+
+export interface AdminUserTerritory {
+  territoryId: number;
+  coordX: number;
+  coordY: number;
+  continentName: string;
+  grade: string;
+  status: string;
+  occupiedUntil: string | null;
+}
+
+export interface AdminUserTerritoryListResponse {
+  totalCount: number;
+  page: number;
+  size: number;
+  territories: AdminUserTerritory[];
+}
+
 export interface AdminTerritoryListResponse {
   territories: AdminTerritory[];
 }

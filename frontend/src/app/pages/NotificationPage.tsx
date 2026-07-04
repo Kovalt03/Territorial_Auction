@@ -19,6 +19,7 @@ const TYPE_ICON: Record<string, string> = {
   SIEGE_RESULT: '🛡️',
   TAX_CHARGED: '💰',
   INCOME: '💎',
+  ADMIN_NOTICE: '📢',
 };
 
 const TYPE_COLOR: Record<string, string> = {
@@ -29,6 +30,7 @@ const TYPE_COLOR: Record<string, string> = {
   SIEGE_RESULT: '#8b50ff',
   TAX_CHARGED: '#ff8c00',
   INCOME: '#00ff88',
+  ADMIN_NOTICE: '#00f5ff',
 };
 
 const PAGE_SIZE = 20;

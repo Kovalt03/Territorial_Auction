@@ -5,6 +5,8 @@ import { fetchAdminUser, changeUserStatus } from '../api/admin';
 import { ApiError } from '../api/client';
 
 import { WalletAdjustForm } from './WalletAdjustForm';
+import { UserActivityPanel } from './UserActivityPanel';
+import { SendNotificationForm } from './SendNotificationForm';
 
 import type { AdminUserDetail, UserStatus } from '../types/admin';
 
@@ -93,9 +95,19 @@ export function AdminUserDetailPage() {
         )}
       </section>
 
-      <section className="bg-panel border border-outline rounded-xl p-4">
+      <section className="bg-panel border border-outline rounded-xl p-4 mb-4">
         <h3 className="font-bold text-sm mb-2">재화 조정</h3>
         <WalletAdjustForm userId={numericId} onAdjusted={setDetail} />
+      </section>
+
+      <section className="bg-panel border border-outline rounded-xl p-4 mb-4">
+        <h3 className="font-bold text-sm mb-3">활동 내역</h3>
+        <UserActivityPanel userId={numericId} />
+      </section>
+
+      <section className="bg-panel border border-outline rounded-xl p-4">
+        <h3 className="font-bold text-sm mb-2">알림 발송</h3>
+        <SendNotificationForm userId={numericId} />
       </section>
     </div>
   );
