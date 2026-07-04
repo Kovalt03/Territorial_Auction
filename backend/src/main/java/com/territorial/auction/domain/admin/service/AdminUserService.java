@@ -33,7 +33,7 @@ public class AdminUserService {
     private final AdminAuditLogger adminAuditLogger;
 
     public AdminUserListResponse getUsers(String keyword, UserStatus status, Pageable pageable) {
-        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : "";
         Page<User> page = userRepository.searchForAdmin(status, kw, pageable);
         List<AdminUserResponse> users =
                 page.getContent().stream().map(AdminUserResponse::from).toList();
