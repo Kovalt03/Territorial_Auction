@@ -149,9 +149,14 @@ public class AdminContinentService {
 
     private ContinentComposition toComposition(Continent continent, Composition comp) {
         Composition c = comp != null ? comp : new Composition();
+        // 사용자 화면과 동일하게 displayName(행성명) 노출. 미설정 시 내부 name으로 폴백.
+        String name =
+                continent.getDisplayName() != null
+                        ? continent.getDisplayName()
+                        : continent.getName();
         return new ContinentComposition(
                 continent.getId(),
-                continent.getName(),
+                name,
                 continent.getMinTrophyRequired(),
                 c.total,
                 c.gradeBreakdown,

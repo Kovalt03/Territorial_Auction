@@ -8,7 +8,8 @@ public record AdminTerritoryResponse(
         int coordY,
         String grade,
         String status,
-        String ownerNickname) {
+        String ownerNickname,
+        boolean auctionEnabled) {
 
     public static AdminTerritoryResponse from(Territory t) {
         return new AdminTerritoryResponse(
@@ -17,6 +18,7 @@ public record AdminTerritoryResponse(
                 t.getCoordY(),
                 t.getGrade().getGrade(),
                 t.getStatus().name(),
-                t.getOwner() != null ? t.getOwner().getNickname() : null);
+                t.getOwner() != null ? t.getOwner().getNickname() : null,
+                t.getAuctionEnabled());
     }
 }
