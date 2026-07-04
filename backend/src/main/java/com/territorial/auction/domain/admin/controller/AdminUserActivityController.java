@@ -1,5 +1,7 @@
 package com.territorial.auction.domain.admin.controller;
 
+import com.territorial.auction.domain.admin.dto.AdminBulkNotificationRequest;
+import com.territorial.auction.domain.admin.dto.AdminBulkResultResponse;
 import com.territorial.auction.domain.admin.dto.AdminSendNotificationRequest;
 import com.territorial.auction.domain.admin.dto.AdminUserActiveBidListResponse;
 import com.territorial.auction.domain.admin.dto.AdminUserBidListResponse;
@@ -56,5 +58,14 @@ public class AdminUserActivityController {
             @RequestBody @Valid AdminSendNotificationRequest request) {
         adminUserActivityService.sendNotification(adminUserId, userId, request);
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PostMapping("/bulk/notifications")
+    public ResponseEntity<ApiResponse<AdminBulkResultResponse>> bulkSendNotification(
+            @AuthenticationPrincipal Long adminUserId,
+            @RequestBody @Valid AdminBulkNotificationRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(
+                        adminUserActivityService.bulkSendNotification(adminUserId, request)));
     }
 }
