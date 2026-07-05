@@ -1,7 +1,10 @@
 package com.territorial.auction.domain.auction.service;
 
+import com.territorial.auction.domain.admin.dto.AdminAuctionListResponse;
+import com.territorial.auction.domain.admin.dto.AdminAuctionResponse;
 import com.territorial.auction.domain.admin.entity.AdminSetting;
 import com.territorial.auction.domain.admin.repository.AdminSettingRepository;
+import com.territorial.auction.domain.admin.service.AdminAuditLogger;
 import com.territorial.auction.domain.auction.AuctionPolicy;
 import com.territorial.auction.domain.auction.dto.AuctionResultAlert;
 import com.territorial.auction.domain.auction.entity.Auction;
@@ -20,12 +23,17 @@ import com.territorial.auction.domain.season.entity.Season;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.WalletRepository;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,8 +53,96 @@ public class AuctionLifecycleService {
     private final WalletRepository walletRepository;
     private final SeasonRepository seasonRepository;
     private final AdminSettingRepository adminSettingRepository;
+    private final AdminAuditLogger adminAuditLogger;
     private final ApplicationEventPublisher eventPublisher;
     private final SimpMessagingTemplate messagingTemplate;
+
+    // ── 관리자 강제 종료 ─────────────────────────────────────────────────────────
+
+    /** 진행 중(미정산) 경매 목록 — 관리자 강제 종료 대상 선택용 */
+    public AdminAuctionListResponse getActiveAuctionsForAdmin(Pageable pageable) {
+        Page<Auction> page = auctionRepository.findActiveForAdmin(LocalDateTime.now(), pageable);
+        List<AdminAuctionResponse> auctions =
+                page.getContent().stream().map(AdminAuctionResponse::from).toList();
+        return new AdminAuctionListResponse(
+                page.getTotalElements(), page.getNumber(), page.getSize(), auctions);
+    }
+
+    /** 강제 낙찰: 현재 최고 입찰자에게 즉시 낙찰(기존 정산 로직 재사용). 입찰자 없으면 거부. */
+    @Transactional
+    public void forceSettle(Long adminUserId, Long auctionId) {
+        Auction auction = findUnsettledOrThrow(auctionId);
+        if (auction.getCurrentBidder() == null) {
+            throw new CustomException(ErrorCode.AUCTION_NO_BIDDER_TO_SETTLE);
+        }
+        settleAuction(auction, LocalDateTime.now());
+        adminAuditLogger.record(
+                adminUserId,
+                "AUCTION_FORCE_SETTLE",
+                "AUCTION",
+                auctionId,
+                Map.of(
+                        "territoryId", auction.getTerritory().getId(),
+                        "winnerId", auction.getCurrentBidder().getId(),
+                        "finalPrice", auction.getCurrentPrice()));
+    }
+
+    /** 강제 취소: 현재 입찰자 AP 잠금 해제 + 영토 IDLE 복귀(표준 재경매 지연) + 경매 종료. */
+    @Transactional
+    public void forceCancel(Long adminUserId, Long auctionId) {
+        Auction auction = findUnsettledOrThrow(auctionId);
+        LocalDateTime now = LocalDateTime.now();
+        Territory territory = auction.getTerritory();
+        User bidder = auction.getCurrentBidder();
+        if (bidder != null) {
+            walletRepository
+                    .findById(bidder.getId())
+                    .ifPresent(w -> w.refundLockedAp(auction.getCurrentPrice()));
+        }
+        territory.release(now.plusHours(AuctionPolicy.IDLE_REAUCTION_DELAY_HOURS));
+        auction.settle();
+
+        final long finalTerritoryId = territory.getId();
+        final int finalCoordX = territory.getCoordX();
+        final int finalCoordY = territory.getCoordY();
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        messagingTemplate.convertAndSend(
+                                "/sub/map/update",
+                                new MapUpdateBroadcast(
+                                        finalTerritoryId,
+                                        finalCoordX,
+                                        finalCoordY,
+                                        null,
+                                        null,
+                                        "IDLE"));
+                    }
+                });
+
+        adminAuditLogger.record(
+                adminUserId,
+                "AUCTION_FORCE_CANCEL",
+                "AUCTION",
+                auctionId,
+                Map.of(
+                        "territoryId", territory.getId(),
+                        "refundedBidderId", bidder != null ? bidder.getId() : -1L,
+                        "refundedAp", bidder != null ? auction.getCurrentPrice() : 0));
+        log.info("[AuctionLifecycle] 관리자 강제 취소 auctionId={}", auctionId);
+    }
+
+    private Auction findUnsettledOrThrow(Long auctionId) {
+        Auction auction =
+                auctionRepository
+                        .findByIdWithDetails(auctionId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
+        if (auction.isSettled()) {
+            throw new CustomException(ErrorCode.AUCTION_ALREADY_SETTLED);
+        }
+        return auction;
+    }
 
     /** 종료된 미정산 경매를 일괄 정산 */
     @Transactional

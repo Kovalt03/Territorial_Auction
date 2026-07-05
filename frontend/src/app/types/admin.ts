@@ -78,6 +78,26 @@ export interface AdminSeason {
   status: 'SCHEDULED' | 'ACTIVE' | 'ENDED' | 'PROCESSED';
 }
 
+export interface AdminAuction {
+  auctionId: number;
+  territoryId: number;
+  coordX: number;
+  coordY: number;
+  continentName: string;
+  grade: string;
+  currentPrice: number;
+  currentBidderId: number | null;
+  currentBidderNickname: string | null;
+  endAt: string;
+}
+
+export interface AdminAuctionListResponse {
+  totalCount: number;
+  page: number;
+  size: number;
+  auctions: AdminAuction[];
+}
+
 export interface AdminItem {
   itemId: number;
   name: string;

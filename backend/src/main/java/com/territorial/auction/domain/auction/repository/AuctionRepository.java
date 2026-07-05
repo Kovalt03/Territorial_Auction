@@ -58,4 +58,25 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
     @Query("SELECT COUNT(a) FROM Auction a WHERE a.settled = false AND a.endAt > :now")
     long countActiveAuctions(@Param("now") LocalDateTime now);
+
+    @Query(
+            "SELECT a FROM Auction a"
+                    + " JOIN FETCH a.territory t"
+                    + " JOIN FETCH t.continent"
+                    + " JOIN FETCH t.grade"
+                    + " LEFT JOIN FETCH a.currentBidder"
+                    + " WHERE a.id = :id")
+    Optional<Auction> findByIdWithDetails(@Param("id") Long id);
+
+    @Query(
+            value =
+                    "SELECT a FROM Auction a"
+                            + " JOIN FETCH a.territory t"
+                            + " JOIN FETCH t.continent"
+                            + " JOIN FETCH t.grade"
+                            + " LEFT JOIN FETCH a.currentBidder"
+                            + " WHERE a.settled = false AND a.endAt > :now",
+            countQuery =
+                    "SELECT COUNT(a) FROM Auction a WHERE a.settled = false AND a.endAt > :now")
+    Page<Auction> findActiveForAdmin(@Param("now") LocalDateTime now, Pageable pageable);
 }

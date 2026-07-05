@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.auction.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -25,6 +26,8 @@ import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.WalletRepository;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -57,6 +60,7 @@ class AuctionLifecycleServiceTest {
     @Mock private WalletRepository walletRepository;
     @Mock private SeasonRepository seasonRepository;
     @Mock private AdminSettingRepository adminSettingRepository;
+    @Mock private com.territorial.auction.domain.admin.service.AdminAuditLogger adminAuditLogger;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private SimpMessagingTemplate messagingTemplate;
 
@@ -353,6 +357,85 @@ class AuctionLifecycleServiceTest {
             lifecycleService.createPendingAuctions(); // 예외 전파되지 않아야 함
 
             then(successTerritory).should().startBidding();
+        }
+    }
+
+    // ─── 관리자 강제 종료 ─────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("forceSettle() / forceCancel()")
+    class ForceEnd {
+
+        @Test
+        @DisplayName("강제 낙찰 - 입찰자 있으면 정산 + 감사 로그")
+        void forceSettle_withBidder() {
+            User winner = sampleUser(10L);
+            Wallet wallet = mock(Wallet.class);
+            Territory territory = mockTerritory(5L, "A");
+            Auction auction = mockAuction(1L, 3000, winner, territory);
+            given(auction.isSettled()).willReturn(false);
+            given(auctionRepository.findByIdWithDetails(1L)).willReturn(Optional.of(auction));
+            given(walletRepository.findById(10L)).willReturn(Optional.of(wallet));
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
+
+            lifecycleService.forceSettle(99L, 1L);
+
+            then(territory).should().occupy(eq(winner), any(LocalDateTime.class));
+            then(auction).should().settle();
+            then(adminAuditLogger)
+                    .should()
+                    .record(eq(99L), eq("AUCTION_FORCE_SETTLE"), eq("AUCTION"), eq(1L), any());
+        }
+
+        @Test
+        @DisplayName("강제 낙찰 - 입찰자 없으면 AUCTION_NO_BIDDER_TO_SETTLE")
+        void forceSettle_noBidder() {
+            Territory territory = mockTerritory(5L, "A");
+            Auction auction = mockAuction(1L, 1000, null, territory);
+            given(auction.isSettled()).willReturn(false);
+            given(auctionRepository.findByIdWithDetails(1L)).willReturn(Optional.of(auction));
+
+            assertThatThrownBy(() -> lifecycleService.forceSettle(99L, 1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.AUCTION_NO_BIDDER_TO_SETTLE);
+        }
+
+        @Test
+        @DisplayName("이미 정산된 경매 강제 종료 → AUCTION_ALREADY_SETTLED")
+        void force_alreadySettled() {
+            Territory territory = mockTerritory(5L, "A");
+            Auction auction = mockAuction(1L, 1000, null, territory);
+            given(auction.isSettled()).willReturn(true);
+            given(auctionRepository.findByIdWithDetails(1L)).willReturn(Optional.of(auction));
+
+            assertThatThrownBy(() -> lifecycleService.forceCancel(99L, 1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.AUCTION_ALREADY_SETTLED);
+        }
+
+        @Test
+        @DisplayName("강제 취소 - 입찰자 AP 환불 + 영토 IDLE 복귀 + 정산 + 감사 로그")
+        void forceCancel_refundsAndReleases() {
+            User bidder = sampleUser(10L);
+            Wallet wallet = mock(Wallet.class);
+            Territory territory = mockTerritory(5L, "A");
+            given(territory.getCoordX()).willReturn(1);
+            given(territory.getCoordY()).willReturn(2);
+            Auction auction = mockAuction(1L, 3000, bidder, territory);
+            given(auction.isSettled()).willReturn(false);
+            given(auctionRepository.findByIdWithDetails(1L)).willReturn(Optional.of(auction));
+            given(walletRepository.findById(10L)).willReturn(Optional.of(wallet));
+
+            lifecycleService.forceCancel(99L, 1L);
+
+            then(wallet).should().refundLockedAp(3000);
+            then(territory).should().release(any(LocalDateTime.class));
+            then(auction).should().settle();
+            then(adminAuditLogger)
+                    .should()
+                    .record(eq(99L), eq("AUCTION_FORCE_CANCEL"), eq("AUCTION"), eq(1L), any());
         }
     }
 }
