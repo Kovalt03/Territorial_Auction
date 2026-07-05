@@ -56,6 +56,7 @@ public class AdminTerritoryService {
                 territoryRepository
                         .findById(territoryId)
                         .orElseThrow(() -> new CustomException(ErrorCode.TERRITORY_NOT_FOUND));
+        validateNotOccupied(territory);
         TerritoryGrade grade =
                 territoryGradeRepository
                         .findByGrade(request.grade())
@@ -126,7 +127,7 @@ public class AdminTerritoryService {
         return AdminTerritoryResponse.from(territory);
     }
 
-    // 선택된 여러 영토의 등급을 일괄 변경 (all-or-nothing).
+    // 선택된 여러 영토의 등급을 일괄 변경. 점유 중인 영토는 보호 대상이라 건너뛰고, 실제 변경된 개수만 반환한다.
     @Transactional
     public AdminBulkResultResponse bulkChangeGrade(
             Long adminUserId, AdminBulkGradeRequest request) {
@@ -136,8 +137,12 @@ public class AdminTerritoryService {
                         .orElseThrow(
                                 () -> new CustomException(ErrorCode.TERRITORY_GRADE_NOT_FOUND));
         List<Long> territoryIds = request.territoryIds().stream().distinct().toList();
+        int changed = 0;
         for (Long territoryId : territoryIds) {
             Territory territory = findTerritoryOrThrow(territoryId);
+            if (territory.getStatus() == Territory.TerritoryStatus.OCCUPIED) {
+                continue;
+            }
             String before = territory.getGrade().getGrade();
             territory.changeGrade(grade);
             adminAuditLogger.record(
@@ -149,8 +154,9 @@ public class AdminTerritoryService {
                             "before", before,
                             "after", request.grade(),
                             "reason", nullSafe(request.reason())));
+            changed++;
         }
-        return new AdminBulkResultResponse(territoryIds.size());
+        return new AdminBulkResultResponse(changed);
     }
 
     // 선택된 여러 영토의 경매 활성/비활성을 일괄 변경 (all-or-nothing).
@@ -213,6 +219,13 @@ public class AdminTerritoryService {
     private void validateIdle(Territory territory) {
         if (territory.getStatus() != Territory.TerritoryStatus.IDLE) {
             throw new CustomException(ErrorCode.TERRITORY_NOT_IDLE);
+        }
+    }
+
+    // 점유 중인 영토는 현재 점유자의 생산량·가치 보호를 위해 등급을 바꿀 수 없다.
+    private void validateNotOccupied(Territory territory) {
+        if (territory.getStatus() == Territory.TerritoryStatus.OCCUPIED) {
+            throw new CustomException(ErrorCode.TERRITORY_GRADE_LOCKED_OCCUPIED);
         }
     }
 

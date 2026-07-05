@@ -24,6 +24,7 @@ export function TerritoryEditPanel({ territory, onChanged }: Props) {
   const [isStarting, setIsStarting] = useState(false);
 
   const isIdle = territory.status === 'IDLE';
+  const isOccupied = territory.status === 'OCCUPIED';
 
   useEffect(() => {
     setGrade(territory.grade);
@@ -81,22 +82,30 @@ export function TerritoryEditPanel({ territory, onChanged }: Props) {
       <label className="block text-dim mb-1.5 text-[11px] font-medium">등급 변경</label>
       <div className="flex gap-1 mb-3">
         {GRADES.map(g => (
-          <button key={g} onClick={() => setGrade(g)}
+          <button key={g} onClick={() => setGrade(g)} disabled={isOccupied}
             style={{ borderColor: grade === g ? GRADE_COLOR[g] : undefined, color: grade === g ? GRADE_COLOR[g] : undefined }}
-            className={`flex-1 h-8 rounded-lg border text-xs font-bold ${grade === g ? '' : 'border-outline text-muted'}`}>
+            className={`flex-1 h-8 rounded-lg border text-xs font-bold disabled:opacity-40 ${grade === g ? '' : 'border-outline text-muted'}`}>
             {g}
           </button>
         ))}
       </div>
 
-      <label className="block text-dim mb-1.5 text-[11px] font-medium">사유</label>
-      <input value={reason} onChange={e => setReason(e.target.value)} placeholder="변경 사유"
-        className="w-full bg-elevated border border-outline rounded-md px-2 h-9 text-foreground outline-none focus:border-primary text-xs mb-4" />
+      {isOccupied ? (
+        <p className="text-flare text-[11px] mb-4 leading-relaxed">
+          점유 중인 영토는 등급을 변경할 수 없습니다. 점유가 끝난 뒤 변경하세요.
+        </p>
+      ) : (
+        <>
+          <label className="block text-dim mb-1.5 text-[11px] font-medium">사유</label>
+          <input value={reason} onChange={e => setReason(e.target.value)} placeholder="변경 사유"
+            className="w-full bg-elevated border border-outline rounded-md px-2 h-9 text-foreground outline-none focus:border-primary text-xs mb-4" />
 
-      <button onClick={() => void handleApplyGrade()} disabled={isSaving || grade === territory.grade}
-        className="w-full h-10 rounded-lg bg-primary text-surface font-bold text-sm hover:brightness-110 disabled:opacity-40">
-        {isSaving ? '적용 중...' : '등급 변경 적용'}
-      </button>
+          <button onClick={() => void handleApplyGrade()} disabled={isSaving || grade === territory.grade}
+            className="w-full h-10 rounded-lg bg-primary text-surface font-bold text-sm hover:brightness-110 disabled:opacity-40">
+            {isSaving ? '적용 중...' : '등급 변경 적용'}
+          </button>
+        </>
+      )}
 
       <div className="border-t border-outline mt-4 pt-4">
         <label className="block text-dim mb-1.5 text-[11px] font-medium">경매 상태</label>

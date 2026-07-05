@@ -78,6 +78,42 @@ class AdminTerritoryServiceTest {
     }
 
     @Test
+    @DisplayName("점유 중 영토 등급 변경 → TERRITORY_GRADE_LOCKED_OCCUPIED")
+    void changeGrade_occupiedLocked() {
+        Territory t = territory(100L, grade("C"));
+        ReflectionTestUtils.setField(t, "status", TerritoryStatus.OCCUPIED);
+        given(territoryRepository.findById(100L)).willReturn(Optional.of(t));
+
+        assertThatThrownBy(
+                        () ->
+                                adminTerritoryService.changeGrade(
+                                        1L, 100L, new AdminChangeGradeRequest("S", "조정")))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.TERRITORY_GRADE_LOCKED_OCCUPIED);
+        assertThat(t.getGrade().getGrade()).isEqualTo("C");
+    }
+
+    @Test
+    @DisplayName("일괄 등급 변경 → 점유 영토는 건너뛰고 변경된 개수만 반환")
+    void bulkChangeGrade_skipsOccupied() {
+        Territory idle = territory(1L, grade("C"));
+        Territory occupied = territory(2L, grade("C"));
+        ReflectionTestUtils.setField(occupied, "status", TerritoryStatus.OCCUPIED);
+        given(territoryGradeRepository.findByGrade("S")).willReturn(Optional.of(grade("S")));
+        given(territoryRepository.findById(1L)).willReturn(Optional.of(idle));
+        given(territoryRepository.findById(2L)).willReturn(Optional.of(occupied));
+
+        var res =
+                adminTerritoryService.bulkChangeGrade(
+                        1L, new AdminBulkGradeRequest(java.util.List.of(1L, 2L), "S", "일괄"));
+
+        assertThat(res.affected()).isEqualTo(1);
+        assertThat(idle.getGrade().getGrade()).isEqualTo("S");
+        assertThat(occupied.getGrade().getGrade()).isEqualTo("C");
+    }
+
+    @Test
     @DisplayName("존재하지 않는 영토 → TERRITORY_NOT_FOUND")
     void changeGrade_territoryNotFound() {
         given(territoryRepository.findById(999L)).willReturn(Optional.empty());
