@@ -12,6 +12,9 @@ import type {
   AdminUserActiveBid,
   AdminUserTerritoryListResponse,
   UserStatus,
+  AdminAuditLogListResponse,
+  AdminChatRoom,
+  AdminChatMessageListResponse,
   AdminLoginResponse,
   TotpSetupResponse,
 } from '../types/admin';
@@ -187,4 +190,40 @@ export function fetchUserTerritories(userId: number, page: number, size = 20) {
 
 export function sendUserNotification(userId: number, message: string) {
   return apiClient.post<null>(`/admin/users/${userId}/notifications`, { message });
+}
+
+export function fetchAuditLogs(params: {
+  action?: string;
+  targetType?: string;
+  page: number;
+  size?: number;
+}) {
+  const qs = new URLSearchParams();
+  if (params.action) qs.set('action', params.action);
+  if (params.targetType) qs.set('targetType', params.targetType);
+  qs.set('page', String(params.page));
+  qs.set('size', String(params.size ?? 30));
+  return apiClient.get<AdminAuditLogListResponse>(`/admin/audit-logs?${qs.toString()}`);
+}
+
+export function fetchChatRooms() {
+  return apiClient.get<AdminChatRoom[]>('/admin/chat/rooms');
+}
+
+export function fetchChatMessages(params: {
+  roomId?: number;
+  keyword?: string;
+  page: number;
+  size?: number;
+}) {
+  const qs = new URLSearchParams();
+  if (params.roomId != null) qs.set('roomId', String(params.roomId));
+  if (params.keyword) qs.set('keyword', params.keyword);
+  qs.set('page', String(params.page));
+  qs.set('size', String(params.size ?? 30));
+  return apiClient.get<AdminChatMessageListResponse>(`/admin/chat/messages?${qs.toString()}`);
+}
+
+export function deleteChatMessage(messageId: number) {
+  return apiClient.delete<null>(`/admin/chat/messages/${messageId}`);
 }

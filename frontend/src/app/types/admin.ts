@@ -54,6 +54,48 @@ export interface AdminBulkResult {
   affected: number;
 }
 
+export interface AdminAuditLog {
+  id: number;
+  adminUserId: number;
+  adminNickname: string | null;
+  action: string;
+  targetType: string | null;
+  targetId: number | null;
+  detailJson: string | null;
+  createdAt: string;
+}
+
+export interface AdminAuditLogListResponse {
+  totalCount: number;
+  page: number;
+  size: number;
+  logs: AdminAuditLog[];
+}
+
+export interface AdminChatRoom {
+  roomId: number;
+  type: string;
+  targetId: number | null;
+  label: string;
+}
+
+export interface AdminChatMessage {
+  messageId: number;
+  roomId: number;
+  roomLabel: string;
+  senderId: number;
+  senderNickname: string;
+  content: string;
+  sentAt: string;
+}
+
+export interface AdminChatMessageListResponse {
+  totalCount: number;
+  page: number;
+  size: number;
+  messages: AdminChatMessage[];
+}
+
 export interface AdminUserDetail extends AdminUser {
   availableAp: number;
   lockedAp: number;
