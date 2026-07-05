@@ -1,8 +1,10 @@
 import { NavLink, Outlet, useNavigate } from 'react-router';
 
 const TABS = [
+  { to: '/admin/dashboard', label: '대시보드' },
   { to: '/admin/continents', label: '영토 구성' },
   { to: '/admin/auctions', label: '경매 관리' },
+  { to: '/admin/seasons', label: '시즌 운영' },
   { to: '/admin/users', label: '사용자 관리' },
   { to: '/admin/chat', label: '채팅 검열' },
   { to: '/admin/audit-logs', label: '감사 로그' },

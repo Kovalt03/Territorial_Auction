@@ -54,6 +54,30 @@ export interface AdminBulkResult {
   affected: number;
 }
 
+export interface AdminDashboard {
+  totalUsers: number;
+  activeUsers: number;
+  suspendedUsers: number;
+  activeAuctions: number;
+  biddingTerritories: number;
+  occupiedTerritories: number;
+  idleTerritories: number;
+  totalAvailableAp: number;
+  totalAvailableGp: number;
+  currentSeasonNumber: number | null;
+  currentSeasonStartedAt: string | null;
+  currentSeasonEndedAt: string | null;
+}
+
+export interface AdminSeason {
+  seasonId: number;
+  seasonNumber: number;
+  startedAt: string;
+  endedAt: string | null;
+  processedAt: string | null;
+  status: 'SCHEDULED' | 'ACTIVE' | 'ENDED' | 'PROCESSED';
+}
+
 export interface AdminAuditLog {
   id: number;
   adminUserId: number;
