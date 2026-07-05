@@ -78,6 +78,18 @@ export interface AdminSeason {
   status: 'SCHEDULED' | 'ACTIVE' | 'ENDED' | 'PROCESSED';
 }
 
+export interface AdminItem {
+  itemId: number;
+  name: string;
+  itemType: string;
+  description: string | null;
+  costAp: number | null;
+  costGp: number | null;
+  dailyLimit: number | null;
+  gpReward: number | null;
+  iconUrl: string | null;
+}
+
 export interface AdminAuditLog {
   id: number;
   adminUserId: number;
