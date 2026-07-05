@@ -33,6 +33,8 @@ const AdminUserListPage = lazyPage(() => import('./pages/AdminUserListPage'), 'A
 const AdminUserDetailPage = lazyPage(() => import('./pages/AdminUserDetailPage'), 'AdminUserDetailPage');
 const AdminChatPage = lazyPage(() => import('./pages/AdminChatPage'), 'AdminChatPage');
 const AdminAuditLogPage = lazyPage(() => import('./pages/AdminAuditLogPage'), 'AdminAuditLogPage');
+const AdminDashboardPage = lazyPage(() => import('./pages/AdminDashboardPage'), 'AdminDashboardPage');
+const AdminSeasonPage = lazyPage(() => import('./pages/AdminSeasonPage'), 'AdminSeasonPage');
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
@@ -60,9 +62,11 @@ export const router = createBrowserRouter([
     path: '/admin',
     element: <AdminRoute><AdminLayout /></AdminRoute>,
     children: [
-      { index: true, element: <Navigate to="/admin/continents" replace /> },
+      { index: true, element: <Navigate to="/admin/dashboard" replace /> },
+      { path: 'dashboard', element: <AdminDashboardPage /> },
       { path: 'continents', element: <AdminContinentPage /> },
       { path: 'auctions', element: <AdminAuctionPage /> },
+      { path: 'seasons', element: <AdminSeasonPage /> },
       { path: 'users', element: <AdminUserListPage /> },
       { path: 'users/:id', element: <AdminUserDetailPage /> },
       { path: 'chat', element: <AdminChatPage /> },

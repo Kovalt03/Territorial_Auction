@@ -15,6 +15,8 @@ import type {
   AdminAuditLogListResponse,
   AdminChatRoom,
   AdminChatMessageListResponse,
+  AdminDashboard,
+  AdminSeason,
   AdminLoginResponse,
   TotpSetupResponse,
 } from '../types/admin';
@@ -226,4 +228,23 @@ export function fetchChatMessages(params: {
 
 export function deleteChatMessage(messageId: number) {
   return apiClient.delete<null>(`/admin/chat/messages/${messageId}`);
+}
+
+export function fetchDashboard() {
+  return apiClient.get<AdminDashboard>('/admin/dashboard');
+}
+
+export function fetchSeasons() {
+  return apiClient.get<{ seasons: AdminSeason[] }>('/admin/seasons');
+}
+
+export function createSeason(startedAt?: string, endedAt?: string) {
+  return apiClient.post<AdminSeason>('/admin/seasons', {
+    startedAt: startedAt ?? null,
+    endedAt: endedAt ?? null,
+  });
+}
+
+export function endSeason(seasonId: number) {
+  return apiClient.patch<AdminSeason>(`/admin/seasons/${seasonId}/end`, {});
 }
