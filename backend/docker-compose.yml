@@ -51,10 +51,9 @@ services:
       DB_PASSWORD: postgres
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      # 관리자 페이지 테스트용 — IP 화이트리스트 비움(전체 허용) + 시드 관리자 자동 생성
+      # IP 화이트리스트 비움(전체 허용, 개발). 시드 관리자 계정(ADMIN_SEED_EMAIL/PASSWORD)은
+      # 자격증명 노출 방지를 위해 backend/.env(gitignore)에만 정의한다.
       ADMIN_IP_ALLOWLIST: ""
-      ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:-admin@territorial.local}
-      ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:-admin1234!}
     depends_on:
       postgres:
         condition: service_healthy
