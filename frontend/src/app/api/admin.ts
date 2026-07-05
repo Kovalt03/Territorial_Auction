@@ -17,6 +17,7 @@ import type {
   AdminChatMessageListResponse,
   AdminDashboard,
   AdminSeason,
+  AdminItem,
   AdminLoginResponse,
   TotpSetupResponse,
 } from '../types/admin';
@@ -247,4 +248,21 @@ export function createSeason(startedAt?: string, endedAt?: string) {
 
 export function endSeason(seasonId: number) {
   return apiClient.patch<AdminSeason>(`/admin/seasons/${seasonId}/end`, {});
+}
+
+export function fetchItems() {
+  return apiClient.get<{ items: AdminItem[] }>('/admin/items');
+}
+
+export function updateItem(
+  itemId: number,
+  costAp: number | null,
+  costGp: number | null,
+  dailyLimit: number | null,
+) {
+  return apiClient.patch<AdminItem>(`/admin/items/${itemId}`, { costAp, costGp, dailyLimit });
+}
+
+export function grantItem(userId: number, itemId: number, quantity: number, reason: string) {
+  return apiClient.post<null>('/admin/items/grant', { userId, itemId, quantity, reason });
 }

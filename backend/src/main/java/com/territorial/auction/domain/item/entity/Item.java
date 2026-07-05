@@ -60,4 +60,11 @@ public class Item {
         this.gpReward = gpReward;
         this.iconUrl = iconUrl;
     }
+
+    // 관리자 상점 정책 수정: 가격(AP/GP)·일일 한도. null은 해당 수단 판매 안 함/무제한을 의미.
+    public void updatePolicy(Integer costAp, Integer costGp, Integer dailyLimit) {
+        this.costAp = costAp;
+        this.costGp = costGp;
+        this.dailyLimit = dailyLimit;
+    }
 }

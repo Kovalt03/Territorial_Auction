@@ -35,6 +35,7 @@ const AdminChatPage = lazyPage(() => import('./pages/AdminChatPage'), 'AdminChat
 const AdminAuditLogPage = lazyPage(() => import('./pages/AdminAuditLogPage'), 'AdminAuditLogPage');
 const AdminDashboardPage = lazyPage(() => import('./pages/AdminDashboardPage'), 'AdminDashboardPage');
 const AdminSeasonPage = lazyPage(() => import('./pages/AdminSeasonPage'), 'AdminSeasonPage');
+const AdminItemPage = lazyPage(() => import('./pages/AdminItemPage'), 'AdminItemPage');
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
@@ -67,6 +68,7 @@ export const router = createBrowserRouter([
       { path: 'continents', element: <AdminContinentPage /> },
       { path: 'auctions', element: <AdminAuctionPage /> },
       { path: 'seasons', element: <AdminSeasonPage /> },
+      { path: 'items', element: <AdminItemPage /> },
       { path: 'users', element: <AdminUserListPage /> },
       { path: 'users/:id', element: <AdminUserDetailPage /> },
       { path: 'chat', element: <AdminChatPage /> },
