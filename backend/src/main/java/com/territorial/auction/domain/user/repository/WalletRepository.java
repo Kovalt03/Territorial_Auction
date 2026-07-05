@@ -13,4 +13,10 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT w FROM Wallet w WHERE w.userId = :userId")
     Optional<Wallet> findByIdWithLock(@Param("userId") Long userId);
+
+    @Query("SELECT COALESCE(SUM(w.availableAp), 0) FROM Wallet w")
+    long sumAvailableAp();
+
+    @Query("SELECT COALESCE(SUM(w.availableGp), 0) FROM Wallet w")
+    long sumAvailableGp();
 }

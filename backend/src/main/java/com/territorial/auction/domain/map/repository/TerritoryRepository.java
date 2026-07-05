@@ -15,6 +15,8 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
 
     long countByOwnerId(Long ownerId);
 
+    long countByStatus(Territory.TerritoryStatus status);
+
     List<Territory> findAllByStatusAndNextAuctionAtIsNull(Territory.TerritoryStatus status);
 
     // 대륙 전체 경매 활성/비활성 일괄 변경

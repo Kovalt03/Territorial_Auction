@@ -55,4 +55,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
                     + " AND a.endAt > :now")
     List<Long> findActiveAuctionTerritoryIds(
             @Param("territoryIds") List<Long> territoryIds, @Param("now") LocalDateTime now);
+
+    @Query("SELECT COUNT(a) FROM Auction a WHERE a.settled = false AND a.endAt > :now")
+    long countActiveAuctions(@Param("now") LocalDateTime now);
 }
