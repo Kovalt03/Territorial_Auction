@@ -54,6 +54,40 @@ export function applyGradeDistribution(
   );
 }
 
+export function changeContinentAuction(continentId: number, enabled: boolean, reason: string) {
+  return apiClient.patch<AdminBulkResult>(`/admin/continents/${continentId}/auction`, {
+    enabled,
+    reason,
+  });
+}
+
+export function bulkChangeTerritoryGrade(territoryIds: number[], grade: string, reason: string) {
+  return apiClient.patch<AdminBulkResult>('/admin/territories/bulk/grade', {
+    territoryIds,
+    grade,
+    reason,
+  });
+}
+
+export function bulkChangeTerritoryAuction(
+  territoryIds: number[],
+  enabled: boolean,
+  reason: string,
+) {
+  return apiClient.patch<AdminBulkResult>('/admin/territories/bulk/auction', {
+    territoryIds,
+    enabled,
+    reason,
+  });
+}
+
+export function bulkForceStartTerritories(territoryIds: number[], reason: string) {
+  return apiClient.post<AdminBulkResult>('/admin/territories/bulk/force-start', {
+    territoryIds,
+    reason,
+  });
+}
+
 export function changeTerritoryAuction(territoryId: number, enabled: boolean, reason: string) {
   return apiClient.patch<AdminTerritory>(`/admin/territories/${territoryId}/auction`, {
     enabled,

@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -15,6 +16,12 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
     long countByOwnerId(Long ownerId);
 
     List<Territory> findAllByStatusAndNextAuctionAtIsNull(Territory.TerritoryStatus status);
+
+    // 대륙 전체 경매 활성/비활성 일괄 변경
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Territory t SET t.auctionEnabled = :enabled WHERE t.continent.id = :continentId")
+    int updateAuctionEnabledByContinentId(
+            @Param("continentId") Long continentId, @Param("enabled") boolean enabled);
 
     long countByOwner_IdIn(List<Long> ownerIds);
 

@@ -20,10 +20,14 @@ interface Props {
   statusFilter: StatusFilter;
   gradeFilter: GradeFilter;
   disabledOnly: boolean;
+  selectMode?: boolean;
+  selectedIds?: Set<number>;
+  onToggleSelect?: (id: number) => void;
 }
 
 export function TerritoryGrid({
   territories, selectedTerritoryId, onSelect, statusFilter, gradeFilter, disabledOnly,
+  selectMode = false, selectedIds, onToggleSelect,
 }: Props) {
   if (territories.length === 0) return <p className="text-muted text-sm">영토가 없습니다.</p>;
 
@@ -58,9 +62,13 @@ export function TerritoryGrid({
               {Array.from({ length: cols }, (_, c) => {
                 const t = byCoord.get(`${minX + c},${y}`);
                 if (!t) return <div key={`c${c}`} />;
+                const isSel = selectMode
+                  ? !!selectedIds?.has(t.territoryId)
+                  : t.territoryId === selectedTerritoryId;
                 return (
-                  <Cell key={`c${c}`} territory={t} selected={t.territoryId === selectedTerritoryId}
-                    dimmed={!matches(t)} onSelect={onSelect} />
+                  <Cell key={`c${c}`} territory={t} selected={isSel} multi={selectMode}
+                    dimmed={!matches(t)}
+                    onClick={() => (selectMode ? onToggleSelect?.(t.territoryId) : onSelect(t.territoryId))} />
                 );
               })}
             </Fragment>
@@ -75,15 +83,16 @@ export function TerritoryGrid({
 interface CellProps {
   territory: AdminTerritory;
   selected: boolean;
+  multi: boolean;
   dimmed: boolean;
-  onSelect: (id: number) => void;
+  onClick: () => void;
 }
 
-function Cell({ territory: t, selected, dimmed, onSelect }: CellProps) {
+function Cell({ territory: t, selected, multi, dimmed, onClick }: CellProps) {
   const enabled = t.auctionEnabled;
   const color = GRADE_COLOR[t.grade] ?? 'var(--color-foreground)';
   return (
-    <button onClick={() => onSelect(t.territoryId)}
+    <button onClick={onClick}
       title={`(${t.coordX}, ${t.coordY}) · ${t.grade}급 · ${STATUS_LABEL[t.status] ?? t.status}${enabled ? '' : ' · 경매중지'}`}
       style={{
         width: CELL,
@@ -108,6 +117,9 @@ function Cell({ territory: t, selected, dimmed, onSelect }: CellProps) {
           }}>
           {STATUS_LABEL[t.status]}
         </span>
+      )}
+      {multi && selected && (
+        <span className="absolute top-0 right-0.5 text-[11px] font-black leading-none" style={{ color: 'var(--color-primary)' }}>✓</span>
       )}
       {!enabled && (
         <span className="absolute top-0.5 left-1 text-[11px] leading-none" style={{ color: 'var(--color-danger)' }}>⏸</span>
