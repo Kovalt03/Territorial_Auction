@@ -125,6 +125,9 @@ public enum ErrorCode {
 
     // Season
     SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "진행 중인 시즌이 없습니다."),
+    SEASON_BY_ID_NOT_FOUND(HttpStatus.NOT_FOUND, "시즌을 찾을 수 없습니다."),
+    SEASON_ALREADY_ACTIVE(HttpStatus.CONFLICT, "진행 중인 시즌이 있어 새 시즌을 시작할 수 없습니다."),
+    SEASON_ALREADY_ENDED(HttpStatus.CONFLICT, "이미 종료된 시즌입니다."),
     SEASON_PASS_NOT_FOUND(HttpStatus.NOT_FOUND, "시즌 패스 정보를 찾을 수 없습니다."),
     SEASON_PASS_ALREADY_OWNED(HttpStatus.CONFLICT, "이미 이번 시즌 패스를 보유하고 있습니다."),
     SEASON_MISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "미션을 찾을 수 없습니다."),
