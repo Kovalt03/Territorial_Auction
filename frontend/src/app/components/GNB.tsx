@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { useApp } from '../context/AppContext';
 import { useStompSubscribe } from '../hooks/useStompClient';
 import { NotificationBell } from './NotificationBell';
+import { AnnouncementBanner } from './AnnouncementBanner';
 
 const navItems = [
   { icon: '🏝', label: '나의섬', path: '/app/my-island' },
@@ -27,6 +28,8 @@ export function GNB() {
     : 0;
 
   return (
+    <>
+    <AnnouncementBanner />
     <header className="flex items-center px-4 gap-3 flex-shrink-0 z-40 h-[76px] bg-surface border-b border-outline">
       {/* Logo */}
       <button
@@ -148,5 +151,6 @@ export function GNB() {
         </button>
       )}
     </header>
+    </>
   );
 }

@@ -36,6 +36,7 @@ const AdminAuditLogPage = lazyPage(() => import('./pages/AdminAuditLogPage'), 'A
 const AdminDashboardPage = lazyPage(() => import('./pages/AdminDashboardPage'), 'AdminDashboardPage');
 const AdminSeasonPage = lazyPage(() => import('./pages/AdminSeasonPage'), 'AdminSeasonPage');
 const AdminItemPage = lazyPage(() => import('./pages/AdminItemPage'), 'AdminItemPage');
+const AdminAnnouncementPage = lazyPage(() => import('./pages/AdminAnnouncementPage'), 'AdminAnnouncementPage');
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
@@ -72,6 +73,7 @@ export const router = createBrowserRouter([
       { path: 'users', element: <AdminUserListPage /> },
       { path: 'users/:id', element: <AdminUserDetailPage /> },
       { path: 'chat', element: <AdminChatPage /> },
+      { path: 'announcement', element: <AdminAnnouncementPage /> },
       { path: 'audit-logs', element: <AdminAuditLogPage /> },
     ],
   },

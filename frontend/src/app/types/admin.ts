@@ -98,6 +98,11 @@ export interface AdminAuctionListResponse {
   auctions: AdminAuction[];
 }
 
+export interface Announcement {
+  active: boolean;
+  message: string;
+}
+
 export interface AdminItem {
   itemId: number;
   name: string;
