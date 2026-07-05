@@ -14,6 +14,8 @@ import lombok.NoArgsConstructor;
 public class AdminSetting {
 
     public static final String KEY_AUCTION_ENABLED = "AUCTION_ENABLED";
+    public static final String KEY_ANNOUNCEMENT_ACTIVE = "ANNOUNCEMENT_ACTIVE";
+    public static final String KEY_ANNOUNCEMENT_MESSAGE = "ANNOUNCEMENT_MESSAGE";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
