@@ -31,6 +31,8 @@ const AdminContinentPage = lazyPage(() => import('./pages/AdminContinentPage'), 
 const AdminAuctionPage = lazyPage(() => import('./pages/AdminAuctionPage'), 'AdminAuctionPage');
 const AdminUserListPage = lazyPage(() => import('./pages/AdminUserListPage'), 'AdminUserListPage');
 const AdminUserDetailPage = lazyPage(() => import('./pages/AdminUserDetailPage'), 'AdminUserDetailPage');
+const AdminChatPage = lazyPage(() => import('./pages/AdminChatPage'), 'AdminChatPage');
+const AdminAuditLogPage = lazyPage(() => import('./pages/AdminAuditLogPage'), 'AdminAuditLogPage');
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
@@ -63,6 +65,8 @@ export const router = createBrowserRouter([
       { path: 'auctions', element: <AdminAuctionPage /> },
       { path: 'users', element: <AdminUserListPage /> },
       { path: 'users/:id', element: <AdminUserDetailPage /> },
+      { path: 'chat', element: <AdminChatPage /> },
+      { path: 'audit-logs', element: <AdminAuditLogPage /> },
     ],
   },
   { path: '*', element: <Navigate to="/login" replace /> },
