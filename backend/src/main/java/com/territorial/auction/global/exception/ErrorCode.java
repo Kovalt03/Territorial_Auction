@@ -45,6 +45,7 @@ public enum ErrorCode {
     CONTINENT_NOT_FOUND(HttpStatus.NOT_FOUND, "대륙을 찾을 수 없습니다."),
     TERRITORY_NOT_FOUND(HttpStatus.NOT_FOUND, "영토를 찾을 수 없습니다."),
     TERRITORY_NOT_IDLE(HttpStatus.CONFLICT, "IDLE 상태의 영토만 경매를 시작할 수 있습니다."),
+    TERRITORY_GRADE_LOCKED_OCCUPIED(HttpStatus.CONFLICT, "점유 중인 영토는 점유가 끝난 뒤에 등급을 변경할 수 있습니다."),
     TERRITORY_GRADE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 등급을 찾을 수 없습니다."),
     GRADE_DISTRIBUTION_MISMATCH(HttpStatus.BAD_REQUEST, "등급 분포 합계가 대륙의 총 영토 수와 일치하지 않습니다."),
     NOT_TERRITORY_OWNER(HttpStatus.FORBIDDEN, "해당 영토의 점유자가 아닙니다."),
