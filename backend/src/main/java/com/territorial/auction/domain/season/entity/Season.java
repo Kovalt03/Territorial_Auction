@@ -34,4 +34,9 @@ public class Season {
     public void markProcessed() {
         this.processedAt = LocalDateTime.now();
     }
+
+    // 관리자 즉시 종료: endedAt을 현재로 설정 → SeasonEndScheduler가 정산 처리한다.
+    public void endNow(LocalDateTime now) {
+        this.endedAt = now;
+    }
 }
