@@ -63,3 +63,17 @@ export interface PlaceFromInventoryResponse {
   posY: number;
   territoryId: number | null;
 }
+
+export interface BuildingTypeInfo {
+  buildingTypeId: number;
+  name: string;
+  width: number;
+  height: number;
+  maxHp: number;
+  baseCostGp: number;
+  zoneRestriction: number | null;
+  defensePower: number | null;
+  foodProductionRate: number | null;
+  unitCapacityPerLevel: number | null;
+  gpProductionRate: number | null;
+}

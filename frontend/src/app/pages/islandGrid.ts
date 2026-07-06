@@ -1,6 +1,7 @@
 import type { IslandData } from '../types/island';
 
-export type BuildingType = 'castle' | 'workshop' | 'barracks' | 'storage' | 'wall' | 'tower' | 'garden' | 'bank' | 'lab' | 'port' | 'mine' | 'empty';
+// 백엔드 building_types 시드와 1:1 대응 (name.toLowerCase()). empty는 빈 셀.
+export type BuildingType = 'castle' | 'storage' | 'workshop' | 'barracks' | 'wall' | 'tower' | 'farmland' | 'residence' | 'empty';
 
 export interface Cell {
   type: BuildingType;
@@ -15,32 +16,27 @@ export interface Cell {
 }
 
 export const buildingColors: Record<BuildingType, string> = {
-  castle: '#ffd700', workshop: '#00ff88', barracks: '#8b50ff', storage: '#00f5ff',
-  wall: '#e0e8ff', tower: '#ff8c00', garden: '#00ffaa', bank: '#ffaa00',
-  lab: '#ff44cc', port: '#44aaff', mine: '#cc8844', empty: '#1a1f35',
+  castle: '#ffd700', storage: '#00f5ff', workshop: '#00ff88', barracks: '#8b50ff',
+  wall: '#e0e8ff', tower: '#ff8c00', farmland: '#a3e635', residence: '#44aaff',
+  empty: '#1a1f35',
 };
 
 export const buildingLabels: Record<BuildingType, string> = {
-  castle: '🏰', workshop: '⚙', barracks: '⚔', storage: '📦',
-  wall: '🧱', tower: '🗼', garden: '🌿', bank: '🏦',
-  lab: '🔬', port: '⛵', mine: '⛏', empty: '',
+  castle: '🏰', storage: '📦', workshop: '⚙', barracks: '⚔',
+  wall: '🧱', tower: '🗼', farmland: '🌾', residence: '🏠',
+  empty: '',
 };
 
 export const buildingNames: Record<BuildingType, string> = {
-  castle: '성', workshop: '생산소', barracks: '병영', storage: '저장소',
-  wall: '방벽', tower: '방어탑', garden: '정원', bank: '금고',
-  lab: '연구소', port: '항구', mine: '광산', empty: '빈 공간',
+  castle: '성', storage: '저장소', workshop: '생산소', barracks: '병영',
+  wall: '방벽', tower: '방어탑', farmland: '농지', residence: '주거지',
+  empty: '빈 공간',
 };
 
 export const UNIT_LABELS: Record<string, { label: string; icon: string; color: string }> = {
   INFANTRY: { label: '보병', icon: '🗡', color: '#e0e8ff' },
   ARCHER: { label: '궁수', icon: '🏹', color: '#00ff88' },
   KNIGHT: { label: '기사', icon: '⚔', color: '#ffd700' },
-};
-
-// 백엔드 building_types 시드 순서 기준 ID 매핑 (building-types.yml)
-export const BUILDING_TYPE_ID: Partial<Record<string, number>> = {
-  castle: 1, storage: 2, workshop: 3, barracks: 4, wall: 5, tower: 6,
 };
 
 export function assignZone(x: number, y: number, size: number, zone1Radius: number, zone2Radius: number): 1 | 2 | 3 {
