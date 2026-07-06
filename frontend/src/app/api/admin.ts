@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { BuildingTypeInfo } from '../types/island';
 import type {
   AdminContinentCompositionResponse,
   AdminContinentComposition,
@@ -291,4 +292,33 @@ export function fetchAdminAnnouncement() {
 
 export function updateAnnouncement(active: boolean, message: string) {
   return apiClient.patch<Announcement>('/admin/announcement', { active, message });
+}
+
+export interface BuildingTypeForm {
+  name?: string;
+  width: number;
+  height: number;
+  maxHp: number;
+  baseCostGp: number;
+  zoneRestriction: number | null;
+  defensePower: number | null;
+  foodProductionRate: number | null;
+  unitCapacityPerLevel: number | null;
+  gpProductionRate: number | null;
+}
+
+export function fetchAdminBuildingTypes() {
+  return apiClient.get<{ buildingTypes: BuildingTypeInfo[] }>('/admin/building-types').then(r => r.buildingTypes);
+}
+
+export function createBuildingType(form: BuildingTypeForm) {
+  return apiClient.post<BuildingTypeInfo>('/admin/building-types', form);
+}
+
+export function updateBuildingType(id: number, form: BuildingTypeForm) {
+  return apiClient.patch<BuildingTypeInfo>(`/admin/building-types/${id}`, form);
+}
+
+export function deleteBuildingType(id: number) {
+  return apiClient.delete<null>(`/admin/building-types/${id}`);
 }
