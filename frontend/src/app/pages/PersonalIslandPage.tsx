@@ -39,6 +39,10 @@ export function PersonalIslandPage() {
   useEffect(() => {
     fetchBuildingTypes().then(setCatalog).catch(e => console.warn('[PersonalIslandPage] building types load failed', e));
   }, []);
+  // 관리자 지정 아이콘/색 우선, 없으면 기본 매핑
+  const catalogByType = new Map(catalog.map(c => [c.name.toLowerCase(), c]));
+  const iconFor = (t: BuildingType) => catalogByType.get(t)?.icon ?? buildingLabels[t] ?? '🏗';
+  const colorFor = (t: BuildingType) => catalogByType.get(t)?.colorHex ?? buildingColors[t] ?? '#8892b0';
   const [buildError, setBuildError] = useState('');
   const [showZones, setShowZones] = useState(true);
   const [activeTab, setActiveTab] = useState<'buildings' | 'resources' | 'units' | 'expand'>('buildings');
@@ -478,7 +482,7 @@ export function PersonalIslandPage() {
                 const isMoveSource = moveSourceCell?.x === x && moveSourceCell?.y === y;
                 const isActionTarget = (moveMode || deployFromInventoryIdx !== null || buildPending) && cell.type === 'empty';
                 const zone = cell.zone || 4;
-                const bg = isMoveSource ? buildingColors[cell.type] + '80' : cell.type !== 'empty' ? buildingColors[cell.type] + '50' : showZones ? zoneOverlay[zone] : 'var(--color-surface)';
+                const bg = isMoveSource ? colorFor(cell.type) + '80' : cell.type !== 'empty' ? colorFor(cell.type) + '50' : showZones ? zoneOverlay[zone] : 'var(--color-surface)';
                 const hpPct = cell.hp && cell.maxHp ? cell.hp / cell.maxHp : 0;
                 const hpColor = hpPct > 0.7 ? '#00ff88' : hpPct > 0.4 ? '#ffd700' : '#ff3333';
                 return (
@@ -495,14 +499,14 @@ export function PersonalIslandPage() {
                           ? '2px solid #00f5ff'
                           : isActionTarget
                             ? '1px dashed #00ff8880'
-                            : showZones ? `1px solid ${zoneBorder[zone]}30` : `1px solid ${cell.type !== 'empty' ? buildingColors[cell.type] + '60' : 'var(--color-outline-soft)'}`,
+                            : showZones ? `1px solid ${zoneBorder[zone]}30` : `1px solid ${cell.type !== 'empty' ? colorFor(cell.type) + '60' : 'var(--color-outline-soft)'}`,
                       boxShadow: isMoveSource ? '0 0 6px #ffd700' : isSelected ? '0 0 8px #00f5ff80' : cell.type === 'castle' ? '0 0 6px #ffd70040' : undefined,
                     }}
                   >
                     {cell.type !== 'empty' ? (
                       <>
                         {!cell.isBody && (
-                          <span className="text-sm leading-none">{buildingLabels[cell.type]}</span>
+                          <span className="text-sm leading-none">{iconFor(cell.type)}</span>
                         )}
                         {!cell.isBody && cell.level && (
                           <div className="absolute bottom-0.5 left-0.5 right-0.5 h-1 rounded-full overflow-hidden" style={{ background: '#0a0e1a' }}>
@@ -510,7 +514,7 @@ export function PersonalIslandPage() {
                           </div>
                         )}
                         {!cell.isBody && cell.level && (
-                          <div className="absolute top-0 right-0 w-3 h-3 rounded-full flex items-center justify-center text-[6px]" style={{ background: buildingColors[cell.type] }}>
+                          <div className="absolute top-0 right-0 w-3 h-3 rounded-full flex items-center justify-center text-[6px]" style={{ background: colorFor(cell.type) }}>
                             {cell.level}
                           </div>
                         )}

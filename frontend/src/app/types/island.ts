@@ -76,4 +76,6 @@ export interface BuildingTypeInfo {
   foodProductionRate: number | null;
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
+  icon: string | null;
+  colorHex: string | null;
 }
