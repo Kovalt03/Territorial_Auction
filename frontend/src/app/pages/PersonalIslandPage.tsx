@@ -5,14 +5,14 @@ import { LoadingState } from '../components/LoadingState';
 import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
 import { useMilitary } from '../hooks/useMilitary';
-import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi } from '../api/island';
+import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi, fetchBuildingTypes } from '../api/island';
 import { produceUnit } from '../api/military';
 import { ApiError } from '../api/client';
-import type { InventoryItem } from '../types/island';
+import type { InventoryItem, BuildingTypeInfo } from '../types/island';
 import {
   type BuildingType, type Cell,
   buildingColors, buildingLabels, buildingNames,
-  UNIT_LABELS, BUILDING_TYPE_ID,
+  UNIT_LABELS,
   emptyGrid, buildGridFromIsland, findOriginCell, clearBuildingCells,
 } from './islandGrid';
 import { IslandToast } from './IslandToast';
@@ -35,6 +35,10 @@ export function PersonalIslandPage() {
     if (island) setGrid(buildGridFromIsland(island));
   }, [island]);
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingType | null>(null);
+  const [catalog, setCatalog] = useState<BuildingTypeInfo[]>([]);
+  useEffect(() => {
+    fetchBuildingTypes().then(setCatalog).catch(e => console.warn('[PersonalIslandPage] building types load failed', e));
+  }, []);
   const [buildError, setBuildError] = useState('');
   const [showZones, setShowZones] = useState(true);
   const [activeTab, setActiveTab] = useState<'buildings' | 'resources' | 'units' | 'expand'>('buildings');
@@ -243,7 +247,7 @@ export function PersonalIslandPage() {
     setBuildError('');
     if (!selectedBuilding) { setBuildError('건물을 선택해주세요.'); return; }
     if (!selectedCell) { setBuildError('그리드에서 빈 셀을 선택해주세요.'); return; }
-    const typeId = BUILDING_TYPE_ID[selectedBuilding];
+    const typeId = catalog.find(c => c.name.toLowerCase() === selectedBuilding)?.buildingTypeId;
     if (!typeId) { setBuildError('아직 건설할 수 없는 건물입니다.'); return; }
     isBuildingRef.current = true;
     setIsBuilding(true);
@@ -677,6 +681,7 @@ export function PersonalIslandPage() {
           selectedCell={selectedCell}
           selectedZone={selectedCellData?.zone}
           gp={gp}
+          catalog={catalog}
           selectedBuilding={selectedBuilding}
           buildError={buildError}
           isBuilding={isBuilding}
@@ -690,6 +695,7 @@ export function PersonalIslandPage() {
         <IslandBuildingActionPanel
           selectedCell={selectedCell}
           cellData={selectedCellData}
+          info={catalog.find(c => c.name.toLowerCase() === selectedCellData.type)}
           onStartMove={handleStartMove}
           onStoreBuilding={handleStoreBuilding}
           onUpgrade={handleUpgradeBuilding}

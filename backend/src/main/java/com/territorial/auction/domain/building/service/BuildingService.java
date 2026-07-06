@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.building.service;
 
 import com.territorial.auction.domain.building.BuildingPolicy;
+import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse;
 import com.territorial.auction.domain.building.dto.HarvestIslandGpResponse;
 import com.territorial.auction.domain.building.dto.InventoryResponse;
 import com.territorial.auction.domain.building.dto.InventoryResponse.InventoryItem;
@@ -56,6 +57,10 @@ public class BuildingService {
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
     private final UserSeasonPassRepository userSeasonPassRepository;
+
+    public BuildingTypeCatalogResponse getBuildingTypes() {
+        return BuildingTypeCatalogResponse.of(buildingTypeRepository.findAll());
+    }
 
     public TerritoryBuildingResponse findTerritoryBuildings(Long territoryId) {
         territoryRepository

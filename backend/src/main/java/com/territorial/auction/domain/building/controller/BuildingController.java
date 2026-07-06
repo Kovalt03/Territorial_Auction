@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.building.controller;
 
+import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse;
 import com.territorial.auction.domain.building.dto.MoveBuildingRequest;
 import com.territorial.auction.domain.building.dto.MoveBuildingResponse;
 import com.territorial.auction.domain.building.dto.PlaceBuildingRequest;
@@ -21,6 +22,11 @@ import org.springframework.web.bind.annotation.*;
 public class BuildingController {
 
     private final BuildingService buildingService;
+
+    @GetMapping("/api/v1/building-types")
+    public ResponseEntity<ApiResponse<BuildingTypeCatalogResponse>> getBuildingTypes() {
+        return ResponseEntity.ok(ApiResponse.ok(buildingService.getBuildingTypes()));
+    }
 
     @GetMapping("/api/v1/map/territories/{territoryId}/buildings")
     public ResponseEntity<ApiResponse<TerritoryBuildingResponse>> getTerritoryBuildings(

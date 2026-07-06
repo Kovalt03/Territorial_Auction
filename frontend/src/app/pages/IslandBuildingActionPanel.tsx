@@ -1,8 +1,11 @@
 import { buildingColors, buildingNames, type Cell } from './islandGrid';
 
+import type { BuildingTypeInfo } from '../types/island';
+
 interface Props {
   selectedCell: { x: number; y: number };
   cellData: Cell;
+  info?: BuildingTypeInfo;
   onStartMove: () => void;
   onStoreBuilding: () => void;
   onUpgrade: () => void;
@@ -11,13 +14,23 @@ interface Props {
 
 const MAX_BUILDING_LEVEL = 3;
 
+function statLine(b: BuildingTypeInfo, level: number): string {
+  const parts: string[] = [];
+  if (b.gpProductionRate) parts.push(`GP +${b.gpProductionRate * level}/시간`);
+  if (b.foodProductionRate) parts.push(`식량 +${b.foodProductionRate * level}/시간`);
+  if (b.defensePower) parts.push(`방어력 +${b.defensePower}`);
+  if (b.unitCapacityPerLevel) parts.push(`유닛 수용 +${b.unitCapacityPerLevel * level}`);
+  return parts.join(' · ');
+}
+
 export function IslandBuildingActionPanel({
-  selectedCell, cellData, onStartMove, onStoreBuilding, onUpgrade, onClose,
+  selectedCell, cellData, info, onStartMove, onStoreBuilding, onUpgrade, onClose,
 }: Props) {
   const color = buildingColors[cellData.type];
   const curLevel = cellData.level ?? 1;
   const isMaxLevel = curLevel >= MAX_BUILDING_LEVEL;
   const isCastle = cellData.type === 'castle';
+  const stats = info ? statLine(info, curLevel) : '';
 
   return (
     <div className="modal-sheet-overlay">
@@ -52,6 +65,7 @@ export function IslandBuildingActionPanel({
               }}
             />
           </div>
+          {stats && <p className="text-muted text-[11px] mt-2">⚙ {stats}</p>}
         </div>
 
         <div className="p-4 flex gap-3">
