@@ -12,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface BuildingInstanceRepository extends JpaRepository<BuildingInstance, Long> {
 
+    long countByBuildingType_Id(Long buildingTypeId);
+
     @Query(
             "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType WHERE b.territory.id = :territoryId AND b.posX >= 0")
     List<BuildingInstance> findByTerritoryId(@Param("territoryId") Long territoryId);

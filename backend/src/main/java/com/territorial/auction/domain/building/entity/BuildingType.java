@@ -49,6 +49,28 @@ public class BuildingType {
         this.gpProductionRate = rate;
     }
 
+    // 관리자 편집: 이름을 제외한 모든 속성 갱신(이름은 게임 로직 식별자라 변경 불가).
+    public void update(
+            Integer width,
+            Integer height,
+            Integer maxHp,
+            Integer baseCostGp,
+            Integer zoneRestriction,
+            Integer defensePower,
+            Integer foodProductionRate,
+            Integer unitCapacityPerLevel,
+            Integer gpProductionRate) {
+        this.width = width;
+        this.height = height;
+        this.maxHp = maxHp;
+        this.baseCostGp = baseCostGp;
+        this.zoneRestriction = zoneRestriction;
+        this.defensePower = defensePower;
+        this.foodProductionRate = foodProductionRate;
+        this.unitCapacityPerLevel = unitCapacityPerLevel;
+        this.gpProductionRate = gpProductionRate;
+    }
+
     @Builder
     public BuildingType(
             String name,
