@@ -14,4 +14,6 @@ public record AdminUpdateBuildingTypeRequest(
         Integer defensePower,
         Integer foodProductionRate,
         Integer unitCapacityPerLevel,
-        Integer gpProductionRate) {}
+        Integer gpProductionRate,
+        String icon,
+        String colorHex) {}

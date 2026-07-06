@@ -46,6 +46,8 @@ public class AdminBuildingService {
                                 .foodProductionRate(request.foodProductionRate())
                                 .unitCapacityPerLevel(request.unitCapacityPerLevel())
                                 .gpProductionRate(request.gpProductionRate())
+                                .icon(blankToNull(request.icon()))
+                                .colorHex(blankToNull(request.colorHex()))
                                 .build());
 
         adminAuditLogger.record(
@@ -70,7 +72,9 @@ public class AdminBuildingService {
                 request.defensePower(),
                 request.foodProductionRate(),
                 request.unitCapacityPerLevel(),
-                request.gpProductionRate());
+                request.gpProductionRate(),
+                blankToNull(request.icon()),
+                blankToNull(request.colorHex()));
 
         adminAuditLogger.record(
                 adminUserId,
@@ -100,5 +104,9 @@ public class AdminBuildingService {
         return buildingTypeRepository
                 .findById(buildingTypeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.BUILDING_TYPE_NOT_FOUND));
+    }
+
+    private String blankToNull(String v) {
+        return (v != null && !v.isBlank()) ? v.trim() : null;
     }
 }
