@@ -1,0 +1,138 @@
+package com.territorial.auction.domain.admin.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
+
+import com.territorial.auction.domain.admin.dto.AdminCreateBuildingTypeRequest;
+import com.territorial.auction.domain.admin.dto.AdminUpdateBuildingTypeRequest;
+import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse.BuildingTypeInfo;
+import com.territorial.auction.domain.building.entity.BuildingType;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
+import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+@ExtendWith(MockitoExtension.class)
+class AdminBuildingServiceTest {
+
+    @InjectMocks private AdminBuildingService adminBuildingService;
+
+    @Mock private BuildingTypeRepository buildingTypeRepository;
+    @Mock private BuildingInstanceRepository buildingInstanceRepository;
+    @Mock private AdminAuditLogger adminAuditLogger;
+
+    private BuildingType type(long id, String name) {
+        BuildingType t =
+                BuildingType.builder()
+                        .name(name)
+                        .width(2)
+                        .height(2)
+                        .maxHp(100)
+                        .baseCostGp(1000)
+                        .build();
+        ReflectionTestUtils.setField(t, "id", id);
+        return t;
+    }
+
+    @Test
+    @DisplayName("건물 생성 성공 → 이름 대문자 저장 + 감사 로그")
+    void create_success() {
+        given(buildingTypeRepository.existsByName("LIGHTHOUSE")).willReturn(false);
+        given(buildingTypeRepository.save(any()))
+                .willAnswer(
+                        inv -> {
+                            BuildingType t = inv.getArgument(0);
+                            ReflectionTestUtils.setField(t, "id", 9L);
+                            return t;
+                        });
+
+        BuildingTypeInfo res =
+                adminBuildingService.create(
+                        10L,
+                        new AdminCreateBuildingTypeRequest(
+                                "lighthouse", 1, 1, 50, 500, null, 40, null, null, null));
+
+        assertThat(res.name()).isEqualTo("LIGHTHOUSE");
+        assertThat(res.defensePower()).isEqualTo(40);
+        then(adminAuditLogger)
+                .should()
+                .record(eq(10L), eq("BUILDING_TYPE_CREATE"), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("중복 이름 생성 → DUPLICATE_BUILDING_TYPE_NAME")
+    void create_duplicate() {
+        given(buildingTypeRepository.existsByName("CASTLE")).willReturn(true);
+
+        assertThatThrownBy(
+                        () ->
+                                adminBuildingService.create(
+                                        10L,
+                                        new AdminCreateBuildingTypeRequest(
+                                                "castle", 2, 2, 100, 1000, null, null, null, null,
+                                                null)))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.DUPLICATE_BUILDING_TYPE_NAME);
+        then(buildingTypeRepository).should(never()).save(any());
+    }
+
+    @Test
+    @DisplayName("건물 수정 → 스탯 반영")
+    void update_success() {
+        BuildingType t = type(3L, "WORKSHOP");
+        given(buildingTypeRepository.findById(3L)).willReturn(Optional.of(t));
+
+        BuildingTypeInfo res =
+                adminBuildingService.update(
+                        10L,
+                        3L,
+                        new AdminUpdateBuildingTypeRequest(
+                                2, 1, 200, 2000, null, null, null, null, 80));
+
+        assertThat(res.maxHp()).isEqualTo(200);
+        assertThat(res.gpProductionRate()).isEqualTo(80);
+    }
+
+    @Test
+    @DisplayName("배치된 건물 있으면 삭제 거부 → BUILDING_TYPE_IN_USE")
+    void delete_inUse() {
+        BuildingType t = type(3L, "WORKSHOP");
+        given(buildingTypeRepository.findById(3L)).willReturn(Optional.of(t));
+        given(buildingInstanceRepository.countByBuildingType_Id(3L)).willReturn(5L);
+
+        assertThatThrownBy(() -> adminBuildingService.delete(10L, 3L))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.BUILDING_TYPE_IN_USE);
+        then(buildingTypeRepository).should(never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("미사용 건물 삭제 성공")
+    void delete_success() {
+        BuildingType t = type(3L, "OLD_BUILDING");
+        given(buildingTypeRepository.findById(3L)).willReturn(Optional.of(t));
+        given(buildingInstanceRepository.countByBuildingType_Id(3L)).willReturn(0L);
+
+        adminBuildingService.delete(10L, 3L);
+
+        then(buildingTypeRepository).should().delete(t);
+        then(adminAuditLogger)
+                .should()
+                .record(eq(10L), eq("BUILDING_TYPE_DELETE"), any(), any(), any());
+    }
+}

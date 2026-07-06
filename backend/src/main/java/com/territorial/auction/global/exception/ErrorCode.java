@@ -76,6 +76,8 @@ public enum ErrorCode {
     // Building
     BUILDING_NOT_FOUND(HttpStatus.NOT_FOUND, "건물을 찾을 수 없습니다."),
     BUILDING_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "건물 타입을 찾을 수 없습니다."),
+    DUPLICATE_BUILDING_TYPE_NAME(HttpStatus.CONFLICT, "이미 존재하는 건물 이름입니다."),
+    BUILDING_TYPE_IN_USE(HttpStatus.CONFLICT, "이미 배치된 건물이 있어 삭제할 수 없습니다."),
     BUILDING_MAX_LEVEL(HttpStatus.BAD_REQUEST, "이미 최대 레벨에 도달한 건물입니다."),
     INVALID_POSITION(HttpStatus.BAD_REQUEST, "배치 불가능한 위치입니다."),
     ZONE_RESTRICTION_VIOLATED(HttpStatus.BAD_REQUEST, "Zone 제약 위반입니다."),
