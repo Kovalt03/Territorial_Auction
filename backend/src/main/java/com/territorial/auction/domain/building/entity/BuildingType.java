@@ -41,6 +41,12 @@ public class BuildingType {
 
     @Column private Integer gpProductionRate; // NULL 허용 — WORKSHOP만 값 있음
 
+    @Column(length = 10)
+    private String icon; // 이모지 아이콘 (관리자 지정). NULL이면 프론트 기본 매핑 사용
+
+    @Column(length = 7)
+    private String colorHex; // #RRGGBB (관리자 지정). NULL이면 프론트 기본 매핑 사용
+
     public boolean isCastle() {
         return "CASTLE".equals(this.name);
     }
@@ -59,7 +65,9 @@ public class BuildingType {
             Integer defensePower,
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
-            Integer gpProductionRate) {
+            Integer gpProductionRate,
+            String icon,
+            String colorHex) {
         this.width = width;
         this.height = height;
         this.maxHp = maxHp;
@@ -69,6 +77,8 @@ public class BuildingType {
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
+        this.icon = icon;
+        this.colorHex = colorHex;
     }
 
     @Builder
@@ -82,7 +92,9 @@ public class BuildingType {
             Integer defensePower,
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
-            Integer gpProductionRate) {
+            Integer gpProductionRate,
+            String icon,
+            String colorHex) {
         this.name = name;
         this.width = width;
         this.height = height;
@@ -93,5 +105,7 @@ public class BuildingType {
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
+        this.icon = icon;
+        this.colorHex = colorHex;
     }
 }
