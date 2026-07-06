@@ -19,6 +19,7 @@ import type {
   AdminSeason,
   AdminItem,
   AdminAuctionListResponse,
+  Announcement,
   AdminLoginResponse,
   TotpSetupResponse,
 } from '../types/admin';
@@ -278,4 +279,16 @@ export function forceSettleAuction(auctionId: number) {
 
 export function forceCancelAuction(auctionId: number) {
   return apiClient.post<null>(`/admin/auctions/${auctionId}/cancel`, {});
+}
+
+export function fetchAnnouncement() {
+  return apiClient.get<Announcement>('/announcement');
+}
+
+export function fetchAdminAnnouncement() {
+  return apiClient.get<Announcement>('/admin/announcement');
+}
+
+export function updateAnnouncement(active: boolean, message: string) {
+  return apiClient.patch<Announcement>('/admin/announcement', { active, message });
 }

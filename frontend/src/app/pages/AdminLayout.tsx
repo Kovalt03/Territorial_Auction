@@ -8,6 +8,7 @@ const TABS = [
   { to: '/admin/items', label: '아이템 관리' },
   { to: '/admin/users', label: '사용자 관리' },
   { to: '/admin/chat', label: '채팅 검열' },
+  { to: '/admin/announcement', label: '공지 배너' },
   { to: '/admin/audit-logs', label: '감사 로그' },
 ];
 
