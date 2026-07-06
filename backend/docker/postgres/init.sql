@@ -275,7 +275,9 @@ CREATE TABLE IF NOT EXISTS building_types (
     defense_power          INTEGER,
     food_production_rate   INTEGER,
     unit_capacity_per_level INTEGER,
-    gp_production_rate     INTEGER
+    gp_production_rate     INTEGER,
+    icon                   VARCHAR(10),
+    color_hex             VARCHAR(7)
 );
 
 -- building_instances
