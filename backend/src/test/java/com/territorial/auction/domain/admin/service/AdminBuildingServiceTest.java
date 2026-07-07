@@ -48,7 +48,7 @@ class AdminBuildingServiceTest {
     }
 
     @Test
-    @DisplayName("건물 생성 성공 → 이름 대문자 저장 + 감사 로그")
+    @DisplayName("ê±´ë¬¼ ìì± ì±ê³µ â ì´ë¦ ëë¬¸ì ì ì¥ + ê°ì¬ ë¡ê·¸")
     void create_success() {
         given(buildingTypeRepository.existsByName("LIGHTHOUSE")).willReturn(false);
         given(buildingTypeRepository.save(any()))
@@ -63,7 +63,18 @@ class AdminBuildingServiceTest {
                 adminBuildingService.create(
                         10L,
                         new AdminCreateBuildingTypeRequest(
-                                "lighthouse", 1, 1, 50, 500, null, 40, null, null, null));
+                                "lighthouse",
+                                1,
+                                1,
+                                50,
+                                500,
+                                null,
+                                40,
+                                null,
+                                null,
+                                null,
+                                "🗼",
+                                "#44aaff"));
 
         assertThat(res.name()).isEqualTo("LIGHTHOUSE");
         assertThat(res.defensePower()).isEqualTo(40);
@@ -73,7 +84,7 @@ class AdminBuildingServiceTest {
     }
 
     @Test
-    @DisplayName("중복 이름 생성 → DUPLICATE_BUILDING_TYPE_NAME")
+    @DisplayName("ì¤ë³µ ì´ë¦ ìì± â DUPLICATE_BUILDING_TYPE_NAME")
     void create_duplicate() {
         given(buildingTypeRepository.existsByName("CASTLE")).willReturn(true);
 
@@ -83,7 +94,7 @@ class AdminBuildingServiceTest {
                                         10L,
                                         new AdminCreateBuildingTypeRequest(
                                                 "castle", 2, 2, 100, 1000, null, null, null, null,
-                                                null)))
+                                                null, null, null)))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.DUPLICATE_BUILDING_TYPE_NAME);
@@ -91,7 +102,7 @@ class AdminBuildingServiceTest {
     }
 
     @Test
-    @DisplayName("건물 수정 → 스탯 반영")
+    @DisplayName("ê±´ë¬¼ ìì  â ì¤í¯ ë°ì")
     void update_success() {
         BuildingType t = type(3L, "WORKSHOP");
         given(buildingTypeRepository.findById(3L)).willReturn(Optional.of(t));
@@ -101,14 +112,14 @@ class AdminBuildingServiceTest {
                         10L,
                         3L,
                         new AdminUpdateBuildingTypeRequest(
-                                2, 1, 200, 2000, null, null, null, null, 80));
+                                2, 1, 200, 2000, null, null, null, null, 80, null, null));
 
         assertThat(res.maxHp()).isEqualTo(200);
         assertThat(res.gpProductionRate()).isEqualTo(80);
     }
 
     @Test
-    @DisplayName("배치된 건물 있으면 삭제 거부 → BUILDING_TYPE_IN_USE")
+    @DisplayName("ë°°ì¹ë ê±´ë¬¼ ìì¼ë©´ ì­ì  ê±°ë¶ â BUILDING_TYPE_IN_USE")
     void delete_inUse() {
         BuildingType t = type(3L, "WORKSHOP");
         given(buildingTypeRepository.findById(3L)).willReturn(Optional.of(t));
@@ -122,7 +133,7 @@ class AdminBuildingServiceTest {
     }
 
     @Test
-    @DisplayName("미사용 건물 삭제 성공")
+    @DisplayName("ë¯¸ì¬ì© ê±´ë¬¼ ì­ì  ì±ê³µ")
     void delete_success() {
         BuildingType t = type(3L, "OLD_BUILDING");
         given(buildingTypeRepository.findById(3L)).willReturn(Optional.of(t));

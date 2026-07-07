@@ -47,7 +47,8 @@ export function IslandBuildModal({
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {catalog.map(b => {
             const type = b.name.toLowerCase() as BuildingType;
-            const color = buildingColors[type] ?? '#8892b0';
+            const color = b.colorHex ?? buildingColors[type] ?? '#8892b0';
+            const icon = b.icon ?? buildingLabels[type] ?? '🏗';
             const isSelected = selectedBuilding === type;
             const affordable = gp >= b.baseCostGp;
             return (
@@ -62,7 +63,7 @@ export function IslandBuildModal({
                 }}
               >
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color + '25' }}>
-                  <span className="text-[22px]">{buildingLabels[type] ?? '🏗'}</span>
+                  <span className="text-[22px]">{icon}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[13px] text-foreground">

@@ -25,7 +25,7 @@ function toForm(b: BuildingTypeInfo): BuildingTypeForm {
     width: b.width, height: b.height, maxHp: b.maxHp, baseCostGp: b.baseCostGp,
     zoneRestriction: b.zoneRestriction, defensePower: b.defensePower,
     foodProductionRate: b.foodProductionRate, unitCapacityPerLevel: b.unitCapacityPerLevel,
-    gpProductionRate: b.gpProductionRate,
+    gpProductionRate: b.gpProductionRate, icon: b.icon, colorHex: b.colorHex,
   };
 }
 
@@ -55,13 +55,15 @@ export function AdminBuildingPage() {
         <thead className="text-dim text-[11px] border-b border-outline">
           <tr>
             <th className="text-left font-medium py-2 px-2">이름</th>
+            <th className="text-left font-medium py-2 px-1 w-[48px]">아이콘</th>
+            <th className="text-left font-medium py-2 px-1 w-[70px]">색</th>
             {STAT_FIELDS.map(f => <th key={f.key} className="text-left font-medium py-2 px-1 w-[68px]">{f.label}</th>)}
             <th className="text-right font-medium py-2 px-2 w-24"></th>
           </tr>
         </thead>
         <tbody>
           {items.map(b => <Row key={b.buildingTypeId} item={b} onDone={onDone} onError={setError} />)}
-          {items.length === 0 && <tr><td colSpan={11} className="py-8 text-center text-muted">건물이 없습니다.</td></tr>}
+          {items.length === 0 && <tr><td colSpan={13} className="py-8 text-center text-muted">건물이 없습니다.</td></tr>}
         </tbody>
       </table>
 
@@ -101,7 +103,15 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
 
   return (
     <tr className="border-b border-outline-soft">
-      <td className="py-1.5 px-2 font-semibold">{item.name}</td>
+      <td className="py-1.5 px-2 font-semibold">
+        <span className="mr-1">{form.icon || item.icon || '🏗'}</span>{item.name}
+      </td>
+      <td className="py-1.5 px-1">
+        <input value={form.icon ?? ''} placeholder="🏗" onChange={e => setForm(f => ({ ...f, icon: e.target.value || null }))} className={input} />
+      </td>
+      <td className="py-1.5 px-1">
+        <input value={form.colorHex ?? ''} placeholder="#rrggbb" onChange={e => setForm(f => ({ ...f, colorHex: e.target.value || null }))} className={input} />
+      </td>
       {STAT_FIELDS.map(f => (
         <td key={f.key} className="py-1.5 px-1">
           <input type="number" value={form[f.key] ?? ''} placeholder={f.nullable ? '-' : '0'}
@@ -117,7 +127,7 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
 }
 
 function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError: (m: string) => void }) {
-  const empty: BuildingTypeForm = { name: '', width: 1, height: 1, maxHp: 100, baseCostGp: 1000, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null };
+  const empty: BuildingTypeForm = { name: '', width: 1, height: 1, maxHp: 100, baseCostGp: 1000, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, icon: null, colorHex: null };
   const [form, setForm] = useState<BuildingTypeForm>(empty);
   const [busy, setBusy] = useState(false);
   const set = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
@@ -136,6 +146,12 @@ function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError:
     <div className="flex flex-wrap items-end gap-2">
       <label className="text-[11px] text-dim">이름
         <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="예: LIGHTHOUSE" className={`${input} w-32 mt-0.5`} />
+      </label>
+      <label className="text-[11px] text-dim">아이콘
+        <input value={form.icon ?? ''} onChange={e => setForm(f => ({ ...f, icon: e.target.value || null }))} placeholder="🏗" className={`${input} w-12 mt-0.5`} />
+      </label>
+      <label className="text-[11px] text-dim">색
+        <input value={form.colorHex ?? ''} onChange={e => setForm(f => ({ ...f, colorHex: e.target.value || null }))} placeholder="#rrggbb" className={`${input} w-20 mt-0.5`} />
       </label>
       {STAT_FIELDS.map(f => (
         <label key={f.key} className="text-[11px] text-dim">{f.label}

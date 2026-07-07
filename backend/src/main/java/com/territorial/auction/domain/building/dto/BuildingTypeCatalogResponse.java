@@ -16,7 +16,9 @@ public record BuildingTypeCatalogResponse(List<BuildingTypeInfo> buildingTypes) 
             Integer defensePower,
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
-            Integer gpProductionRate) {
+            Integer gpProductionRate,
+            String icon,
+            String colorHex) {
 
         public static BuildingTypeInfo from(BuildingType t) {
             return new BuildingTypeInfo(
@@ -30,7 +32,9 @@ public record BuildingTypeCatalogResponse(List<BuildingTypeInfo> buildingTypes) 
                     t.getDefensePower(),
                     t.getFoodProductionRate(),
                     t.getUnitCapacityPerLevel(),
-                    t.getGpProductionRate());
+                    t.getGpProductionRate(),
+                    t.getIcon(),
+                    t.getColorHex());
         }
     }
 
