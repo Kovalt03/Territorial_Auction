@@ -8,6 +8,8 @@ public record BuildingTypeCatalogResponse(List<BuildingTypeInfo> buildingTypes) 
     public record BuildingTypeInfo(
             Long buildingTypeId,
             String name,
+            String displayName,
+            String category,
             int width,
             int height,
             int maxHp,
@@ -24,6 +26,8 @@ public record BuildingTypeCatalogResponse(List<BuildingTypeInfo> buildingTypes) 
             return new BuildingTypeInfo(
                     t.getId(),
                     t.getName(),
+                    t.getDisplayName(),
+                    t.getCategory() != null ? t.getCategory().name() : null,
                     t.getWidth(),
                     t.getHeight(),
                     t.getMaxHp(),

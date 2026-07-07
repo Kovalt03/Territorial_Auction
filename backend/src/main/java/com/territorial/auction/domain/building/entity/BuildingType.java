@@ -14,8 +14,14 @@ public class BuildingType {
     private Long id;
 
     @Column(nullable = false, length = 30)
-    private String
-            name; // CASTLE / STORAGE / WORKSHOP / BARRACKS / WALL / TOWER / FARMLAND / RESIDENCE
+    private String name; // 영문 코드(서버 식별자). CASTLE / WORKSHOP / FARMLAND / RESIDENCE / STORAGE ...
+
+    @Column(length = 30)
+    private String displayName; // 한글 표시명 (사용자 노출). NULL이면 프론트 기본 매핑 사용
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private BuildingCategory category; // FUNCTIONAL(기능) / DECORATIVE(장식)
 
     @Column(nullable = false)
     private Integer width;
@@ -55,8 +61,15 @@ public class BuildingType {
         this.gpProductionRate = rate;
     }
 
-    // 관리자 편집: 이름을 제외한 모든 속성 갱신(이름은 게임 로직 식별자라 변경 불가).
+    // 기존 시드 데이터 백필: 비어 있는 분류·한글명만 채운다.
+    public void backfillMeta(BuildingCategory category, String displayName) {
+        if (this.category == null) this.category = category;
+        if (this.displayName == null) this.displayName = displayName;
+    }
+
+    // 관리자 편집: 이름(코드)·분류를 제외한 속성 갱신. 이름은 서버 식별자라 변경 불가.
     public void update(
+            String displayName,
             Integer width,
             Integer height,
             Integer maxHp,
@@ -68,6 +81,7 @@ public class BuildingType {
             Integer gpProductionRate,
             String icon,
             String colorHex) {
+        this.displayName = displayName;
         this.width = width;
         this.height = height;
         this.maxHp = maxHp;
@@ -84,6 +98,8 @@ public class BuildingType {
     @Builder
     public BuildingType(
             String name,
+            String displayName,
+            BuildingCategory category,
             Integer width,
             Integer height,
             Integer maxHp,
@@ -96,6 +112,8 @@ public class BuildingType {
             String icon,
             String colorHex) {
         this.name = name;
+        this.displayName = displayName;
+        this.category = category != null ? category : BuildingCategory.of(name);
         this.width = width;
         this.height = height;
         this.maxHp = maxHp;
