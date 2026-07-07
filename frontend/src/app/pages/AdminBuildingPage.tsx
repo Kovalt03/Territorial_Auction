@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 
 import {
   fetchAdminBuildingTypes, createBuildingType, updateBuildingType, deleteBuildingType,
@@ -68,7 +68,20 @@ export function AdminBuildingPage() {
           </tr>
         </thead>
         <tbody>
-          {items.map(b => <Row key={b.buildingTypeId} item={b} onDone={onDone} onError={setError} />)}
+          {(['FUNCTIONAL', 'DECORATIVE'] as const).map(cat => {
+            const group = items.filter(b => (cat === 'DECORATIVE' ? b.category === 'DECORATIVE' : b.category !== 'DECORATIVE'));
+            if (group.length === 0) return null;
+            return (
+              <Fragment key={cat}>
+                <tr className="bg-panel-deep">
+                  <td colSpan={15} className={`py-1.5 px-2 text-[11px] font-bold ${cat === 'DECORATIVE' ? 'text-gp' : 'text-primary'}`}>
+                    {cat === 'DECORATIVE' ? '🎨 장식 건물' : '⚙ 기능 건물'} <span className="text-dim font-normal">({group.length})</span>
+                  </td>
+                </tr>
+                {group.map(b => <Row key={b.buildingTypeId} item={b} onDone={onDone} onError={setError} />)}
+              </Fragment>
+            );
+          })}
           {items.length === 0 && <tr><td colSpan={15} className="py-8 text-center text-muted">건물이 없습니다.</td></tr>}
         </tbody>
       </table>
@@ -133,7 +146,9 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
       ))}
       <td className="py-1.5 px-2 text-right whitespace-nowrap">
         <button onClick={() => void save()} disabled={busy || !dirty} className="text-primary font-bold hover:brightness-125 disabled:opacity-30 mr-2">저장</button>
-        <button onClick={() => void remove()} disabled={busy} className="text-danger font-bold hover:brightness-125 disabled:opacity-40">삭제</button>
+        {isDecorative
+          ? <button onClick={() => void remove()} disabled={busy} className="text-danger font-bold hover:brightness-125 disabled:opacity-40">삭제</button>
+          : <span className="text-dim text-[10px]">기능 건물</span>}
       </td>
     </tr>
   );
