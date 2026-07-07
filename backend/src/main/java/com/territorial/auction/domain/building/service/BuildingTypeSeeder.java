@@ -36,6 +36,7 @@ public class BuildingTypeSeeder implements ApplicationRunner {
         if (buildingTypeRepository.count() > 0) {
             log.info("building_types 이미 존재 — 건너뜀");
             patchCastleGpProductionRate();
+            backfillCategoryAndDisplayName();
             placeDefaultCastleOnExistingIslands();
             migrateIslandGradeAndSize();
             return;
@@ -44,7 +45,31 @@ public class BuildingTypeSeeder implements ApplicationRunner {
         List<Map<String, Object>> rows = loadRows();
         List<BuildingType> types = rows.stream().map(this::toEntity).toList();
         buildingTypeRepository.saveAll(types);
+        backfillCategoryAndDisplayName();
         log.info("building_types 시드 완료. 건수={}", types.size());
+    }
+
+    private static final Map<String, String> KOREAN_NAMES =
+            Map.of(
+                    "CASTLE", "성",
+                    "WORKSHOP", "생산소",
+                    "BARRACKS", "병영",
+                    "STORAGE", "저장소",
+                    "WALL", "방벽",
+                    "TOWER", "방어탑",
+                    "FARMLAND", "농지",
+                    "RESIDENCE", "주거지");
+
+    // 기존 건물의 분류(name 기반)·한글 표시명을 채운다. 이미 값이 있으면 유지.
+    private void backfillCategoryAndDisplayName() {
+        buildingTypeRepository
+                .findAll()
+                .forEach(
+                        t ->
+                                t.backfillMeta(
+                                        com.territorial.auction.domain.building.entity
+                                                .BuildingCategory.of(t.getName()),
+                                        KOREAN_NAMES.get(t.getName())));
     }
 
     private void patchCastleGpProductionRate() {
