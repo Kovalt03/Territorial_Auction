@@ -120,7 +120,7 @@ public class BuildingService {
 
         int cost =
                 BuildingPolicy.upgradeCost(
-                        building.getBuildingType().getBaseCostGp(), building.getLevel());
+                        building.getBuildingType().getUpgradeCostBase(), building.getLevel());
         Wallet wallet = findWalletOrThrow(userId);
         validateGp(wallet, cost);
 
