@@ -67,7 +67,7 @@ export function IslandBuildModal({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[13px] text-foreground">
-                    {buildingNames[type] ?? b.name} <span className="text-muted font-normal text-[11px]">{b.width}×{b.height} · HP {b.maxHp}</span>
+                    {b.displayName ?? buildingNames[type] ?? b.name} <span className="text-muted font-normal text-[11px]">{b.width}×{b.height} · HP {b.maxHp}</span>
                   </p>
                   <p className="text-muted text-[11px] truncate">{statLine(b) || '기능 없음'}</p>
                 </div>

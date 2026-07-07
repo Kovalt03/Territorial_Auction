@@ -43,6 +43,7 @@ export function PersonalIslandPage() {
   const catalogByType = new Map(catalog.map(c => [c.name.toLowerCase(), c]));
   const iconFor = (t: BuildingType) => catalogByType.get(t)?.icon ?? buildingLabels[t] ?? '🏗';
   const colorFor = (t: BuildingType) => catalogByType.get(t)?.colorHex ?? buildingColors[t] ?? '#8892b0';
+  const nameFor = (t: BuildingType) => catalogByType.get(t)?.displayName ?? buildingNames[t] ?? t;
   const [buildError, setBuildError] = useState('');
   const [showZones, setShowZones] = useState(true);
   const [activeTab, setActiveTab] = useState<'buildings' | 'resources' | 'units' | 'expand'>('buildings');
@@ -456,7 +457,7 @@ export function PersonalIslandPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-muted text-[10px]">
-                {selectedCell ? `선택: (${selectedCell.x}, ${selectedCell.y}) - ${buildingNames[selectedCellData?.type || 'empty']}` : '셀을 클릭하여 선택'}
+                {selectedCell ? `선택: (${selectedCell.x}, ${selectedCell.y}) - ${nameFor(selectedCellData?.type || 'empty')}` : '셀을 클릭하여 선택'}
               </span>
               <button onClick={() => setZoom(z => Math.min(5, z * 1.2))} className="w-6 h-6 bg-outline-soft border border-outline rounded text-muted hover:text-white text-xs flex items-center justify-center">+</button>
               <button onClick={() => setZoom(z => Math.max(0.3, z / 1.2))} className="w-6 h-6 bg-outline-soft border border-outline rounded text-muted hover:text-white text-xs flex items-center justify-center">−</button>
@@ -554,7 +555,7 @@ export function PersonalIslandPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs" style={{ color: b.color }}>{buildingNames[b.type]}</span>
+                          <span className="text-xs" style={{ color: b.color }}>{nameFor(b.type)}</span>
                           <span className="text-muted text-[10px]">×{count}</span>
                         </div>
                         <p className="text-muted text-[10px]">{b.gp}</p>
