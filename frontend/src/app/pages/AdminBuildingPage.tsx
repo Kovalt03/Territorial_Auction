@@ -8,11 +8,18 @@ import { ApiError } from '../api/client';
 
 import type { BuildingTypeInfo } from '../types/island';
 
-const STAT_FIELDS: { key: keyof BuildingTypeForm; label: string; nullable?: boolean; production?: boolean }[] = [
+type Field = { key: keyof BuildingTypeForm; label: string; nullable?: boolean; production?: boolean };
+
+// 컴팩트 행에 항상 보이는 필드
+const MAIN_FIELDS: Field[] = [
+  { key: 'maxHp', label: 'HP' },
+  { key: 'baseCostGp', label: '건설비용' },
+];
+// 상세 토글에서만 보이는 필드
+const DETAIL_FIELDS: Field[] = [
+  { key: 'upgradeCostGp', label: '업글비용', nullable: true },
   { key: 'width', label: '너비' },
   { key: 'height', label: '높이' },
-  { key: 'maxHp', label: 'HP' },
-  { key: 'baseCostGp', label: '비용(GP)' },
   { key: 'zoneRestriction', label: 'Zone제한', nullable: true },
   { key: 'defensePower', label: '방어력', nullable: true },
   { key: 'foodProductionRate', label: '식량/시간', nullable: true, production: true },
@@ -24,11 +31,13 @@ function toForm(b: BuildingTypeInfo): BuildingTypeForm {
   return {
     displayName: b.displayName,
     width: b.width, height: b.height, maxHp: b.maxHp, baseCostGp: b.baseCostGp,
-    zoneRestriction: b.zoneRestriction, defensePower: b.defensePower,
+    upgradeCostGp: b.upgradeCostGp, zoneRestriction: b.zoneRestriction, defensePower: b.defensePower,
     foodProductionRate: b.foodProductionRate, unitCapacityPerLevel: b.unitCapacityPerLevel,
     gpProductionRate: b.gpProductionRate, icon: b.icon, colorHex: b.colorHex,
   };
 }
+
+const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-foreground text-[11px] outline-none focus:border-primary';
 
 export function AdminBuildingPage() {
   const [items, setItems] = useState<BuildingTypeInfo[]>([]);
@@ -47,10 +56,9 @@ export function AdminBuildingPage() {
   return (
     <div className="h-full overflow-auto p-6">
       <h2 className="font-bold text-base mb-1">건물 관리</h2>
-      <p className="text-muted text-xs mb-1">이름(영문 코드)은 서버 식별자라 변경 불가. 표시명(한글)이 사용자에게 노출됩니다.</p>
       <p className="text-muted text-[11px] mb-4">
-        <span className="text-primary font-semibold">기능</span> 건물(성·생산소·병영·저장소·농지·주거지)은 코드로 기능이 연결돼 스탯·표시명만 수정 가능 ·
-        <span className="text-gp font-semibold"> 장식</span> 건물은 자유 생성(HP·방어력만 유효, 생산은 없음)
+        <span className="text-primary font-semibold">기능</span> 건물은 스탯·표시명만 수정 ·
+        <span className="text-gp font-semibold"> 장식</span> 건물은 자유 생성(HP·방어력만 유효) · 상세 설정은 <b>상세</b> 토글로 펼칩니다.
       </p>
 
       {error && <p className="text-danger text-xs mb-3">⚠ {error}</p>}
@@ -60,11 +68,9 @@ export function AdminBuildingPage() {
         <thead className="text-dim text-[11px] border-b border-outline">
           <tr>
             <th className="text-left font-medium py-2 px-2">코드 / 분류</th>
-            <th className="text-left font-medium py-2 px-1 w-[90px]">표시명</th>
-            <th className="text-left font-medium py-2 px-1 w-[48px]">아이콘</th>
-            <th className="text-left font-medium py-2 px-1 w-[70px]">색</th>
-            {STAT_FIELDS.map(f => <th key={f.key} className="text-left font-medium py-2 px-1 w-[68px]">{f.label}</th>)}
-            <th className="text-right font-medium py-2 px-2 w-24"></th>
+            <th className="text-left font-medium py-2 px-1 w-[110px]">표시명</th>
+            {MAIN_FIELDS.map(f => <th key={f.key} className="text-left font-medium py-2 px-1 w-[80px]">{f.label}</th>)}
+            <th className="text-right font-medium py-2 px-2 w-40"></th>
           </tr>
         </thead>
         <tbody>
@@ -74,7 +80,7 @@ export function AdminBuildingPage() {
             return (
               <Fragment key={cat}>
                 <tr className="bg-panel-deep">
-                  <td colSpan={15} className={`py-1.5 px-2 text-[11px] font-bold ${cat === 'DECORATIVE' ? 'text-gp' : 'text-primary'}`}>
+                  <td colSpan={5} className={`py-1.5 px-2 text-[11px] font-bold ${cat === 'DECORATIVE' ? 'text-gp' : 'text-primary'}`}>
                     {cat === 'DECORATIVE' ? '🎨 장식 건물' : '⚙ 기능 건물'} <span className="text-dim font-normal">({group.length})</span>
                   </td>
                 </tr>
@@ -82,7 +88,7 @@ export function AdminBuildingPage() {
               </Fragment>
             );
           })}
-          {items.length === 0 && <tr><td colSpan={15} className="py-8 text-center text-muted">건물이 없습니다.</td></tr>}
+          {items.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-muted">건물이 없습니다.</td></tr>}
         </tbody>
       </table>
 
@@ -94,14 +100,14 @@ export function AdminBuildingPage() {
   );
 }
 
-const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-foreground text-[11px] outline-none focus:border-primary';
-
 function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: string) => void; onError: (m: string) => void }) {
   const [form, setForm] = useState<BuildingTypeForm>(toForm(item));
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
   const dirty = JSON.stringify(form) !== JSON.stringify(toForm(item));
+  const isDecorative = item.category === 'DECORATIVE';
 
-  const set = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
+  const setNum = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
     setForm(f => ({ ...f, [k]: v.trim() === '' ? (nullable ? null : 0) : Number(v) }));
 
   const save = async () => {
@@ -120,50 +126,68 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
     finally { setBusy(false); }
   };
 
-  const isDecorative = item.category === 'DECORATIVE';
   return (
-    <tr className="border-b border-outline-soft">
-      <td className="py-1.5 px-2 font-semibold whitespace-nowrap">
-        <span className="mr-1">{form.icon || item.icon || '🏗'}</span>{item.name}
-        <span className={`ml-1.5 text-[9px] font-bold ${isDecorative ? 'text-gp' : 'text-primary'}`}>{isDecorative ? '장식' : '기능'}</span>
-      </td>
-      <td className="py-1.5 px-1">
-        <input value={form.displayName ?? ''} placeholder="한글명" onChange={e => setForm(f => ({ ...f, displayName: e.target.value || null }))} className={input} />
-      </td>
-      <td className="py-1.5 px-1">
-        <input value={form.icon ?? ''} placeholder="🏗" onChange={e => setForm(f => ({ ...f, icon: e.target.value || null }))} className={input} />
-      </td>
-      <td className="py-1.5 px-1">
-        <input value={form.colorHex ?? ''} placeholder="#rrggbb" onChange={e => setForm(f => ({ ...f, colorHex: e.target.value || null }))} className={input} />
-      </td>
-      {STAT_FIELDS.map(f => (
-        <td key={f.key} className="py-1.5 px-1">
-          {isDecorative && f.production
-            ? <span className="text-dim text-[11px] pl-1">—</span>
-            : <input type="number" value={form[f.key] ?? ''} placeholder={f.nullable ? '-' : '0'}
-                onChange={e => set(f.key, e.target.value, f.nullable)} className={input} />}
+    <>
+      <tr className="border-b border-outline-soft">
+        <td className="py-1.5 px-2 font-semibold whitespace-nowrap">
+          <span className="mr-1">{form.icon || item.icon || '🏗'}</span>{item.name}
+          <span className={`ml-1.5 text-[9px] font-bold ${isDecorative ? 'text-gp' : 'text-primary'}`}>{isDecorative ? '장식' : '기능'}</span>
         </td>
-      ))}
-      <td className="py-1.5 px-2 text-right whitespace-nowrap">
-        <button onClick={() => void save()} disabled={busy || !dirty} className="text-primary font-bold hover:brightness-125 disabled:opacity-30 mr-2">저장</button>
-        {isDecorative
-          ? <button onClick={() => void remove()} disabled={busy} className="text-danger font-bold hover:brightness-125 disabled:opacity-40">삭제</button>
-          : <span className="text-dim text-[10px]">기능 건물</span>}
-      </td>
-    </tr>
+        <td className="py-1.5 px-1">
+          <input value={form.displayName ?? ''} placeholder="한글명" onChange={e => setForm(f => ({ ...f, displayName: e.target.value || null }))} className={input} />
+        </td>
+        {MAIN_FIELDS.map(f => (
+          <td key={f.key} className="py-1.5 px-1">
+            <input type="number" value={form[f.key] ?? ''} placeholder="0" onChange={e => setNum(f.key, e.target.value, f.nullable)} className={input} />
+          </td>
+        ))}
+        <td className="py-1.5 px-2 text-right whitespace-nowrap">
+          <button onClick={() => setOpen(o => !o)} className="text-dim hover:text-foreground-soft mr-2">{open ? '상세 ▾' : '상세 ▸'}</button>
+          <button onClick={() => void save()} disabled={busy || !dirty} className="text-primary font-bold hover:brightness-125 disabled:opacity-30 mr-2">저장</button>
+          {isDecorative
+            ? <button onClick={() => void remove()} disabled={busy} className="text-danger font-bold hover:brightness-125 disabled:opacity-40">삭제</button>
+            : <span className="text-dim text-[10px]">기능</span>}
+        </td>
+      </tr>
+      {open && (
+        <tr className="bg-surface border-b border-outline-soft">
+          <td colSpan={5} className="py-2 px-3">
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="text-[11px] text-dim">아이콘
+                <input value={form.icon ?? ''} placeholder="🏗" onChange={e => setForm(f => ({ ...f, icon: e.target.value || null }))} className={`${input} w-12 mt-0.5`} />
+              </label>
+              <label className="text-[11px] text-dim">색
+                <input value={form.colorHex ?? ''} placeholder="#rrggbb" onChange={e => setForm(f => ({ ...f, colorHex: e.target.value || null }))} className={`${input} w-20 mt-0.5`} />
+              </label>
+              {DETAIL_FIELDS.map(f => (
+                <label key={f.key} className="text-[11px] text-dim">{f.label}
+                  {isDecorative && f.production
+                    ? <div className="h-7 flex items-center pl-1 text-dim text-[11px]">—</div>
+                    : <input type="number" value={form[f.key] ?? ''} placeholder={f.nullable ? '-' : '0'}
+                        onChange={e => setNum(f.key, e.target.value, f.nullable)} className={`${input} w-[70px] mt-0.5`} />}
+                </label>
+              ))}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
 function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError: (m: string) => void }) {
-  const empty: BuildingTypeForm = { name: '', displayName: null, width: 1, height: 1, maxHp: 100, baseCostGp: 1000, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, icon: null, colorHex: null };
+  const empty: BuildingTypeForm = { name: '', displayName: null, width: 1, height: 1, maxHp: 100, baseCostGp: 1000, upgradeCostGp: null, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, icon: null, colorHex: null };
   const [form, setForm] = useState<BuildingTypeForm>(empty);
   const [busy, setBusy] = useState(false);
-  const set = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
+  const setNum = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
     setForm(f => ({ ...f, [k]: v.trim() === '' ? (nullable ? null : 0) : Number(v) }));
+
+  // 생성은 장식 전용 — 생산 필드는 제외
+  const CREATE_FIELDS = [...MAIN_FIELDS, ...DETAIL_FIELDS.filter(f => !f.production)];
 
   const create = async () => {
     if (busy) return;
-    if (!form.name?.trim()) { onError('건물 이름을 입력하세요.'); return; }
+    if (!form.name?.trim()) { onError('건물 코드를 입력하세요.'); return; }
     setBusy(true);
     try { await createBuildingType(form); onDone(`${form.name.toUpperCase()} 생성됨`); setForm(empty); }
     catch (e) { onError(e instanceof ApiError ? e.message : '생성 실패'); }
@@ -172,7 +196,7 @@ function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError:
 
   return (
     <div>
-      <p className="text-muted text-[11px] mb-2">장식 건물만 추가할 수 있습니다. (기능은 코드 매칭이라 신규 생성 불가) · HP·방어력만 유효</p>
+      <p className="text-muted text-[11px] mb-2">장식 건물만 추가 가능(기능은 코드 매칭이라 신규 생성 불가) · HP·방어력만 유효</p>
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-[11px] text-dim">코드(영문)
           <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="예: STATUE" className={`${input} w-28 mt-0.5`} />
@@ -186,10 +210,10 @@ function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError:
         <label className="text-[11px] text-dim">색
           <input value={form.colorHex ?? ''} onChange={e => setForm(f => ({ ...f, colorHex: e.target.value || null }))} placeholder="#rrggbb" className={`${input} w-20 mt-0.5`} />
         </label>
-        {STAT_FIELDS.filter(f => !f.production).map(f => (
+        {CREATE_FIELDS.map(f => (
           <label key={f.key} className="text-[11px] text-dim">{f.label}
             <input type="number" value={form[f.key] ?? ''} placeholder={f.nullable ? '-' : '0'}
-              onChange={e => set(f.key, e.target.value, f.nullable)} className={`${input} w-[68px] mt-0.5`} />
+              onChange={e => setNum(f.key, e.target.value, f.nullable)} className={`${input} w-[70px] mt-0.5`} />
           </label>
         ))}
         <button onClick={() => void create()} disabled={busy} className="h-8 px-4 rounded-md bg-primary text-surface text-xs font-bold hover:brightness-110 disabled:opacity-40">추가</button>
