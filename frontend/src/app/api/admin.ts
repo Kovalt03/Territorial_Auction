@@ -296,6 +296,7 @@ export function updateAnnouncement(active: boolean, message: string) {
 
 export interface BuildingTypeForm {
   name?: string;
+  displayName: string | null;
   width: number;
   height: number;
   maxHp: number;

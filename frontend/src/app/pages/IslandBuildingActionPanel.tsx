@@ -42,7 +42,7 @@ export function IslandBuildingActionPanel({
         >
           <div>
             <h3 className="font-bold text-lg" style={{ color }}>
-              {buildingNames[cellData.type]}
+              {info?.displayName ?? buildingNames[cellData.type]}
             </h3>
             <p className="text-muted text-xs">
               위치: ({selectedCell.x}, {selectedCell.y}) · Zone {cellData.zone} · Lv.{cellData.level}

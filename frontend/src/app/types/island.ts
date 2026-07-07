@@ -67,6 +67,8 @@ export interface PlaceFromInventoryResponse {
 export interface BuildingTypeInfo {
   buildingTypeId: number;
   name: string;
+  displayName: string | null;
+  category: 'FUNCTIONAL' | 'DECORATIVE' | null;
   width: number;
   height: number;
   maxHp: number;

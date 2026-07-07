@@ -6,6 +6,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 
 // 이름은 게임 로직 식별자라 변경 불가 — 스탯만 수정.
 public record AdminUpdateBuildingTypeRequest(
+        String displayName,
         @NotNull @Positive Integer width,
         @NotNull @Positive Integer height,
         @NotNull @Positive Integer maxHp,

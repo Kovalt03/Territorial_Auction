@@ -43,6 +43,15 @@ export function PersonalIslandPage() {
   const catalogByType = new Map(catalog.map(c => [c.name.toLowerCase(), c]));
   const iconFor = (t: BuildingType) => catalogByType.get(t)?.icon ?? buildingLabels[t] ?? '🏗';
   const colorFor = (t: BuildingType) => catalogByType.get(t)?.colorHex ?? buildingColors[t] ?? '#8892b0';
+  const nameFor = (t: BuildingType) => catalogByType.get(t)?.displayName ?? buildingNames[t] ?? t;
+  const statDesc = (c: BuildingTypeInfo) => {
+    const parts: string[] = [];
+    if (c.gpProductionRate) parts.push(`GP +${c.gpProductionRate}/시간`);
+    if (c.foodProductionRate) parts.push(`식량 +${c.foodProductionRate}/시간`);
+    if (c.unitCapacityPerLevel) parts.push(`유닛 +${c.unitCapacityPerLevel}/레벨`);
+    if (c.defensePower) parts.push(`방어력 +${c.defensePower}`);
+    return parts.join(' · ') || '장식';
+  };
   const [buildError, setBuildError] = useState('');
   const [showZones, setShowZones] = useState(true);
   const [activeTab, setActiveTab] = useState<'buildings' | 'resources' | 'units' | 'expand'>('buildings');
@@ -337,18 +346,6 @@ export function PersonalIslandPage() {
 
   const countBuildings = (type: BuildingType) => grid.flat().filter(c => c.type === type).length;
 
-  const buildings = [
-    { type: 'castle' as BuildingType, color: '#ffd700', icon: '🏰', gp: 'GP/분 × 0' },
-    { type: 'workshop' as BuildingType, color: '#00ff88', icon: '⚙', gp: '+48/분' },
-    { type: 'barracks' as BuildingType, color: '#8b50ff', icon: '⚔', gp: '유닛 생산' },
-    { type: 'storage' as BuildingType, color: '#00f5ff', icon: '📦', gp: '최대 4,000' },
-    { type: 'tower' as BuildingType, color: '#ff8c00', icon: '🗼', gp: '방어 자동' },
-    { type: 'bank' as BuildingType, color: '#ffaa00', icon: '🏦', gp: '+22/분' },
-    { type: 'lab' as BuildingType, color: '#ff44cc', icon: '🔬', gp: '연구 중' },
-    { type: 'port' as BuildingType, color: '#44aaff', icon: '⛵', gp: '무역 +15%' },
-    { type: 'mine' as BuildingType, color: '#cc8844', icon: '⛏', gp: '+35/분' },
-  ];
-
   const CELL_SIZE = 36;
 
   return (
@@ -456,7 +453,7 @@ export function PersonalIslandPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-muted text-[10px]">
-                {selectedCell ? `선택: (${selectedCell.x}, ${selectedCell.y}) - ${buildingNames[selectedCellData?.type || 'empty']}` : '셀을 클릭하여 선택'}
+                {selectedCell ? `선택: (${selectedCell.x}, ${selectedCell.y}) - ${nameFor(selectedCellData?.type || 'empty')}` : '셀을 클릭하여 선택'}
               </span>
               <button onClick={() => setZoom(z => Math.min(5, z * 1.2))} className="w-6 h-6 bg-outline-soft border border-outline rounded text-muted hover:text-white text-xs flex items-center justify-center">+</button>
               <button onClick={() => setZoom(z => Math.max(0.3, z / 1.2))} className="w-6 h-6 bg-outline-soft border border-outline rounded text-muted hover:text-white text-xs flex items-center justify-center">−</button>
@@ -545,19 +542,21 @@ export function PersonalIslandPage() {
           <div className="flex-1 overflow-y-auto">
             {activeTab === 'buildings' && (
               <div className="p-3 space-y-2">
-                {buildings.map(b => {
-                  const count = countBuildings(b.type);
+                {catalog.map(c => {
+                  const type = c.name.toLowerCase() as BuildingType;
+                  const color = colorFor(type);
+                  const count = countBuildings(type);
                   return (
-                    <div key={b.type} className="bg-panel-deep rounded-xl p-2.5 flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: b.color + '25', border: `1px solid ${b.color}50` }}>
-                        <span className="text-base">{b.icon}</span>
+                    <div key={c.buildingTypeId} className="bg-panel-deep rounded-xl p-2.5 flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: color + '25', border: `1px solid ${color}50` }}>
+                        <span className="text-base">{iconFor(type)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs" style={{ color: b.color }}>{buildingNames[b.type]}</span>
+                          <span className="text-xs" style={{ color }}>{nameFor(type)}</span>
                           <span className="text-muted text-[10px]">×{count}</span>
                         </div>
-                        <p className="text-muted text-[10px]">{b.gp}</p>
+                        <p className="text-muted text-[10px]">{statDesc(c)}</p>
                       </div>
                     </div>
                   );

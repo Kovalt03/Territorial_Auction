@@ -64,6 +64,7 @@ class AdminBuildingServiceTest {
                         10L,
                         new AdminCreateBuildingTypeRequest(
                                 "lighthouse",
+                                null,
                                 1,
                                 1,
                                 50,
@@ -93,12 +94,67 @@ class AdminBuildingServiceTest {
                                 adminBuildingService.create(
                                         10L,
                                         new AdminCreateBuildingTypeRequest(
-                                                "castle", 2, 2, 100, 1000, null, null, null, null,
-                                                null, null, null)))
+                                                "castle", null, 2, 2, 100, 1000, null, null, null,
+                                                null, null, null, null)))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.DUPLICATE_BUILDING_TYPE_NAME);
         then(buildingTypeRepository).should(never()).save(any());
+    }
+
+    @Test
+    @DisplayName("기능 건물 코드로 생성 시도 → FUNCTIONAL_BUILDING_NOT_CREATABLE")
+    void create_functionalRejected() {
+        given(buildingTypeRepository.existsByName("WORKSHOP")).willReturn(false);
+
+        assertThatThrownBy(
+                        () ->
+                                adminBuildingService.create(
+                                        10L,
+                                        new AdminCreateBuildingTypeRequest(
+                                                "workshop",
+                                                "생산소",
+                                                2,
+                                                1,
+                                                100,
+                                                1000,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                50,
+                                                null,
+                                                null)))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.FUNCTIONAL_BUILDING_NOT_CREATABLE);
+        then(buildingTypeRepository).should(never()).save(any());
+    }
+
+    @Test
+    @DisplayName("장식 건물 생성 → 생산 필드 무효화(null)")
+    void create_decorativeNullsProduction() {
+        given(buildingTypeRepository.existsByName("STATUE")).willReturn(false);
+        given(buildingTypeRepository.save(any()))
+                .willAnswer(
+                        inv -> {
+                            BuildingType t = inv.getArgument(0);
+                            ReflectionTestUtils.setField(t, "id", 11L);
+                            return t;
+                        });
+
+        BuildingTypeInfo res =
+                adminBuildingService.create(
+                        10L,
+                        new AdminCreateBuildingTypeRequest(
+                                "statue", "동상", 1, 1, 50, 300, null, 15, 99, 99, 99, "🗽",
+                                "#cccccc"));
+
+        assertThat(res.category()).isEqualTo("DECORATIVE");
+        assertThat(res.defensePower()).isEqualTo(15);
+        assertThat(res.gpProductionRate()).isNull();
+        assertThat(res.foodProductionRate()).isNull();
+        assertThat(res.unitCapacityPerLevel()).isNull();
     }
 
     @Test
@@ -112,7 +168,7 @@ class AdminBuildingServiceTest {
                         10L,
                         3L,
                         new AdminUpdateBuildingTypeRequest(
-                                2, 1, 200, 2000, null, null, null, null, 80, null, null));
+                                null, 2, 1, 200, 2000, null, null, null, null, 80, null, null));
 
         assertThat(res.maxHp()).isEqualTo(200);
         assertThat(res.gpProductionRate()).isEqualTo(80);

@@ -4,6 +4,7 @@ import com.territorial.auction.domain.admin.dto.AdminCreateBuildingTypeRequest;
 import com.territorial.auction.domain.admin.dto.AdminUpdateBuildingTypeRequest;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse.BuildingTypeInfo;
+import com.territorial.auction.domain.building.entity.BuildingCategory;
 import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
@@ -33,19 +34,26 @@ public class AdminBuildingService {
         if (buildingTypeRepository.existsByName(name)) {
             throw new CustomException(ErrorCode.DUPLICATE_BUILDING_TYPE_NAME);
         }
+        // 기능은 백엔드가 코드로 하드코딩 매칭하므로, 신규 생성은 장식 건물만 허용한다.
+        if (BuildingCategory.FUNCTIONAL_CODES.contains(name)) {
+            throw new CustomException(ErrorCode.FUNCTIONAL_BUILDING_NOT_CREATABLE);
+        }
         BuildingType saved =
                 buildingTypeRepository.save(
                         BuildingType.builder()
                                 .name(name)
+                                .displayName(blankToNull(request.displayName()))
+                                .category(BuildingCategory.DECORATIVE)
                                 .width(request.width())
                                 .height(request.height())
                                 .maxHp(request.maxHp())
                                 .baseCostGp(request.baseCostGp())
                                 .zoneRestriction(request.zoneRestriction())
                                 .defensePower(request.defensePower())
-                                .foodProductionRate(request.foodProductionRate())
-                                .unitCapacityPerLevel(request.unitCapacityPerLevel())
-                                .gpProductionRate(request.gpProductionRate())
+                                // 장식 건물은 생산 기능이 없다(이름 기반 로직이 없음).
+                                .foodProductionRate(null)
+                                .unitCapacityPerLevel(null)
+                                .gpProductionRate(null)
                                 .icon(blankToNull(request.icon()))
                                 .colorHex(blankToNull(request.colorHex()))
                                 .build());
@@ -63,16 +71,19 @@ public class AdminBuildingService {
     public BuildingTypeInfo update(
             Long adminUserId, Long buildingTypeId, AdminUpdateBuildingTypeRequest request) {
         BuildingType type = findOrThrow(buildingTypeId);
+        boolean isDecorative = type.getCategory() == BuildingCategory.DECORATIVE;
         type.update(
+                blankToNull(request.displayName()),
                 request.width(),
                 request.height(),
                 request.maxHp(),
                 request.baseCostGp(),
                 request.zoneRestriction(),
                 request.defensePower(),
-                request.foodProductionRate(),
-                request.unitCapacityPerLevel(),
-                request.gpProductionRate(),
+                // 장식 건물은 생산 필드를 강제로 비운다(기능이 없으므로).
+                isDecorative ? null : request.foodProductionRate(),
+                isDecorative ? null : request.unitCapacityPerLevel(),
+                isDecorative ? null : request.gpProductionRate(),
                 blankToNull(request.icon()),
                 blankToNull(request.colorHex()));
 

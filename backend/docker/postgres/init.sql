@@ -277,7 +277,9 @@ CREATE TABLE IF NOT EXISTS building_types (
     unit_capacity_per_level INTEGER,
     gp_production_rate     INTEGER,
     icon                   VARCHAR(10),
-    color_hex             VARCHAR(7)
+    color_hex             VARCHAR(7),
+    display_name           VARCHAR(30),
+    category               VARCHAR(20)
 );
 
 -- building_instances
