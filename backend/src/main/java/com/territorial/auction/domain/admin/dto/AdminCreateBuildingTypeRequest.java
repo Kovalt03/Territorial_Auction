@@ -12,6 +12,7 @@ public record AdminCreateBuildingTypeRequest(
         @NotNull @Positive Integer height,
         @NotNull @Positive Integer maxHp,
         @NotNull @PositiveOrZero Integer baseCostGp,
+        @PositiveOrZero Integer upgradeCostGp,
         Integer zoneRestriction,
         Integer defensePower,
         Integer foodProductionRate,
