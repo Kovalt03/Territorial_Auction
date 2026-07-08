@@ -9,6 +9,14 @@ export function fetchBuildingTypes(): Promise<BuildingTypeInfo[]> {
   return apiClient.get<{ buildingTypes: BuildingTypeInfo[] }>('/building-types').then(r => r.buildingTypes);
 }
 
+export function fetchDecorationShop(): Promise<BuildingTypeInfo[]> {
+  return apiClient.get<{ buildingTypes: BuildingTypeInfo[] }>('/building-shop').then(r => r.buildingTypes);
+}
+
+export function purchaseDecoration(buildingTypeId: number) {
+  return apiClient.post<{ inventoryId: number; buildingType: string; displayName: string | null; apRemaining: number }>(`/building-shop/${buildingTypeId}/purchase`, {});
+}
+
 export function placeIslandBuilding(buildingTypeId: number, posX: number, posY: number) {
   return apiClient.post<PlaceIslandBuildingResponse>('/island/buildings', { buildingTypeId, posX, posY });
 }

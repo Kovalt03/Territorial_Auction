@@ -15,12 +15,13 @@ const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-
 const UPGRADE_LEVELS = [2, 3];
 
 // 정적 속성(레벨과 무관, 메인 행에서 편집)
-const ATTR_FIELDS: { key: keyof BuildingTypeForm; label: string; w: string; nullable?: boolean; text?: boolean }[] = [
+const ATTR_FIELDS: { key: keyof BuildingTypeForm; label: string; w: string; nullable?: boolean; text?: boolean; decorativeOnly?: boolean }[] = [
   { key: 'icon', label: '아이콘', w: 'w-12', nullable: true, text: true },
   { key: 'colorHex', label: '색', w: 'w-20', nullable: true, text: true },
   { key: 'width', label: '너비', w: 'w-12' },
   { key: 'height', label: '높이', w: 'w-12' },
   { key: 'zoneRestriction', label: 'Zone', w: 'w-14', nullable: true },
+  { key: 'apCost', label: 'AP상점가', w: 'w-16', nullable: true, decorativeOnly: true },
 ];
 
 // 레벨별 값. baseKey=Lv1(건물 기본값), specKey=Lv2·Lv3(레벨 지정값)
@@ -38,7 +39,7 @@ function toForm(b: BuildingTypeInfo): BuildingTypeForm {
   return {
     displayName: b.displayName,
     width: b.width, height: b.height, maxHp: b.maxHp, baseCostGp: b.baseCostGp,
-    upgradeCostGp: b.upgradeCostGp, zoneRestriction: b.zoneRestriction, defensePower: b.defensePower,
+    upgradeCostGp: b.upgradeCostGp, apCost: b.apCost, zoneRestriction: b.zoneRestriction, defensePower: b.defensePower,
     foodProductionRate: b.foodProductionRate, unitCapacityPerLevel: b.unitCapacityPerLevel,
     gpProductionRate: b.gpProductionRate, icon: b.icon, colorHex: b.colorHex,
   };
@@ -180,8 +181,10 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
         </td>
         {ATTR_FIELDS.map(f => (
           <td key={f.key} className="py-1.5 px-1">
-            <input type={f.text ? 'text' : 'number'} value={form[f.key] ?? ''} placeholder={f.text ? (f.key === 'colorHex' ? '#rgb' : '🏗') : f.nullable ? '-' : '0'}
-              onChange={e => setAttr(f.key, e.target.value, f.text, f.nullable)} className={`${input} ${f.w}`} />
+            {f.decorativeOnly && !isDecorative
+              ? <span className="text-dim text-[11px] pl-1">—</span>
+              : <input type={f.text ? 'text' : 'number'} value={form[f.key] ?? ''} placeholder={f.text ? (f.key === 'colorHex' ? '#rgb' : '🏗') : f.nullable ? '-' : '0'}
+                  onChange={e => setAttr(f.key, e.target.value, f.text, f.nullable)} className={`${input} ${f.w}`} />}
           </td>
         ))}
         <td className="py-1.5 px-2 text-right whitespace-nowrap">
@@ -231,7 +234,7 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
 }
 
 function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError: (m: string) => void }) {
-  const empty: BuildingTypeForm = { name: '', displayName: null, width: 1, height: 1, maxHp: 100, baseCostGp: 1000, upgradeCostGp: null, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, icon: null, colorHex: null };
+  const empty: BuildingTypeForm = { name: '', displayName: null, width: 1, height: 1, maxHp: 100, baseCostGp: 1000, upgradeCostGp: null, apCost: null, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, icon: null, colorHex: null };
   const [form, setForm] = useState<BuildingTypeForm>(empty);
   const [busy, setBusy] = useState(false);
   const setNum = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
@@ -241,6 +244,7 @@ function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError:
     { key: 'width', label: '너비' }, { key: 'height', label: '높이' },
     { key: 'maxHp', label: 'HP' }, { key: 'baseCostGp', label: '건설비용' },
     { key: 'zoneRestriction', label: 'Zone제한', nullable: true }, { key: 'defensePower', label: '방어력', nullable: true },
+    { key: 'apCost', label: 'AP상점가', nullable: true },
   ];
 
   const create = async () => {

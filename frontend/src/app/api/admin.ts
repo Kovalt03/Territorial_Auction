@@ -302,6 +302,7 @@ export interface BuildingTypeForm {
   maxHp: number;
   baseCostGp: number;
   upgradeCostGp: number | null;
+  apCost: number | null;
   zoneRestriction: number | null;
   defensePower: number | null;
   foodProductionRate: number | null;

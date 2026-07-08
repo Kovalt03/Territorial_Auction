@@ -20,10 +20,11 @@ import { IslandBuildModal } from './IslandBuildModal';
 import { IslandBuildingActionPanel } from './IslandBuildingActionPanel';
 import { IslandTrainUnitModal } from './IslandTrainUnitModal';
 import { IslandInventoryModal } from './IslandInventoryModal';
+import { IslandDecorationShopModal } from './IslandDecorationShopModal';
 
 export function PersonalIslandPage() {
   const navigate = useNavigate();
-  const { ap, gp, username, syncGP } = useApp();
+  const { ap, gp, username, syncGP, syncAP } = useApp();
   const { island, reload: reloadIsland } = useIsland();
   const { data: militaryData, isLoading: isMilitaryLoading, reload: reloadMilitary } = useMilitary();
   const gridSize = island?.gridSize ?? 10;
@@ -66,6 +67,7 @@ export function PersonalIslandPage() {
   // Inventory (서버 보관함)
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [showInventory, setShowInventory] = useState(false);
+  const [showShop, setShowShop] = useState(false);
   const [deployFromInventoryIdx, setDeployFromInventoryIdx] = useState<number | null>(null);
 
   // 유닛 훈련 모달
@@ -661,6 +663,10 @@ export function PersonalIslandPage() {
               )}
             </button>
             <button
+              onClick={() => setShowShop(true)}
+              className="w-full h-9 border border-gold text-gold rounded-xl text-xs transition-colors hover:bg-gold/10"
+            >🛒 장식 상점</button>
+            <button
               onClick={() => void handleHarvest()}
               disabled={isHarvesting}
               className="w-full h-9 rounded-xl font-bold text-xs transition-all"
@@ -725,6 +731,14 @@ export function PersonalIslandPage() {
           inventory={inventory}
           onDeploy={(idx) => { setDeployFromInventoryIdx(idx); setShowInventory(false); }}
           onClose={() => setShowInventory(false)}
+        />
+      )}
+
+      {showShop && (
+        <IslandDecorationShopModal
+          ap={ap}
+          onPurchased={(apRemaining) => { syncAP(apRemaining); reloadInventory(); }}
+          onClose={() => setShowShop(false)}
         />
       )}
     </div>
