@@ -6,6 +6,7 @@ import com.territorial.auction.domain.building.entity.HomeIsland;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.function.ToIntFunction;
 
 public record IslandResponse(
         Long islandId,
@@ -46,19 +47,15 @@ public record IslandResponse(
         }
     }
 
-    public static IslandResponse of(HomeIsland island, List<BuildingInstance> buildings) {
+    public static IslandResponse of(
+            HomeIsland island,
+            List<BuildingInstance> buildings,
+            ToIntFunction<BuildingInstance> gpPerHourFn) {
         List<IslandBuildingInfo> buildingInfos =
                 buildings.stream().map(IslandBuildingInfo::from).toList();
 
         int productionRatePerHour =
-                buildings.stream()
-                        .filter(
-                                b ->
-                                        !b.isDestroyed()
-                                                && b.getBuildingType().getGpProductionRate()
-                                                        != null)
-                        .mapToInt(b -> b.getLevel() * b.getBuildingType().getGpProductionRate())
-                        .sum();
+                buildings.stream().filter(b -> !b.isDestroyed()).mapToInt(gpPerHourFn).sum();
         int productionRate = productionRatePerHour / 60;
 
         LocalDateTime lastHarvestAt =

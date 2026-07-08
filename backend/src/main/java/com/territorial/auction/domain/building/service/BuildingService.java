@@ -194,7 +194,10 @@ public class BuildingService {
 
         List<BuildingInstance> buildings =
                 buildingInstanceRepository.findByIslandId(island.getId());
-        return IslandResponse.of(island, buildings);
+        com.territorial.auction.domain.building.BuildingLevelSpecResolver resolver =
+                com.territorial.auction.domain.building.BuildingLevelSpecResolver.of(
+                        buildings, buildingLevelSpecRepository);
+        return IslandResponse.of(island, buildings, resolver::gpPerHour);
     }
 
     public List<IslandResponse.IslandBuildingInfo> getIslandBuildings(Long userId) {

@@ -34,6 +34,8 @@ public class SiegeService {
     private final SiegeResultRepository siegeResultRepository;
     private final UnitInstanceRepository unitInstanceRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
+    private final com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository
+            buildingLevelSpecRepository;
     private final WalletRepository walletRepository;
     private final SeasonRepository seasonRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -153,14 +155,13 @@ public class SiegeService {
                 defenderUnits.stream()
                         .mapToInt(u -> u.getUnitType().getDefensePower() * u.getQuantity())
                         .sum();
-        int buildingDef =
-                buildingInstanceRepository
-                        .findActiveByTerritoryIdAndZone(
-                                event.getTargetTerritory().getId(), event.getAttackZone())
-                        .stream()
-                        .filter(b -> b.getBuildingType().getDefensePower() != null)
-                        .mapToInt(b -> b.getBuildingType().getDefensePower())
-                        .sum();
+        List<com.territorial.auction.domain.building.entity.BuildingInstance> defenseBuildings =
+                buildingInstanceRepository.findActiveByTerritoryIdAndZone(
+                        event.getTargetTerritory().getId(), event.getAttackZone());
+        com.territorial.auction.domain.building.BuildingLevelSpecResolver resolver =
+                com.territorial.auction.domain.building.BuildingLevelSpecResolver.of(
+                        defenseBuildings, buildingLevelSpecRepository);
+        int buildingDef = defenseBuildings.stream().mapToInt(resolver::defense).sum();
         return unitDef + buildingDef;
     }
 
