@@ -43,14 +43,12 @@ public final class BuildingLevelSpecResolver {
         return specByKey.get(key(b.getBuildingType().getId(), b.getLevel()));
     }
 
-    /** GP 생산량/시간 — 지정값 우선, 없으면 level × 기본. GP 건물이 아니면 0. */
+    /** GP 생산량/시간 — 지정값 우선, 없으면 level × 기본. 둘 다 없으면 0. */
     public int gpPerHour(BuildingInstance b) {
-        Integer base = b.getBuildingType().getGpProductionRate();
-        if (base == null) return 0;
         BuildingLevelSpec s = specFor(b);
-        return (s != null && s.getGpProductionRate() != null)
-                ? s.getGpProductionRate()
-                : b.getLevel() * base;
+        if (s != null && s.getGpProductionRate() != null) return s.getGpProductionRate();
+        Integer base = b.getBuildingType().getGpProductionRate();
+        return base != null ? b.getLevel() * base : 0;
     }
 
     /** 방어력 — 지정값 우선, 없으면 기본(레벨 무관). 둘 다 없으면 0. */
