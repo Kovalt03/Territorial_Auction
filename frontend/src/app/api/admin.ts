@@ -329,6 +329,7 @@ export function deleteBuildingType(id: number) {
 
 export interface LevelSpecValues {
   upgradeCostGp: number | null;
+  maxHp: number | null;
   defensePower: number | null;
   foodProductionRate: number | null;
   unitCapacityPerLevel: number | null;

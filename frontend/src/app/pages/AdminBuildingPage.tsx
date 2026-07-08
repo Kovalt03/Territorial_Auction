@@ -43,10 +43,12 @@ const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-
 // 최대 레벨 3 → 업그레이드 도달 레벨 2, 3
 const UPGRADE_LEVELS = [2, 3];
 
-// 레벨별로 설정 가능한 항목. base가 있으면 건물 기본값이 있을 때만 노출(그 건물의 기능일 때).
+// 레벨별로 설정 가능한 항목. base 지정 항목은 그 건물의 기능(기본값 존재)일 때만 노출.
+// HP·방어력·업글비용은 모든 건물에 적용되므로 항상 노출.
 const LEVEL_FIELDS: { key: keyof LevelSpecValues; label: string; base?: keyof BuildingTypeInfo }[] = [
   { key: 'upgradeCostGp', label: '업글비용' },
-  { key: 'defensePower', label: '방어력', base: 'defensePower' },
+  { key: 'maxHp', label: 'HP' },
+  { key: 'defensePower', label: '방어력' },
   { key: 'foodProductionRate', label: '식량/시간', base: 'foodProductionRate' },
   { key: 'unitCapacityPerLevel', label: '유닛/레벨', base: 'unitCapacityPerLevel' },
   { key: 'gpProductionRate', label: 'GP/시간', base: 'gpProductionRate' },
@@ -155,6 +157,7 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
         const row = levelSpecs[lv] ?? {};
         payload[lv] = {
           upgradeCostGp: row.upgradeCostGp?.trim() ? Number(row.upgradeCostGp) : null,
+          maxHp: row.maxHp?.trim() ? Number(row.maxHp) : null,
           defensePower: row.defensePower?.trim() ? Number(row.defensePower) : null,
           foodProductionRate: row.foodProductionRate?.trim() ? Number(row.foodProductionRate) : null,
           unitCapacityPerLevel: row.unitCapacityPerLevel?.trim() ? Number(row.unitCapacityPerLevel) : null,
