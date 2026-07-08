@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 
 import {
   fetchAdminBuildingTypes, createBuildingType, updateBuildingType, deleteBuildingType,
+  fetchLevelCosts, updateLevelCosts,
   type BuildingTypeForm,
 } from '../api/admin';
 import { ApiError } from '../api/client';
@@ -38,6 +39,9 @@ function toForm(b: BuildingTypeInfo): BuildingTypeForm {
 }
 
 const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-foreground text-[11px] outline-none focus:border-primary';
+
+// 최대 레벨 3 → 업그레이드 도달 레벨 2, 3
+const UPGRADE_LEVELS = [2, 3];
 
 export function AdminBuildingPage() {
   const [items, setItems] = useState<BuildingTypeInfo[]>([]);
@@ -107,6 +111,34 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
   const dirty = JSON.stringify(form) !== JSON.stringify(toForm(item));
   const isDecorative = item.category === 'DECORATIVE';
 
+  // 레벨별 업그레이드 비용 (상세 토글 시 로드)
+  const [levelCosts, setLevelCosts] = useState<Record<number, string>>({});
+  const [levelLoaded, setLevelLoaded] = useState(false);
+  const [levelBusy, setLevelBusy] = useState(false);
+  useEffect(() => {
+    if (!open || levelLoaded) return;
+    fetchLevelCosts(item.buildingTypeId)
+      .then(r => {
+        const next: Record<number, string> = {};
+        UPGRADE_LEVELS.forEach(lv => { next[lv] = r[String(lv)] != null ? String(r[String(lv)]) : ''; });
+        setLevelCosts(next); setLevelLoaded(true);
+      })
+      .catch(e => { onError(e instanceof ApiError ? e.message : '레벨 비용을 불러올 수 없습니다.'); console.warn('[AdminBuilding] levelCosts', e); });
+  }, [open, levelLoaded, item.buildingTypeId, onError]);
+
+  const saveLevelCosts = async () => {
+    if (levelBusy) return;
+    setLevelBusy(true);
+    try {
+      const payload: Record<number, number | null> = {};
+      UPGRADE_LEVELS.forEach(lv => { payload[lv] = levelCosts[lv]?.trim() ? Number(levelCosts[lv]) : null; });
+      await updateLevelCosts(item.buildingTypeId, payload);
+      onDone(`${item.name} 레벨 비용 저장됨`);
+    } catch (e) {
+      onError(e instanceof ApiError ? e.message : '레벨 비용 저장 실패');
+    } finally { setLevelBusy(false); }
+  };
+
   const setNum = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
     setForm(f => ({ ...f, [k]: v.trim() === '' ? (nullable ? null : 0) : Number(v) }));
 
@@ -167,6 +199,21 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
                         onChange={e => setNum(f.key, e.target.value, f.nullable)} className={`${input} w-[70px] mt-0.5`} />}
                 </label>
               ))}
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-outline-soft">
+              <p className="text-[11px] text-dim mb-1.5">레벨별 업그레이드 비용 <span className="text-muted">(비우면 공식 자동)</span></p>
+              <div className="flex flex-wrap items-end gap-2">
+                {UPGRADE_LEVELS.map(lv => (
+                  <label key={lv} className="text-[11px] text-dim">→ Lv{lv} 비용
+                    <input type="number" value={levelCosts[lv] ?? ''} placeholder="자동"
+                      onChange={e => setLevelCosts(c => ({ ...c, [lv]: e.target.value }))}
+                      className={`${input} w-[80px] mt-0.5`} />
+                  </label>
+                ))}
+                <button onClick={() => void saveLevelCosts()} disabled={levelBusy || !levelLoaded}
+                  className="h-7 px-3 rounded-md bg-primary text-surface text-[11px] font-bold hover:brightness-110 disabled:opacity-40">레벨 비용 저장</button>
+              </div>
             </div>
           </td>
         </tr>

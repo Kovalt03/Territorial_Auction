@@ -326,3 +326,11 @@ export function updateBuildingType(id: number, form: BuildingTypeForm) {
 export function deleteBuildingType(id: number) {
   return apiClient.delete<null>(`/admin/building-types/${id}`);
 }
+
+export function fetchLevelCosts(id: number) {
+  return apiClient.get<Record<string, number>>(`/admin/building-types/${id}/level-costs`);
+}
+
+export function updateLevelCosts(id: number, costs: Record<number, number | null>) {
+  return apiClient.patch<Record<string, number>>(`/admin/building-types/${id}/level-costs`, { costs });
+}
