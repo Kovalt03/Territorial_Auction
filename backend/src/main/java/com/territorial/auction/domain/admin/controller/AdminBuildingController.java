@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.admin.controller;
 
 import com.territorial.auction.domain.admin.dto.AdminCreateBuildingTypeRequest;
+import com.territorial.auction.domain.admin.dto.AdminLevelCostsRequest;
 import com.territorial.auction.domain.admin.dto.AdminUpdateBuildingTypeRequest;
 import com.territorial.auction.domain.admin.service.AdminBuildingService;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse;
@@ -52,5 +53,23 @@ public class AdminBuildingController {
             @AuthenticationPrincipal Long adminUserId, @PathVariable Long buildingTypeId) {
         adminBuildingService.delete(adminUserId, buildingTypeId);
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @GetMapping("/{buildingTypeId}/level-costs")
+    public ResponseEntity<ApiResponse<java.util.Map<Integer, Integer>>> getLevelCosts(
+            @PathVariable Long buildingTypeId) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminBuildingService.getLevelCosts(buildingTypeId)));
+    }
+
+    @PatchMapping("/{buildingTypeId}/level-costs")
+    public ResponseEntity<ApiResponse<java.util.Map<Integer, Integer>>> updateLevelCosts(
+            @AuthenticationPrincipal Long adminUserId,
+            @PathVariable Long buildingTypeId,
+            @RequestBody AdminLevelCostsRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(
+                        adminBuildingService.updateLevelCosts(
+                                adminUserId, buildingTypeId, request.costs())));
     }
 }

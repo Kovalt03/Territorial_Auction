@@ -2,14 +2,18 @@ package com.territorial.auction.domain.admin.service;
 
 import com.territorial.auction.domain.admin.dto.AdminCreateBuildingTypeRequest;
 import com.territorial.auction.domain.admin.dto.AdminUpdateBuildingTypeRequest;
+import com.territorial.auction.domain.building.BuildingPolicy;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse.BuildingTypeInfo;
 import com.territorial.auction.domain.building.entity.BuildingCategory;
+import com.territorial.auction.domain.building.entity.BuildingLevelSpec;
 import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +26,55 @@ public class AdminBuildingService {
 
     private final BuildingTypeRepository buildingTypeRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
+    private final BuildingLevelSpecRepository buildingLevelSpecRepository;
     private final AdminAuditLogger adminAuditLogger;
+
+    // 건물별 레벨 비용 조회: {도달레벨: 비용}. 지정된 것만 담는다.
+    public Map<Integer, Integer> getLevelCosts(Long buildingTypeId) {
+        findOrThrow(buildingTypeId);
+        Map<Integer, Integer> costs = new LinkedHashMap<>();
+        buildingLevelSpecRepository.findAllByBuildingType_Id(buildingTypeId).stream()
+                .filter(s -> s.getUpgradeCostGp() != null)
+                .sorted((a, b) -> a.getLevel() - b.getLevel())
+                .forEach(s -> costs.put(s.getLevel(), s.getUpgradeCostGp()));
+        return costs;
+    }
+
+    // {도달레벨: 비용} 설정. 값이 null이면 해당 레벨 지정 해제(공식 폴백).
+    @Transactional
+    public Map<Integer, Integer> updateLevelCosts(
+            Long adminUserId, Long buildingTypeId, Map<Integer, Integer> costs) {
+        BuildingType type = findOrThrow(buildingTypeId);
+        costs.forEach((level, cost) -> applyLevelCost(type, level, cost));
+
+        adminAuditLogger.record(
+                adminUserId,
+                "BUILDING_LEVEL_COST_UPDATE",
+                "BUILDING_TYPE",
+                buildingTypeId,
+                Map.of("name", type.getName()));
+        return getLevelCosts(buildingTypeId);
+    }
+
+    private void applyLevelCost(BuildingType type, Integer level, Integer cost) {
+        if (level == null || level < 2 || level > BuildingPolicy.MAX_LEVEL) {
+            throw new CustomException(ErrorCode.INVALID_BUILDING_LEVEL);
+        }
+        buildingLevelSpecRepository
+                .findByBuildingType_IdAndLevel(type.getId(), level)
+                .ifPresentOrElse(
+                        spec -> spec.updateUpgradeCostGp(cost),
+                        () -> {
+                            if (cost != null) {
+                                buildingLevelSpecRepository.save(
+                                        BuildingLevelSpec.builder()
+                                                .buildingType(type)
+                                                .level(level)
+                                                .upgradeCostGp(cost)
+                                                .build());
+                            }
+                        });
+    }
 
     public BuildingTypeCatalogResponse getBuildingTypes() {
         return BuildingTypeCatalogResponse.of(buildingTypeRepository.findAll());
