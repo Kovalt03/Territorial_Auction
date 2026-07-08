@@ -199,7 +199,7 @@ class AdminBuildingServiceTest {
                 java.util.Map.of(
                         2,
                         new com.territorial.auction.domain.admin.dto.AdminLevelSpecsRequest
-                                .LevelSpecValues(1500, null, null, null, 40)));
+                                .LevelSpecValues(1500, null, null, null, null, 40)));
 
         then(buildingLevelSpecRepository).should().save(any());
         then(adminAuditLogger)
@@ -222,7 +222,7 @@ class AdminBuildingServiceTest {
                                                 9,
                                                 new com.territorial.auction.domain.admin.dto
                                                         .AdminLevelSpecsRequest.LevelSpecValues(
-                                                        100, null, null, null, null))))
+                                                        100, null, null, null, null, null))))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_BUILDING_LEVEL);
