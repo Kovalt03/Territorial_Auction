@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.admin.service;
 
 import com.territorial.auction.domain.admin.dto.AdminCreateBuildingTypeRequest;
+import com.territorial.auction.domain.admin.dto.AdminLevelSpecsRequest.LevelSpecValues;
 import com.territorial.auction.domain.admin.dto.AdminUpdateBuildingTypeRequest;
 import com.territorial.auction.domain.building.BuildingPolicy;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse;
@@ -29,50 +30,61 @@ public class AdminBuildingService {
     private final BuildingLevelSpecRepository buildingLevelSpecRepository;
     private final AdminAuditLogger adminAuditLogger;
 
-    // 건물별 레벨 비용 조회: {도달레벨: 비용}. 지정된 것만 담는다.
-    public Map<Integer, Integer> getLevelCosts(Long buildingTypeId) {
+    // 건물별 레벨 스펙 조회: {도달레벨: 값들}. 비어있지 않은 것만 담는다.
+    public Map<Integer, LevelSpecValues> getLevelSpecs(Long buildingTypeId) {
         findOrThrow(buildingTypeId);
-        Map<Integer, Integer> costs = new LinkedHashMap<>();
+        Map<Integer, LevelSpecValues> specs = new LinkedHashMap<>();
         buildingLevelSpecRepository.findAllByBuildingType_Id(buildingTypeId).stream()
-                .filter(s -> s.getUpgradeCostGp() != null)
+                .filter(s -> !s.isEmpty())
                 .sorted((a, b) -> a.getLevel() - b.getLevel())
-                .forEach(s -> costs.put(s.getLevel(), s.getUpgradeCostGp()));
-        return costs;
+                .forEach(s -> specs.put(s.getLevel(), LevelSpecValues.from(s)));
+        return specs;
     }
 
-    // {도달레벨: 비용} 설정. 값이 null이면 해당 레벨 지정 해제(공식 폴백).
+    // {도달레벨: 값들} 설정. 각 값이 null이면 해당 항목은 공식 폴백. 모두 null이면 스펙 삭제.
     @Transactional
-    public Map<Integer, Integer> updateLevelCosts(
-            Long adminUserId, Long buildingTypeId, Map<Integer, Integer> costs) {
+    public Map<Integer, LevelSpecValues> updateLevelSpecs(
+            Long adminUserId, Long buildingTypeId, Map<Integer, LevelSpecValues> specs) {
         BuildingType type = findOrThrow(buildingTypeId);
-        costs.forEach((level, cost) -> applyLevelCost(type, level, cost));
+        specs.forEach((level, values) -> applyLevelSpec(type, level, values));
 
         adminAuditLogger.record(
                 adminUserId,
-                "BUILDING_LEVEL_COST_UPDATE",
+                "BUILDING_LEVEL_SPEC_UPDATE",
                 "BUILDING_TYPE",
                 buildingTypeId,
                 Map.of("name", type.getName()));
-        return getLevelCosts(buildingTypeId);
+        return getLevelSpecs(buildingTypeId);
     }
 
-    private void applyLevelCost(BuildingType type, Integer level, Integer cost) {
+    private void applyLevelSpec(BuildingType type, Integer level, LevelSpecValues v) {
         if (level == null || level < 2 || level > BuildingPolicy.MAX_LEVEL) {
             throw new CustomException(ErrorCode.INVALID_BUILDING_LEVEL);
         }
         buildingLevelSpecRepository
                 .findByBuildingType_IdAndLevel(type.getId(), level)
                 .ifPresentOrElse(
-                        spec -> spec.updateUpgradeCostGp(cost),
+                        spec -> {
+                            spec.update(
+                                    v.upgradeCostGp(),
+                                    v.defensePower(),
+                                    v.foodProductionRate(),
+                                    v.unitCapacityPerLevel(),
+                                    v.gpProductionRate());
+                            if (spec.isEmpty()) buildingLevelSpecRepository.delete(spec);
+                        },
                         () -> {
-                            if (cost != null) {
-                                buildingLevelSpecRepository.save(
-                                        BuildingLevelSpec.builder()
-                                                .buildingType(type)
-                                                .level(level)
-                                                .upgradeCostGp(cost)
-                                                .build());
-                            }
+                            BuildingLevelSpec created =
+                                    BuildingLevelSpec.builder()
+                                            .buildingType(type)
+                                            .level(level)
+                                            .upgradeCostGp(v.upgradeCostGp())
+                                            .defensePower(v.defensePower())
+                                            .foodProductionRate(v.foodProductionRate())
+                                            .unitCapacityPerLevel(v.unitCapacityPerLevel())
+                                            .gpProductionRate(v.gpProductionRate())
+                                            .build();
+                            if (!created.isEmpty()) buildingLevelSpecRepository.save(created);
                         });
     }
 
