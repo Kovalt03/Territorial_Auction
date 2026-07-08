@@ -32,14 +32,14 @@ public record IslandResponse(
             int height,
             boolean isDestroyed) {
 
-        public static IslandBuildingInfo from(BuildingInstance bi) {
+        public static IslandBuildingInfo from(BuildingInstance bi, int maxHp) {
             return new IslandBuildingInfo(
                     bi.getId(),
                     bi.getBuildingType().getName(),
                     bi.getPosX(),
                     bi.getPosY(),
                     bi.getHp(),
-                    bi.getBuildingType().getMaxHp(),
+                    maxHp,
                     bi.getLevel(),
                     bi.getBuildingType().getWidth(),
                     bi.getBuildingType().getHeight(),
@@ -50,9 +50,12 @@ public record IslandResponse(
     public static IslandResponse of(
             HomeIsland island,
             List<BuildingInstance> buildings,
-            ToIntFunction<BuildingInstance> gpPerHourFn) {
+            ToIntFunction<BuildingInstance> gpPerHourFn,
+            ToIntFunction<BuildingInstance> maxHpFn) {
         List<IslandBuildingInfo> buildingInfos =
-                buildings.stream().map(IslandBuildingInfo::from).toList();
+                buildings.stream()
+                        .map(b -> IslandBuildingInfo.from(b, maxHpFn.applyAsInt(b)))
+                        .toList();
 
         int productionRatePerHour =
                 buildings.stream().filter(b -> !b.isDestroyed()).mapToInt(gpPerHourFn).sum();

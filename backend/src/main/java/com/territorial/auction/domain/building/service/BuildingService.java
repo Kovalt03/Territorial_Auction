@@ -126,6 +126,12 @@ public class BuildingService {
 
         wallet.spendGp(cost);
         building.upgrade();
+        buildingLevelSpecRepository
+                .findByBuildingType_IdAndLevel(
+                        building.getBuildingType().getId(), building.getLevel())
+                .map(com.territorial.auction.domain.building.entity.BuildingLevelSpec::getMaxHp)
+                .filter(java.util.Objects::nonNull)
+                .ifPresent(building::applyLevelMaxHp);
 
         if (building.getBuildingType().isCastle() && building.getIsland() != null) {
             IslandGrade newGrade =
@@ -197,7 +203,7 @@ public class BuildingService {
         com.territorial.auction.domain.building.BuildingLevelSpecResolver resolver =
                 com.territorial.auction.domain.building.BuildingLevelSpecResolver.of(
                         buildings, buildingLevelSpecRepository);
-        return IslandResponse.of(island, buildings, resolver::gpPerHour);
+        return IslandResponse.of(island, buildings, resolver::gpPerHour, resolver::maxHp);
     }
 
     public List<IslandResponse.IslandBuildingInfo> getIslandBuildings(Long userId) {
@@ -206,8 +212,13 @@ public class BuildingService {
                         .findByUserId(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.ISLAND_NOT_FOUND));
 
-        return buildingInstanceRepository.findByIslandId(island.getId()).stream()
-                .map(IslandResponse.IslandBuildingInfo::from)
+        List<BuildingInstance> buildings =
+                buildingInstanceRepository.findByIslandId(island.getId());
+        com.territorial.auction.domain.building.BuildingLevelSpecResolver resolver =
+                com.territorial.auction.domain.building.BuildingLevelSpecResolver.of(
+                        buildings, buildingLevelSpecRepository);
+        return buildings.stream()
+                .map(b -> IslandResponse.IslandBuildingInfo.from(b, resolver.maxHp(b)))
                 .toList();
     }
 

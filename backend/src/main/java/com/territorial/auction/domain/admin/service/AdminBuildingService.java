@@ -67,6 +67,7 @@ public class AdminBuildingService {
                         spec -> {
                             spec.update(
                                     v.upgradeCostGp(),
+                                    v.maxHp(),
                                     v.defensePower(),
                                     v.foodProductionRate(),
                                     v.unitCapacityPerLevel(),
@@ -79,6 +80,7 @@ public class AdminBuildingService {
                                             .buildingType(type)
                                             .level(level)
                                             .upgradeCostGp(v.upgradeCostGp())
+                                            .maxHp(v.maxHp())
                                             .defensePower(v.defensePower())
                                             .foodProductionRate(v.foodProductionRate())
                                             .unitCapacityPerLevel(v.unitCapacityPerLevel())
