@@ -51,6 +51,8 @@ public class BuildingService {
 
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final BuildingTypeRepository buildingTypeRepository;
+    private final com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository
+            buildingLevelSpecRepository;
     private final HomeIslandRepository homeIslandRepository;
     private final IslandGradeRepository islandGradeRepository;
     private final TerritoryRepository territoryRepository;
@@ -118,14 +120,18 @@ public class BuildingService {
         validateBuildingOwner(building, userId);
         validateNotMaxLevel(building);
 
-        int cost =
-                BuildingPolicy.upgradeCost(
-                        building.getBuildingType().getUpgradeCostBase(), building.getLevel());
+        int cost = resolveUpgradeCost(building);
         Wallet wallet = findWalletOrThrow(userId);
         validateGp(wallet, cost);
 
         wallet.spendGp(cost);
         building.upgrade();
+        buildingLevelSpecRepository
+                .findByBuildingType_IdAndLevel(
+                        building.getBuildingType().getId(), building.getLevel())
+                .map(com.territorial.auction.domain.building.entity.BuildingLevelSpec::getMaxHp)
+                .filter(java.util.Objects::nonNull)
+                .ifPresent(building::applyLevelMaxHp);
 
         if (building.getBuildingType().isCastle() && building.getIsland() != null) {
             IslandGrade newGrade =
@@ -148,6 +154,22 @@ public class BuildingService {
                 BuildingPolicy.MAX_LEVEL,
                 cost,
                 wallet.getAvailableGp());
+    }
+
+    // 도달 레벨(현재+1)에 지정된 비용이 있으면 그 값을, 없으면 공식(기준×레벨)을 사용한다.
+    private int resolveUpgradeCost(BuildingInstance building) {
+        int targetLevel = building.getLevel() + 1;
+        return buildingLevelSpecRepository
+                .findByBuildingType_IdAndLevel(building.getBuildingType().getId(), targetLevel)
+                .map(
+                        com.territorial.auction.domain.building.entity.BuildingLevelSpec
+                                ::getUpgradeCostGp)
+                .filter(java.util.Objects::nonNull)
+                .orElseGet(
+                        () ->
+                                BuildingPolicy.upgradeCost(
+                                        building.getBuildingType().getUpgradeCostBase(),
+                                        building.getLevel()));
     }
 
     @Transactional
@@ -178,7 +200,10 @@ public class BuildingService {
 
         List<BuildingInstance> buildings =
                 buildingInstanceRepository.findByIslandId(island.getId());
-        return IslandResponse.of(island, buildings);
+        com.territorial.auction.domain.building.BuildingLevelSpecResolver resolver =
+                com.territorial.auction.domain.building.BuildingLevelSpecResolver.of(
+                        buildings, buildingLevelSpecRepository);
+        return IslandResponse.of(island, buildings, resolver::gpPerHour, resolver::maxHp);
     }
 
     public List<IslandResponse.IslandBuildingInfo> getIslandBuildings(Long userId) {
@@ -187,8 +212,13 @@ public class BuildingService {
                         .findByUserId(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.ISLAND_NOT_FOUND));
 
-        return buildingInstanceRepository.findByIslandId(island.getId()).stream()
-                .map(IslandResponse.IslandBuildingInfo::from)
+        List<BuildingInstance> buildings =
+                buildingInstanceRepository.findByIslandId(island.getId());
+        com.territorial.auction.domain.building.BuildingLevelSpecResolver resolver =
+                com.territorial.auction.domain.building.BuildingLevelSpecResolver.of(
+                        buildings, buildingLevelSpecRepository);
+        return buildings.stream()
+                .map(b -> IslandResponse.IslandBuildingInfo.from(b, resolver.maxHp(b)))
                 .toList();
     }
 

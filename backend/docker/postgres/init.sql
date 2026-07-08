@@ -283,6 +283,20 @@ CREATE TABLE IF NOT EXISTS building_types (
     category               VARCHAR(20)
 );
 
+-- building_level_specs (건물별·레벨별 세부 설정: 레벨별 업그레이드 비용)
+CREATE TABLE IF NOT EXISTS building_level_specs (
+    id                     BIGSERIAL   PRIMARY KEY,
+    building_type_id       BIGINT      NOT NULL REFERENCES building_types(id),
+    level                  INTEGER     NOT NULL,
+    upgrade_cost_gp        INTEGER,
+    max_hp                 INTEGER,
+    defense_power          INTEGER,
+    food_production_rate   INTEGER,
+    unit_capacity_per_level INTEGER,
+    gp_production_rate     INTEGER,
+    UNIQUE (building_type_id, level)
+);
+
 -- building_instances
 CREATE TABLE IF NOT EXISTS building_instances (
     id                    BIGSERIAL   PRIMARY KEY,

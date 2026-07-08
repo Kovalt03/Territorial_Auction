@@ -72,25 +72,31 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " WHERE b.territory.owner.id = :userId AND b.buildingType.name = 'CASTLE' AND b.isDestroyed = false")
     List<Integer> findActiveCastleLevelsByOwnerId(@Param("userId") Long userId);
 
-    /** 유저 소유 영토의 활성 RESIDENCE 유닛 슬롯 합산 (level × unitCapacityPerLevel) */
+    /** 유저 소유 영토 건물의 유닛 수용량 합산 — 유닛 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
     @Query(
-            "SELECT COALESCE(SUM(b.level * b.buildingType.unitCapacityPerLevel), 0) FROM BuildingInstance b"
-                    + " WHERE b.territory.owner.id = :userId AND b.buildingType.name = 'RESIDENCE' AND b.isDestroyed = false")
+            "SELECT COALESCE(SUM(COALESCE(s.unitCapacityPerLevel, b.level * b.buildingType.unitCapacityPerLevel)), 0)"
+                    + " FROM BuildingInstance b"
+                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
+                    + " WHERE b.territory.owner.id = :userId AND b.isDestroyed = false")
     Integer sumResidenceCapacityByOwnerId(@Param("userId") Long userId);
 
-    /** 농경지 식량 생산량을 소유자별로 합산 — FarmlandScheduler 전용 */
+    /** 식량 생산량을 소유자별로 합산 — 식량 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
     @Query(
-            "SELECT b.territory.owner.id, SUM(b.level * b.buildingType.foodProductionRate)"
+            "SELECT b.territory.owner.id, SUM(COALESCE(s.foodProductionRate, b.level * b.buildingType.foodProductionRate))"
                     + " FROM BuildingInstance b"
-                    + " WHERE b.buildingType.name = 'FARMLAND' AND b.isDestroyed = false AND b.territory IS NOT NULL"
+                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
+                    + " WHERE b.isDestroyed = false AND b.territory IS NOT NULL"
+                    + " AND (b.buildingType.foodProductionRate IS NOT NULL OR s.foodProductionRate IS NOT NULL)"
                     + " GROUP BY b.territory.owner.id")
     List<Object[]> sumFarmlandFoodProductionGroupedByOwner();
 
-    /** 영토 WORKSHOP GP 생산량을 소유자별로 합산 — WorkshopScheduler 전용 */
+    /** GP 생산량을 소유자별로 합산 — GP 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
     @Query(
-            "SELECT b.territory.owner.id, SUM(b.level * b.buildingType.gpProductionRate)"
+            "SELECT b.territory.owner.id, SUM(COALESCE(s.gpProductionRate, b.level * b.buildingType.gpProductionRate))"
                     + " FROM BuildingInstance b"
-                    + " WHERE b.buildingType.name = 'WORKSHOP' AND b.isDestroyed = false AND b.territory IS NOT NULL"
+                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
+                    + " WHERE b.isDestroyed = false AND b.territory IS NOT NULL"
+                    + " AND (b.buildingType.gpProductionRate IS NOT NULL OR s.gpProductionRate IS NOT NULL)"
                     + " AND (b.workshopDebuffUntil IS NULL OR b.workshopDebuffUntil < :now)"
                     + " GROUP BY b.territory.owner.id")
     List<Object[]> sumWorkshopGpProductionGroupedByOwner(@Param("now") LocalDateTime now);

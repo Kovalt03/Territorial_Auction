@@ -1,15 +1,20 @@
 package com.territorial.auction.domain.admin.service;
 
 import com.territorial.auction.domain.admin.dto.AdminCreateBuildingTypeRequest;
+import com.territorial.auction.domain.admin.dto.AdminLevelSpecsRequest.LevelSpecValues;
 import com.territorial.auction.domain.admin.dto.AdminUpdateBuildingTypeRequest;
+import com.territorial.auction.domain.building.BuildingPolicy;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse.BuildingTypeInfo;
 import com.territorial.auction.domain.building.entity.BuildingCategory;
+import com.territorial.auction.domain.building.entity.BuildingLevelSpec;
 import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository;
 import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +27,68 @@ public class AdminBuildingService {
 
     private final BuildingTypeRepository buildingTypeRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
+    private final BuildingLevelSpecRepository buildingLevelSpecRepository;
     private final AdminAuditLogger adminAuditLogger;
+
+    // 건물별 레벨 스펙 조회: {도달레벨: 값들}. 비어있지 않은 것만 담는다.
+    public Map<Integer, LevelSpecValues> getLevelSpecs(Long buildingTypeId) {
+        findOrThrow(buildingTypeId);
+        Map<Integer, LevelSpecValues> specs = new LinkedHashMap<>();
+        buildingLevelSpecRepository.findAllByBuildingType_Id(buildingTypeId).stream()
+                .filter(s -> !s.isEmpty())
+                .sorted((a, b) -> a.getLevel() - b.getLevel())
+                .forEach(s -> specs.put(s.getLevel(), LevelSpecValues.from(s)));
+        return specs;
+    }
+
+    // {도달레벨: 값들} 설정. 각 값이 null이면 해당 항목은 공식 폴백. 모두 null이면 스펙 삭제.
+    @Transactional
+    public Map<Integer, LevelSpecValues> updateLevelSpecs(
+            Long adminUserId, Long buildingTypeId, Map<Integer, LevelSpecValues> specs) {
+        BuildingType type = findOrThrow(buildingTypeId);
+        specs.forEach((level, values) -> applyLevelSpec(type, level, values));
+
+        adminAuditLogger.record(
+                adminUserId,
+                "BUILDING_LEVEL_SPEC_UPDATE",
+                "BUILDING_TYPE",
+                buildingTypeId,
+                Map.of("name", type.getName()));
+        return getLevelSpecs(buildingTypeId);
+    }
+
+    private void applyLevelSpec(BuildingType type, Integer level, LevelSpecValues v) {
+        if (level == null || level < 2 || level > BuildingPolicy.MAX_LEVEL) {
+            throw new CustomException(ErrorCode.INVALID_BUILDING_LEVEL);
+        }
+        // 장식 건물은 생산 기능이 없으므로 레벨 스펙에서도 식량/유닛/GP를 무효화한다.
+        boolean isDecorative = type.getCategory() == BuildingCategory.DECORATIVE;
+        Integer food = isDecorative ? null : v.foodProductionRate();
+        Integer unit = isDecorative ? null : v.unitCapacityPerLevel();
+        Integer gp = isDecorative ? null : v.gpProductionRate();
+        buildingLevelSpecRepository
+                .findByBuildingType_IdAndLevel(type.getId(), level)
+                .ifPresentOrElse(
+                        spec -> {
+                            spec.update(
+                                    v.upgradeCostGp(), v.maxHp(), v.defensePower(), food, unit, gp);
+                            if (spec.isEmpty()) buildingLevelSpecRepository.delete(spec);
+                        },
+                        () -> {
+                            BuildingLevelSpec created =
+                                    BuildingLevelSpec.builder()
+                                            .buildingType(type)
+                                            .level(level)
+                                            .upgradeCostGp(v.upgradeCostGp())
+                                            .maxHp(v.maxHp())
+                                            .defensePower(v.defensePower())
+                                            .foodProductionRate(food)
+                                            .unitCapacityPerLevel(unit)
+                                            .gpProductionRate(gp)
+                                            .build();
+                            if (!created.isEmpty()) buildingLevelSpecRepository.save(created);
+                        });
+    }
 
     public BuildingTypeCatalogResponse getBuildingTypes() {
         return BuildingTypeCatalogResponse.of(buildingTypeRepository.findAll());

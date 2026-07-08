@@ -1,6 +1,8 @@
 package com.territorial.auction.domain.admin.controller;
 
 import com.territorial.auction.domain.admin.dto.AdminCreateBuildingTypeRequest;
+import com.territorial.auction.domain.admin.dto.AdminLevelSpecsRequest;
+import com.territorial.auction.domain.admin.dto.AdminLevelSpecsRequest.LevelSpecValues;
 import com.territorial.auction.domain.admin.dto.AdminUpdateBuildingTypeRequest;
 import com.territorial.auction.domain.admin.service.AdminBuildingService;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse;
@@ -52,5 +54,23 @@ public class AdminBuildingController {
             @AuthenticationPrincipal Long adminUserId, @PathVariable Long buildingTypeId) {
         adminBuildingService.delete(adminUserId, buildingTypeId);
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @GetMapping("/{buildingTypeId}/level-specs")
+    public ResponseEntity<ApiResponse<java.util.Map<Integer, LevelSpecValues>>> getLevelSpecs(
+            @PathVariable Long buildingTypeId) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminBuildingService.getLevelSpecs(buildingTypeId)));
+    }
+
+    @PatchMapping("/{buildingTypeId}/level-specs")
+    public ResponseEntity<ApiResponse<java.util.Map<Integer, LevelSpecValues>>> updateLevelSpecs(
+            @AuthenticationPrincipal Long adminUserId,
+            @PathVariable Long buildingTypeId,
+            @RequestBody AdminLevelSpecsRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(
+                        adminBuildingService.updateLevelSpecs(
+                                adminUserId, buildingTypeId, request.specs())));
     }
 }

@@ -6,6 +6,7 @@ import com.territorial.auction.domain.building.entity.HomeIsland;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.function.ToIntFunction;
 
 public record IslandResponse(
         Long islandId,
@@ -31,14 +32,14 @@ public record IslandResponse(
             int height,
             boolean isDestroyed) {
 
-        public static IslandBuildingInfo from(BuildingInstance bi) {
+        public static IslandBuildingInfo from(BuildingInstance bi, int maxHp) {
             return new IslandBuildingInfo(
                     bi.getId(),
                     bi.getBuildingType().getName(),
                     bi.getPosX(),
                     bi.getPosY(),
                     bi.getHp(),
-                    bi.getBuildingType().getMaxHp(),
+                    maxHp,
                     bi.getLevel(),
                     bi.getBuildingType().getWidth(),
                     bi.getBuildingType().getHeight(),
@@ -46,19 +47,18 @@ public record IslandResponse(
         }
     }
 
-    public static IslandResponse of(HomeIsland island, List<BuildingInstance> buildings) {
+    public static IslandResponse of(
+            HomeIsland island,
+            List<BuildingInstance> buildings,
+            ToIntFunction<BuildingInstance> gpPerHourFn,
+            ToIntFunction<BuildingInstance> maxHpFn) {
         List<IslandBuildingInfo> buildingInfos =
-                buildings.stream().map(IslandBuildingInfo::from).toList();
+                buildings.stream()
+                        .map(b -> IslandBuildingInfo.from(b, maxHpFn.applyAsInt(b)))
+                        .toList();
 
         int productionRatePerHour =
-                buildings.stream()
-                        .filter(
-                                b ->
-                                        !b.isDestroyed()
-                                                && b.getBuildingType().getGpProductionRate()
-                                                        != null)
-                        .mapToInt(b -> b.getLevel() * b.getBuildingType().getGpProductionRate())
-                        .sum();
+                buildings.stream().filter(b -> !b.isDestroyed()).mapToInt(gpPerHourFn).sum();
         int productionRate = productionRatePerHour / 60;
 
         LocalDateTime lastHarvestAt =

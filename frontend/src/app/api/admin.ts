@@ -326,3 +326,20 @@ export function updateBuildingType(id: number, form: BuildingTypeForm) {
 export function deleteBuildingType(id: number) {
   return apiClient.delete<null>(`/admin/building-types/${id}`);
 }
+
+export interface LevelSpecValues {
+  upgradeCostGp: number | null;
+  maxHp: number | null;
+  defensePower: number | null;
+  foodProductionRate: number | null;
+  unitCapacityPerLevel: number | null;
+  gpProductionRate: number | null;
+}
+
+export function fetchLevelSpecs(id: number) {
+  return apiClient.get<Record<string, LevelSpecValues>>(`/admin/building-types/${id}/level-specs`);
+}
+
+export function updateLevelSpecs(id: number, specs: Record<number, LevelSpecValues>) {
+  return apiClient.patch<Record<string, LevelSpecValues>>(`/admin/building-types/${id}/level-specs`, { specs });
+}

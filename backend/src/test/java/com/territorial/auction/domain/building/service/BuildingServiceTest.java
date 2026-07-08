@@ -58,12 +58,32 @@ class BuildingServiceTest {
 
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private BuildingTypeRepository buildingTypeRepository;
+
+    @Mock
+    private com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository
+            buildingLevelSpecRepository;
+
     @Mock private HomeIslandRepository homeIslandRepository;
     @Mock private IslandGradeRepository islandGradeRepository;
     @Mock private TerritoryRepository territoryRepository;
     @Mock private WalletRepository walletRepository;
     @Mock private UserRepository userRepository;
     @Mock private UserSeasonPassRepository userSeasonPassRepository;
+
+    @org.junit.jupiter.api.BeforeEach
+    void stubLevelSpecsEmpty() {
+        org.mockito.Mockito.lenient()
+                .when(
+                        buildingLevelSpecRepository.findByBuildingType_IdAndLevel(
+                                org.mockito.ArgumentMatchers.any(),
+                                org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.Optional.empty());
+        org.mockito.Mockito.lenient()
+                .when(
+                        buildingLevelSpecRepository.findAllByBuildingType_IdIn(
+                                org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.List.of());
+    }
 
     // ─── 공통 픽스처 ───────────────────────────────────────────────────────────
 

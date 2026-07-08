@@ -2,29 +2,36 @@ import { Fragment, useEffect, useState } from 'react';
 
 import {
   fetchAdminBuildingTypes, createBuildingType, updateBuildingType, deleteBuildingType,
-  type BuildingTypeForm,
+  fetchLevelSpecs, updateLevelSpecs,
+  type BuildingTypeForm, type LevelSpecValues,
 } from '../api/admin';
 import { ApiError } from '../api/client';
 
 import type { BuildingTypeInfo } from '../types/island';
 
-type Field = { key: keyof BuildingTypeForm; label: string; nullable?: boolean; production?: boolean };
+const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-foreground text-[11px] outline-none focus:border-primary';
 
-// 컴팩트 행에 항상 보이는 필드
-const MAIN_FIELDS: Field[] = [
-  { key: 'maxHp', label: 'HP' },
-  { key: 'baseCostGp', label: '건설비용' },
+// 최대 레벨 3 → 상세 그리드는 Lv1(기본)·Lv2·Lv3
+const UPGRADE_LEVELS = [2, 3];
+
+// 정적 속성(레벨과 무관, 메인 행에서 편집)
+const ATTR_FIELDS: { key: keyof BuildingTypeForm; label: string; w: string; nullable?: boolean; text?: boolean }[] = [
+  { key: 'icon', label: '아이콘', w: 'w-12', nullable: true, text: true },
+  { key: 'colorHex', label: '색', w: 'w-20', nullable: true, text: true },
+  { key: 'width', label: '너비', w: 'w-12' },
+  { key: 'height', label: '높이', w: 'w-12' },
+  { key: 'zoneRestriction', label: 'Zone', w: 'w-14', nullable: true },
 ];
-// 상세 토글에서만 보이는 필드
-const DETAIL_FIELDS: Field[] = [
-  { key: 'upgradeCostGp', label: '업글비용', nullable: true },
-  { key: 'width', label: '너비' },
-  { key: 'height', label: '높이' },
-  { key: 'zoneRestriction', label: 'Zone제한', nullable: true },
-  { key: 'defensePower', label: '방어력', nullable: true },
-  { key: 'foodProductionRate', label: '식량/시간', nullable: true, production: true },
-  { key: 'unitCapacityPerLevel', label: '유닛/레벨', nullable: true, production: true },
-  { key: 'gpProductionRate', label: 'GP/시간', nullable: true, production: true },
+
+// 레벨별 값. baseKey=Lv1(건물 기본값), specKey=Lv2·Lv3(레벨 지정값)
+type StatRow = { label: string; baseKey: keyof BuildingTypeForm; specKey: keyof LevelSpecValues; production?: boolean; nullable?: boolean };
+const STAT_ROWS: StatRow[] = [
+  { label: '비용', baseKey: 'baseCostGp', specKey: 'upgradeCostGp' },
+  { label: 'HP', baseKey: 'maxHp', specKey: 'maxHp' },
+  { label: '방어력', baseKey: 'defensePower', specKey: 'defensePower', nullable: true },
+  { label: '식량/시간', baseKey: 'foodProductionRate', specKey: 'foodProductionRate', production: true, nullable: true },
+  { label: '유닛/레벨', baseKey: 'unitCapacityPerLevel', specKey: 'unitCapacityPerLevel', production: true, nullable: true },
+  { label: 'GP/시간', baseKey: 'gpProductionRate', specKey: 'gpProductionRate', production: true, nullable: true },
 ];
 
 function toForm(b: BuildingTypeInfo): BuildingTypeForm {
@@ -36,8 +43,6 @@ function toForm(b: BuildingTypeInfo): BuildingTypeForm {
     gpProductionRate: b.gpProductionRate, icon: b.icon, colorHex: b.colorHex,
   };
 }
-
-const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-foreground text-[11px] outline-none focus:border-primary';
 
 export function AdminBuildingPage() {
   const [items, setItems] = useState<BuildingTypeInfo[]>([]);
@@ -57,8 +62,8 @@ export function AdminBuildingPage() {
     <div className="h-full overflow-auto p-6">
       <h2 className="font-bold text-base mb-1">건물 관리</h2>
       <p className="text-muted text-[11px] mb-4">
-        <span className="text-primary font-semibold">기능</span> 건물은 스탯·표시명만 수정 ·
-        <span className="text-gp font-semibold"> 장식</span> 건물은 자유 생성(HP·방어력만 유효) · 상세 설정은 <b>상세</b> 토글로 펼칩니다.
+        메인 행은 정적 속성(아이콘·색·크기·Zone·표시명), <b>상세</b>에서 레벨별 값(비용·HP·방어력·생산)을 편집합니다.
+        <span className="text-primary font-semibold"> 기능</span> 건물은 생산 스탯도, <span className="text-gp font-semibold">장식</span> 건물은 HP·방어력만.
       </p>
 
       {error && <p className="text-danger text-xs mb-3">⚠ {error}</p>}
@@ -69,8 +74,8 @@ export function AdminBuildingPage() {
           <tr>
             <th className="text-left font-medium py-2 px-2">코드 / 분류</th>
             <th className="text-left font-medium py-2 px-1 w-[110px]">표시명</th>
-            {MAIN_FIELDS.map(f => <th key={f.key} className="text-left font-medium py-2 px-1 w-[80px]">{f.label}</th>)}
-            <th className="text-right font-medium py-2 px-2 w-40"></th>
+            {ATTR_FIELDS.map(f => <th key={f.key} className="text-left font-medium py-2 px-1">{f.label}</th>)}
+            <th className="text-right font-medium py-2 px-2 w-44"></th>
           </tr>
         </thead>
         <tbody>
@@ -80,7 +85,7 @@ export function AdminBuildingPage() {
             return (
               <Fragment key={cat}>
                 <tr className="bg-panel-deep">
-                  <td colSpan={5} className={`py-1.5 px-2 text-[11px] font-bold ${cat === 'DECORATIVE' ? 'text-gp' : 'text-primary'}`}>
+                  <td colSpan={ATTR_FIELDS.length + 3} className={`py-1.5 px-2 text-[11px] font-bold ${cat === 'DECORATIVE' ? 'text-gp' : 'text-primary'}`}>
                     {cat === 'DECORATIVE' ? '🎨 장식 건물' : '⚙ 기능 건물'} <span className="text-dim font-normal">({group.length})</span>
                   </td>
                 </tr>
@@ -88,7 +93,7 @@ export function AdminBuildingPage() {
               </Fragment>
             );
           })}
-          {items.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-muted">건물이 없습니다.</td></tr>}
+          {items.length === 0 && <tr><td colSpan={ATTR_FIELDS.length + 3} className="py-8 text-center text-muted">건물이 없습니다.</td></tr>}
         </tbody>
       </table>
 
@@ -104,18 +109,55 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
   const [form, setForm] = useState<BuildingTypeForm>(toForm(item));
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
-  const dirty = JSON.stringify(form) !== JSON.stringify(toForm(item));
   const isDecorative = item.category === 'DECORATIVE';
+  const statRows = STAT_ROWS.filter(s => !s.production || !isDecorative);
 
-  const setNum = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
-    setForm(f => ({ ...f, [k]: v.trim() === '' ? (nullable ? null : 0) : Number(v) }));
+  // Lv2·Lv3 지정값 (상세 토글 시 로드). levelSpecs[level][specKey] = 문자열 입력값
+  const [levelSpecs, setLevelSpecs] = useState<Record<number, Partial<Record<keyof LevelSpecValues, string>>>>({});
+  const [levelLoaded, setLevelLoaded] = useState(false);
+  useEffect(() => {
+    if (!open || levelLoaded) return;
+    fetchLevelSpecs(item.buildingTypeId)
+      .then(r => {
+        const next: Record<number, Partial<Record<keyof LevelSpecValues, string>>> = {};
+        UPGRADE_LEVELS.forEach(lv => {
+          const v = r[String(lv)];
+          const row: Partial<Record<keyof LevelSpecValues, string>> = {};
+          statRows.forEach(s => { row[s.specKey] = v && v[s.specKey] != null ? String(v[s.specKey]) : ''; });
+          next[lv] = row;
+        });
+        setLevelSpecs(next); setLevelLoaded(true);
+      })
+      .catch(e => { onError(e instanceof ApiError ? e.message : '레벨 설정을 불러올 수 없습니다.'); console.warn('[AdminBuilding] levelSpecs', e); });
+  }, [open, levelLoaded, item.buildingTypeId, onError, statRows]);
+
+  const setAttr = (k: keyof BuildingTypeForm, v: string, text?: boolean, nullable?: boolean) =>
+    setForm(f => ({ ...f, [k]: text ? (v || null) : v.trim() === '' ? (nullable ? null : 0) : Number(v) }));
+  const setSpec = (lv: number, key: keyof LevelSpecValues, val: string) =>
+    setLevelSpecs(s => ({ ...s, [lv]: { ...s[lv], [key]: val } }));
 
   const save = async () => {
-    if (busy || !dirty) return;
+    if (busy) return;
     setBusy(true);
-    try { await updateBuildingType(item.buildingTypeId, form); onDone(`${item.name} 저장됨`); }
-    catch (e) { onError(e instanceof ApiError ? e.message : '저장 실패'); }
-    finally { setBusy(false); }
+    try {
+      await updateBuildingType(item.buildingTypeId, form);
+      if (levelLoaded) {
+        const payload: Record<number, LevelSpecValues> = {};
+        UPGRADE_LEVELS.forEach(lv => {
+          const row = levelSpecs[lv] ?? {};
+          const num = (k: keyof LevelSpecValues) => (row[k]?.trim() ? Number(row[k]) : null);
+          payload[lv] = {
+            upgradeCostGp: num('upgradeCostGp'), maxHp: num('maxHp'), defensePower: num('defensePower'),
+            foodProductionRate: num('foodProductionRate'), unitCapacityPerLevel: num('unitCapacityPerLevel'),
+            gpProductionRate: num('gpProductionRate'),
+          };
+        });
+        await updateLevelSpecs(item.buildingTypeId, payload);
+      }
+      onDone(`${item.name} 저장됨`);
+    } catch (e) {
+      onError(e instanceof ApiError ? e.message : '저장 실패');
+    } finally { setBusy(false); }
   };
   const remove = async () => {
     if (busy) return;
@@ -130,20 +172,21 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
     <>
       <tr className="border-b border-outline-soft">
         <td className="py-1.5 px-2 font-semibold whitespace-nowrap">
-          <span className="mr-1">{form.icon || item.icon || '🏗'}</span>{item.name}
+          <span className="mr-1">{form.icon || '🏗'}</span>{item.name}
           <span className={`ml-1.5 text-[9px] font-bold ${isDecorative ? 'text-gp' : 'text-primary'}`}>{isDecorative ? '장식' : '기능'}</span>
         </td>
         <td className="py-1.5 px-1">
           <input value={form.displayName ?? ''} placeholder="한글명" onChange={e => setForm(f => ({ ...f, displayName: e.target.value || null }))} className={input} />
         </td>
-        {MAIN_FIELDS.map(f => (
+        {ATTR_FIELDS.map(f => (
           <td key={f.key} className="py-1.5 px-1">
-            <input type="number" value={form[f.key] ?? ''} placeholder="0" onChange={e => setNum(f.key, e.target.value, f.nullable)} className={input} />
+            <input type={f.text ? 'text' : 'number'} value={form[f.key] ?? ''} placeholder={f.text ? (f.key === 'colorHex' ? '#rgb' : '🏗') : f.nullable ? '-' : '0'}
+              onChange={e => setAttr(f.key, e.target.value, f.text, f.nullable)} className={`${input} ${f.w}`} />
           </td>
         ))}
         <td className="py-1.5 px-2 text-right whitespace-nowrap">
           <button onClick={() => setOpen(o => !o)} className="text-dim hover:text-foreground-soft mr-2">{open ? '상세 ▾' : '상세 ▸'}</button>
-          <button onClick={() => void save()} disabled={busy || !dirty} className="text-primary font-bold hover:brightness-125 disabled:opacity-30 mr-2">저장</button>
+          <button onClick={() => void save()} disabled={busy} className="text-primary font-bold hover:brightness-125 disabled:opacity-30 mr-2">저장</button>
           {isDecorative
             ? <button onClick={() => void remove()} disabled={busy} className="text-danger font-bold hover:brightness-125 disabled:opacity-40">삭제</button>
             : <span className="text-dim text-[10px]">기능</span>}
@@ -151,23 +194,35 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
       </tr>
       {open && (
         <tr className="bg-surface border-b border-outline-soft">
-          <td colSpan={5} className="py-2 px-3">
-            <div className="flex flex-wrap items-end gap-2">
-              <label className="text-[11px] text-dim">아이콘
-                <input value={form.icon ?? ''} placeholder="🏗" onChange={e => setForm(f => ({ ...f, icon: e.target.value || null }))} className={`${input} w-12 mt-0.5`} />
-              </label>
-              <label className="text-[11px] text-dim">색
-                <input value={form.colorHex ?? ''} placeholder="#rrggbb" onChange={e => setForm(f => ({ ...f, colorHex: e.target.value || null }))} className={`${input} w-20 mt-0.5`} />
-              </label>
-              {DETAIL_FIELDS.map(f => (
-                <label key={f.key} className="text-[11px] text-dim">{f.label}
-                  {isDecorative && f.production
-                    ? <div className="h-7 flex items-center pl-1 text-dim text-[11px]">—</div>
-                    : <input type="number" value={form[f.key] ?? ''} placeholder={f.nullable ? '-' : '0'}
-                        onChange={e => setNum(f.key, e.target.value, f.nullable)} className={`${input} w-[70px] mt-0.5`} />}
-                </label>
-              ))}
-            </div>
+          <td colSpan={ATTR_FIELDS.length + 3} className="py-2 px-3">
+            <p className="text-[11px] text-dim mb-2">레벨별 값 <span className="text-muted">— Lv1은 기본값, Lv2·Lv3은 비우면 공식 자동</span></p>
+            <table className="text-[11px]">
+              <thead className="text-dim">
+                <tr>
+                  <th className="text-left font-medium pr-3 pb-1">항목</th>
+                  <th className="text-left font-medium px-1 pb-1">Lv1 (기본)</th>
+                  <th className="text-left font-medium px-1 pb-1">Lv2</th>
+                  <th className="text-left font-medium px-1 pb-1">Lv3</th>
+                </tr>
+              </thead>
+              <tbody>
+                {statRows.map(s => (
+                  <tr key={s.label}>
+                    <td className="pr-3 py-0.5 text-foreground-soft whitespace-nowrap">{s.label}</td>
+                    <td className="px-1 py-0.5">
+                      <input type="number" value={form[s.baseKey] ?? ''} placeholder={s.nullable ? '-' : '0'}
+                        onChange={e => setAttr(s.baseKey, e.target.value, false, s.nullable)} className={`${input} w-[84px]`} />
+                    </td>
+                    {UPGRADE_LEVELS.map(lv => (
+                      <td key={lv} className="px-1 py-0.5">
+                        <input type="number" value={levelSpecs[lv]?.[s.specKey] ?? ''} placeholder="자동"
+                          onChange={e => setSpec(lv, s.specKey, e.target.value)} className={`${input} w-[84px]`} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </td>
         </tr>
       )}
@@ -182,8 +237,11 @@ function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError:
   const setNum = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
     setForm(f => ({ ...f, [k]: v.trim() === '' ? (nullable ? null : 0) : Number(v) }));
 
-  // 생성은 장식 전용 — 생산 필드는 제외
-  const CREATE_FIELDS = [...MAIN_FIELDS, ...DETAIL_FIELDS.filter(f => !f.production)];
+  const NUM_FIELDS: { key: keyof BuildingTypeForm; label: string; nullable?: boolean }[] = [
+    { key: 'width', label: '너비' }, { key: 'height', label: '높이' },
+    { key: 'maxHp', label: 'HP' }, { key: 'baseCostGp', label: '건설비용' },
+    { key: 'zoneRestriction', label: 'Zone제한', nullable: true }, { key: 'defensePower', label: '방어력', nullable: true },
+  ];
 
   const create = async () => {
     if (busy) return;
@@ -210,10 +268,10 @@ function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError:
         <label className="text-[11px] text-dim">색
           <input value={form.colorHex ?? ''} onChange={e => setForm(f => ({ ...f, colorHex: e.target.value || null }))} placeholder="#rrggbb" className={`${input} w-20 mt-0.5`} />
         </label>
-        {CREATE_FIELDS.map(f => (
+        {NUM_FIELDS.map(f => (
           <label key={f.key} className="text-[11px] text-dim">{f.label}
             <input type="number" value={form[f.key] ?? ''} placeholder={f.nullable ? '-' : '0'}
-              onChange={e => setNum(f.key, e.target.value, f.nullable)} className={`${input} w-[70px] mt-0.5`} />
+              onChange={e => setNum(f.key, e.target.value, f.nullable)} className={`${input} w-[68px] mt-0.5`} />
           </label>
         ))}
         <button onClick={() => void create()} disabled={busy} className="h-8 px-4 rounded-md bg-primary text-surface text-xs font-bold hover:brightness-110 disabled:opacity-40">추가</button>
