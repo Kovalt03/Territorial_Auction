@@ -272,6 +272,7 @@ CREATE TABLE IF NOT EXISTS building_types (
     max_hp                 INTEGER     NOT NULL,
     base_cost_gp           INTEGER     NOT NULL,
     upgrade_cost_gp        INTEGER,
+    ap_cost                INTEGER,
     zone_restriction       INTEGER,
     defense_power          INTEGER,
     food_production_rate   INTEGER,
