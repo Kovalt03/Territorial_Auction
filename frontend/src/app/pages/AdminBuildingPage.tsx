@@ -2,8 +2,8 @@ import { Fragment, useEffect, useState } from 'react';
 
 import {
   fetchAdminBuildingTypes, createBuildingType, updateBuildingType, deleteBuildingType,
-  fetchLevelCosts, updateLevelCosts,
-  type BuildingTypeForm,
+  fetchLevelSpecs, updateLevelSpecs,
+  type BuildingTypeForm, type LevelSpecValues,
 } from '../api/admin';
 import { ApiError } from '../api/client';
 
@@ -42,6 +42,15 @@ const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-
 
 // 최대 레벨 3 → 업그레이드 도달 레벨 2, 3
 const UPGRADE_LEVELS = [2, 3];
+
+// 레벨별로 설정 가능한 항목. base가 있으면 건물 기본값이 있을 때만 노출(그 건물의 기능일 때).
+const LEVEL_FIELDS: { key: keyof LevelSpecValues; label: string; base?: keyof BuildingTypeInfo }[] = [
+  { key: 'upgradeCostGp', label: '업글비용' },
+  { key: 'defensePower', label: '방어력', base: 'defensePower' },
+  { key: 'foodProductionRate', label: '식량/시간', base: 'foodProductionRate' },
+  { key: 'unitCapacityPerLevel', label: '유닛/레벨', base: 'unitCapacityPerLevel' },
+  { key: 'gpProductionRate', label: 'GP/시간', base: 'gpProductionRate' },
+];
 
 export function AdminBuildingPage() {
   const [items, setItems] = useState<BuildingTypeInfo[]>([]);
@@ -111,31 +120,51 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
   const dirty = JSON.stringify(form) !== JSON.stringify(toForm(item));
   const isDecorative = item.category === 'DECORATIVE';
 
-  // 레벨별 업그레이드 비용 (상세 토글 시 로드)
-  const [levelCosts, setLevelCosts] = useState<Record<number, string>>({});
+  // 레벨별 스펙 (상세 토글 시 로드). levelSpecs[level][fieldKey] = 문자열 입력값
+  const [levelSpecs, setLevelSpecs] = useState<Record<number, Partial<Record<keyof LevelSpecValues, string>>>>({});
   const [levelLoaded, setLevelLoaded] = useState(false);
   const [levelBusy, setLevelBusy] = useState(false);
+  // 이 건물에서 레벨별로 조절 가능한 항목(업글비용 + 기본값 있는 기능 스탯)
+  const levelFields = LEVEL_FIELDS.filter(f => !f.base || item[f.base] != null);
+
   useEffect(() => {
     if (!open || levelLoaded) return;
-    fetchLevelCosts(item.buildingTypeId)
+    fetchLevelSpecs(item.buildingTypeId)
       .then(r => {
-        const next: Record<number, string> = {};
-        UPGRADE_LEVELS.forEach(lv => { next[lv] = r[String(lv)] != null ? String(r[String(lv)]) : ''; });
-        setLevelCosts(next); setLevelLoaded(true);
+        const next: Record<number, Partial<Record<keyof LevelSpecValues, string>>> = {};
+        UPGRADE_LEVELS.forEach(lv => {
+          const v = r[String(lv)];
+          const row: Partial<Record<keyof LevelSpecValues, string>> = {};
+          levelFields.forEach(f => { row[f.key] = v && v[f.key] != null ? String(v[f.key]) : ''; });
+          next[lv] = row;
+        });
+        setLevelSpecs(next); setLevelLoaded(true);
       })
-      .catch(e => { onError(e instanceof ApiError ? e.message : '레벨 비용을 불러올 수 없습니다.'); console.warn('[AdminBuilding] levelCosts', e); });
-  }, [open, levelLoaded, item.buildingTypeId, onError]);
+      .catch(e => { onError(e instanceof ApiError ? e.message : '레벨 설정을 불러올 수 없습니다.'); console.warn('[AdminBuilding] levelSpecs', e); });
+  }, [open, levelLoaded, item.buildingTypeId, onError, levelFields]);
 
-  const saveLevelCosts = async () => {
+  const setLevelField = (lv: number, key: keyof LevelSpecValues, val: string) =>
+    setLevelSpecs(s => ({ ...s, [lv]: { ...s[lv], [key]: val } }));
+
+  const saveLevelSpecs = async () => {
     if (levelBusy) return;
     setLevelBusy(true);
     try {
-      const payload: Record<number, number | null> = {};
-      UPGRADE_LEVELS.forEach(lv => { payload[lv] = levelCosts[lv]?.trim() ? Number(levelCosts[lv]) : null; });
-      await updateLevelCosts(item.buildingTypeId, payload);
-      onDone(`${item.name} 레벨 비용 저장됨`);
+      const payload: Record<number, LevelSpecValues> = {};
+      UPGRADE_LEVELS.forEach(lv => {
+        const row = levelSpecs[lv] ?? {};
+        payload[lv] = {
+          upgradeCostGp: row.upgradeCostGp?.trim() ? Number(row.upgradeCostGp) : null,
+          defensePower: row.defensePower?.trim() ? Number(row.defensePower) : null,
+          foodProductionRate: row.foodProductionRate?.trim() ? Number(row.foodProductionRate) : null,
+          unitCapacityPerLevel: row.unitCapacityPerLevel?.trim() ? Number(row.unitCapacityPerLevel) : null,
+          gpProductionRate: row.gpProductionRate?.trim() ? Number(row.gpProductionRate) : null,
+        };
+      });
+      await updateLevelSpecs(item.buildingTypeId, payload);
+      onDone(`${item.name} 레벨 설정 저장됨`);
     } catch (e) {
-      onError(e instanceof ApiError ? e.message : '레벨 비용 저장 실패');
+      onError(e instanceof ApiError ? e.message : '레벨 설정 저장 실패');
     } finally { setLevelBusy(false); }
   };
 
@@ -202,17 +231,22 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
             </div>
 
             <div className="mt-3 pt-3 border-t border-outline-soft">
-              <p className="text-[11px] text-dim mb-1.5">레벨별 업그레이드 비용 <span className="text-muted">(비우면 공식 자동)</span></p>
-              <div className="flex flex-wrap items-end gap-2">
+              <p className="text-[11px] text-dim mb-1.5">레벨별 세부 설정 <span className="text-muted">(비우면 공식 자동)</span></p>
+              <div className="space-y-1.5">
                 {UPGRADE_LEVELS.map(lv => (
-                  <label key={lv} className="text-[11px] text-dim">→ Lv{lv} 비용
-                    <input type="number" value={levelCosts[lv] ?? ''} placeholder="자동"
-                      onChange={e => setLevelCosts(c => ({ ...c, [lv]: e.target.value }))}
-                      className={`${input} w-[80px] mt-0.5`} />
-                  </label>
+                  <div key={lv} className="flex flex-wrap items-end gap-2">
+                    <span className="text-[11px] text-foreground-soft font-bold w-10">→Lv{lv}</span>
+                    {levelFields.map(f => (
+                      <label key={f.key} className="text-[11px] text-dim">{f.label}
+                        <input type="number" value={levelSpecs[lv]?.[f.key] ?? ''} placeholder="자동"
+                          onChange={e => setLevelField(lv, f.key, e.target.value)}
+                          className={`${input} w-[74px] mt-0.5`} />
+                      </label>
+                    ))}
+                  </div>
                 ))}
-                <button onClick={() => void saveLevelCosts()} disabled={levelBusy || !levelLoaded}
-                  className="h-7 px-3 rounded-md bg-primary text-surface text-[11px] font-bold hover:brightness-110 disabled:opacity-40">레벨 비용 저장</button>
+                <button onClick={() => void saveLevelSpecs()} disabled={levelBusy || !levelLoaded}
+                  className="h-7 px-3 rounded-md bg-primary text-surface text-[11px] font-bold hover:brightness-110 disabled:opacity-40">레벨 설정 저장</button>
               </div>
             </div>
           </td>

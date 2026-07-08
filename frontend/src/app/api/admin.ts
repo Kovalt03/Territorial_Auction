@@ -327,10 +327,18 @@ export function deleteBuildingType(id: number) {
   return apiClient.delete<null>(`/admin/building-types/${id}`);
 }
 
-export function fetchLevelCosts(id: number) {
-  return apiClient.get<Record<string, number>>(`/admin/building-types/${id}/level-costs`);
+export interface LevelSpecValues {
+  upgradeCostGp: number | null;
+  defensePower: number | null;
+  foodProductionRate: number | null;
+  unitCapacityPerLevel: number | null;
+  gpProductionRate: number | null;
 }
 
-export function updateLevelCosts(id: number, costs: Record<number, number | null>) {
-  return apiClient.patch<Record<string, number>>(`/admin/building-types/${id}/level-costs`, { costs });
+export function fetchLevelSpecs(id: number) {
+  return apiClient.get<Record<string, LevelSpecValues>>(`/admin/building-types/${id}/level-specs`);
+}
+
+export function updateLevelSpecs(id: number, specs: Record<number, LevelSpecValues>) {
+  return apiClient.patch<Record<string, LevelSpecValues>>(`/admin/building-types/${id}/level-specs`, { specs });
 }
