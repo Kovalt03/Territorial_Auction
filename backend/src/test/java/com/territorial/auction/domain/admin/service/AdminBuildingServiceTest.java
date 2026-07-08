@@ -184,8 +184,8 @@ class AdminBuildingServiceTest {
     }
 
     @Test
-    @DisplayName("레벨 비용 설정 → 미존재 레벨 신규 저장 + 감사 로그")
-    void updateLevelCosts_savesNew() {
+    @DisplayName("레벨 스펙 설정 → 미존재 레벨 신규 저장 + 감사 로그")
+    void updateLevelSpecs_savesNew() {
         BuildingType t = type(3L, "WORKSHOP");
         given(buildingTypeRepository.findById(3L)).willReturn(Optional.of(t));
         given(buildingLevelSpecRepository.findByBuildingType_IdAndLevel(3L, 2))
@@ -193,24 +193,36 @@ class AdminBuildingServiceTest {
         given(buildingLevelSpecRepository.findAllByBuildingType_Id(3L))
                 .willReturn(java.util.List.of());
 
-        adminBuildingService.updateLevelCosts(10L, 3L, java.util.Map.of(2, 1500));
+        adminBuildingService.updateLevelSpecs(
+                10L,
+                3L,
+                java.util.Map.of(
+                        2,
+                        new com.territorial.auction.domain.admin.dto.AdminLevelSpecsRequest
+                                .LevelSpecValues(1500, null, null, null, 40)));
 
         then(buildingLevelSpecRepository).should().save(any());
         then(adminAuditLogger)
                 .should()
-                .record(eq(10L), eq("BUILDING_LEVEL_COST_UPDATE"), any(), any(), any());
+                .record(eq(10L), eq("BUILDING_LEVEL_SPEC_UPDATE"), any(), any(), any());
     }
 
     @Test
     @DisplayName("허용 범위 밖 레벨 → INVALID_BUILDING_LEVEL")
-    void updateLevelCosts_invalidLevel() {
+    void updateLevelSpecs_invalidLevel() {
         BuildingType t = type(3L, "WORKSHOP");
         given(buildingTypeRepository.findById(3L)).willReturn(Optional.of(t));
 
         assertThatThrownBy(
                         () ->
-                                adminBuildingService.updateLevelCosts(
-                                        10L, 3L, java.util.Map.of(9, 100)))
+                                adminBuildingService.updateLevelSpecs(
+                                        10L,
+                                        3L,
+                                        java.util.Map.of(
+                                                9,
+                                                new com.territorial.auction.domain.admin.dto
+                                                        .AdminLevelSpecsRequest.LevelSpecValues(
+                                                        100, null, null, null, null))))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_BUILDING_LEVEL);

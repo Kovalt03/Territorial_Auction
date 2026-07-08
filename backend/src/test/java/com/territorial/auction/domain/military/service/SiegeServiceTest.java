@@ -56,6 +56,10 @@ class SiegeServiceTest {
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private SimpMessagingTemplate messagingTemplate;
 
+    @Mock
+    private com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository
+            buildingLevelSpecRepository;
+
     private SiegeEvent event;
     private User attacker;
     private User defender;
@@ -68,6 +72,9 @@ class SiegeServiceTest {
         lenient()
                 .when(seasonRepository.findActiveSeason(any(LocalDateTime.class)))
                 .thenReturn(Optional.empty());
+        lenient()
+                .when(buildingLevelSpecRepository.findAllByBuildingType_IdIn(any()))
+                .thenReturn(java.util.List.of());
 
         attacker = mock(User.class);
         given(attacker.getId()).willReturn(1L);

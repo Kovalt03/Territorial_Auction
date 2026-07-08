@@ -78,6 +78,11 @@ class BuildingServiceTest {
                                 org.mockito.ArgumentMatchers.any(),
                                 org.mockito.ArgumentMatchers.any()))
                 .thenReturn(java.util.Optional.empty());
+        org.mockito.Mockito.lenient()
+                .when(
+                        buildingLevelSpecRepository.findAllByBuildingType_IdIn(
+                                org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.List.of());
     }
 
     // ─── 공통 픽스처 ───────────────────────────────────────────────────────────
