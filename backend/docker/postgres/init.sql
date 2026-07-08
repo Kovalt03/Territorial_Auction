@@ -289,6 +289,10 @@ CREATE TABLE IF NOT EXISTS building_level_specs (
     building_type_id       BIGINT      NOT NULL REFERENCES building_types(id),
     level                  INTEGER     NOT NULL,
     upgrade_cost_gp        INTEGER,
+    defense_power          INTEGER,
+    food_production_rate   INTEGER,
+    unit_capacity_per_level INTEGER,
+    gp_production_rate     INTEGER,
     UNIQUE (building_type_id, level)
 );
 
