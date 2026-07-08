@@ -43,7 +43,7 @@ const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-
 // 최대 레벨 3 → 업그레이드 도달 레벨 2, 3
 const UPGRADE_LEVELS = [2, 3];
 
-// 레벨별로 설정 가능한 항목(모든 건물 공통). 비우면 각 기본 공식으로 폴백.
+// 레벨별로 설정 가능한 항목. 비우면 각 기본 공식으로 폴백.
 const LEVEL_FIELDS: { key: keyof LevelSpecValues; label: string }[] = [
   { key: 'upgradeCostGp', label: '업글비용' },
   { key: 'maxHp', label: 'HP' },
@@ -51,6 +51,11 @@ const LEVEL_FIELDS: { key: keyof LevelSpecValues; label: string }[] = [
   { key: 'foodProductionRate', label: '식량/시간' },
   { key: 'unitCapacityPerLevel', label: '유닛/레벨' },
   { key: 'gpProductionRate', label: 'GP/시간' },
+];
+
+// 장식 건물엔 생산 기능이 없으므로 레벨 설정에서 제외한다.
+const PRODUCTION_KEYS: (keyof LevelSpecValues)[] = [
+  'foodProductionRate', 'unitCapacityPerLevel', 'gpProductionRate',
 ];
 
 export function AdminBuildingPage() {
@@ -125,8 +130,10 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
   const [levelSpecs, setLevelSpecs] = useState<Record<number, Partial<Record<keyof LevelSpecValues, string>>>>({});
   const [levelLoaded, setLevelLoaded] = useState(false);
   const [levelBusy, setLevelBusy] = useState(false);
-  // 모든 건물에서 6개 스탯을 레벨별로 설정 가능(비우면 공식 자동)
-  const levelFields = LEVEL_FIELDS;
+  // 장식 건물은 생산 스탯 제외, 기능 건물은 6개 모두
+  const levelFields = item.category === 'DECORATIVE'
+    ? LEVEL_FIELDS.filter(f => !PRODUCTION_KEYS.includes(f.key))
+    : LEVEL_FIELDS;
 
   useEffect(() => {
     if (!open || levelLoaded) return;

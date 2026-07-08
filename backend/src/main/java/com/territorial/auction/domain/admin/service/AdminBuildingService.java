@@ -61,17 +61,17 @@ public class AdminBuildingService {
         if (level == null || level < 2 || level > BuildingPolicy.MAX_LEVEL) {
             throw new CustomException(ErrorCode.INVALID_BUILDING_LEVEL);
         }
+        // 장식 건물은 생산 기능이 없으므로 레벨 스펙에서도 식량/유닛/GP를 무효화한다.
+        boolean isDecorative = type.getCategory() == BuildingCategory.DECORATIVE;
+        Integer food = isDecorative ? null : v.foodProductionRate();
+        Integer unit = isDecorative ? null : v.unitCapacityPerLevel();
+        Integer gp = isDecorative ? null : v.gpProductionRate();
         buildingLevelSpecRepository
                 .findByBuildingType_IdAndLevel(type.getId(), level)
                 .ifPresentOrElse(
                         spec -> {
                             spec.update(
-                                    v.upgradeCostGp(),
-                                    v.maxHp(),
-                                    v.defensePower(),
-                                    v.foodProductionRate(),
-                                    v.unitCapacityPerLevel(),
-                                    v.gpProductionRate());
+                                    v.upgradeCostGp(), v.maxHp(), v.defensePower(), food, unit, gp);
                             if (spec.isEmpty()) buildingLevelSpecRepository.delete(spec);
                         },
                         () -> {
@@ -82,9 +82,9 @@ public class AdminBuildingService {
                                             .upgradeCostGp(v.upgradeCostGp())
                                             .maxHp(v.maxHp())
                                             .defensePower(v.defensePower())
-                                            .foodProductionRate(v.foodProductionRate())
-                                            .unitCapacityPerLevel(v.unitCapacityPerLevel())
-                                            .gpProductionRate(v.gpProductionRate())
+                                            .foodProductionRate(food)
+                                            .unitCapacityPerLevel(unit)
+                                            .gpProductionRate(gp)
                                             .build();
                             if (!created.isEmpty()) buildingLevelSpecRepository.save(created);
                         });
