@@ -60,7 +60,30 @@ public class BuildingTypeSeeder implements ApplicationRunner {
                     "FARMLAND", "농지",
                     "RESIDENCE", "주거지");
 
-    // 기존 건물의 분류(name 기반)·한글 표시명을 채운다. 이미 값이 있으면 유지.
+    // 프론트 기본 매핑(islandGrid.ts)과 동일 — 관리자/사용자 표기 일치를 위해 DB에 채운다.
+    private static final Map<String, String> ICONS =
+            Map.of(
+                    "CASTLE", "🏰",
+                    "WORKSHOP", "⚙",
+                    "BARRACKS", "⚔",
+                    "STORAGE", "📦",
+                    "WALL", "🧱",
+                    "TOWER", "🗼",
+                    "FARMLAND", "🌾",
+                    "RESIDENCE", "🏠");
+
+    private static final Map<String, String> COLORS =
+            Map.of(
+                    "CASTLE", "#ffd700",
+                    "WORKSHOP", "#00ff88",
+                    "BARRACKS", "#8b50ff",
+                    "STORAGE", "#00f5ff",
+                    "WALL", "#e0e8ff",
+                    "TOWER", "#ff8c00",
+                    "FARMLAND", "#a3e635",
+                    "RESIDENCE", "#44aaff");
+
+    // 기존 건물의 분류·한글명·아이콘·색을 채운다. 이미 값이 있으면 유지.
     private void backfillCategoryAndDisplayName() {
         buildingTypeRepository
                 .findAll()
@@ -69,7 +92,9 @@ public class BuildingTypeSeeder implements ApplicationRunner {
                                 t.backfillMeta(
                                         com.territorial.auction.domain.building.entity
                                                 .BuildingCategory.of(t.getName()),
-                                        KOREAN_NAMES.get(t.getName())));
+                                        KOREAN_NAMES.get(t.getName()),
+                                        ICONS.get(t.getName()),
+                                        COLORS.get(t.getName())));
     }
 
     private void patchCastleGpProductionRate() {

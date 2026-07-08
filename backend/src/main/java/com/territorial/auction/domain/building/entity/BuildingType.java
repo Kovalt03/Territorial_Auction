@@ -68,10 +68,13 @@ public class BuildingType {
         this.gpProductionRate = rate;
     }
 
-    // 기존 시드 데이터 백필: 비어 있는 분류·한글명만 채운다.
-    public void backfillMeta(BuildingCategory category, String displayName) {
+    // 기존 시드 데이터 백필: 비어 있는 분류·한글명·아이콘·색만 채운다.
+    public void backfillMeta(
+            BuildingCategory category, String displayName, String icon, String colorHex) {
         if (this.category == null) this.category = category;
         if (this.displayName == null) this.displayName = displayName;
+        if (this.icon == null) this.icon = icon;
+        if (this.colorHex == null) this.colorHex = colorHex;
     }
 
     // 관리자 편집: 이름(코드)·분류를 제외한 속성 갱신. 이름은 서버 식별자라 변경 불가.
