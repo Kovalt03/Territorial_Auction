@@ -84,6 +84,11 @@ public class BuildingInstance {
         this.hp = BuildingPolicy.scaledMaxHp(this.buildingType.getMaxHp(), this.level);
     }
 
+    // 레벨별 지정 HP가 있으면 현재 HP를 그 값으로 맞춘다(업그레이드 직후 풀피).
+    public void applyLevelMaxHp(int maxHp) {
+        this.hp = maxHp;
+    }
+
     public void repair() {
         this.hp = BuildingPolicy.scaledMaxHp(this.buildingType.getMaxHp(), this.level);
         this.isDestroyed = false;

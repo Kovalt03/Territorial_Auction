@@ -53,11 +53,19 @@ public final class BuildingLevelSpecResolver {
                 : b.getLevel() * base;
     }
 
-    /** 방어력 — 지정값 우선, 없으면 기본(레벨 무관). 방어 건물이 아니면 0. */
+    /** 방어력 — 지정값 우선, 없으면 기본(레벨 무관). 둘 다 없으면 0. */
     public int defense(BuildingInstance b) {
-        Integer base = b.getBuildingType().getDefensePower();
-        if (base == null) return 0;
         BuildingLevelSpec s = specFor(b);
-        return (s != null && s.getDefensePower() != null) ? s.getDefensePower() : base;
+        if (s != null && s.getDefensePower() != null) return s.getDefensePower();
+        Integer base = b.getBuildingType().getDefensePower();
+        return base != null ? base : 0;
+    }
+
+    /** 최대 HP — 지정값 우선, 없으면 기본 × 레벨. */
+    public int maxHp(BuildingInstance b) {
+        BuildingLevelSpec s = specFor(b);
+        if (s != null && s.getMaxHp() != null) return s.getMaxHp();
+        return com.territorial.auction.domain.building.BuildingPolicy.scaledMaxHp(
+                b.getBuildingType().getMaxHp(), b.getLevel());
     }
 }
