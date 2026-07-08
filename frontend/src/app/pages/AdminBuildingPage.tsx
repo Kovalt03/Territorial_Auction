@@ -43,15 +43,14 @@ const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-
 // 최대 레벨 3 → 업그레이드 도달 레벨 2, 3
 const UPGRADE_LEVELS = [2, 3];
 
-// 레벨별로 설정 가능한 항목. base 지정 항목은 그 건물의 기능(기본값 존재)일 때만 노출.
-// HP·방어력·업글비용은 모든 건물에 적용되므로 항상 노출.
-const LEVEL_FIELDS: { key: keyof LevelSpecValues; label: string; base?: keyof BuildingTypeInfo }[] = [
+// 레벨별로 설정 가능한 항목(모든 건물 공통). 비우면 각 기본 공식으로 폴백.
+const LEVEL_FIELDS: { key: keyof LevelSpecValues; label: string }[] = [
   { key: 'upgradeCostGp', label: '업글비용' },
   { key: 'maxHp', label: 'HP' },
   { key: 'defensePower', label: '방어력' },
-  { key: 'foodProductionRate', label: '식량/시간', base: 'foodProductionRate' },
-  { key: 'unitCapacityPerLevel', label: '유닛/레벨', base: 'unitCapacityPerLevel' },
-  { key: 'gpProductionRate', label: 'GP/시간', base: 'gpProductionRate' },
+  { key: 'foodProductionRate', label: '식량/시간' },
+  { key: 'unitCapacityPerLevel', label: '유닛/레벨' },
+  { key: 'gpProductionRate', label: 'GP/시간' },
 ];
 
 export function AdminBuildingPage() {
@@ -126,8 +125,8 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
   const [levelSpecs, setLevelSpecs] = useState<Record<number, Partial<Record<keyof LevelSpecValues, string>>>>({});
   const [levelLoaded, setLevelLoaded] = useState(false);
   const [levelBusy, setLevelBusy] = useState(false);
-  // 이 건물에서 레벨별로 조절 가능한 항목(업글비용 + 기본값 있는 기능 스탯)
-  const levelFields = LEVEL_FIELDS.filter(f => !f.base || item[f.base] != null);
+  // 모든 건물에서 6개 스탯을 레벨별로 설정 가능(비우면 공식 자동)
+  const levelFields = LEVEL_FIELDS;
 
   useEffect(() => {
     if (!open || levelLoaded) return;
