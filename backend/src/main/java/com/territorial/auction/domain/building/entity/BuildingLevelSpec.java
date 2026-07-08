@@ -21,18 +21,52 @@ public class BuildingLevelSpec {
     private BuildingType buildingType;
 
     @Column(nullable = false)
-    private Integer level; // 도달 레벨(2..MAX). 해당 레벨로 올리는 비용
+    private Integer level; // 도달 레벨(2..MAX). 해당 레벨로 올리는 비용/스탯
 
-    @Column private Integer upgradeCostGp; // 절대 비용. NULL이면 공식 폴백
+    // 아래 값들은 절대값. NULL이면 각 기본 공식으로 폴백한다.
+    @Column private Integer upgradeCostGp; // 이 레벨로 올리는 비용
+    @Column private Integer defensePower; // 이 레벨 방어력
+    @Column private Integer foodProductionRate; // 이 레벨 식량/시간
+    @Column private Integer unitCapacityPerLevel; // 이 레벨 유닛 수용량
+    @Column private Integer gpProductionRate; // 이 레벨 GP/시간
 
     @Builder
-    public BuildingLevelSpec(BuildingType buildingType, Integer level, Integer upgradeCostGp) {
+    public BuildingLevelSpec(
+            BuildingType buildingType,
+            Integer level,
+            Integer upgradeCostGp,
+            Integer defensePower,
+            Integer foodProductionRate,
+            Integer unitCapacityPerLevel,
+            Integer gpProductionRate) {
         this.buildingType = buildingType;
         this.level = level;
         this.upgradeCostGp = upgradeCostGp;
+        this.defensePower = defensePower;
+        this.foodProductionRate = foodProductionRate;
+        this.unitCapacityPerLevel = unitCapacityPerLevel;
+        this.gpProductionRate = gpProductionRate;
     }
 
-    public void updateUpgradeCostGp(Integer upgradeCostGp) {
+    public void update(
+            Integer upgradeCostGp,
+            Integer defensePower,
+            Integer foodProductionRate,
+            Integer unitCapacityPerLevel,
+            Integer gpProductionRate) {
         this.upgradeCostGp = upgradeCostGp;
+        this.defensePower = defensePower;
+        this.foodProductionRate = foodProductionRate;
+        this.unitCapacityPerLevel = unitCapacityPerLevel;
+        this.gpProductionRate = gpProductionRate;
+    }
+
+    // 지정된 값이 하나도 없으면 빈 스펙(삭제 대상)
+    public boolean isEmpty() {
+        return upgradeCostGp == null
+                && defensePower == null
+                && foodProductionRate == null
+                && unitCapacityPerLevel == null
+                && gpProductionRate == null;
     }
 }
