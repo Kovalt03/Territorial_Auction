@@ -33,7 +33,9 @@ public class BuildingType {
     private Integer maxHp;
 
     @Column(nullable = false)
-    private Integer baseCostGp;
+    private Integer baseCostGp; // 건설 비용
+
+    @Column private Integer upgradeCostGp; // 업그레이드 비용 기준. NULL이면 baseCostGp를 사용
 
     // 양수: 해당 Zone에만 배치 가능 (예: 1 = Zone1 전용 — CASTLE)
     // 음수: |값| 이상 Zone에만 배치 가능 (예: -2 = Zone2/3 전용 — FARMLAND)
@@ -57,6 +59,11 @@ public class BuildingType {
         return "CASTLE".equals(this.name);
     }
 
+    // 업그레이드 비용 기준값: 별도 지정이 없으면 건설 비용을 따른다.
+    public int getUpgradeCostBase() {
+        return upgradeCostGp != null ? upgradeCostGp : baseCostGp;
+    }
+
     public void patchGpProductionRate(int rate) {
         this.gpProductionRate = rate;
     }
@@ -74,6 +81,7 @@ public class BuildingType {
             Integer height,
             Integer maxHp,
             Integer baseCostGp,
+            Integer upgradeCostGp,
             Integer zoneRestriction,
             Integer defensePower,
             Integer foodProductionRate,
@@ -86,6 +94,7 @@ public class BuildingType {
         this.height = height;
         this.maxHp = maxHp;
         this.baseCostGp = baseCostGp;
+        this.upgradeCostGp = upgradeCostGp;
         this.zoneRestriction = zoneRestriction;
         this.defensePower = defensePower;
         this.foodProductionRate = foodProductionRate;
@@ -104,6 +113,7 @@ public class BuildingType {
             Integer height,
             Integer maxHp,
             Integer baseCostGp,
+            Integer upgradeCostGp,
             Integer zoneRestriction,
             Integer defensePower,
             Integer foodProductionRate,
@@ -118,6 +128,7 @@ public class BuildingType {
         this.height = height;
         this.maxHp = maxHp;
         this.baseCostGp = baseCostGp;
+        this.upgradeCostGp = upgradeCostGp;
         this.zoneRestriction = zoneRestriction;
         this.defensePower = defensePower;
         this.foodProductionRate = foodProductionRate;

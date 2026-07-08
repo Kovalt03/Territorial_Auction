@@ -73,6 +73,7 @@ export interface BuildingTypeInfo {
   height: number;
   maxHp: number;
   baseCostGp: number;
+  upgradeCostGp: number | null;
   zoneRestriction: number | null;
   defensePower: number | null;
   foodProductionRate: number | null;

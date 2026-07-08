@@ -70,6 +70,7 @@ class AdminBuildingServiceTest {
                                 50,
                                 500,
                                 null,
+                                null,
                                 40,
                                 null,
                                 null,
@@ -95,7 +96,7 @@ class AdminBuildingServiceTest {
                                         10L,
                                         new AdminCreateBuildingTypeRequest(
                                                 "castle", null, 2, 2, 100, 1000, null, null, null,
-                                                null, null, null, null)))
+                                                null, null, null, null, null)))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.DUPLICATE_BUILDING_TYPE_NAME);
@@ -118,6 +119,7 @@ class AdminBuildingServiceTest {
                                                 1,
                                                 100,
                                                 1000,
+                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -147,7 +149,7 @@ class AdminBuildingServiceTest {
                 adminBuildingService.create(
                         10L,
                         new AdminCreateBuildingTypeRequest(
-                                "statue", "동상", 1, 1, 50, 300, null, 15, 99, 99, 99, "🗽",
+                                "statue", "동상", 1, 1, 50, 300, null, null, 15, 99, 99, 99, "🗽",
                                 "#cccccc"));
 
         assertThat(res.category()).isEqualTo("DECORATIVE");
@@ -168,10 +170,12 @@ class AdminBuildingServiceTest {
                         10L,
                         3L,
                         new AdminUpdateBuildingTypeRequest(
-                                null, 2, 1, 200, 2000, null, null, null, null, 80, null, null));
+                                null, 2, 1, 200, 2000, 500, null, null, null, null, 80, null,
+                                null));
 
         assertThat(res.maxHp()).isEqualTo(200);
         assertThat(res.gpProductionRate()).isEqualTo(80);
+        assertThat(res.upgradeCostGp()).isEqualTo(500);
     }
 
     @Test

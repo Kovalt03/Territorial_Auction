@@ -48,6 +48,7 @@ public class AdminBuildingService {
                                 .height(request.height())
                                 .maxHp(request.maxHp())
                                 .baseCostGp(request.baseCostGp())
+                                .upgradeCostGp(request.upgradeCostGp())
                                 .zoneRestriction(request.zoneRestriction())
                                 .defensePower(request.defensePower())
                                 // 장식 건물은 생산 기능이 없다(이름 기반 로직이 없음).
@@ -78,6 +79,7 @@ public class AdminBuildingService {
                 request.height(),
                 request.maxHp(),
                 request.baseCostGp(),
+                request.upgradeCostGp(),
                 request.zoneRestriction(),
                 request.defensePower(),
                 // 장식 건물은 생산 필드를 강제로 비운다(기능이 없으므로).
