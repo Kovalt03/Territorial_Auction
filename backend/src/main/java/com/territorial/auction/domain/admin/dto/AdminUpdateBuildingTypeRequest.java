@@ -12,6 +12,7 @@ public record AdminUpdateBuildingTypeRequest(
         @NotNull @Positive Integer maxHp,
         @NotNull @PositiveOrZero Integer baseCostGp,
         @PositiveOrZero Integer upgradeCostGp,
+        @PositiveOrZero Integer apCost,
         Integer zoneRestriction,
         Integer defensePower,
         Integer foodProductionRate,
