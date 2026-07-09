@@ -54,6 +54,9 @@ public class BuildingType {
     // 성(CASTLE) 전용 — 이 성 레벨에서 섬에 지을 수 있는 최대 건물 수. NULL이면 무제한.
     @Column private Integer maxBuildings;
 
+    // 건설 소요 시간(초). NULL이거나 0이면 즉시 완성.
+    @Column private Integer buildTimeSeconds;
+
     @Column(length = 10)
     private String icon; // 이모지 아이콘 (관리자 지정). NULL이면 프론트 기본 매핑 사용
 
@@ -87,6 +90,10 @@ public class BuildingType {
         if (this.colorHex == null) this.colorHex = colorHex;
     }
 
+    public void backfillBuildTime(Integer buildTimeSeconds) {
+        if (this.buildTimeSeconds == null) this.buildTimeSeconds = buildTimeSeconds;
+    }
+
     // 관리자 편집: 이름(코드)·분류를 제외한 속성 갱신. 이름은 서버 식별자라 변경 불가.
     public void update(
             String displayName,
@@ -102,6 +109,7 @@ public class BuildingType {
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
             Integer maxBuildings,
+            Integer buildTimeSeconds,
             String icon,
             String colorHex) {
         this.displayName = displayName;
@@ -117,6 +125,7 @@ public class BuildingType {
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
         this.maxBuildings = maxBuildings;
+        this.buildTimeSeconds = buildTimeSeconds;
         this.icon = icon;
         this.colorHex = colorHex;
     }
@@ -138,6 +147,7 @@ public class BuildingType {
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
             Integer maxBuildings,
+            Integer buildTimeSeconds,
             String icon,
             String colorHex) {
         this.name = name;
@@ -155,6 +165,7 @@ public class BuildingType {
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
         this.maxBuildings = maxBuildings;
+        this.buildTimeSeconds = buildTimeSeconds;
         this.icon = icon;
         this.colorHex = colorHex;
     }

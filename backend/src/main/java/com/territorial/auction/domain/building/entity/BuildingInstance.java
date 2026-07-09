@@ -59,6 +59,9 @@ public class BuildingInstance {
     // WORKSHOP 파괴 후 일정 시간 생산 중단 — null이면 디버프 없음
     @Column private LocalDateTime workshopDebuffUntil;
 
+    // 건설 완료 예정 시각 — null이면 완성된 건물. 건축 장인 슬롯은 이 값이 미래인 건물만 점유한다.
+    @Column private LocalDateTime buildCompleteAt;
+
     @Builder
     public BuildingInstance(
             Territory territory,
@@ -142,6 +145,14 @@ public class BuildingInstance {
             return owner.getId();
         }
         return null;
+    }
+
+    public void startConstruction(LocalDateTime completeAt) {
+        this.buildCompleteAt = completeAt;
+    }
+
+    public boolean isUnderConstruction(LocalDateTime now) {
+        return buildCompleteAt != null && buildCompleteAt.isAfter(now);
     }
 
     public void applyWorkshopDebuff(LocalDateTime until) {
