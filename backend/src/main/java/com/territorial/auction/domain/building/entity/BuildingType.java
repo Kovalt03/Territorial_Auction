@@ -51,6 +51,9 @@ public class BuildingType {
 
     @Column private Integer gpProductionRate; // NULL 허용 — WORKSHOP만 값 있음
 
+    // 성(CASTLE) 전용 — 이 성 레벨에서 섬에 지을 수 있는 최대 건물 수. NULL이면 무제한.
+    @Column private Integer maxBuildings;
+
     @Column(length = 10)
     private String icon; // 이모지 아이콘 (관리자 지정). NULL이면 프론트 기본 매핑 사용
 
@@ -98,6 +101,7 @@ public class BuildingType {
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
+            Integer maxBuildings,
             String icon,
             String colorHex) {
         this.displayName = displayName;
@@ -112,6 +116,7 @@ public class BuildingType {
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
+        this.maxBuildings = maxBuildings;
         this.icon = icon;
         this.colorHex = colorHex;
     }
@@ -132,6 +137,7 @@ public class BuildingType {
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
+            Integer maxBuildings,
             String icon,
             String colorHex) {
         this.name = name;
@@ -148,6 +154,7 @@ public class BuildingType {
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
+        this.maxBuildings = maxBuildings;
         this.icon = icon;
         this.colorHex = colorHex;
     }

@@ -30,6 +30,7 @@ public class BuildingLevelSpec {
     @Column private Integer foodProductionRate; // 이 레벨 식량/시간
     @Column private Integer unitCapacityPerLevel; // 이 레벨 유닛 수용량
     @Column private Integer gpProductionRate; // 이 레벨 GP/시간
+    @Column private Integer maxBuildings; // 성 전용 — 이 성 레벨에서의 최대 건물 수
 
     @Builder
     public BuildingLevelSpec(
@@ -40,7 +41,8 @@ public class BuildingLevelSpec {
             Integer defensePower,
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
-            Integer gpProductionRate) {
+            Integer gpProductionRate,
+            Integer maxBuildings) {
         this.buildingType = buildingType;
         this.level = level;
         this.upgradeCostGp = upgradeCostGp;
@@ -49,6 +51,7 @@ public class BuildingLevelSpec {
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
+        this.maxBuildings = maxBuildings;
     }
 
     public void update(
@@ -57,13 +60,15 @@ public class BuildingLevelSpec {
             Integer defensePower,
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
-            Integer gpProductionRate) {
+            Integer gpProductionRate,
+            Integer maxBuildings) {
         this.upgradeCostGp = upgradeCostGp;
         this.maxHp = maxHp;
         this.defensePower = defensePower;
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
+        this.maxBuildings = maxBuildings;
     }
 
     // 지정된 값이 하나도 없으면 빈 스펙(삭제 대상)
@@ -73,6 +78,7 @@ public class BuildingLevelSpec {
                 && defensePower == null
                 && foodProductionRate == null
                 && unitCapacityPerLevel == null
-                && gpProductionRate == null;
+                && gpProductionRate == null
+                && maxBuildings == null;
     }
 }
