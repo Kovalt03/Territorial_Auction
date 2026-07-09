@@ -131,6 +131,7 @@ public class AdminBuildingService {
                                 .foodProductionRate(null)
                                 .unitCapacityPerLevel(null)
                                 .gpProductionRate(null)
+                                .buildTimeSeconds(request.buildTimeSeconds())
                                 .icon(blankToNull(request.icon()))
                                 .colorHex(blankToNull(request.colorHex()))
                                 .build());
@@ -166,6 +167,7 @@ public class AdminBuildingService {
                 isDecorative ? null : request.gpProductionRate(),
                 // 최대 건물 수는 성 레벨에 따라 결정되므로 성에만 유효.
                 type.isCastle() ? request.maxBuildings() : null,
+                request.buildTimeSeconds(),
                 blankToNull(request.icon()),
                 blankToNull(request.colorHex()));
 
