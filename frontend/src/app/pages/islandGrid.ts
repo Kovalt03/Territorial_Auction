@@ -39,11 +39,13 @@ export const UNIT_LABELS: Record<string, { label: string; icon: string; color: s
   KNIGHT: { label: '기사', icon: '⚔', color: '#ffd700' },
 };
 
+// 백엔드 ZonePolicy.calculateZone 과 동일. 짝수 크기 격자의 중심은 반칸 위치라
+// 좌표·반경을 2배로 환산해 정수 연산으로 좌우 대칭을 유지한다.
 export function assignZone(x: number, y: number, size: number, zone1Radius: number, zone2Radius: number): 1 | 2 | 3 {
-  const center = Math.floor(size / 2);
-  const dist = Math.max(Math.abs(x - center), Math.abs(y - center));
-  if (dist <= zone1Radius) return 1;
-  if (dist <= zone2Radius) return 2;
+  const doubledCenter = size - 1;
+  const dist = Math.max(Math.abs(2 * x - doubledCenter), Math.abs(2 * y - doubledCenter));
+  if (dist <= 2 * zone1Radius) return 1;
+  if (dist <= 2 * zone2Radius) return 2;
   return 3;
 }
 
