@@ -15,11 +15,13 @@ public record BuildingTypeCatalogResponse(List<BuildingTypeInfo> buildingTypes) 
             int maxHp,
             int baseCostGp,
             Integer upgradeCostGp,
+            Integer apCost,
             Integer zoneRestriction,
             Integer defensePower,
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
+            Integer maxBuildings,
             String icon,
             String colorHex) {
 
@@ -34,11 +36,13 @@ public record BuildingTypeCatalogResponse(List<BuildingTypeInfo> buildingTypes) 
                     t.getMaxHp(),
                     t.getBaseCostGp(),
                     t.getUpgradeCostGp(),
+                    t.getApCost(),
                     t.getZoneRestriction(),
                     t.getDefensePower(),
                     t.getFoodProductionRate(),
                     t.getUnitCapacityPerLevel(),
                     t.getGpProductionRate(),
+                    t.getMaxBuildings(),
                     t.getIcon(),
                     t.getColorHex());
         }

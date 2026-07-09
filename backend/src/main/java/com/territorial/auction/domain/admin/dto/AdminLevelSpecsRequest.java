@@ -12,7 +12,8 @@ public record AdminLevelSpecsRequest(Map<Integer, LevelSpecValues> specs) {
             Integer defensePower,
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
-            Integer gpProductionRate) {
+            Integer gpProductionRate,
+            Integer maxBuildings) {
 
         public static LevelSpecValues from(BuildingLevelSpec s) {
             return new LevelSpecValues(
@@ -21,7 +22,8 @@ public record AdminLevelSpecsRequest(Map<Integer, LevelSpecValues> specs) {
                     s.getDefensePower(),
                     s.getFoodProductionRate(),
                     s.getUnitCapacityPerLevel(),
-                    s.getGpProductionRate());
+                    s.getGpProductionRate(),
+                    s.getMaxBuildings());
         }
     }
 }

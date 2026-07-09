@@ -76,6 +76,7 @@ class AdminBuildingServiceTest {
                                 500,
                                 null,
                                 null,
+                                null,
                                 40,
                                 null,
                                 null,
@@ -101,7 +102,7 @@ class AdminBuildingServiceTest {
                                         10L,
                                         new AdminCreateBuildingTypeRequest(
                                                 "castle", null, 2, 2, 100, 1000, null, null, null,
-                                                null, null, null, null, null)))
+                                                null, null, null, null, null, null)))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.DUPLICATE_BUILDING_TYPE_NAME);
@@ -124,6 +125,7 @@ class AdminBuildingServiceTest {
                                                 1,
                                                 100,
                                                 1000,
+                                                null,
                                                 null,
                                                 null,
                                                 null,
@@ -154,8 +156,8 @@ class AdminBuildingServiceTest {
                 adminBuildingService.create(
                         10L,
                         new AdminCreateBuildingTypeRequest(
-                                "statue", "동상", 1, 1, 50, 300, null, null, 15, 99, 99, 99, "🗽",
-                                "#cccccc"));
+                                "statue", "동상", 1, 1, 50, 300, null, null, null, 15, 99, 99, 99,
+                                "🗽", "#cccccc"));
 
         assertThat(res.category()).isEqualTo("DECORATIVE");
         assertThat(res.defensePower()).isEqualTo(15);
@@ -175,12 +177,46 @@ class AdminBuildingServiceTest {
                         10L,
                         3L,
                         new AdminUpdateBuildingTypeRequest(
-                                null, 2, 1, 200, 2000, 500, null, null, null, null, 80, null,
-                                null));
+                                null, 2, 1, 200, 2000, 500, null, null, null, null, null, 80, null,
+                                null, null));
 
         assertThat(res.maxHp()).isEqualTo(200);
         assertThat(res.gpProductionRate()).isEqualTo(80);
         assertThat(res.upgradeCostGp()).isEqualTo(500);
+    }
+
+    @Test
+    @DisplayName("성 수정 → 최대 건물 수 반영")
+    void update_castleMaxBuildings() {
+        BuildingType t = type(1L, "CASTLE");
+        given(buildingTypeRepository.findById(1L)).willReturn(Optional.of(t));
+
+        BuildingTypeInfo res =
+                adminBuildingService.update(
+                        10L,
+                        1L,
+                        new AdminUpdateBuildingTypeRequest(
+                                null, 2, 2, 400, 0, null, null, 1, null, null, null, 10, 12, null,
+                                null));
+
+        assertThat(res.maxBuildings()).isEqualTo(12);
+    }
+
+    @Test
+    @DisplayName("성이 아닌 건물 수정 → 최대 건물 수는 무시(null)")
+    void update_nonCastleMaxBuildingsIgnored() {
+        BuildingType t = type(3L, "WORKSHOP");
+        given(buildingTypeRepository.findById(3L)).willReturn(Optional.of(t));
+
+        BuildingTypeInfo res =
+                adminBuildingService.update(
+                        10L,
+                        3L,
+                        new AdminUpdateBuildingTypeRequest(
+                                null, 2, 1, 200, 2000, null, null, null, null, null, null, 80, 99,
+                                null, null));
+
+        assertThat(res.maxBuildings()).isNull();
     }
 
     @Test
@@ -199,7 +235,7 @@ class AdminBuildingServiceTest {
                 java.util.Map.of(
                         2,
                         new com.territorial.auction.domain.admin.dto.AdminLevelSpecsRequest
-                                .LevelSpecValues(1500, null, null, null, null, 40)));
+                                .LevelSpecValues(1500, null, null, null, null, 40, null)));
 
         then(buildingLevelSpecRepository).should().save(any());
         then(adminAuditLogger)
@@ -222,7 +258,7 @@ class AdminBuildingServiceTest {
                                                 9,
                                                 new com.territorial.auction.domain.admin.dto
                                                         .AdminLevelSpecsRequest.LevelSpecValues(
-                                                        100, null, null, null, null, null))))
+                                                        100, null, null, null, null, null, null))))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_BUILDING_LEVEL);

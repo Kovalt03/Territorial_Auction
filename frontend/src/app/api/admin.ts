@@ -302,11 +302,13 @@ export interface BuildingTypeForm {
   maxHp: number;
   baseCostGp: number;
   upgradeCostGp: number | null;
+  apCost: number | null;
   zoneRestriction: number | null;
   defensePower: number | null;
   foodProductionRate: number | null;
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
+  maxBuildings: number | null;
   icon: string | null;
   colorHex: string | null;
 }
@@ -334,6 +336,7 @@ export interface LevelSpecValues {
   foodProductionRate: number | null;
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
+  maxBuildings: number | null;
 }
 
 export function fetchLevelSpecs(id: number) {

@@ -80,6 +80,7 @@ public enum ErrorCode {
     FUNCTIONAL_BUILDING_NOT_CREATABLE(
             HttpStatus.BAD_REQUEST, "기능 건물은 새로 만들 수 없습니다. 장식 건물만 추가할 수 있습니다."),
     INVALID_BUILDING_LEVEL(HttpStatus.BAD_REQUEST, "유효하지 않은 건물 레벨입니다."),
+    BUILDING_NOT_PURCHASABLE(HttpStatus.BAD_REQUEST, "상점에서 구매할 수 없는 건물입니다."),
     BUILDING_TYPE_IN_USE(HttpStatus.CONFLICT, "이미 배치된 건물이 있어 삭제할 수 없습니다."),
     BUILDING_MAX_LEVEL(HttpStatus.BAD_REQUEST, "이미 최대 레벨에 도달한 건물입니다."),
     INVALID_POSITION(HttpStatus.BAD_REQUEST, "배치 불가능한 위치입니다."),

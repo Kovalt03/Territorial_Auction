@@ -37,6 +37,8 @@ public class BuildingType {
 
     @Column private Integer upgradeCostGp; // 업그레이드 비용 기준. NULL이면 baseCostGp를 사용
 
+    @Column private Integer apCost; // 장식 상점 AP 판매가. NULL이면 판매 안 함(장식 건물만 유효)
+
     // 양수: 해당 Zone에만 배치 가능 (예: 1 = Zone1 전용 — CASTLE)
     // 음수: |값| 이상 Zone에만 배치 가능 (예: -2 = Zone2/3 전용 — FARMLAND)
     private Integer zoneRestriction;
@@ -49,6 +51,9 @@ public class BuildingType {
 
     @Column private Integer gpProductionRate; // NULL 허용 — WORKSHOP만 값 있음
 
+    // 성(CASTLE) 전용 — 이 성 레벨에서 섬에 지을 수 있는 최대 건물 수. NULL이면 무제한.
+    @Column private Integer maxBuildings;
+
     @Column(length = 10)
     private String icon; // 이모지 아이콘 (관리자 지정). NULL이면 프론트 기본 매핑 사용
 
@@ -57,6 +62,11 @@ public class BuildingType {
 
     public boolean isCastle() {
         return "CASTLE".equals(this.name);
+    }
+
+    // 장식 상점에서 AP로 구매 가능한가 — 장식 건물이면서 판매가가 지정된 경우
+    public boolean isPurchasable() {
+        return category == BuildingCategory.DECORATIVE && apCost != null;
     }
 
     // 업그레이드 비용 기준값: 별도 지정이 없으면 건설 비용을 따른다.
@@ -85,11 +95,13 @@ public class BuildingType {
             Integer maxHp,
             Integer baseCostGp,
             Integer upgradeCostGp,
+            Integer apCost,
             Integer zoneRestriction,
             Integer defensePower,
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
+            Integer maxBuildings,
             String icon,
             String colorHex) {
         this.displayName = displayName;
@@ -98,11 +110,13 @@ public class BuildingType {
         this.maxHp = maxHp;
         this.baseCostGp = baseCostGp;
         this.upgradeCostGp = upgradeCostGp;
+        this.apCost = apCost;
         this.zoneRestriction = zoneRestriction;
         this.defensePower = defensePower;
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
+        this.maxBuildings = maxBuildings;
         this.icon = icon;
         this.colorHex = colorHex;
     }
@@ -117,11 +131,13 @@ public class BuildingType {
             Integer maxHp,
             Integer baseCostGp,
             Integer upgradeCostGp,
+            Integer apCost,
             Integer zoneRestriction,
             Integer defensePower,
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
+            Integer maxBuildings,
             String icon,
             String colorHex) {
         this.name = name;
@@ -132,11 +148,13 @@ public class BuildingType {
         this.maxHp = maxHp;
         this.baseCostGp = baseCostGp;
         this.upgradeCostGp = upgradeCostGp;
+        this.apCost = apCost;
         this.zoneRestriction = zoneRestriction;
         this.defensePower = defensePower;
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
+        this.maxBuildings = maxBuildings;
         this.icon = icon;
         this.colorHex = colorHex;
     }

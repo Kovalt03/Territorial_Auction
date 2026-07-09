@@ -272,11 +272,13 @@ CREATE TABLE IF NOT EXISTS building_types (
     max_hp                 INTEGER     NOT NULL,
     base_cost_gp           INTEGER     NOT NULL,
     upgrade_cost_gp        INTEGER,
+    ap_cost                INTEGER,
     zone_restriction       INTEGER,
     defense_power          INTEGER,
     food_production_rate   INTEGER,
     unit_capacity_per_level INTEGER,
     gp_production_rate     INTEGER,
+    max_buildings          INTEGER,
     icon                   VARCHAR(10),
     color_hex             VARCHAR(7),
     display_name           VARCHAR(30),
@@ -294,6 +296,7 @@ CREATE TABLE IF NOT EXISTS building_level_specs (
     food_production_rate   INTEGER,
     unit_capacity_per_level INTEGER,
     gp_production_rate     INTEGER,
+    max_buildings          INTEGER,
     UNIQUE (building_type_id, level)
 );
 

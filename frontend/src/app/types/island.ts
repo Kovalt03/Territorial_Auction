@@ -74,11 +74,13 @@ export interface BuildingTypeInfo {
   maxHp: number;
   baseCostGp: number;
   upgradeCostGp: number | null;
+  apCost: number | null;
   zoneRestriction: number | null;
   defensePower: number | null;
   foodProductionRate: number | null;
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
+  maxBuildings: number | null;
   icon: string | null;
   colorHex: string | null;
 }
