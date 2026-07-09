@@ -308,6 +308,7 @@ export interface BuildingTypeForm {
   foodProductionRate: number | null;
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
+  maxBuildings: number | null;
   icon: string | null;
   colorHex: string | null;
 }
@@ -335,6 +336,7 @@ export interface LevelSpecValues {
   foodProductionRate: number | null;
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
+  maxBuildings: number | null;
 }
 
 export function fetchLevelSpecs(id: number) {
