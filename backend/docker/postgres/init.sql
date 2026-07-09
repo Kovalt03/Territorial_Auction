@@ -281,6 +281,7 @@ CREATE TABLE IF NOT EXISTS building_types (
     unit_capacity_per_level INTEGER,
     gp_production_rate     INTEGER,
     max_buildings          INTEGER,
+    build_time_seconds     INTEGER,
     icon                   VARCHAR(10),
     color_hex             VARCHAR(7),
     display_name           VARCHAR(30),
@@ -316,7 +317,8 @@ CREATE TABLE IF NOT EXISTS building_instances (
     zone                  INTEGER     NOT NULL,
     is_destroyed          BOOLEAN     NOT NULL DEFAULT false,
     stored_gp             INTEGER     NOT NULL DEFAULT 0,
-    workshop_debuff_until TIMESTAMPTZ
+    workshop_debuff_until TIMESTAMPTZ,
+    build_complete_at     TIMESTAMPTZ
 );
 
 -- global_vaults
