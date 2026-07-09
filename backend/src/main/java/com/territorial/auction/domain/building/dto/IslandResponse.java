@@ -30,7 +30,8 @@ public record IslandResponse(
             int level,
             int width,
             int height,
-            boolean isDestroyed) {
+            boolean isDestroyed,
+            LocalDateTime buildCompleteAt) {
 
         public static IslandBuildingInfo from(BuildingInstance bi, int maxHp) {
             return new IslandBuildingInfo(
@@ -43,7 +44,8 @@ public record IslandResponse(
                     bi.getLevel(),
                     bi.getBuildingType().getWidth(),
                     bi.getBuildingType().getHeight(),
-                    bi.isDestroyed());
+                    bi.isDestroyed(),
+                    bi.getBuildCompleteAt());
         }
     }
 
@@ -57,8 +59,12 @@ public record IslandResponse(
                         .map(b -> IslandBuildingInfo.from(b, maxHpFn.applyAsInt(b)))
                         .toList();
 
+        LocalDateTime now = LocalDateTime.now();
         int productionRatePerHour =
-                buildings.stream().filter(b -> !b.isDestroyed()).mapToInt(gpPerHourFn).sum();
+                buildings.stream()
+                        .filter(b -> !b.isDestroyed() && !b.isUnderConstruction(now))
+                        .mapToInt(gpPerHourFn)
+                        .sum();
         int productionRate = productionRatePerHour / 60;
 
         LocalDateTime lastHarvestAt =

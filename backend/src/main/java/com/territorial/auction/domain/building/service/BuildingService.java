@@ -120,6 +120,7 @@ public class BuildingService {
     public UpgradeBuildingResponse upgrade(Long userId, Long buildingId) {
         BuildingInstance building = findBuildingOrThrow(buildingId);
         validateBuildingOwner(building, userId);
+        validateNotUnderConstruction(building);
         validateNotMaxLevel(building);
 
         int cost = resolveUpgradeCost(building);
@@ -245,15 +246,16 @@ public class BuildingService {
         wallet.spendGp(buildingType.getBaseCostGp());
 
         BuildingInstance building =
-                buildingInstanceRepository.save(
-                        BuildingInstance.builder()
-                                .island(island)
-                                .buildingType(buildingType)
-                                .posX(request.posX())
-                                .posY(request.posY())
-                                .hp(buildingType.getMaxHp())
-                                .zone(zone)
-                                .build());
+                BuildingInstance.builder()
+                        .island(island)
+                        .buildingType(buildingType)
+                        .posX(request.posX())
+                        .posY(request.posY())
+                        .hp(buildingType.getMaxHp())
+                        .zone(zone)
+                        .build();
+        startConstruction(building, buildingType);
+        buildingInstanceRepository.save(building);
 
         return new PlaceBuildingResponse(
                 building.getId(),
@@ -375,6 +377,8 @@ public class BuildingService {
     public StoreBuildingResponse store(Long userId, Long buildingId) {
         BuildingInstance building = findBuildingOrThrow(buildingId);
         validateBuildingOwner(building, userId);
+        // 보관 후 즉시 재배치하면 건설 대기를 건너뛸 수 있으므로 건설 중에는 막는다.
+        validateNotUnderConstruction(building);
 
         if (building.getBuildingType().isCastle()) {
             throw new CustomException(ErrorCode.CASTLE_CANNOT_BE_STORED);
@@ -434,12 +438,15 @@ public class BuildingService {
         return LocalDateTime.now();
     }
 
+    // 건설 중인 건물은 아직 생산하지 않는다.
     private int calculateIslandProductionRatePerMinute(List<BuildingInstance> buildings) {
+        LocalDateTime now = LocalDateTime.now();
         int perHour =
                 buildings.stream()
                         .filter(
                                 b ->
                                         !b.isDestroyed()
+                                                && !b.isUnderConstruction(now)
                                                 && b.getBuildingType().getGpProductionRate()
                                                         != null)
                         .mapToInt(b -> b.getLevel() * b.getBuildingType().getGpProductionRate())
@@ -449,6 +456,7 @@ public class BuildingService {
 
     // ─── private helpers ──────────────────────────────────────────────────────
 
+    // 건축 장인은 "짓는 중"인 건물만 점유한다 — 완성된 건물 수는 장인과 무관.
     private void validateBuilderSlot(Long userId, List<BuildingInstance> existing) {
         int extraBuilders =
                 userSeasonPassRepository
@@ -456,8 +464,23 @@ public class BuildingService {
                         .map(p -> p.getSeasonPass().getExtraBuilders())
                         .orElse(0);
         int builderCount = 1 + extraBuilders;
-        if (existing.size() >= builderCount) {
+        LocalDateTime now = LocalDateTime.now();
+        long buildingNow = existing.stream().filter(b -> b.isUnderConstruction(now)).count();
+        if (buildingNow >= builderCount) {
             throw new CustomException(ErrorCode.BUILDER_SLOT_FULL);
+        }
+    }
+
+    // 건설 시간이 지정된 건물만 대기 시간을 갖는다 — 미지정(또는 0)이면 즉시 완성.
+    private void startConstruction(BuildingInstance building, BuildingType buildingType) {
+        Integer buildTimeSeconds = buildingType.getBuildTimeSeconds();
+        if (buildTimeSeconds == null || buildTimeSeconds <= 0) return;
+        building.startConstruction(LocalDateTime.now().plusSeconds(buildTimeSeconds));
+    }
+
+    private void validateNotUnderConstruction(BuildingInstance building) {
+        if (building.isUnderConstruction(LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.BUILDING_UNDER_CONSTRUCTION);
         }
     }
 
