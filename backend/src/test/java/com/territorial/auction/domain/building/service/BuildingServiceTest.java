@@ -114,6 +114,8 @@ class BuildingServiceTest {
                         .auctionPriceMultiplier(BigDecimal.ONE)
                         .spawnRate(BigDecimal.valueOf(0.1))
                         .gridSize(10)
+                        .zone1Radius(2)
+                        .zone2Radius(4)
                         .build();
         return grade;
     }
