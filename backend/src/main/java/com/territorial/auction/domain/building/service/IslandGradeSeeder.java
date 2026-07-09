@@ -22,16 +22,27 @@ public class IslandGradeSeeder implements ApplicationRunner {
 
     private final IslandGradeRepository islandGradeRepository;
 
+    // yml을 단일 진실 공급원으로 삼는다 — 기존 행이 있으면 건너뛰지 않고 값을 맞춘다.
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (islandGradeRepository.count() > 0) {
-            log.info("island_grades 이미 존재 — 건너뜀");
-            return;
-        }
-        List<IslandGrade> grades = loadEntries().stream().map(this::toEntity).toList();
-        islandGradeRepository.saveAll(grades);
-        log.info("island_grades 시드 완료. 건수={}", grades.size());
+        List<Map<String, Object>> entries = loadEntries();
+        entries.forEach(this::upsert);
+        log.info("island_grades 시드 동기화 완료. 건수={}", entries.size());
+    }
+
+    private void upsert(Map<String, Object> m) {
+        String name = (String) m.get("name");
+        islandGradeRepository
+                .findByName(name)
+                .ifPresentOrElse(
+                        grade ->
+                                grade.syncFromSeed(
+                                        (Integer) m.get("gridSize"),
+                                        (Integer) m.get("zone1Radius"),
+                                        (Integer) m.get("zone2Radius"),
+                                        (Integer) m.get("castleLevelRequired")),
+                        () -> islandGradeRepository.save(toEntity(m)));
     }
 
     @SuppressWarnings("unchecked")
