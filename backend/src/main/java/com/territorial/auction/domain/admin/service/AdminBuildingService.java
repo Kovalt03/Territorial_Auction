@@ -66,12 +66,20 @@ public class AdminBuildingService {
         Integer food = isDecorative ? null : v.foodProductionRate();
         Integer unit = isDecorative ? null : v.unitCapacityPerLevel();
         Integer gp = isDecorative ? null : v.gpProductionRate();
+        // 최대 건물 수는 성 레벨에 따라 결정되므로 성에만 유효.
+        Integer maxBuildings = type.isCastle() ? v.maxBuildings() : null;
         buildingLevelSpecRepository
                 .findByBuildingType_IdAndLevel(type.getId(), level)
                 .ifPresentOrElse(
                         spec -> {
                             spec.update(
-                                    v.upgradeCostGp(), v.maxHp(), v.defensePower(), food, unit, gp);
+                                    v.upgradeCostGp(),
+                                    v.maxHp(),
+                                    v.defensePower(),
+                                    food,
+                                    unit,
+                                    gp,
+                                    maxBuildings);
                             if (spec.isEmpty()) buildingLevelSpecRepository.delete(spec);
                         },
                         () -> {
@@ -85,6 +93,7 @@ public class AdminBuildingService {
                                             .foodProductionRate(food)
                                             .unitCapacityPerLevel(unit)
                                             .gpProductionRate(gp)
+                                            .maxBuildings(maxBuildings)
                                             .build();
                             if (!created.isEmpty()) buildingLevelSpecRepository.save(created);
                         });
@@ -155,6 +164,8 @@ public class AdminBuildingService {
                 isDecorative ? null : request.foodProductionRate(),
                 isDecorative ? null : request.unitCapacityPerLevel(),
                 isDecorative ? null : request.gpProductionRate(),
+                // 최대 건물 수는 성 레벨에 따라 결정되므로 성에만 유효.
+                type.isCastle() ? request.maxBuildings() : null,
                 blankToNull(request.icon()),
                 blankToNull(request.colorHex()));
 

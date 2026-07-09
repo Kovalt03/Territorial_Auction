@@ -21,6 +21,7 @@ public record BuildingTypeCatalogResponse(List<BuildingTypeInfo> buildingTypes) 
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
+            Integer maxBuildings,
             String icon,
             String colorHex) {
 
@@ -41,6 +42,7 @@ public record BuildingTypeCatalogResponse(List<BuildingTypeInfo> buildingTypes) 
                     t.getFoodProductionRate(),
                     t.getUnitCapacityPerLevel(),
                     t.getGpProductionRate(),
+                    t.getMaxBuildings(),
                     t.getIcon(),
                     t.getColorHex());
         }

@@ -18,5 +18,6 @@ public record AdminUpdateBuildingTypeRequest(
         Integer foodProductionRate,
         Integer unitCapacityPerLevel,
         Integer gpProductionRate,
+        @Positive Integer maxBuildings,
         String icon,
         String colorHex) {}
