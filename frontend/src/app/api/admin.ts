@@ -309,6 +309,7 @@ export interface BuildingTypeForm {
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
   maxBuildings: number | null;
+  buildTimeSeconds: number | null;
   icon: string | null;
   colorHex: string | null;
 }

@@ -13,7 +13,7 @@ import {
   type BuildingType, type Cell,
   buildingColors, buildingLabels, buildingNames,
   UNIT_LABELS,
-  emptyGrid, buildGridFromIsland, findOriginCell, clearBuildingCells,
+  emptyGrid, buildGridFromIsland, findOriginCell, clearBuildingCells, isUnderConstruction, remainingLabel,
 } from './islandGrid';
 import { IslandToast } from './IslandToast';
 import { IslandBuildModal } from './IslandBuildModal';
@@ -35,6 +35,20 @@ export function PersonalIslandPage() {
   useEffect(() => {
     if (island) setGrid(buildGridFromIsland(island));
   }, [island]);
+
+  // 건설 중인 건물이 있는 동안만 1초마다 남은 시간을 갱신하고, 완료 시점에 섬을 다시 불러온다.
+  const [now, setNow] = useState(() => Date.now());
+  const hasConstruction = !!island?.buildings.some(b => isUnderConstruction(b.buildCompleteAt, now));
+  useEffect(() => {
+    if (!hasConstruction) return;
+    const timer = setInterval(() => {
+      const next = Date.now();
+      setNow(next);
+      const stillBuilding = island?.buildings.some(b => isUnderConstruction(b.buildCompleteAt, next));
+      if (!stillBuilding) void reloadIsland();
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [hasConstruction, island, reloadIsland]);
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingType | null>(null);
   const [catalog, setCatalog] = useState<BuildingTypeInfo[]>([]);
   useEffect(() => {
@@ -484,6 +498,7 @@ export function PersonalIslandPage() {
                 const bg = isMoveSource ? colorFor(cell.type) + '80' : cell.type !== 'empty' ? colorFor(cell.type) + '50' : showZones ? zoneOverlay[zone] : 'var(--color-surface)';
                 const hpPct = cell.hp && cell.maxHp ? cell.hp / cell.maxHp : 0;
                 const hpColor = hpPct > 0.7 ? '#00ff88' : hpPct > 0.4 ? '#ffd700' : '#ff3333';
+                const building = isUnderConstruction(cell.buildCompleteAt, now);
                 return (
                   <div
                     key={`${x}-${y}`}
@@ -505,14 +520,19 @@ export function PersonalIslandPage() {
                     {cell.type !== 'empty' ? (
                       <>
                         {!cell.isBody && (
-                          <span className="text-sm leading-none">{iconFor(cell.type)}</span>
+                          <span className="text-sm leading-none">{building ? '🔨' : iconFor(cell.type)}</span>
                         )}
-                        {!cell.isBody && cell.level && (
+                        {!cell.isBody && building && (
+                          <span className="absolute bottom-0 left-0 right-0 text-[7px] text-center text-gold font-bold leading-tight">
+                            {remainingLabel(cell.buildCompleteAt, now)}
+                          </span>
+                        )}
+                        {!cell.isBody && cell.level && !building && (
                           <div className="absolute bottom-0.5 left-0.5 right-0.5 h-1 rounded-full overflow-hidden" style={{ background: '#0a0e1a' }}>
                             <div className="h-full rounded-full" style={{ width: `${hpPct * 100}%`, background: hpColor }} />
                           </div>
                         )}
-                        {!cell.isBody && cell.level && (
+                        {!cell.isBody && cell.level && !building && (
                           <div className="absolute top-0 right-0 w-3 h-3 rounded-full flex items-center justify-center text-[6px]" style={{ background: colorFor(cell.type) }}>
                             {cell.level}
                           </div>

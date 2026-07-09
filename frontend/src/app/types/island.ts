@@ -9,6 +9,7 @@ export interface IslandBuilding {
   width: number;
   height: number;
   isDestroyed: boolean;
+  buildCompleteAt: string | null;
 }
 
 export interface IslandData {
@@ -81,6 +82,7 @@ export interface BuildingTypeInfo {
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
   maxBuildings: number | null;
+  buildTimeSeconds: number | null;
   icon: string | null;
   colorHex: string | null;
 }

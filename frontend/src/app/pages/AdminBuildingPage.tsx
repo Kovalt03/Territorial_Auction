@@ -21,6 +21,7 @@ const ATTR_FIELDS: { key: keyof BuildingTypeForm; label: string; w: string; null
   { key: 'width', label: '너비', w: 'w-12' },
   { key: 'height', label: '높이', w: 'w-12' },
   { key: 'zoneRestriction', label: 'Zone', w: 'w-14', nullable: true },
+  { key: 'buildTimeSeconds', label: '건설시간(초)', w: 'w-20', nullable: true },
   { key: 'apCost', label: 'AP상점가', w: 'w-16', nullable: true, decorativeOnly: true },
 ];
 
@@ -43,7 +44,8 @@ function toForm(b: BuildingTypeInfo): BuildingTypeForm {
     width: b.width, height: b.height, maxHp: b.maxHp, baseCostGp: b.baseCostGp,
     upgradeCostGp: b.upgradeCostGp, apCost: b.apCost, zoneRestriction: b.zoneRestriction, defensePower: b.defensePower,
     foodProductionRate: b.foodProductionRate, unitCapacityPerLevel: b.unitCapacityPerLevel,
-    gpProductionRate: b.gpProductionRate, maxBuildings: b.maxBuildings, icon: b.icon, colorHex: b.colorHex,
+    gpProductionRate: b.gpProductionRate, maxBuildings: b.maxBuildings,
+    buildTimeSeconds: b.buildTimeSeconds, icon: b.icon, colorHex: b.colorHex,
   };
 }
 
@@ -240,7 +242,7 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
 }
 
 function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError: (m: string) => void }) {
-  const empty: BuildingTypeForm = { name: '', displayName: null, width: 1, height: 1, maxHp: 100, baseCostGp: 1000, upgradeCostGp: null, apCost: null, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, maxBuildings: null, icon: null, colorHex: null };
+  const empty: BuildingTypeForm = { name: '', displayName: null, width: 1, height: 1, maxHp: 100, baseCostGp: 1000, upgradeCostGp: null, apCost: null, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, maxBuildings: null, buildTimeSeconds: null, icon: null, colorHex: null };
   const [form, setForm] = useState<BuildingTypeForm>(empty);
   const [busy, setBusy] = useState(false);
   const setNum = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
@@ -251,6 +253,7 @@ function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError:
     { key: 'maxHp', label: 'HP' }, { key: 'baseCostGp', label: '건설비용' },
     { key: 'zoneRestriction', label: 'Zone제한', nullable: true }, { key: 'defensePower', label: '방어력', nullable: true },
     { key: 'apCost', label: 'AP상점가', nullable: true },
+    { key: 'buildTimeSeconds', label: '건설시간(초)', nullable: true },
   ];
 
   const create = async () => {

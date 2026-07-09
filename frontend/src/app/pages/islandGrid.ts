@@ -13,6 +13,7 @@ export interface Cell {
   isBody?: boolean;
   width?: number;
   height?: number;
+  buildCompleteAt?: string | null;
 }
 
 export const buildingColors: Record<BuildingType, string> = {
@@ -76,6 +77,7 @@ export function buildGridFromIsland(island: IslandData): Cell[][] {
           hp: b.hp,
           maxHp: b.maxHp,
           buildingId: b.buildingId,
+          buildCompleteAt: b.buildCompleteAt,
           zone: assignZone(gx, gy, size, z1, z2),
           isBody: dx > 0 || dy > 0,
           width: w,
@@ -85,6 +87,17 @@ export function buildGridFromIsland(island: IslandData): Cell[][] {
     }
   }
   return grid;
+}
+
+export function isUnderConstruction(buildCompleteAt: string | null | undefined, now: number): boolean {
+  return !!buildCompleteAt && new Date(buildCompleteAt).getTime() > now;
+}
+
+export function remainingLabel(buildCompleteAt: string | null | undefined, now: number): string {
+  if (!buildCompleteAt) return '';
+  const seconds = Math.max(0, Math.ceil((new Date(buildCompleteAt).getTime() - now) / 1000));
+  if (seconds >= 60) return `${Math.ceil(seconds / 60)}분`;
+  return `${seconds}초`;
 }
 
 export function findOriginCell(grid: Cell[][], buildingId: number): { x: number; y: number } | null {
