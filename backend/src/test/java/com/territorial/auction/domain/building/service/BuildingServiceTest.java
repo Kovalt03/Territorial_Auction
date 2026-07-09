@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
 
 import com.territorial.auction.domain.building.dto.InventoryResponse;
 import com.territorial.auction.domain.building.dto.IslandResponse;
@@ -46,6 +48,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -153,6 +156,33 @@ class BuildingServiceTest {
                         .build();
         ReflectionTestUtils.setField(bt, "id", 2L);
         return bt;
+    }
+
+    // 건설 시간이 지정된 건물 타입 — 배치 시 buildCompleteAt 이 설정된다.
+    private BuildingType storageWithBuildTime(int seconds) {
+        BuildingType bt = storage();
+        ReflectionTestUtils.setField(bt, "buildTimeSeconds", seconds);
+        return bt;
+    }
+
+    private BuildingInstance islandBuilding(BuildingType bt, HomeIsland island, long id) {
+        BuildingInstance b =
+                BuildingInstance.builder()
+                        .buildingType(bt)
+                        .island(island)
+                        .posX(5)
+                        .posY(5)
+                        .hp(bt.getMaxHp())
+                        .zone(2)
+                        .build();
+        ReflectionTestUtils.setField(b, "id", id);
+        return b;
+    }
+
+    private BuildingInstance underConstruction(BuildingType bt, HomeIsland island, long id) {
+        BuildingInstance b = islandBuilding(bt, island, id);
+        b.startConstruction(LocalDateTime.now().plusMinutes(10));
+        return b;
     }
 
     private BuildingInstance placedInstance(
@@ -344,6 +374,22 @@ class BuildingServiceTest {
     @Nested
     @DisplayName("upgrade()")
     class Upgrade {
+
+        @Test
+        @DisplayName("건설 중인 건물은 업그레이드 불가 → BUILDING_UNDER_CONSTRUCTION")
+        void under_construction_cannot_upgrade() {
+            User user = sampleUser(1L);
+            Territory territory = territoryOwnedBy(user, gradeA());
+            BuildingInstance bi = placedInstance(storage(), territory, 0, 0);
+            bi.startConstruction(LocalDateTime.now().plusMinutes(5));
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
+
+            assertThatThrownBy(() -> buildingService.upgrade(1L, 100L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BUILDING_UNDER_CONSTRUCTION);
+        }
 
         @Test
         @DisplayName("레벨 1 → 2 업그레이드 성공 → newLevel=2, nextLevel=3, upgradeCost=500")
@@ -600,28 +646,18 @@ class BuildingServiceTest {
         }
 
         @Test
-        @DisplayName("건설 슬롯 초과 (패스 없음, 기존 건물 1개) → BUILDER_SLOT_FULL")
+        @DisplayName("장인 1명이 이미 건설 중 → BUILDER_SLOT_FULL")
         void builder_slot_full_no_pass() {
             User user = sampleUser(1L);
             HomeIsland island = sampleIsland(user);
             BuildingType bt = storage();
-            BuildingInstance existingBuilding =
-                    BuildingInstance.builder()
-                            .buildingType(bt)
-                            .island(island)
-                            .posX(5)
-                            .posY(5)
-                            .hp(bt.getMaxHp())
-                            .zone(2)
-                            .build();
-            ReflectionTestUtils.setField(existingBuilding, "id", 99L);
 
             given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
             given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
             given(buildingInstanceRepository.findByIslandId(1L))
-                    .willReturn(List.of(existingBuilding));
+                    .willReturn(List.of(underConstruction(bt, island, 99L)));
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
-                    .willReturn(Optional.empty()); // builderCount = 1, existing = 1 → full
+                    .willReturn(Optional.empty()); // builderCount = 1, 건설 중 = 1 → full
 
             PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
             assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
@@ -631,21 +667,70 @@ class BuildingServiceTest {
         }
 
         @Test
-        @DisplayName("시즌 패스 보유 시 슬롯 2개 → 기존 건물 1개면 배치 성공")
+        @DisplayName("완성된 건물은 장인 슬롯을 점유하지 않는다 → 배치 성공")
+        void completed_buildings_do_not_occupy_slot() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            BuildingType bt = storage();
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(
+                            List.of(
+                                    islandBuilding(bt, island, 97L),
+                                    islandBuilding(bt, island, 98L)));
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.save(any()))
+                    .willAnswer(
+                            inv -> {
+                                BuildingInstance saved = inv.getArgument(0);
+                                ReflectionTestUtils.setField(saved, "id", 203L);
+                                return saved;
+                            });
+
+            PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
+            assertThat(buildingService.placeOnIsland(1L, req).buildingId()).isEqualTo(203L);
+        }
+
+        @Test
+        @DisplayName("건설 시간 지정 → buildCompleteAt 설정, 미지정 → 즉시 완성")
+        void build_time_sets_complete_at() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(Collections.emptyList());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 9000)));
+            given(buildingInstanceRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+            given(buildingTypeRepository.findById(2L))
+                    .willReturn(Optional.of(storageWithBuildTime(120)));
+            buildingService.placeOnIsland(1L, new PlaceBuildingRequest(2L, 0, 0));
+
+            ArgumentCaptor<BuildingInstance> captor =
+                    ArgumentCaptor.forClass(BuildingInstance.class);
+            then(buildingInstanceRepository).should().save(captor.capture());
+            assertThat(captor.getValue().isUnderConstruction(LocalDateTime.now())).isTrue();
+
+            given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(storage()));
+            buildingService.placeOnIsland(1L, new PlaceBuildingRequest(2L, 1, 1));
+            then(buildingInstanceRepository).should(times(2)).save(captor.capture());
+            assertThat(captor.getValue().getBuildCompleteAt()).isNull();
+        }
+
+        @Test
+        @DisplayName("시즌 패스 보유 시 장인 2명 → 1개 건설 중이어도 배치 성공")
         void season_pass_extra_slot_allows_second_building() {
             User user = sampleUser(1L);
             HomeIsland island = sampleIsland(user);
             BuildingType bt = storage();
-            BuildingInstance existingBuilding =
-                    BuildingInstance.builder()
-                            .buildingType(bt)
-                            .island(island)
-                            .posX(5)
-                            .posY(5)
-                            .hp(bt.getMaxHp())
-                            .zone(2)
-                            .build();
-            ReflectionTestUtils.setField(existingBuilding, "id", 99L);
+            BuildingInstance existingBuilding = underConstruction(bt, island, 99L);
 
             SeasonPass seasonPass = SeasonPass.builder().extraBuilders(1).build();
             UserSeasonPass userSeasonPass =
@@ -660,7 +745,7 @@ class BuildingServiceTest {
             given(buildingInstanceRepository.findByIslandId(1L))
                     .willReturn(List.of(existingBuilding));
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
-                    .willReturn(Optional.of(userSeasonPass)); // builderCount = 2, existing = 1 → OK
+                    .willReturn(Optional.of(userSeasonPass)); // builderCount = 2, 건설 중 = 1 → OK
             given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
             given(buildingInstanceRepository.save(any()))
                     .willAnswer(
@@ -723,6 +808,22 @@ class BuildingServiceTest {
     @Nested
     @DisplayName("store()")
     class Store {
+
+        @Test
+        @DisplayName("건설 중인 건물은 보관 불가 → BUILDING_UNDER_CONSTRUCTION")
+        void under_construction_cannot_be_stored() {
+            User user = sampleUser(1L);
+            Territory territory = territoryOwnedBy(user, gradeA());
+            BuildingInstance bi = placedInstance(storage(), territory, 2, 2);
+            bi.startConstruction(LocalDateTime.now().plusMinutes(5));
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
+
+            assertThatThrownBy(() -> buildingService.store(1L, 100L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BUILDING_UNDER_CONSTRUCTION);
+        }
 
         @Test
         @DisplayName("건물 보관 성공")

@@ -81,6 +81,7 @@ class AdminBuildingServiceTest {
                                 null,
                                 null,
                                 null,
+                                null,
                                 "🗼",
                                 "#44aaff"));
 
@@ -102,7 +103,7 @@ class AdminBuildingServiceTest {
                                         10L,
                                         new AdminCreateBuildingTypeRequest(
                                                 "castle", null, 2, 2, 100, 1000, null, null, null,
-                                                null, null, null, null, null, null)))
+                                                null, null, null, null, null, null, null)))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.DUPLICATE_BUILDING_TYPE_NAME);
@@ -133,6 +134,7 @@ class AdminBuildingServiceTest {
                                                 null,
                                                 50,
                                                 null,
+                                                null,
                                                 null)))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
@@ -157,7 +159,7 @@ class AdminBuildingServiceTest {
                         10L,
                         new AdminCreateBuildingTypeRequest(
                                 "statue", "동상", 1, 1, 50, 300, null, null, null, 15, 99, 99, 99,
-                                "🗽", "#cccccc"));
+                                null, "🗽", "#cccccc"));
 
         assertThat(res.category()).isEqualTo("DECORATIVE");
         assertThat(res.defensePower()).isEqualTo(15);
@@ -178,7 +180,7 @@ class AdminBuildingServiceTest {
                         3L,
                         new AdminUpdateBuildingTypeRequest(
                                 null, 2, 1, 200, 2000, 500, null, null, null, null, null, 80, null,
-                                null, null));
+                                null, null, null));
 
         assertThat(res.maxHp()).isEqualTo(200);
         assertThat(res.gpProductionRate()).isEqualTo(80);
@@ -197,7 +199,7 @@ class AdminBuildingServiceTest {
                         1L,
                         new AdminUpdateBuildingTypeRequest(
                                 null, 2, 2, 400, 0, null, null, 1, null, null, null, 10, 12, null,
-                                null));
+                                null, null));
 
         assertThat(res.maxBuildings()).isEqualTo(12);
     }
@@ -214,7 +216,7 @@ class AdminBuildingServiceTest {
                         3L,
                         new AdminUpdateBuildingTypeRequest(
                                 null, 2, 1, 200, 2000, null, null, null, null, null, null, 80, 99,
-                                null, null));
+                                null, null, null));
 
         assertThat(res.maxBuildings()).isNull();
     }
