@@ -37,6 +37,7 @@ public class BuildingTypeSeeder implements ApplicationRunner {
             log.info("building_types 이미 존재 — 건너뜀");
             patchCastleGpProductionRate();
             backfillCategoryAndDisplayName();
+            backfillBuildTime();
             placeDefaultCastleOnExistingIslands();
             migrateIslandGradeAndSize();
             return;
@@ -83,6 +84,18 @@ public class BuildingTypeSeeder implements ApplicationRunner {
                     "FARMLAND", "#a3e635",
                     "RESIDENCE", "#44aaff");
 
+    // building-types.yml 과 동일 — 기존 DB 백필용
+    private static final Map<String, Integer> BUILD_TIME_SECONDS =
+            Map.of(
+                    "CASTLE", 300,
+                    "WORKSHOP", 180,
+                    "BARRACKS", 240,
+                    "STORAGE", 120,
+                    "WALL", 30,
+                    "TOWER", 90,
+                    "FARMLAND", 60,
+                    "RESIDENCE", 120);
+
     // 기존 건물의 분류·한글명·아이콘·색을 채운다. 이미 값이 있으면 유지.
     private void backfillCategoryAndDisplayName() {
         buildingTypeRepository
@@ -95,6 +108,13 @@ public class BuildingTypeSeeder implements ApplicationRunner {
                                         KOREAN_NAMES.get(t.getName()),
                                         ICONS.get(t.getName()),
                                         COLORS.get(t.getName())));
+    }
+
+    // 기존 건물의 건설 시간을 채운다. 관리자가 이미 지정했으면 유지.
+    private void backfillBuildTime() {
+        buildingTypeRepository
+                .findAll()
+                .forEach(t -> t.backfillBuildTime(BUILD_TIME_SECONDS.get(t.getName())));
     }
 
     private void patchCastleGpProductionRate() {
@@ -186,6 +206,7 @@ public class BuildingTypeSeeder implements ApplicationRunner {
                 .foodProductionRate((Integer) row.get("foodProductionRate"))
                 .unitCapacityPerLevel((Integer) row.get("unitCapacityPerLevel"))
                 .gpProductionRate((Integer) row.get("gpProductionRate"))
+                .buildTimeSeconds((Integer) row.get("buildTimeSeconds"))
                 .build();
     }
 }
