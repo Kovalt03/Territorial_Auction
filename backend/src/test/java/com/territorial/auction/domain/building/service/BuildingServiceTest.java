@@ -3,6 +3,7 @@ package com.territorial.auction.domain.building.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
@@ -73,6 +74,10 @@ class BuildingServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private UserSeasonPassRepository userSeasonPassRepository;
 
+    @Mock
+    private com.territorial.auction.domain.notification.service.NotificationService
+            notificationService;
+
     @org.junit.jupiter.api.BeforeEach
     void stubLevelSpecsEmpty() {
         org.mockito.Mockito.lenient()
@@ -86,6 +91,11 @@ class BuildingServiceTest {
                         buildingLevelSpecRepository.findAllByBuildingType_IdIn(
                                 org.mockito.ArgumentMatchers.any()))
                 .thenReturn(java.util.List.of());
+        org.mockito.Mockito.lenient()
+                .when(
+                        userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(
+                                org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.Optional.empty());
     }
 
     // ─── 공통 픽스처 ───────────────────────────────────────────────────────────
@@ -698,10 +708,10 @@ class BuildingServiceTest {
 
             given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
             given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
-            given(buildingInstanceRepository.findByIslandId(1L))
-                    .willReturn(List.of(underConstruction(bt, island, 99L)));
+            given(buildingInstanceRepository.countUnderConstructionByOwnerId(eq(1L), any()))
+                    .willReturn(1L); // builderCount = 1, 건설 중 = 1 → full
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
-                    .willReturn(Optional.empty()); // builderCount = 1, 건설 중 = 1 → full
+                    .willReturn(Optional.empty());
 
             PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
             assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
@@ -774,7 +784,6 @@ class BuildingServiceTest {
             User user = sampleUser(1L);
             HomeIsland island = sampleIsland(user);
             BuildingType bt = storage();
-            BuildingInstance existingBuilding = underConstruction(bt, island, 99L);
 
             SeasonPass seasonPass = SeasonPass.builder().extraBuilders(1).build();
             UserSeasonPass userSeasonPass =
@@ -787,9 +796,11 @@ class BuildingServiceTest {
             given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
             given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
             given(buildingInstanceRepository.findByIslandId(1L))
-                    .willReturn(List.of(existingBuilding));
+                    .willReturn(Collections.emptyList());
+            given(buildingInstanceRepository.countUnderConstructionByOwnerId(eq(1L), any()))
+                    .willReturn(1L); // builderCount = 2, 건설 중 = 1 → OK
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
-                    .willReturn(Optional.of(userSeasonPass)); // builderCount = 2, 건설 중 = 1 → OK
+                    .willReturn(Optional.of(userSeasonPass));
             given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
             given(buildingInstanceRepository.save(any()))
                     .willAnswer(
@@ -1007,6 +1018,148 @@ class BuildingServiceTest {
     }
 
     // ─── upgrade() — 섬 성 레벨업 시 IslandGrade 연동 ─────────────────────────
+
+    @Nested
+    @DisplayName("건설 시간 / 섬 확장")
+    class ConstructionTime {
+
+        private BuildingType castleWithUpgradeTime(Integer seconds) {
+            BuildingType bt = castle();
+            ReflectionTestUtils.setField(bt, "upgradeTimeSeconds", seconds);
+            return bt;
+        }
+
+        private BuildingInstance castleAt(BuildingType bt, HomeIsland island, int x, int y) {
+            BuildingInstance bi =
+                    BuildingInstance.builder()
+                            .buildingType(bt)
+                            .island(island)
+                            .posX(x)
+                            .posY(y)
+                            .hp(bt.getMaxHp())
+                            .zone(1)
+                            .build();
+            ReflectionTestUtils.setField(bi, "id", 100L);
+            return bi;
+        }
+
+        private BuildingInstance farmlandAt(HomeIsland island, int x, int y) {
+            BuildingType bt =
+                    BuildingType.builder()
+                            .name("FARMLAND")
+                            .width(1)
+                            .height(1)
+                            .maxHp(50)
+                            .baseCostGp(300)
+                            .zoneRestriction(-2) // Zone2 이상에만 배치 가능
+                            .build();
+            ReflectionTestUtils.setField(bt, "id", 7L);
+            BuildingInstance bi =
+                    BuildingInstance.builder()
+                            .buildingType(bt)
+                            .island(island)
+                            .posX(x)
+                            .posY(y)
+                            .hp(50)
+                            .zone(2)
+                            .build();
+            ReflectionTestUtils.setField(bi, "id", 101L);
+            return bi;
+        }
+
+        @Test
+        @DisplayName("업그레이드 시간이 있으면 레벨은 그대로, 완료 예정 시각만 설정된다")
+        void upgrade_defers_level_until_complete() {
+            User user = sampleUser(1L);
+            HomeIsland island = islandWithGrade(user, islandGrade("D", 10, 2, 4, 1));
+            BuildingInstance castle = castleAt(castleWithUpgradeTime(600), island, 3, 3);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 5000)));
+
+            UpgradeBuildingResponse response = buildingService.upgrade(1L, 100L);
+
+            assertThat(castle.getLevel()).isEqualTo(1); // 아직 안 오름
+            assertThat(castle.getUpgradeToLevel()).isEqualTo(2);
+            assertThat(castle.isUnderConstruction(LocalDateTime.now())).isTrue();
+            assertThat(response.newLevel()).isEqualTo(2); // 도달할 레벨
+            assertThat(response.buildCompleteAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("장인이 모두 작업 중이면 업그레이드 불가 → BUILDER_SLOT_FULL")
+        void upgrade_requires_free_builder() {
+            User user = sampleUser(1L);
+            HomeIsland island = islandWithGrade(user, islandGrade("D", 10, 2, 4, 1));
+            BuildingInstance castle = castleAt(castleWithUpgradeTime(600), island, 3, 3);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(buildingInstanceRepository.countUnderConstructionByOwnerId(eq(1L), any()))
+                    .willReturn(1L);
+
+            assertThatThrownBy(() -> buildingService.upgrade(1L, 100L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BUILDER_SLOT_FULL);
+        }
+
+        @Test
+        @DisplayName("시즌 패스 건설 시간 20% 감소 → 600초 업그레이드가 480초")
+        void season_pass_reduces_build_time() {
+            User user = sampleUser(1L);
+            HomeIsland island = islandWithGrade(user, islandGrade("D", 10, 2, 4, 1));
+            BuildingInstance castle = castleAt(castleWithUpgradeTime(600), island, 3, 3);
+            SeasonPass pass = SeasonPass.builder().buildTimeReductionPct(20).build();
+            UserSeasonPass userPass =
+                    UserSeasonPass.builder()
+                            .seasonPass(pass)
+                            .startedAt(LocalDateTime.now().minusDays(1))
+                            .expiresAt(LocalDateTime.now().plusDays(30))
+                            .build();
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 5000)));
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.of(userPass));
+
+            LocalDateTime before = LocalDateTime.now();
+            buildingService.upgrade(1L, 100L);
+
+            long seconds =
+                    java.time.Duration.between(before, castle.getBuildCompleteAt()).getSeconds();
+            assertThat(seconds).isBetween(475L, 480L);
+        }
+
+        @Test
+        @DisplayName("성 업그레이드 완료 → 섬 확장 + 중심 기준 재배치 + 규칙 위반 건물 자동 보관")
+        void island_expansion_recenters_and_stores_violators() {
+            User user = sampleUser(1L);
+            IslandGrade dGrade = islandGrade("D", 10, 2, 4, 1);
+            IslandGrade bGrade = islandGrade("B", 16, 3, 6, 2);
+            HomeIsland island = islandWithGrade(user, dGrade);
+            BuildingInstance castle = castleAt(castle(), island, 3, 3); // 업그레이드 시간 없음 → 즉시
+            BuildingInstance farmland = farmlandAt(island, 2, 2); // D에서는 Zone2
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 5000)));
+            given(islandGradeRepository.findByCastleLevelRequired(2))
+                    .willReturn(Optional.of(bGrade));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(List.of(castle, farmland));
+
+            buildingService.upgrade(1L, 100L);
+
+            assertThat(castle.getLevel()).isEqualTo(2);
+            assertThat(island.getGridSize()).isEqualTo(16);
+            // 그리드가 10→16, 중심 기준으로 +3 이동
+            assertThat(castle.getPosX()).isEqualTo(6);
+            assertThat(castle.getPosY()).isEqualTo(6);
+            // 농지는 재배치 후 Zone1이 되어 규칙(Zone2 이상)을 어기므로 보관함으로
+            assertThat(farmland.isInInventory()).isTrue();
+            assertThat(farmland.getOwner()).isEqualTo(user);
+            then(notificationService).should().sendNotification(eq(1L), any(), any());
+        }
+    }
 
     @Nested
     @DisplayName("upgrade() — 섬 성 레벨업 & IslandGrade 연동")
