@@ -5,3 +5,4 @@ seasonPasses:
     islandBonusPct: 50
     extraBuilders: 1
     taxExemptBonus: 2
+    buildTimeReductionPct: 20
