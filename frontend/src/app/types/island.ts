@@ -22,6 +22,8 @@ export interface IslandData {
   accumulatedGp: number;
   zone1Radius: number;
   zone2Radius: number;
+  builderCount: number;
+  buildersInUse: number;
   buildings: IslandBuilding[];
 }
 

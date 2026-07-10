@@ -38,7 +38,11 @@ export function PersonalIslandPage() {
 
   // 건설 중인 건물이 있는 동안만 1초마다 남은 시간을 갱신하고, 완료 시점에 섬을 다시 불러온다.
   const [now, setNow] = useState(() => Date.now());
-  const hasConstruction = !!island?.buildings.some(b => isUnderConstruction(b.buildCompleteAt, now));
+  // 서버 buildersInUse 는 폴링 사이에 낡으므로 타이머 기준으로 다시 센다.
+  const buildersInUse = island?.buildings.filter(b => isUnderConstruction(b.buildCompleteAt, now)).length ?? 0;
+  const builderCount = island?.builderCount ?? 1;
+  const isBuilderFull = buildersInUse >= builderCount;
+  const hasConstruction = buildersInUse > 0;
   useEffect(() => {
     if (!hasConstruction) return;
     const timer = setInterval(() => {
@@ -392,6 +396,15 @@ export function PersonalIslandPage() {
           <div className="flex items-center gap-1 bg-elevated border border-gp rounded-lg px-2 py-1">
             <div className="w-2 h-2 bg-gp rounded-full animate-pulse" />
             <span className="text-gp text-[11px]">안전 보호 중</span>
+          </div>
+          <div
+            className={`flex items-center gap-1 bg-elevated border rounded-lg px-2 py-1 ${isBuilderFull ? 'border-gold' : 'border-outline'}`}
+            title="건축 장인 — 동시에 지을 수 있는 건물 수"
+          >
+            <span className="text-[11px]">🔨</span>
+            <span className={`text-[11px] font-bold ${isBuilderFull ? 'text-gold' : 'text-muted'}`}>
+              장인 {buildersInUse}/{builderCount}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-4 ml-auto">

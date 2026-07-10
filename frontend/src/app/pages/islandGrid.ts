@@ -93,11 +93,12 @@ export function isUnderConstruction(buildCompleteAt: string | null | undefined, 
   return !!buildCompleteAt && new Date(buildCompleteAt).getTime() > now;
 }
 
+// 남은 시간은 초 단위까지 보여준다 — 1분 이상이면 m:ss, 미만이면 초.
 export function remainingLabel(buildCompleteAt: string | null | undefined, now: number): string {
   if (!buildCompleteAt) return '';
   const seconds = Math.max(0, Math.ceil((new Date(buildCompleteAt).getTime() - now) / 1000));
-  if (seconds >= 60) return `${Math.ceil(seconds / 60)}분`;
-  return `${seconds}초`;
+  if (seconds < 60) return `${seconds}초`;
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
 export function findOriginCell(grid: Cell[][], buildingId: number): { x: number; y: number } | null {
