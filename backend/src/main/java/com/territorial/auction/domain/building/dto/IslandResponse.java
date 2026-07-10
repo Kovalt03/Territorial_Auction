@@ -18,6 +18,8 @@ public record IslandResponse(
         int accumulatedGp,
         int zone1Radius,
         int zone2Radius,
+        int builderCount,
+        int buildersInUse,
         List<IslandBuildingInfo> buildings) {
 
     public record IslandBuildingInfo(
@@ -53,13 +55,16 @@ public record IslandResponse(
             HomeIsland island,
             List<BuildingInstance> buildings,
             ToIntFunction<BuildingInstance> gpPerHourFn,
-            ToIntFunction<BuildingInstance> maxHpFn) {
+            ToIntFunction<BuildingInstance> maxHpFn,
+            int builderCount) {
         List<IslandBuildingInfo> buildingInfos =
                 buildings.stream()
                         .map(b -> IslandBuildingInfo.from(b, maxHpFn.applyAsInt(b)))
                         .toList();
 
         LocalDateTime now = LocalDateTime.now();
+        int buildersInUse =
+                (int) buildings.stream().filter(b -> b.isUnderConstruction(now)).count();
         int productionRatePerHour =
                 buildings.stream()
                         .filter(b -> !b.isDestroyed() && !b.isUnderConstruction(now))
@@ -93,6 +98,8 @@ public record IslandResponse(
                 accumulatedGp,
                 island.getZone1Radius(),
                 island.getZone2Radius(),
+                builderCount,
+                buildersInUse,
                 buildingInfos);
     }
 }
