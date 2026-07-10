@@ -31,6 +31,7 @@ public class BuildingLevelSpec {
     @Column private Integer unitCapacityPerLevel; // 이 레벨 유닛 수용량
     @Column private Integer gpProductionRate; // 이 레벨 GP/시간
     @Column private Integer maxBuildings; // 성 전용 — 이 성 레벨에서의 최대 건물 수
+    @Column private Integer upgradeTimeSeconds; // 이 레벨로 올리는 데 걸리는 시간(초)
 
     @Builder
     public BuildingLevelSpec(
@@ -42,7 +43,8 @@ public class BuildingLevelSpec {
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
-            Integer maxBuildings) {
+            Integer maxBuildings,
+            Integer upgradeTimeSeconds) {
         this.buildingType = buildingType;
         this.level = level;
         this.upgradeCostGp = upgradeCostGp;
@@ -52,6 +54,7 @@ public class BuildingLevelSpec {
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
         this.maxBuildings = maxBuildings;
+        this.upgradeTimeSeconds = upgradeTimeSeconds;
     }
 
     public void update(
@@ -61,7 +64,8 @@ public class BuildingLevelSpec {
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
-            Integer maxBuildings) {
+            Integer maxBuildings,
+            Integer upgradeTimeSeconds) {
         this.upgradeCostGp = upgradeCostGp;
         this.maxHp = maxHp;
         this.defensePower = defensePower;
@@ -69,6 +73,7 @@ public class BuildingLevelSpec {
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
         this.maxBuildings = maxBuildings;
+        this.upgradeTimeSeconds = upgradeTimeSeconds;
     }
 
     // 지정된 값이 하나도 없으면 빈 스펙(삭제 대상)
@@ -79,6 +84,7 @@ public class BuildingLevelSpec {
                 && foodProductionRate == null
                 && unitCapacityPerLevel == null
                 && gpProductionRate == null
-                && maxBuildings == null;
+                && maxBuildings == null
+                && upgradeTimeSeconds == null;
     }
 }

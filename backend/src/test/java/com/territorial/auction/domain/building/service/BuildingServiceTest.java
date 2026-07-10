@@ -3,7 +3,10 @@ package com.territorial.auction.domain.building.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
 
 import com.territorial.auction.domain.building.dto.InventoryResponse;
 import com.territorial.auction.domain.building.dto.IslandResponse;
@@ -46,6 +49,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -70,6 +74,10 @@ class BuildingServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private UserSeasonPassRepository userSeasonPassRepository;
 
+    @Mock
+    private com.territorial.auction.domain.notification.service.NotificationService
+            notificationService;
+
     @org.junit.jupiter.api.BeforeEach
     void stubLevelSpecsEmpty() {
         org.mockito.Mockito.lenient()
@@ -83,6 +91,11 @@ class BuildingServiceTest {
                         buildingLevelSpecRepository.findAllByBuildingType_IdIn(
                                 org.mockito.ArgumentMatchers.any()))
                 .thenReturn(java.util.List.of());
+        org.mockito.Mockito.lenient()
+                .when(
+                        userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(
+                                org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.Optional.empty());
     }
 
     // ─── 공통 픽스처 ───────────────────────────────────────────────────────────
@@ -153,6 +166,33 @@ class BuildingServiceTest {
                         .build();
         ReflectionTestUtils.setField(bt, "id", 2L);
         return bt;
+    }
+
+    // 건설 시간이 지정된 건물 타입 — 배치 시 buildCompleteAt 이 설정된다.
+    private BuildingType storageWithBuildTime(int seconds) {
+        BuildingType bt = storage();
+        ReflectionTestUtils.setField(bt, "buildTimeSeconds", seconds);
+        return bt;
+    }
+
+    private BuildingInstance islandBuilding(BuildingType bt, HomeIsland island, long id) {
+        BuildingInstance b =
+                BuildingInstance.builder()
+                        .buildingType(bt)
+                        .island(island)
+                        .posX(5)
+                        .posY(5)
+                        .hp(bt.getMaxHp())
+                        .zone(2)
+                        .build();
+        ReflectionTestUtils.setField(b, "id", id);
+        return b;
+    }
+
+    private BuildingInstance underConstruction(BuildingType bt, HomeIsland island, long id) {
+        BuildingInstance b = islandBuilding(bt, island, id);
+        b.startConstruction(LocalDateTime.now().plusMinutes(10));
+        return b;
     }
 
     private BuildingInstance placedInstance(
@@ -344,6 +384,22 @@ class BuildingServiceTest {
     @Nested
     @DisplayName("upgrade()")
     class Upgrade {
+
+        @Test
+        @DisplayName("건설 중인 건물은 업그레이드 불가 → BUILDING_UNDER_CONSTRUCTION")
+        void under_construction_cannot_upgrade() {
+            User user = sampleUser(1L);
+            Territory territory = territoryOwnedBy(user, gradeA());
+            BuildingInstance bi = placedInstance(storage(), territory, 0, 0);
+            bi.startConstruction(LocalDateTime.now().plusMinutes(5));
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
+
+            assertThatThrownBy(() -> buildingService.upgrade(1L, 100L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BUILDING_UNDER_CONSTRUCTION);
+        }
 
         @Test
         @DisplayName("레벨 1 → 2 업그레이드 성공 → newLevel=2, nextLevel=3, upgradeCost=500")
@@ -599,29 +655,63 @@ class BuildingServiceTest {
                     .isEqualTo(ErrorCode.INSUFFICIENT_GP);
         }
 
+        // 섬 D등급: gridSize=10, zone1Radius=2 → Zone1은 (3..6, 3..6)
         @Test
-        @DisplayName("건설 슬롯 초과 (패스 없음, 기존 건물 1개) → BUILDER_SLOT_FULL")
+        @DisplayName("2×2 성이 Zone1을 벗어나 걸치면 → ZONE_RESTRICTION_VIOLATED")
+        void castle_footprint_must_fit_in_zone() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(1L)).willReturn(Optional.of(castle()));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(Collections.emptyList());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+
+            // 원점 (6,6)은 Zone1이지만 (7,7)까지 차지하므로 Zone2를 침범한다
+            PlaceBuildingRequest req = new PlaceBuildingRequest(1L, 6, 6);
+            assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.ZONE_RESTRICTION_VIOLATED);
+        }
+
+        @Test
+        @DisplayName("섬에 성이 이미 있으면 → CASTLE_ALREADY_EXISTS")
+        void only_one_castle_per_island() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(1L)).willReturn(Optional.of(castle()));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(Collections.emptyList());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+            given(buildingInstanceRepository.existsCastleOnIsland(1L)).willReturn(true);
+
+            // (3,3)~(4,4) 는 모두 Zone1 — Zone 제약은 통과하고 성 중복에서 걸린다
+            PlaceBuildingRequest req = new PlaceBuildingRequest(1L, 3, 3);
+            assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.CASTLE_ALREADY_EXISTS);
+        }
+
+        @Test
+        @DisplayName("장인 1명이 이미 건설 중 → BUILDER_SLOT_FULL")
         void builder_slot_full_no_pass() {
             User user = sampleUser(1L);
             HomeIsland island = sampleIsland(user);
             BuildingType bt = storage();
-            BuildingInstance existingBuilding =
-                    BuildingInstance.builder()
-                            .buildingType(bt)
-                            .island(island)
-                            .posX(5)
-                            .posY(5)
-                            .hp(bt.getMaxHp())
-                            .zone(2)
-                            .build();
-            ReflectionTestUtils.setField(existingBuilding, "id", 99L);
 
             given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
             given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
-            given(buildingInstanceRepository.findByIslandId(1L))
-                    .willReturn(List.of(existingBuilding));
+            given(buildingInstanceRepository.countUnderConstructionByOwnerId(eq(1L), any()))
+                    .willReturn(1L); // builderCount = 1, 건설 중 = 1 → full
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
-                    .willReturn(Optional.empty()); // builderCount = 1, existing = 1 → full
+                    .willReturn(Optional.empty());
 
             PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
             assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
@@ -631,21 +721,69 @@ class BuildingServiceTest {
         }
 
         @Test
-        @DisplayName("시즌 패스 보유 시 슬롯 2개 → 기존 건물 1개면 배치 성공")
+        @DisplayName("완성된 건물은 장인 슬롯을 점유하지 않는다 → 배치 성공")
+        void completed_buildings_do_not_occupy_slot() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            BuildingType bt = storage();
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(
+                            List.of(
+                                    islandBuilding(bt, island, 97L),
+                                    islandBuilding(bt, island, 98L)));
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.save(any()))
+                    .willAnswer(
+                            inv -> {
+                                BuildingInstance saved = inv.getArgument(0);
+                                ReflectionTestUtils.setField(saved, "id", 203L);
+                                return saved;
+                            });
+
+            PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
+            assertThat(buildingService.placeOnIsland(1L, req).buildingId()).isEqualTo(203L);
+        }
+
+        @Test
+        @DisplayName("건설 시간 지정 → buildCompleteAt 설정, 미지정 → 즉시 완성")
+        void build_time_sets_complete_at() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(Collections.emptyList());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 9000)));
+            given(buildingInstanceRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+            given(buildingTypeRepository.findById(2L))
+                    .willReturn(Optional.of(storageWithBuildTime(120)));
+            buildingService.placeOnIsland(1L, new PlaceBuildingRequest(2L, 0, 0));
+
+            ArgumentCaptor<BuildingInstance> captor =
+                    ArgumentCaptor.forClass(BuildingInstance.class);
+            then(buildingInstanceRepository).should().save(captor.capture());
+            assertThat(captor.getValue().isUnderConstruction(LocalDateTime.now())).isTrue();
+
+            given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(storage()));
+            buildingService.placeOnIsland(1L, new PlaceBuildingRequest(2L, 1, 1));
+            then(buildingInstanceRepository).should(times(2)).save(captor.capture());
+            assertThat(captor.getValue().getBuildCompleteAt()).isNull();
+        }
+
+        @Test
+        @DisplayName("시즌 패스 보유 시 장인 2명 → 1개 건설 중이어도 배치 성공")
         void season_pass_extra_slot_allows_second_building() {
             User user = sampleUser(1L);
             HomeIsland island = sampleIsland(user);
             BuildingType bt = storage();
-            BuildingInstance existingBuilding =
-                    BuildingInstance.builder()
-                            .buildingType(bt)
-                            .island(island)
-                            .posX(5)
-                            .posY(5)
-                            .hp(bt.getMaxHp())
-                            .zone(2)
-                            .build();
-            ReflectionTestUtils.setField(existingBuilding, "id", 99L);
 
             SeasonPass seasonPass = SeasonPass.builder().extraBuilders(1).build();
             UserSeasonPass userSeasonPass =
@@ -658,9 +796,11 @@ class BuildingServiceTest {
             given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
             given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
             given(buildingInstanceRepository.findByIslandId(1L))
-                    .willReturn(List.of(existingBuilding));
+                    .willReturn(Collections.emptyList());
+            given(buildingInstanceRepository.countUnderConstructionByOwnerId(eq(1L), any()))
+                    .willReturn(1L); // builderCount = 2, 건설 중 = 1 → OK
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
-                    .willReturn(Optional.of(userSeasonPass)); // builderCount = 2, existing = 1 → OK
+                    .willReturn(Optional.of(userSeasonPass));
             given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
             given(buildingInstanceRepository.save(any()))
                     .willAnswer(
@@ -723,6 +863,22 @@ class BuildingServiceTest {
     @Nested
     @DisplayName("store()")
     class Store {
+
+        @Test
+        @DisplayName("건설 중인 건물은 보관 불가 → BUILDING_UNDER_CONSTRUCTION")
+        void under_construction_cannot_be_stored() {
+            User user = sampleUser(1L);
+            Territory territory = territoryOwnedBy(user, gradeA());
+            BuildingInstance bi = placedInstance(storage(), territory, 2, 2);
+            bi.startConstruction(LocalDateTime.now().plusMinutes(5));
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
+
+            assertThatThrownBy(() -> buildingService.store(1L, 100L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BUILDING_UNDER_CONSTRUCTION);
+        }
 
         @Test
         @DisplayName("건물 보관 성공")
@@ -862,6 +1018,148 @@ class BuildingServiceTest {
     }
 
     // ─── upgrade() — 섬 성 레벨업 시 IslandGrade 연동 ─────────────────────────
+
+    @Nested
+    @DisplayName("건설 시간 / 섬 확장")
+    class ConstructionTime {
+
+        private BuildingType castleWithUpgradeTime(Integer seconds) {
+            BuildingType bt = castle();
+            ReflectionTestUtils.setField(bt, "upgradeTimeSeconds", seconds);
+            return bt;
+        }
+
+        private BuildingInstance castleAt(BuildingType bt, HomeIsland island, int x, int y) {
+            BuildingInstance bi =
+                    BuildingInstance.builder()
+                            .buildingType(bt)
+                            .island(island)
+                            .posX(x)
+                            .posY(y)
+                            .hp(bt.getMaxHp())
+                            .zone(1)
+                            .build();
+            ReflectionTestUtils.setField(bi, "id", 100L);
+            return bi;
+        }
+
+        private BuildingInstance farmlandAt(HomeIsland island, int x, int y) {
+            BuildingType bt =
+                    BuildingType.builder()
+                            .name("FARMLAND")
+                            .width(1)
+                            .height(1)
+                            .maxHp(50)
+                            .baseCostGp(300)
+                            .zoneRestriction(-2) // Zone2 이상에만 배치 가능
+                            .build();
+            ReflectionTestUtils.setField(bt, "id", 7L);
+            BuildingInstance bi =
+                    BuildingInstance.builder()
+                            .buildingType(bt)
+                            .island(island)
+                            .posX(x)
+                            .posY(y)
+                            .hp(50)
+                            .zone(2)
+                            .build();
+            ReflectionTestUtils.setField(bi, "id", 101L);
+            return bi;
+        }
+
+        @Test
+        @DisplayName("업그레이드 시간이 있으면 레벨은 그대로, 완료 예정 시각만 설정된다")
+        void upgrade_defers_level_until_complete() {
+            User user = sampleUser(1L);
+            HomeIsland island = islandWithGrade(user, islandGrade("D", 10, 2, 4, 1));
+            BuildingInstance castle = castleAt(castleWithUpgradeTime(600), island, 3, 3);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 5000)));
+
+            UpgradeBuildingResponse response = buildingService.upgrade(1L, 100L);
+
+            assertThat(castle.getLevel()).isEqualTo(1); // 아직 안 오름
+            assertThat(castle.getUpgradeToLevel()).isEqualTo(2);
+            assertThat(castle.isUnderConstruction(LocalDateTime.now())).isTrue();
+            assertThat(response.newLevel()).isEqualTo(2); // 도달할 레벨
+            assertThat(response.buildCompleteAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("장인이 모두 작업 중이면 업그레이드 불가 → BUILDER_SLOT_FULL")
+        void upgrade_requires_free_builder() {
+            User user = sampleUser(1L);
+            HomeIsland island = islandWithGrade(user, islandGrade("D", 10, 2, 4, 1));
+            BuildingInstance castle = castleAt(castleWithUpgradeTime(600), island, 3, 3);
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(buildingInstanceRepository.countUnderConstructionByOwnerId(eq(1L), any()))
+                    .willReturn(1L);
+
+            assertThatThrownBy(() -> buildingService.upgrade(1L, 100L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BUILDER_SLOT_FULL);
+        }
+
+        @Test
+        @DisplayName("시즌 패스 건설 시간 20% 감소 → 600초 업그레이드가 480초")
+        void season_pass_reduces_build_time() {
+            User user = sampleUser(1L);
+            HomeIsland island = islandWithGrade(user, islandGrade("D", 10, 2, 4, 1));
+            BuildingInstance castle = castleAt(castleWithUpgradeTime(600), island, 3, 3);
+            SeasonPass pass = SeasonPass.builder().buildTimeReductionPct(20).build();
+            UserSeasonPass userPass =
+                    UserSeasonPass.builder()
+                            .seasonPass(pass)
+                            .startedAt(LocalDateTime.now().minusDays(1))
+                            .expiresAt(LocalDateTime.now().plusDays(30))
+                            .build();
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 5000)));
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.of(userPass));
+
+            LocalDateTime before = LocalDateTime.now();
+            buildingService.upgrade(1L, 100L);
+
+            long seconds =
+                    java.time.Duration.between(before, castle.getBuildCompleteAt()).getSeconds();
+            assertThat(seconds).isBetween(475L, 480L);
+        }
+
+        @Test
+        @DisplayName("성 업그레이드 완료 → 섬 확장 + 중심 기준 재배치 + 규칙 위반 건물 자동 보관")
+        void island_expansion_recenters_and_stores_violators() {
+            User user = sampleUser(1L);
+            IslandGrade dGrade = islandGrade("D", 10, 2, 4, 1);
+            IslandGrade bGrade = islandGrade("B", 16, 3, 6, 2);
+            HomeIsland island = islandWithGrade(user, dGrade);
+            BuildingInstance castle = castleAt(castle(), island, 3, 3); // 업그레이드 시간 없음 → 즉시
+            BuildingInstance farmland = farmlandAt(island, 2, 2); // D에서는 Zone2
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 5000)));
+            given(islandGradeRepository.findByCastleLevelRequired(2))
+                    .willReturn(Optional.of(bGrade));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(List.of(castle, farmland));
+
+            buildingService.upgrade(1L, 100L);
+
+            assertThat(castle.getLevel()).isEqualTo(2);
+            assertThat(island.getGridSize()).isEqualTo(16);
+            // 그리드가 10→16, 중심 기준으로 +3 이동
+            assertThat(castle.getPosX()).isEqualTo(6);
+            assertThat(castle.getPosY()).isEqualTo(6);
+            // 농지는 재배치 후 Zone1이 되어 규칙(Zone2 이상)을 어기므로 보관함으로
+            assertThat(farmland.isInInventory()).isTrue();
+            assertThat(farmland.getOwner()).isEqualTo(user);
+            then(notificationService).should().sendNotification(eq(1L), any(), any());
+        }
+    }
 
     @Nested
     @DisplayName("upgrade() — 섬 성 레벨업 & IslandGrade 연동")

@@ -29,6 +29,7 @@ type StatRow = { label: string; baseKey: keyof BuildingTypeForm; specKey: keyof 
 const STAT_ROWS: StatRow[] = [
   { label: '비용', baseKey: 'baseCostGp', specKey: 'upgradeCostGp' },
   { label: 'HP', baseKey: 'maxHp', specKey: 'maxHp' },
+  { label: '시간(초)', baseKey: 'buildTimeSeconds', specKey: 'upgradeTimeSeconds', nullable: true },
   { label: '방어력', baseKey: 'defensePower', specKey: 'defensePower', nullable: true },
   { label: '식량/시간', baseKey: 'foodProductionRate', specKey: 'foodProductionRate', production: true, nullable: true },
   { label: '유닛/레벨', baseKey: 'unitCapacityPerLevel', specKey: 'unitCapacityPerLevel', production: true, nullable: true },
@@ -43,7 +44,9 @@ function toForm(b: BuildingTypeInfo): BuildingTypeForm {
     width: b.width, height: b.height, maxHp: b.maxHp, baseCostGp: b.baseCostGp,
     upgradeCostGp: b.upgradeCostGp, apCost: b.apCost, zoneRestriction: b.zoneRestriction, defensePower: b.defensePower,
     foodProductionRate: b.foodProductionRate, unitCapacityPerLevel: b.unitCapacityPerLevel,
-    gpProductionRate: b.gpProductionRate, maxBuildings: b.maxBuildings, icon: b.icon, colorHex: b.colorHex,
+    gpProductionRate: b.gpProductionRate, maxBuildings: b.maxBuildings,
+    buildTimeSeconds: b.buildTimeSeconds, upgradeTimeSeconds: b.upgradeTimeSeconds,
+    icon: b.icon, colorHex: b.colorHex,
   };
 }
 
@@ -154,6 +157,7 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
             upgradeCostGp: num('upgradeCostGp'), maxHp: num('maxHp'), defensePower: num('defensePower'),
             foodProductionRate: num('foodProductionRate'), unitCapacityPerLevel: num('unitCapacityPerLevel'),
             gpProductionRate: num('gpProductionRate'), maxBuildings: num('maxBuildings'),
+            upgradeTimeSeconds: num('upgradeTimeSeconds'),
           };
         });
         await updateLevelSpecs(item.buildingTypeId, payload);
@@ -202,7 +206,7 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
         <tr className="bg-surface border-b border-outline-soft">
           <td colSpan={ATTR_FIELDS.length + 3} className="py-2 px-3">
             <p className="text-[11px] text-dim mb-2">
-              레벨별 값 <span className="text-muted">— Lv1은 기본값, Lv2·Lv3은 비우면 공식 자동</span>
+              레벨별 값 <span className="text-muted">— Lv1은 기본값(시간은 건설 시간), Lv2·Lv3은 비우면 공식 자동</span>
               {isCastle && <span className="text-muted"> · 최대 건물 수는 성 레벨이 결정 (비우면 무제한)</span>}
             </p>
             <table className="text-[11px]">
@@ -240,7 +244,7 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
 }
 
 function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError: (m: string) => void }) {
-  const empty: BuildingTypeForm = { name: '', displayName: null, width: 1, height: 1, maxHp: 100, baseCostGp: 1000, upgradeCostGp: null, apCost: null, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, maxBuildings: null, icon: null, colorHex: null };
+  const empty: BuildingTypeForm = { name: '', displayName: null, width: 1, height: 1, maxHp: 100, baseCostGp: 1000, upgradeCostGp: null, apCost: null, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, maxBuildings: null, buildTimeSeconds: null, upgradeTimeSeconds: null, icon: null, colorHex: null };
   const [form, setForm] = useState<BuildingTypeForm>(empty);
   const [busy, setBusy] = useState(false);
   const setNum = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>
@@ -251,6 +255,7 @@ function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError:
     { key: 'maxHp', label: 'HP' }, { key: 'baseCostGp', label: '건설비용' },
     { key: 'zoneRestriction', label: 'Zone제한', nullable: true }, { key: 'defensePower', label: '방어력', nullable: true },
     { key: 'apCost', label: 'AP상점가', nullable: true },
+    { key: 'buildTimeSeconds', label: '건설시간(초)', nullable: true },
   ];
 
   const create = async () => {

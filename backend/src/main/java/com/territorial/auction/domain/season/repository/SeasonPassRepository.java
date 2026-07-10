@@ -6,5 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SeasonPassRepository extends JpaRepository<SeasonPass, Long> {
 
+    java.util.Optional<SeasonPass> findByName(String name);
+
     Optional<SeasonPass> findFirstByOrderByIdDesc();
 }

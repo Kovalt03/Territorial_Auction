@@ -19,5 +19,7 @@ public record AdminUpdateBuildingTypeRequest(
         Integer unitCapacityPerLevel,
         Integer gpProductionRate,
         @Positive Integer maxBuildings,
+        @PositiveOrZero Integer buildTimeSeconds,
+        @PositiveOrZero Integer upgradeTimeSeconds,
         String icon,
         String colorHex) {}

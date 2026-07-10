@@ -14,6 +14,14 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
 
     long countByBuildingType_Id(Long buildingTypeId);
 
+    /** 유저가 지금 짓거나 업그레이드하고 있는 건물 수 — 건축 장인 슬롯 점유량 */
+    @Query(
+            "SELECT COUNT(b) FROM BuildingInstance b"
+                    + " WHERE b.buildCompleteAt > :now"
+                    + " AND (b.island.user.id = :userId OR b.territory.owner.id = :userId)")
+    long countUnderConstructionByOwnerId(
+            @Param("userId") Long userId, @Param("now") LocalDateTime now);
+
     @Query(
             "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType WHERE b.territory.id = :territoryId AND b.posX >= 0")
     List<BuildingInstance> findByTerritoryId(@Param("territoryId") Long territoryId);

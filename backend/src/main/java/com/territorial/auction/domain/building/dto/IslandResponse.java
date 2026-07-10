@@ -13,11 +13,13 @@ public record IslandResponse(
         String grade,
         int gridSize,
         int level,
-        int productionRate,
+        int productionRatePerHour,
         LocalDateTime lastHarvestAt,
         int accumulatedGp,
         int zone1Radius,
         int zone2Radius,
+        int builderCount,
+        int buildersInUse,
         List<IslandBuildingInfo> buildings) {
 
     public record IslandBuildingInfo(
@@ -30,7 +32,8 @@ public record IslandResponse(
             int level,
             int width,
             int height,
-            boolean isDestroyed) {
+            boolean isDestroyed,
+            LocalDateTime buildCompleteAt) {
 
         public static IslandBuildingInfo from(BuildingInstance bi, int maxHp) {
             return new IslandBuildingInfo(
@@ -43,7 +46,8 @@ public record IslandResponse(
                     bi.getLevel(),
                     bi.getBuildingType().getWidth(),
                     bi.getBuildingType().getHeight(),
-                    bi.isDestroyed());
+                    bi.isDestroyed(),
+                    bi.getBuildCompleteAt());
         }
     }
 
@@ -51,15 +55,21 @@ public record IslandResponse(
             HomeIsland island,
             List<BuildingInstance> buildings,
             ToIntFunction<BuildingInstance> gpPerHourFn,
-            ToIntFunction<BuildingInstance> maxHpFn) {
+            ToIntFunction<BuildingInstance> maxHpFn,
+            int builderCount) {
         List<IslandBuildingInfo> buildingInfos =
                 buildings.stream()
                         .map(b -> IslandBuildingInfo.from(b, maxHpFn.applyAsInt(b)))
                         .toList();
 
+        LocalDateTime now = LocalDateTime.now();
+        int buildersInUse =
+                (int) buildings.stream().filter(b -> b.isUnderConstruction(now)).count();
         int productionRatePerHour =
-                buildings.stream().filter(b -> !b.isDestroyed()).mapToInt(gpPerHourFn).sum();
-        int productionRate = productionRatePerHour / 60;
+                buildings.stream()
+                        .filter(b -> !b.isDestroyed() && !b.isUnderConstruction(now))
+                        .mapToInt(gpPerHourFn)
+                        .sum();
 
         LocalDateTime lastHarvestAt =
                 island.getLastHarvestAt() != null
@@ -75,18 +85,21 @@ public record IslandResponse(
                                 ChronoUnit.MINUTES.between(lastHarvestAt, LocalDateTime.now()),
                                 BuildingPolicy.MAX_HARVEST_ACCUMULATION_MINUTES));
 
-        int accumulatedGp = (int) (minutesElapsed * productionRate);
+        // 분당으로 먼저 나누면 시간당 생산량이 60 미만인 건물은 0이 되어 버린다.
+        int accumulatedGp = (int) (minutesElapsed * productionRatePerHour / 60);
 
         return new IslandResponse(
                 island.getId(),
                 island.getGrade(),
                 island.getGridSize(),
                 island.getLevel(),
-                productionRate,
+                productionRatePerHour,
                 lastHarvestAt,
                 accumulatedGp,
                 island.getZone1Radius(),
                 island.getZone2Radius(),
+                builderCount,
+                buildersInUse,
                 buildingInfos);
     }
 }

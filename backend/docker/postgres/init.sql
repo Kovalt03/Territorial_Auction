@@ -230,7 +230,8 @@ CREATE TABLE IF NOT EXISTS season_passes (
     duration_days    INTEGER     NOT NULL DEFAULT 30,
     island_bonus_pct INTEGER     NOT NULL,
     extra_builders   INTEGER     NOT NULL DEFAULT 1,
-    tax_exempt_bonus INTEGER     NOT NULL DEFAULT 2
+    tax_exempt_bonus INTEGER     NOT NULL DEFAULT 2,
+    build_time_reduction_pct INTEGER NOT NULL DEFAULT 0
 );
 
 -- user_season_passes
@@ -281,6 +282,8 @@ CREATE TABLE IF NOT EXISTS building_types (
     unit_capacity_per_level INTEGER,
     gp_production_rate     INTEGER,
     max_buildings          INTEGER,
+    build_time_seconds     INTEGER,
+    upgrade_time_seconds   INTEGER,
     icon                   VARCHAR(10),
     color_hex             VARCHAR(7),
     display_name           VARCHAR(30),
@@ -299,6 +302,7 @@ CREATE TABLE IF NOT EXISTS building_level_specs (
     unit_capacity_per_level INTEGER,
     gp_production_rate     INTEGER,
     max_buildings          INTEGER,
+    upgrade_time_seconds   INTEGER,
     UNIQUE (building_type_id, level)
 );
 
@@ -316,7 +320,9 @@ CREATE TABLE IF NOT EXISTS building_instances (
     zone                  INTEGER     NOT NULL,
     is_destroyed          BOOLEAN     NOT NULL DEFAULT false,
     stored_gp             INTEGER     NOT NULL DEFAULT 0,
-    workshop_debuff_until TIMESTAMPTZ
+    workshop_debuff_until TIMESTAMPTZ,
+    build_complete_at     TIMESTAMPTZ,
+    upgrade_to_level      INTEGER
 );
 
 -- global_vaults

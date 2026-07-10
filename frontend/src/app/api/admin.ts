@@ -309,6 +309,8 @@ export interface BuildingTypeForm {
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
   maxBuildings: number | null;
+  buildTimeSeconds: number | null;
+  upgradeTimeSeconds: number | null;
   icon: string | null;
   colorHex: string | null;
 }
@@ -337,6 +339,7 @@ export interface LevelSpecValues {
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
   maxBuildings: number | null;
+  upgradeTimeSeconds: number | null;
 }
 
 export function fetchLevelSpecs(id: number) {

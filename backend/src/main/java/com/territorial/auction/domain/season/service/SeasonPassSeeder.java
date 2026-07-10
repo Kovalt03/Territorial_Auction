@@ -22,16 +22,28 @@ public class SeasonPassSeeder implements ApplicationRunner {
 
     private final SeasonPassRepository seasonPassRepository;
 
+    // yml을 단일 진실 공급원으로 삼는다 — 기존 행이 있으면 건너뛰지 않고 값을 맞춘다.
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (seasonPassRepository.count() > 0) {
-            log.info("season_passes 이미 존재 — 건너뜀");
-            return;
-        }
-        List<SeasonPass> passes = loadEntries().stream().map(this::toEntity).toList();
-        seasonPassRepository.saveAll(passes);
-        log.info("season_passes 시드 완료. 건수={}", passes.size());
+        List<Map<String, Object>> entries = loadEntries();
+        entries.forEach(this::upsert);
+        log.info("season_passes 시드 동기화 완료. 건수={}", entries.size());
+    }
+
+    private void upsert(Map<String, Object> m) {
+        seasonPassRepository
+                .findByName((String) m.get("name"))
+                .ifPresentOrElse(
+                        pass ->
+                                pass.syncFromSeed(
+                                        (Integer) m.get("costAp"),
+                                        (Integer) m.get("durationDays"),
+                                        (Integer) m.get("islandBonusPct"),
+                                        (Integer) m.get("extraBuilders"),
+                                        (Integer) m.get("taxExemptBonus"),
+                                        (Integer) m.get("buildTimeReductionPct")),
+                        () -> seasonPassRepository.save(toEntity(m)));
     }
 
     @SuppressWarnings("unchecked")
@@ -52,6 +64,7 @@ public class SeasonPassSeeder implements ApplicationRunner {
                 .durationDays((Integer) m.get("durationDays"))
                 .islandBonusPct((Integer) m.get("islandBonusPct"))
                 .extraBuilders((Integer) m.get("extraBuilders"))
+                .buildTimeReductionPct((Integer) m.get("buildTimeReductionPct"))
                 .taxExemptBonus((Integer) m.get("taxExemptBonus"))
                 .build();
     }

@@ -9,6 +9,7 @@ export interface IslandBuilding {
   width: number;
   height: number;
   isDestroyed: boolean;
+  buildCompleteAt: string | null;
 }
 
 export interface IslandData {
@@ -16,11 +17,13 @@ export interface IslandData {
   grade: string;
   gridSize: number;
   level: number;
-  productionRate: number;
+  productionRatePerHour: number;
   lastHarvestAt: string;
   accumulatedGp: number;
   zone1Radius: number;
   zone2Radius: number;
+  builderCount: number;
+  buildersInUse: number;
   buildings: IslandBuilding[];
 }
 
@@ -54,6 +57,7 @@ export interface UpgradeBuildingResponse {
   maxLevel: number;
   upgradeCost: number;
   gpRemaining: number;
+  buildCompleteAt: string | null;
 }
 
 export interface PlaceFromInventoryResponse {
@@ -81,6 +85,8 @@ export interface BuildingTypeInfo {
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
   maxBuildings: number | null;
+  buildTimeSeconds: number | null;
+  upgradeTimeSeconds: number | null;
   icon: string | null;
   colorHex: string | null;
 }

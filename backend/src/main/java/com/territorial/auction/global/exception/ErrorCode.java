@@ -86,6 +86,7 @@ public enum ErrorCode {
     INVALID_POSITION(HttpStatus.BAD_REQUEST, "배치 불가능한 위치입니다."),
     ZONE_RESTRICTION_VIOLATED(HttpStatus.BAD_REQUEST, "Zone 제약 위반입니다."),
     INSUFFICIENT_GP(HttpStatus.BAD_REQUEST, "GP 잔액이 부족합니다."),
+    CASTLE_ALREADY_EXISTS(HttpStatus.CONFLICT, "성은 하나만 지을 수 있습니다."),
     CASTLE_CANNOT_BE_STORED(HttpStatus.BAD_REQUEST, "Castle은 보관할 수 없습니다."),
     CASTLE_CANNOT_BE_MOVED(HttpStatus.BAD_REQUEST, "Castle은 이동할 수 없습니다."),
 
@@ -130,7 +131,8 @@ public enum ErrorCode {
 
     // Island
     ISLAND_NOT_FOUND(HttpStatus.NOT_FOUND, "섬을 찾을 수 없습니다."),
-    BUILDER_SLOT_FULL(HttpStatus.CONFLICT, "건설 슬롯이 가득 찼습니다. 시즌 패스로 슬롯을 추가할 수 있습니다."),
+    BUILDER_SLOT_FULL(HttpStatus.CONFLICT, "건축 장인이 모두 작업 중입니다. 시즌 패스로 장인을 추가할 수 있습니다."),
+    BUILDING_UNDER_CONSTRUCTION(HttpStatus.CONFLICT, "아직 건설 중인 건물입니다."),
 
     // Season
     SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "진행 중인 시즌이 없습니다."),

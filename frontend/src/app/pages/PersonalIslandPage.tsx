@@ -13,7 +13,7 @@ import {
   type BuildingType, type Cell,
   buildingColors, buildingLabels, buildingNames,
   UNIT_LABELS,
-  emptyGrid, buildGridFromIsland, findOriginCell, clearBuildingCells,
+  emptyGrid, buildGridFromIsland, findOriginCell, clearBuildingCells, isUnderConstruction, remainingLabel,
 } from './islandGrid';
 import { IslandToast } from './IslandToast';
 import { IslandBuildModal } from './IslandBuildModal';
@@ -35,6 +35,24 @@ export function PersonalIslandPage() {
   useEffect(() => {
     if (island) setGrid(buildGridFromIsland(island));
   }, [island]);
+
+  // 건설 중인 건물이 있는 동안만 1초마다 남은 시간을 갱신하고, 완료 시점에 섬을 다시 불러온다.
+  const [now, setNow] = useState(() => Date.now());
+  // 서버 buildersInUse 는 폴링 사이에 낡으므로 타이머 기준으로 다시 센다.
+  const buildersInUse = island?.buildings.filter(b => isUnderConstruction(b.buildCompleteAt, now)).length ?? 0;
+  const builderCount = island?.builderCount ?? 1;
+  const isBuilderFull = buildersInUse >= builderCount;
+  const hasConstruction = buildersInUse > 0;
+  useEffect(() => {
+    if (!hasConstruction) return;
+    const timer = setInterval(() => {
+      const next = Date.now();
+      setNow(next);
+      const stillBuilding = island?.buildings.some(b => isUnderConstruction(b.buildCompleteAt, next));
+      if (!stillBuilding) void reloadIsland();
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [hasConstruction, island, reloadIsland]);
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingType | null>(null);
   const [catalog, setCatalog] = useState<BuildingTypeInfo[]>([]);
   useEffect(() => {
@@ -99,7 +117,12 @@ export function PersonalIslandPage() {
       syncGP(result.gpRemaining);
       void reloadIsland();
       setShowBuildingAction(false);
-      showToast(`Lv.${result.newLevel}으로 업그레이드 완료 (${result.upgradeCost.toLocaleString()} GP 소모)`, false);
+      showToast(
+        result.buildCompleteAt
+          ? `Lv.${result.newLevel} 업그레이드 시작 — ${remainingLabel(result.buildCompleteAt, Date.now())} 후 완료 (${result.upgradeCost.toLocaleString()} GP 소모)`
+          : `Lv.${result.newLevel}으로 업그레이드 완료 (${result.upgradeCost.toLocaleString()} GP 소모)`,
+        false,
+      );
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : '업그레이드에 실패했습니다');
     }
@@ -379,6 +402,15 @@ export function PersonalIslandPage() {
             <div className="w-2 h-2 bg-gp rounded-full animate-pulse" />
             <span className="text-gp text-[11px]">안전 보호 중</span>
           </div>
+          <div
+            className={`flex items-center gap-1 bg-elevated border rounded-lg px-2 py-1 ${isBuilderFull ? 'border-gold' : 'border-outline'}`}
+            title="건축 장인 — 동시에 지을 수 있는 건물 수"
+          >
+            <span className="text-[11px]">🔨</span>
+            <span className={`text-[11px] font-bold ${isBuilderFull ? 'text-gold' : 'text-muted'}`}>
+              장인 {buildersInUse}/{builderCount}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-4 ml-auto">
           <div className="text-right">
@@ -387,7 +419,7 @@ export function PersonalIslandPage() {
           </div>
           <div className="text-right">
             <p className="text-muted text-[10px]">생산 속도</p>
-            <p className="text-gold font-bold text-base">+{island?.productionRate ?? 0} GP/분</p>
+            <p className="text-gold font-bold text-base">+{island?.productionRatePerHour ?? 0} GP/시간</p>
           </div>
           <div className="text-right">
             <p className="text-muted text-[10px]">총 방어력</p>
@@ -484,6 +516,7 @@ export function PersonalIslandPage() {
                 const bg = isMoveSource ? colorFor(cell.type) + '80' : cell.type !== 'empty' ? colorFor(cell.type) + '50' : showZones ? zoneOverlay[zone] : 'var(--color-surface)';
                 const hpPct = cell.hp && cell.maxHp ? cell.hp / cell.maxHp : 0;
                 const hpColor = hpPct > 0.7 ? '#00ff88' : hpPct > 0.4 ? '#ffd700' : '#ff3333';
+                const building = isUnderConstruction(cell.buildCompleteAt, now);
                 return (
                   <div
                     key={`${x}-${y}`}
@@ -505,14 +538,19 @@ export function PersonalIslandPage() {
                     {cell.type !== 'empty' ? (
                       <>
                         {!cell.isBody && (
-                          <span className="text-sm leading-none">{iconFor(cell.type)}</span>
+                          <span className="text-sm leading-none">{building ? '🔨' : iconFor(cell.type)}</span>
                         )}
-                        {!cell.isBody && cell.level && (
+                        {!cell.isBody && building && (
+                          <span className="absolute bottom-0 left-0 right-0 text-[7px] text-center text-gold font-bold leading-tight">
+                            {remainingLabel(cell.buildCompleteAt, now)}
+                          </span>
+                        )}
+                        {!cell.isBody && cell.level && !building && (
                           <div className="absolute bottom-0.5 left-0.5 right-0.5 h-1 rounded-full overflow-hidden" style={{ background: '#0a0e1a' }}>
                             <div className="h-full rounded-full" style={{ width: `${hpPct * 100}%`, background: hpColor }} />
                           </div>
                         )}
-                        {!cell.isBody && cell.level && (
+                        {!cell.isBody && cell.level && !building && (
                           <div className="absolute top-0 right-0 w-3 h-3 rounded-full flex items-center justify-center text-[6px]" style={{ background: colorFor(cell.type) }}>
                             {cell.level}
                           </div>
@@ -571,10 +609,10 @@ export function PersonalIslandPage() {
                   <div className="flex justify-between"><span className="text-gold font-semibold text-xs">⚡ AP</span><span className="text-gold font-bold text-sm">{ap.toLocaleString()}</span></div>
                 </div>
                 <div className="bg-panel-deep rounded-xl p-3">
-                  <div className="flex justify-between mb-1"><span className="text-gp font-semibold text-xs">💎 GP 생산</span><span className="text-gp font-bold text-sm">+{island?.productionRate ?? 0}/분</span></div>
+                  <div className="flex justify-between mb-1"><span className="text-gp font-semibold text-xs">💎 GP 생산</span><span className="text-gp font-bold text-sm">+{island?.productionRatePerHour ?? 0}/시간</span></div>
                   <div className="space-y-1 mt-2">
                     {countBuildings('workshop') > 0
-                      ? <div className="flex justify-between"><span className="text-muted text-[10px]">생산소 ×{countBuildings('workshop')}개</span><span className="text-[10px]" style={{ color: '#00ff88' }}>+{island?.productionRate ?? 0}/분</span></div>
+                      ? <div className="flex justify-between"><span className="text-muted text-[10px]">생산소 ×{countBuildings('workshop')}개</span><span className="text-[10px]" style={{ color: '#00ff88' }}>+{island?.productionRatePerHour ?? 0}/시간</span></div>
                       : <p className="text-muted text-[10px]">생산 건물 없음</p>
                     }
                   </div>

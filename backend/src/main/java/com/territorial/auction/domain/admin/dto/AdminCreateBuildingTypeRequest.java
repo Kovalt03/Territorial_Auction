@@ -19,5 +19,7 @@ public record AdminCreateBuildingTypeRequest(
         Integer foodProductionRate,
         Integer unitCapacityPerLevel,
         Integer gpProductionRate,
+        @PositiveOrZero Integer buildTimeSeconds,
+        @PositiveOrZero Integer upgradeTimeSeconds,
         String icon,
         String colorHex) {}
