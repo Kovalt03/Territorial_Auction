@@ -340,12 +340,23 @@ public class SeasonPassService {
         switch (reward.getRewardKind()) {
             case GP -> grantGp(user.getId(), reward.getQuantity());
             case ITEM -> grantItem(user, reward.getItemType(), reward.getQuantity());
+            case BUILD_TIME_REDUCTION ->
+                    grantBuildTimeReduction(user.getId(), reward.getQuantity());
         }
         log.info(
                 "시즌 패스 보상 지급. userId={}, kind={}, reward={}",
                 user.getId(),
                 reward.getRewardKind(),
                 reward.getRewardName());
+    }
+
+    // PREMIUM 트랙 보상이라 활성 패스가 반드시 존재한다.
+    private void grantBuildTimeReduction(Long userId, int pct) {
+        UserSeasonPass userSeasonPass =
+                userSeasonPassRepository
+                        .findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.SEASON_PASS_NOT_FOUND));
+        userSeasonPass.addBuildTimeReduction(pct);
     }
 
     private void grantGp(Long userId, int amount) {
