@@ -75,6 +75,7 @@ public enum ErrorCode {
 
     // Building
     BUILDING_NOT_FOUND(HttpStatus.NOT_FOUND, "건물을 찾을 수 없습니다."),
+    STORAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "저장 공간이 없습니다."),
     BUILDING_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "건물 타입을 찾을 수 없습니다."),
     DUPLICATE_BUILDING_TYPE_NAME(HttpStatus.CONFLICT, "이미 존재하는 건물 이름입니다."),
     FUNCTIONAL_BUILDING_NOT_CREATABLE(
@@ -98,6 +99,7 @@ public enum ErrorCode {
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.UNPROCESSABLE_ENTITY, "결제 금액이 일치하지 않습니다."),
 
     // Global Vault
+    STORAGE_CAPACITY_EXCEEDED(HttpStatus.CONFLICT, "저장 공간이 가득 찼습니다."),
     VAULT_CAPACITY_EXCEEDED(HttpStatus.CONFLICT, "금고 용량을 초과합니다."),
     TRANSFER_COOLDOWN_ACTIVE(HttpStatus.TOO_MANY_REQUESTS, "이전 쿨다운 중입니다. 잠시 후 다시 시도하세요."),
 
