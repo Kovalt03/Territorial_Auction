@@ -128,6 +128,8 @@ public enum ErrorCode {
     SIEGE_NOT_FOUND(HttpStatus.NOT_FOUND, "공성전을 찾을 수 없습니다."),
     SIEGE_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 공성전의 관계자가 아닙니다."),
     UNIT_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "유닛 타입을 찾을 수 없습니다."),
+    INVALID_UNIT_LEVEL(HttpStatus.BAD_REQUEST, "유효하지 않은 유닛 레벨입니다."),
+    INCOMPLETE_UNIT_LEVEL_SPEC(HttpStatus.BAD_REQUEST, "훈련 스펙은 모든 값을 함께 입력해야 합니다."),
     SIEGE_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "공성전 결과가 아직 처리되지 않았습니다."),
     CANNOT_ATTACK_OWN_TERRITORY(HttpStatus.FORBIDDEN, "자신의 영토는 공격할 수 없습니다."),
 
