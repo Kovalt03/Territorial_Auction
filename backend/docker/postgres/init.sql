@@ -338,7 +338,7 @@ CREATE TABLE IF NOT EXISTS building_instances (
 CREATE TABLE IF NOT EXISTS global_vaults (
     user_id          BIGINT  PRIMARY KEY REFERENCES users(id),
     stored_gp        INTEGER NOT NULL DEFAULT 0,
-    capacity         INTEGER NOT NULL DEFAULT 500,
+    capacity         INTEGER NOT NULL DEFAULT 10000,
     last_transfer_at TIMESTAMPTZ
 );
 
