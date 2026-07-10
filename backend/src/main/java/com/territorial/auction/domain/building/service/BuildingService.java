@@ -544,7 +544,7 @@ public class BuildingService {
 
         List<BuildingInstance> buildings =
                 buildingInstanceRepository.findByIslandId(island.getId());
-        int productionRatePerMinute = calculateIslandProductionRatePerMinute(buildings);
+        int productionPerHour = calculateIslandProductionPerHour(buildings);
 
         LocalDateTime lastHarvest = resolveLastHarvest(island);
         long minutesElapsed =
@@ -553,7 +553,8 @@ public class BuildingService {
                         Math.min(
                                 ChronoUnit.MINUTES.between(lastHarvest, LocalDateTime.now()),
                                 BuildingPolicy.MAX_HARVEST_ACCUMULATION_MINUTES));
-        int gpAmount = (int) (minutesElapsed * productionRatePerMinute);
+        // 분당으로 먼저 나누면 시간당 생산량이 60 미만인 건물은 0이 되어 버린다.
+        int gpAmount = (int) (minutesElapsed * productionPerHour / 60);
 
         Wallet wallet = findWalletOrThrow(userId);
         if (gpAmount > 0) {
@@ -574,19 +575,16 @@ public class BuildingService {
     }
 
     // 건설 중인 건물은 아직 생산하지 않는다.
-    private int calculateIslandProductionRatePerMinute(List<BuildingInstance> buildings) {
+    private int calculateIslandProductionPerHour(List<BuildingInstance> buildings) {
         LocalDateTime now = LocalDateTime.now();
-        int perHour =
-                buildings.stream()
-                        .filter(
-                                b ->
-                                        !b.isDestroyed()
-                                                && !b.isUnderConstruction(now)
-                                                && b.getBuildingType().getGpProductionRate()
-                                                        != null)
-                        .mapToInt(b -> b.getLevel() * b.getBuildingType().getGpProductionRate())
-                        .sum();
-        return perHour / 60;
+        return buildings.stream()
+                .filter(
+                        b ->
+                                !b.isDestroyed()
+                                        && !b.isUnderConstruction(now)
+                                        && b.getBuildingType().getGpProductionRate() != null)
+                .mapToInt(b -> b.getLevel() * b.getBuildingType().getGpProductionRate())
+                .sum();
     }
 
     // ─── private helpers ──────────────────────────────────────────────────────

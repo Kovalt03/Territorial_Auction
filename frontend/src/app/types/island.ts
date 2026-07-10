@@ -17,7 +17,7 @@ export interface IslandData {
   grade: string;
   gridSize: number;
   level: number;
-  productionRate: number;
+  productionRatePerHour: number;
   lastHarvestAt: string;
   accumulatedGp: number;
   zone1Radius: number;

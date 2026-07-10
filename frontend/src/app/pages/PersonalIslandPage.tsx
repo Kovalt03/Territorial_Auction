@@ -419,7 +419,7 @@ export function PersonalIslandPage() {
           </div>
           <div className="text-right">
             <p className="text-muted text-[10px]">생산 속도</p>
-            <p className="text-gold font-bold text-base">+{island?.productionRate ?? 0} GP/분</p>
+            <p className="text-gold font-bold text-base">+{island?.productionRatePerHour ?? 0} GP/시간</p>
           </div>
           <div className="text-right">
             <p className="text-muted text-[10px]">총 방어력</p>
@@ -609,10 +609,10 @@ export function PersonalIslandPage() {
                   <div className="flex justify-between"><span className="text-gold font-semibold text-xs">⚡ AP</span><span className="text-gold font-bold text-sm">{ap.toLocaleString()}</span></div>
                 </div>
                 <div className="bg-panel-deep rounded-xl p-3">
-                  <div className="flex justify-between mb-1"><span className="text-gp font-semibold text-xs">💎 GP 생산</span><span className="text-gp font-bold text-sm">+{island?.productionRate ?? 0}/분</span></div>
+                  <div className="flex justify-between mb-1"><span className="text-gp font-semibold text-xs">💎 GP 생산</span><span className="text-gp font-bold text-sm">+{island?.productionRatePerHour ?? 0}/시간</span></div>
                   <div className="space-y-1 mt-2">
                     {countBuildings('workshop') > 0
-                      ? <div className="flex justify-between"><span className="text-muted text-[10px]">생산소 ×{countBuildings('workshop')}개</span><span className="text-[10px]" style={{ color: '#00ff88' }}>+{island?.productionRate ?? 0}/분</span></div>
+                      ? <div className="flex justify-between"><span className="text-muted text-[10px]">생산소 ×{countBuildings('workshop')}개</span><span className="text-[10px]" style={{ color: '#00ff88' }}>+{island?.productionRatePerHour ?? 0}/시간</span></div>
                       : <p className="text-muted text-[10px]">생산 건물 없음</p>
                     }
                   </div>
