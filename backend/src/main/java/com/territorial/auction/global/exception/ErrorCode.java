@@ -86,6 +86,7 @@ public enum ErrorCode {
     INVALID_POSITION(HttpStatus.BAD_REQUEST, "배치 불가능한 위치입니다."),
     ZONE_RESTRICTION_VIOLATED(HttpStatus.BAD_REQUEST, "Zone 제약 위반입니다."),
     INSUFFICIENT_GP(HttpStatus.BAD_REQUEST, "GP 잔액이 부족합니다."),
+    CASTLE_ALREADY_EXISTS(HttpStatus.CONFLICT, "성은 하나만 지을 수 있습니다."),
     CASTLE_CANNOT_BE_STORED(HttpStatus.BAD_REQUEST, "Castle은 보관할 수 없습니다."),
     CASTLE_CANNOT_BE_MOVED(HttpStatus.BAD_REQUEST, "Castle은 이동할 수 없습니다."),
 

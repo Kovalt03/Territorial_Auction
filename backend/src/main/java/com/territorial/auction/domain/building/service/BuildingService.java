@@ -40,6 +40,7 @@ import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.function.IntBinaryOperator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -91,7 +92,11 @@ public class BuildingService {
         int gridSize = territory.getGrade().getGridSize();
         int zone = calculateTerritoryZone(request.posX(), request.posY(), territory.getGrade());
         validatePosition(existing, buildingType, request.posX(), request.posY(), gridSize);
-        validateZoneRestriction(buildingType, zone);
+        validateZoneFootprint(
+                buildingType,
+                request.posX(),
+                request.posY(),
+                (x, y) -> calculateTerritoryZone(x, y, territory.getGrade()));
 
         Wallet wallet = findWalletOrThrow(userId);
         validateGp(wallet, buildingType.getBaseCostGp());
@@ -206,7 +211,12 @@ public class BuildingService {
         com.territorial.auction.domain.building.BuildingLevelSpecResolver resolver =
                 com.territorial.auction.domain.building.BuildingLevelSpecResolver.of(
                         buildings, buildingLevelSpecRepository);
-        return IslandResponse.of(island, buildings, resolver::gpPerHour, resolver::maxHp);
+        return IslandResponse.of(
+                island,
+                buildings,
+                resolver::gpPerHour,
+                resolver::maxHp,
+                resolveBuilderCount(userId));
     }
 
     public List<IslandResponse.IslandBuildingInfo> getIslandBuildings(Long userId) {
@@ -239,7 +249,12 @@ public class BuildingService {
         int gridSize = island.getGridSize();
         int zone = calculateIslandZone(request.posX(), request.posY(), island);
         validatePosition(existing, buildingType, request.posX(), request.posY(), gridSize);
-        validateZoneRestriction(buildingType, zone);
+        validateZoneFootprint(
+                buildingType,
+                request.posX(),
+                request.posY(),
+                (x, y) -> calculateIslandZone(x, y, island));
+        validateSingleCastleOnIsland(buildingType, island);
 
         Wallet wallet = findWalletOrThrow(userId);
         validateGp(wallet, buildingType.getBaseCostGp());
@@ -297,7 +312,11 @@ public class BuildingService {
         int zone = calculateTerritoryZone(request.posX(), request.posY(), territory.getGrade());
         validatePosition(
                 existing, stored.getBuildingType(), request.posX(), request.posY(), gridSize);
-        validateZoneRestriction(stored.getBuildingType(), zone);
+        validateZoneFootprint(
+                stored.getBuildingType(),
+                request.posX(),
+                request.posY(),
+                (x, y) -> calculateTerritoryZone(x, y, territory.getGrade()));
 
         stored.placeOnTerritory(territory, request.posX(), request.posY(), zone);
 
@@ -334,7 +353,12 @@ public class BuildingService {
         int zone = calculateIslandZone(request.posX(), request.posY(), island);
         validatePosition(
                 existing, stored.getBuildingType(), request.posX(), request.posY(), gridSize);
-        validateZoneRestriction(stored.getBuildingType(), zone);
+        validateZoneFootprint(
+                stored.getBuildingType(),
+                request.posX(),
+                request.posY(),
+                (x, y) -> calculateIslandZone(x, y, island));
+        validateSingleCastleOnIsland(stored.getBuildingType(), island);
 
         stored.placeOnIsland(island, request.posX(), request.posY(), zone);
 
@@ -362,7 +386,11 @@ public class BuildingService {
                 existing.stream().filter(b -> !b.getId().equals(buildingId)).toList();
         validatePosition(
                 othersOnly, building.getBuildingType(), request.posX(), request.posY(), gridSize);
-        validateZoneRestriction(building.getBuildingType(), zone);
+        validateZoneFootprint(
+                building.getBuildingType(),
+                request.posX(),
+                request.posY(),
+                (x, y) -> resolveZone(building, x, y));
 
         building.movePosition(request.posX(), request.posY(), zone);
 
@@ -456,17 +484,21 @@ public class BuildingService {
 
     // ─── private helpers ──────────────────────────────────────────────────────
 
-    // 건축 장인은 "짓는 중"인 건물만 점유한다 — 완성된 건물 수는 장인과 무관.
-    private void validateBuilderSlot(Long userId, List<BuildingInstance> existing) {
+    // 기본 장인 1명 + 시즌 패스로 추가된 인원
+    private int resolveBuilderCount(Long userId) {
         int extraBuilders =
                 userSeasonPassRepository
                         .findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(userId)
                         .map(p -> p.getSeasonPass().getExtraBuilders())
                         .orElse(0);
-        int builderCount = 1 + extraBuilders;
+        return 1 + extraBuilders;
+    }
+
+    // 건축 장인은 "짓는 중"인 건물만 점유한다 — 완성된 건물 수는 장인과 무관.
+    private void validateBuilderSlot(Long userId, List<BuildingInstance> existing) {
         LocalDateTime now = LocalDateTime.now();
         long buildingNow = existing.stream().filter(b -> b.isUnderConstruction(now)).count();
-        if (buildingNow >= builderCount) {
+        if (buildingNow >= resolveBuilderCount(userId)) {
             throw new CustomException(ErrorCode.BUILDER_SLOT_FULL);
         }
     }
@@ -548,6 +580,25 @@ public class BuildingService {
             return calculateIslandZone(posX, posY, building.getIsland());
         }
         return calculateTerritoryZone(posX, posY, building.getTerritory().getGrade());
+    }
+
+    // 섬에는 성이 하나만 존재한다 — 시작 건물로 이미 배치되어 있다.
+    private void validateSingleCastleOnIsland(BuildingType buildingType, HomeIsland island) {
+        if (!buildingType.isCastle()) return;
+        if (buildingInstanceRepository.existsCastleOnIsland(island.getId())) {
+            throw new CustomException(ErrorCode.CASTLE_ALREADY_EXISTS);
+        }
+    }
+
+    // 건물이 차지하는 모든 칸이 Zone 제약을 만족해야 한다 — 2×2 성이 Zone1을 벗어나 걸치는 것을 막는다.
+    private void validateZoneFootprint(
+            BuildingType buildingType, int posX, int posY, IntBinaryOperator zoneAt) {
+        if (buildingType.getZoneRestriction() == null) return;
+        for (int dy = 0; dy < buildingType.getHeight(); dy++) {
+            for (int dx = 0; dx < buildingType.getWidth(); dx++) {
+                validateZoneRestriction(buildingType, zoneAt.applyAsInt(posX + dx, posY + dy));
+            }
+        }
     }
 
     private void validateZoneRestriction(BuildingType buildingType, int zone) {
