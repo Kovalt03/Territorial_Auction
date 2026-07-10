@@ -645,6 +645,50 @@ class BuildingServiceTest {
                     .isEqualTo(ErrorCode.INSUFFICIENT_GP);
         }
 
+        // 섬 D등급: gridSize=10, zone1Radius=2 → Zone1은 (3..6, 3..6)
+        @Test
+        @DisplayName("2×2 성이 Zone1을 벗어나 걸치면 → ZONE_RESTRICTION_VIOLATED")
+        void castle_footprint_must_fit_in_zone() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(1L)).willReturn(Optional.of(castle()));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(Collections.emptyList());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+
+            // 원점 (6,6)은 Zone1이지만 (7,7)까지 차지하므로 Zone2를 침범한다
+            PlaceBuildingRequest req = new PlaceBuildingRequest(1L, 6, 6);
+            assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.ZONE_RESTRICTION_VIOLATED);
+        }
+
+        @Test
+        @DisplayName("섬에 성이 이미 있으면 → CASTLE_ALREADY_EXISTS")
+        void only_one_castle_per_island() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(1L)).willReturn(Optional.of(castle()));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(Collections.emptyList());
+            given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
+                    .willReturn(Optional.empty());
+            given(buildingInstanceRepository.existsCastleOnIsland(1L)).willReturn(true);
+
+            // (3,3)~(4,4) 는 모두 Zone1 — Zone 제약은 통과하고 성 중복에서 걸린다
+            PlaceBuildingRequest req = new PlaceBuildingRequest(1L, 3, 3);
+            assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.CASTLE_ALREADY_EXISTS);
+        }
+
         @Test
         @DisplayName("장인 1명이 이미 건설 중 → BUILDER_SLOT_FULL")
         void builder_slot_full_no_pass() {
