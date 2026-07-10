@@ -328,6 +328,7 @@ CREATE TABLE IF NOT EXISTS building_instances (
     zone                  INTEGER     NOT NULL,
     is_destroyed          BOOLEAN     NOT NULL DEFAULT false,
     stored_gp             INTEGER     NOT NULL DEFAULT 0,
+    stored_food           INTEGER     NOT NULL DEFAULT 0,
     workshop_debuff_until TIMESTAMPTZ,
     build_complete_at     TIMESTAMPTZ,
     upgrade_to_level      INTEGER
@@ -373,6 +374,9 @@ CREATE TABLE IF NOT EXISTS unit_instances (
     user_id                BIGINT    NOT NULL REFERENCES users(id),
     unit_type_id           BIGINT    NOT NULL REFERENCES unit_types(id),
     quantity               INTEGER   NOT NULL,
+    -- 유닛이 귀속된 위치. 영토 또는 섬 중 하나만 설정된다 (Stage 2 백필 후 CHECK 추가)
+    home_territory_id      BIGINT    REFERENCES territories(id),
+    home_island_id         BIGINT    REFERENCES home_islands(id),
     deployed_territory_id  BIGINT    REFERENCES territories(id)
 );
 
