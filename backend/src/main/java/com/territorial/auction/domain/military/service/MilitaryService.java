@@ -469,6 +469,7 @@ public class MilitaryService {
         }
     }
 
+    /** 보유 유닛이 없어도 전체 유닛 종류를 돌려준다 — 훈련 화면이 이 목록으로 생산 대상을 고른다. */
     private UnitListResponse buildUnitListResponse(
             List<UnitInstance> instances, int availableFood) {
         Map<Long, List<UnitInstance>> grouped = new LinkedHashMap<>();
@@ -478,11 +479,11 @@ public class MilitaryService {
 
         List<UnitListResponse.UnitDto> dtos = new ArrayList<>();
 
-        for (Map.Entry<Long, List<UnitInstance>> entry : grouped.entrySet()) {
-            UnitType unitType = entry.getValue().get(0).getUnitType();
-            int total = entry.getValue().stream().mapToInt(UnitInstance::getQuantity).sum();
+        for (UnitType unitType : unitTypeRepository.findAll()) {
+            List<UnitInstance> owned = grouped.getOrDefault(unitType.getId(), List.of());
+            int total = owned.stream().mapToInt(UnitInstance::getQuantity).sum();
             int deployed =
-                    entry.getValue().stream()
+                    owned.stream()
                             .filter(i -> i.getDeployedTerritory() != null)
                             .mapToInt(UnitInstance::getQuantity)
                             .sum();
@@ -490,12 +491,17 @@ public class MilitaryService {
                     new UnitListResponse.UnitDto(
                             unitType.getId(),
                             unitType.getName(),
+                            unitType.getDisplayName(),
+                            unitType.getIcon(),
+                            unitType.getColorHex(),
                             total,
                             deployed,
                             total - deployed,
                             unitType.getAttackPower(),
                             unitType.getDefensePower(),
-                            unitType.getFoodCost()));
+                            unitType.getCostGp(),
+                            unitType.getFoodCost(),
+                            unitType.getLevel()));
         }
         return new UnitListResponse(dtos, availableFood);
     }
