@@ -229,7 +229,9 @@ public class MilitaryService {
                 buildingInstanceRepository.findActiveCastleLevelsByOwnerId(userId);
         int castleSlots = castleLevels.stream().mapToInt(MilitaryPolicy::castleUnitSlots).sum();
         int residenceSlots =
-                nullSafe(buildingInstanceRepository.sumResidenceCapacityByOwnerId(userId));
+                nullSafe(
+                        buildingInstanceRepository.sumResidenceCapacityByOwnerId(
+                                userId, java.time.LocalDateTime.now()));
         return (castleLevels.isEmpty() ? MilitaryPolicy.DEFAULT_UNIT_SLOTS : castleSlots)
                 + residenceSlots;
     }

@@ -103,21 +103,23 @@ public class BuildingService {
                 request.posX(),
                 request.posY(),
                 (x, y) -> calculateTerritoryZone(x, y, territory.getGrade()));
+        validateBuilderAvailable(userId);
 
         Wallet wallet = findWalletOrThrow(userId);
         validateGp(wallet, buildingType.getBaseCostGp());
         wallet.spendGp(buildingType.getBaseCostGp());
 
         BuildingInstance building =
-                buildingInstanceRepository.save(
-                        BuildingInstance.builder()
-                                .territory(territory)
-                                .buildingType(buildingType)
-                                .posX(request.posX())
-                                .posY(request.posY())
-                                .hp(buildingType.getMaxHp())
-                                .zone(zone)
-                                .build());
+                BuildingInstance.builder()
+                        .territory(territory)
+                        .buildingType(buildingType)
+                        .posX(request.posX())
+                        .posY(request.posY())
+                        .hp(buildingType.getMaxHp())
+                        .zone(zone)
+                        .build();
+        startConstruction(userId, building, buildingType);
+        buildingInstanceRepository.save(building);
 
         return new PlaceBuildingResponse(
                 building.getId(),
