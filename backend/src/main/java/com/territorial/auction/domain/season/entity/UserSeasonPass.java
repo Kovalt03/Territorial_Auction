@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.season.entity;
 
+import com.territorial.auction.domain.season.SeasonPassPolicy;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -32,6 +33,10 @@ public class UserSeasonPass {
     @Column(nullable = false)
     private Boolean isActive = true;
 
+    // 레벨 보상으로 얻은 추가 건설 시간 감소 % — 패스 기본값에 더해진다.
+    @Column(nullable = false)
+    private Integer bonusBuildTimeReductionPct = 0;
+
     @Builder
     public UserSeasonPass(
             User user, SeasonPass seasonPass, LocalDateTime startedAt, LocalDateTime expiresAt) {
@@ -43,5 +48,15 @@ public class UserSeasonPass {
 
     public void deactivate() {
         this.isActive = false;
+    }
+
+    public void addBuildTimeReduction(int pct) {
+        this.bonusBuildTimeReductionPct += pct;
+    }
+
+    // 패스 기본 감소율 + 보상으로 얻은 추가 감소율 (상한 적용)
+    public int totalBuildTimeReductionPct() {
+        int total = seasonPass.getBuildTimeReductionPct() + bonusBuildTimeReductionPct;
+        return Math.min(total, SeasonPassPolicy.MAX_BUILD_TIME_REDUCTION_PCT);
     }
 }

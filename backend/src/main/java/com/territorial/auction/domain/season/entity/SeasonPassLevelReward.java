@@ -17,7 +17,8 @@ public class SeasonPassLevelReward {
 
     public enum RewardKind {
         ITEM,
-        GP
+        GP,
+        BUILD_TIME_REDUCTION // quantity = 추가 감소 %
     }
 
     @Id
@@ -39,7 +40,7 @@ public class SeasonPassLevelReward {
     private String rewardName;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 30)
     private RewardKind rewardKind = RewardKind.ITEM;
 
     // ITEM 보상일 때 지급할 아이템 타입. GP 보상이면 null.
@@ -47,7 +48,7 @@ public class SeasonPassLevelReward {
     @Column(length = 20)
     private Item.ItemType itemType;
 
-    // ITEM: 지급 개수, GP: 지급 GP 수량
+    // ITEM: 지급 개수, GP: 지급 GP 수량, BUILD_TIME_REDUCTION: 추가 감소 %
     @Column(nullable = false)
     private Integer quantity = 1;
 

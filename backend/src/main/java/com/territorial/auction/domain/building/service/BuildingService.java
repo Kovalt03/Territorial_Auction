@@ -32,6 +32,7 @@ import com.territorial.auction.domain.map.entity.TerritoryGrade;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.notification.entity.NotificationLog.NotificationType;
 import com.territorial.auction.domain.notification.service.NotificationService;
+import com.territorial.auction.domain.season.entity.UserSeasonPass;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
@@ -261,7 +262,7 @@ public class BuildingService {
         int reductionPct =
                 userSeasonPassRepository
                         .findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(userId)
-                        .map(p -> p.getSeasonPass().getBuildTimeReductionPct())
+                        .map(UserSeasonPass::totalBuildTimeReductionPct)
                         .orElse(0);
         if (reductionPct <= 0) return seconds;
         return Math.max(0, seconds * (100 - reductionPct) / 100);
