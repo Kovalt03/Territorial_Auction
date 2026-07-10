@@ -115,6 +115,18 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
     boolean existsCastleOnIsland(@Param("islandId") Long islandId);
 
     @Query(
+            "SELECT b.level FROM BuildingInstance b"
+                    + " WHERE b.island.id = :islandId AND b.buildingType.name = 'CASTLE'")
+    Optional<Integer> findCastleLevelByIslandId(@Param("islandId") Long islandId);
+
+    /** 섬에 배치된 특정 종류의 건물 수 — 건설 중인 것도 자리를 차지하므로 함께 센다. */
+    @Query(
+            "SELECT COUNT(b) FROM BuildingInstance b"
+                    + " WHERE b.island.id = :islandId AND b.buildingType.id = :buildingTypeId")
+    long countByIslandIdAndBuildingTypeId(
+            @Param("islandId") Long islandId, @Param("buildingTypeId") Long buildingTypeId);
+
+    @Query(
             "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType"
                     + " WHERE b.island IS NOT NULL AND b.buildingType.name = 'CASTLE'"
                     + " AND b.posX = :posX AND b.posY = :posY")
