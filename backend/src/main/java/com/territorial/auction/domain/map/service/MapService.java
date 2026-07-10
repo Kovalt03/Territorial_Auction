@@ -131,6 +131,8 @@ public class MapService {
                 territory.getGrade().getGrade(),
                 territory.getGrade().getProductionMultiplier(),
                 territory.getGrade().getGridSize(),
+                territory.getGrade().getZone1Radius(),
+                territory.getGrade().getZone2Radius(),
                 territory.getStatus().name(),
                 owner,
                 territory.getBaseProductionRate(),
