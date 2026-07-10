@@ -249,6 +249,42 @@ export function createSeason(startedAt?: string, endedAt?: string) {
   });
 }
 
+export interface AdminUnitType {
+  unitTypeId: number;
+  name: string;
+  displayName: string | null;
+  icon: string | null;
+  colorHex: string | null;
+  attackPower: number;
+  defensePower: number;
+  costGp: number;
+  foodCost: number;
+  level: number;
+}
+
+export interface UnitLevelValues {
+  attackPower: number | null;
+  defensePower: number | null;
+  trainCostFood: number | null;
+  requiredBarracksLevel: number | null;
+}
+
+export function fetchAdminUnitTypes() {
+  return apiClient.get<AdminUnitType[]>('/admin/unit-types');
+}
+
+export function updateUnitType(unitTypeId: number, form: Omit<AdminUnitType, 'unitTypeId' | 'name'>) {
+  return apiClient.patch<AdminUnitType>(`/admin/unit-types/${unitTypeId}`, form);
+}
+
+export function fetchUnitLevelSpecs(unitTypeId: number) {
+  return apiClient.get<Record<string, UnitLevelValues>>(`/admin/unit-types/${unitTypeId}/level-specs`);
+}
+
+export function updateUnitLevelSpecs(unitTypeId: number, specs: Record<number, UnitLevelValues>) {
+  return apiClient.patch<Record<string, UnitLevelValues>>(`/admin/unit-types/${unitTypeId}/level-specs`, { specs });
+}
+
 export interface AdminSeasonPass {
   seasonPassId: number;
   name: string;

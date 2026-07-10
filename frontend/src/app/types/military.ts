@@ -6,12 +6,17 @@ export interface AttackTokens {
 export interface UnitInfo {
   unitTypeId: number;
   name: string;
+  displayName: string | null;
+  icon: string | null;
+  colorHex: string | null;
   quantity: number;
   deployedCount: number;
   idleCount: number;
   attackPower: number;
   defensePower: number;
+  costGp: number;
   foodCost: number;
+  requiredBarracksLevel: number;
 }
 
 export interface UnitsResponse {
