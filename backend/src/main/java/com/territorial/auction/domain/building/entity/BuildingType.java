@@ -57,6 +57,9 @@ public class BuildingType {
     // 건설 소요 시간(초). NULL이거나 0이면 즉시 완성.
     @Column private Integer buildTimeSeconds;
 
+    // 업그레이드 소요 시간(초) 기준. NULL이면 buildTimeSeconds를 따른다.
+    @Column private Integer upgradeTimeSeconds;
+
     @Column(length = 10)
     private String icon; // 이모지 아이콘 (관리자 지정). NULL이면 프론트 기본 매핑 사용
 
@@ -75,6 +78,12 @@ public class BuildingType {
     // 업그레이드 비용 기준값: 별도 지정이 없으면 건설 비용을 따른다.
     public int getUpgradeCostBase() {
         return upgradeCostGp != null ? upgradeCostGp : baseCostGp;
+    }
+
+    // 업그레이드 시간 기준값: 별도 지정이 없으면 건설 시간을 따른다.
+    public int getUpgradeTimeBase() {
+        Integer seconds = upgradeTimeSeconds != null ? upgradeTimeSeconds : buildTimeSeconds;
+        return seconds != null ? seconds : 0;
     }
 
     public void patchGpProductionRate(int rate) {
@@ -110,6 +119,7 @@ public class BuildingType {
             Integer gpProductionRate,
             Integer maxBuildings,
             Integer buildTimeSeconds,
+            Integer upgradeTimeSeconds,
             String icon,
             String colorHex) {
         this.displayName = displayName;
@@ -126,6 +136,7 @@ public class BuildingType {
         this.gpProductionRate = gpProductionRate;
         this.maxBuildings = maxBuildings;
         this.buildTimeSeconds = buildTimeSeconds;
+        this.upgradeTimeSeconds = upgradeTimeSeconds;
         this.icon = icon;
         this.colorHex = colorHex;
     }
@@ -148,6 +159,7 @@ public class BuildingType {
             Integer gpProductionRate,
             Integer maxBuildings,
             Integer buildTimeSeconds,
+            Integer upgradeTimeSeconds,
             String icon,
             String colorHex) {
         this.name = name;
@@ -166,6 +178,7 @@ public class BuildingType {
         this.gpProductionRate = gpProductionRate;
         this.maxBuildings = maxBuildings;
         this.buildTimeSeconds = buildTimeSeconds;
+        this.upgradeTimeSeconds = upgradeTimeSeconds;
         this.icon = icon;
         this.colorHex = colorHex;
     }

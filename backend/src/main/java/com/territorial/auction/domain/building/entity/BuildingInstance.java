@@ -59,8 +59,11 @@ public class BuildingInstance {
     // WORKSHOP 파괴 후 일정 시간 생산 중단 — null이면 디버프 없음
     @Column private LocalDateTime workshopDebuffUntil;
 
-    // 건설 완료 예정 시각 — null이면 완성된 건물. 건축 장인 슬롯은 이 값이 미래인 건물만 점유한다.
+    // 건설/업그레이드 완료 예정 시각 — null이면 완성된 건물. 장인 슬롯은 이 값이 미래인 건물만 점유한다.
     @Column private LocalDateTime buildCompleteAt;
+
+    // 업그레이드 대기 중일 때 도달할 레벨. null이면 신축 대기이거나 대기 없음.
+    @Column private Integer upgradeToLevel;
 
     @Builder
     public BuildingInstance(
@@ -151,8 +154,28 @@ public class BuildingInstance {
         this.buildCompleteAt = completeAt;
     }
 
+    // 업그레이드는 완료 시점에 레벨이 오른다 — 대기 중에는 기존 레벨·HP를 유지한다.
+    public void startUpgrade(int targetLevel, LocalDateTime completeAt) {
+        this.upgradeToLevel = targetLevel;
+        this.buildCompleteAt = completeAt;
+    }
+
     public boolean isUnderConstruction(LocalDateTime now) {
         return buildCompleteAt != null && buildCompleteAt.isAfter(now);
+    }
+
+    // 완료 시각이 지났는데 아직 정리되지 않은 상태
+    public boolean isConstructionFinished(LocalDateTime now) {
+        return buildCompleteAt != null && !buildCompleteAt.isAfter(now);
+    }
+
+    // 대기 종료 — 업그레이드였다면 레벨을 올린다. HP는 호출자가 레벨 스펙을 반영해 맞춘다.
+    public void finishConstruction() {
+        if (upgradeToLevel != null) {
+            this.level = upgradeToLevel;
+            this.upgradeToLevel = null;
+        }
+        this.buildCompleteAt = null;
     }
 
     public void applyWorkshopDebuff(LocalDateTime until) {

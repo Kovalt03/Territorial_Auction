@@ -31,6 +31,9 @@ public class SeasonPass {
     @Column(nullable = false)
     private Integer taxExemptBonus = 2;
 
+    @Column(nullable = false)
+    private Integer buildTimeReductionPct = 0; // 건설·업그레이드 시간 감소 %
+
     @Builder
     public SeasonPass(
             String name,
@@ -38,12 +41,30 @@ public class SeasonPass {
             Integer durationDays,
             Integer islandBonusPct,
             Integer extraBuilders,
-            Integer taxExemptBonus) {
+            Integer taxExemptBonus,
+            Integer buildTimeReductionPct) {
         this.name = name;
         this.costAp = costAp;
         this.durationDays = durationDays != null ? durationDays : 30;
         this.islandBonusPct = islandBonusPct;
         this.extraBuilders = extraBuilders != null ? extraBuilders : 1;
         this.taxExemptBonus = taxExemptBonus != null ? taxExemptBonus : 2;
+        this.buildTimeReductionPct = buildTimeReductionPct != null ? buildTimeReductionPct : 0;
+    }
+
+    // 시드 재적용 — 이름은 식별자라 제외하고 나머지를 yml 값으로 맞춘다.
+    public void syncFromSeed(
+            Integer costAp,
+            Integer durationDays,
+            Integer islandBonusPct,
+            Integer extraBuilders,
+            Integer taxExemptBonus,
+            Integer buildTimeReductionPct) {
+        this.costAp = costAp;
+        this.durationDays = durationDays;
+        this.islandBonusPct = islandBonusPct;
+        this.extraBuilders = extraBuilders;
+        this.taxExemptBonus = taxExemptBonus;
+        this.buildTimeReductionPct = buildTimeReductionPct != null ? buildTimeReductionPct : 0;
     }
 }

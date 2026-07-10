@@ -58,6 +58,7 @@ public class NotificationLog {
         SEASON_PASS_EXPIRING,
         TAX_FAIL_WARNING,
         TAX_EVICTION,
+        ISLAND_EXPANDED,
         ADMIN_NOTICE
     }
 }
