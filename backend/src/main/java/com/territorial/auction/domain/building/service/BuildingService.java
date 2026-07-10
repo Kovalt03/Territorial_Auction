@@ -66,6 +66,8 @@ public class BuildingService {
     private final UserRepository userRepository;
     private final UserSeasonPassRepository userSeasonPassRepository;
     private final NotificationService notificationService;
+    private final com.territorial.auction.domain.building.repository.BuildingCastleLimitRepository
+            buildingCastleLimitRepository;
 
     public BuildingTypeCatalogResponse getBuildingTypes() {
         return BuildingTypeCatalogResponse.of(buildingTypeRepository.findAll());
@@ -363,6 +365,7 @@ public class BuildingService {
                 request.posY(),
                 (x, y) -> calculateIslandZone(x, y, island));
         validateSingleCastleOnIsland(buildingType, island);
+        validateBuildingLimit(buildingType, island);
 
         Wallet wallet = findWalletOrThrow(userId);
         validateGp(wallet, buildingType.getBaseCostGp());
@@ -467,6 +470,7 @@ public class BuildingService {
                 request.posY(),
                 (x, y) -> calculateIslandZone(x, y, island));
         validateSingleCastleOnIsland(stored.getBuildingType(), island);
+        validateBuildingLimit(stored.getBuildingType(), island);
 
         stored.placeOnIsland(island, request.posX(), request.posY(), zone);
 
@@ -696,6 +700,28 @@ public class BuildingService {
     }
 
     // 섬에는 성이 하나만 존재한다 — 시작 건물로 이미 배치되어 있다.
+    /**
+     * 성 레벨별로 건물 종류마다 개수 상한이 있다. 상한이 설정되지 않은 조합은 제한 없음. 성은 별도 검증(validateSingleCastleOnIsland)으로 이미
+     * 1개로 묶여 있다.
+     */
+    private void validateBuildingLimit(BuildingType buildingType, HomeIsland island) {
+        if (buildingType.isCastle()) return;
+
+        int castleLevel =
+                buildingInstanceRepository.findCastleLevelByIslandId(island.getId()).orElse(1);
+        buildingCastleLimitRepository
+                .findByBuildingType_IdAndCastleLevel(buildingType.getId(), castleLevel)
+                .ifPresent(
+                        limit -> {
+                            long placed =
+                                    buildingInstanceRepository.countByIslandIdAndBuildingTypeId(
+                                            island.getId(), buildingType.getId());
+                            if (placed >= limit.getMaxCount()) {
+                                throw new CustomException(ErrorCode.BUILDING_LIMIT_EXCEEDED);
+                            }
+                        });
+    }
+
     private void validateSingleCastleOnIsland(BuildingType buildingType, HomeIsland island) {
         if (!buildingType.isCastle()) return;
         if (buildingInstanceRepository.existsCastleOnIsland(island.getId())) {
