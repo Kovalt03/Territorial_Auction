@@ -23,6 +23,7 @@ public record BuildingTypeCatalogResponse(List<BuildingTypeInfo> buildingTypes) 
             Integer gpProductionRate,
             Integer maxBuildings,
             Integer buildTimeSeconds,
+            Integer upgradeTimeSeconds,
             String icon,
             String colorHex) {
 
@@ -45,6 +46,7 @@ public record BuildingTypeCatalogResponse(List<BuildingTypeInfo> buildingTypes) 
                     t.getGpProductionRate(),
                     t.getMaxBuildings(),
                     t.getBuildTimeSeconds(),
+                    t.getUpgradeTimeSeconds(),
                     t.getIcon(),
                     t.getColorHex());
         }

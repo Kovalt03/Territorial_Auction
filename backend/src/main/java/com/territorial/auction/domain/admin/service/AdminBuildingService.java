@@ -79,7 +79,8 @@ public class AdminBuildingService {
                                     food,
                                     unit,
                                     gp,
-                                    maxBuildings);
+                                    maxBuildings,
+                                    v.upgradeTimeSeconds());
                             if (spec.isEmpty()) buildingLevelSpecRepository.delete(spec);
                         },
                         () -> {
@@ -94,6 +95,7 @@ public class AdminBuildingService {
                                             .unitCapacityPerLevel(unit)
                                             .gpProductionRate(gp)
                                             .maxBuildings(maxBuildings)
+                                            .upgradeTimeSeconds(v.upgradeTimeSeconds())
                                             .build();
                             if (!created.isEmpty()) buildingLevelSpecRepository.save(created);
                         });
@@ -132,6 +134,7 @@ public class AdminBuildingService {
                                 .unitCapacityPerLevel(null)
                                 .gpProductionRate(null)
                                 .buildTimeSeconds(request.buildTimeSeconds())
+                                .upgradeTimeSeconds(request.upgradeTimeSeconds())
                                 .icon(blankToNull(request.icon()))
                                 .colorHex(blankToNull(request.colorHex()))
                                 .build());
@@ -168,6 +171,7 @@ public class AdminBuildingService {
                 // 최대 건물 수는 성 레벨에 따라 결정되므로 성에만 유효.
                 type.isCastle() ? request.maxBuildings() : null,
                 request.buildTimeSeconds(),
+                request.upgradeTimeSeconds(),
                 blankToNull(request.icon()),
                 blankToNull(request.colorHex()));
 
