@@ -7,17 +7,19 @@ import static org.mockito.BDDMockito.given;
 import com.territorial.auction.domain.building.dto.GlobalVaultResponse;
 import com.territorial.auction.domain.building.dto.VaultTransferRequest;
 import com.territorial.auction.domain.building.dto.VaultTransferResponse;
+import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.GlobalVault;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.user.entity.User;
-import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,13 +38,13 @@ class GlobalVaultServiceTest {
 
     @Mock private GlobalVaultRepository globalVaultRepository;
     @Mock private TerritoryRepository territoryRepository;
-    @Mock private WalletRepository walletRepository;
+    @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private UserRepository userRepository;
 
     private User user;
-    private Wallet wallet;
     private GlobalVault vault;
     private Territory territory;
+    private BuildingInstance storage; // 저장소 Lv2 = 용량 10,000
 
     @BeforeEach
     void setUp() {
@@ -55,8 +57,24 @@ class GlobalVaultServiceTest {
                         .build();
         ReflectionTestUtils.setField(user, "id", 1L);
 
-        wallet = Wallet.builder().user(user).build();
-        ReflectionTestUtils.setField(wallet, "availableGp", 10000);
+        BuildingType storageType =
+                BuildingType.builder()
+                        .name("STORAGE")
+                        .width(2)
+                        .height(2)
+                        .maxHp(100)
+                        .baseCostGp(0)
+                        .build();
+        storage =
+                BuildingInstance.builder()
+                        .buildingType(storageType)
+                        .posX(0)
+                        .posY(0)
+                        .hp(100)
+                        .zone(2)
+                        .build();
+        ReflectionTestUtils.setField(storage, "level", 2); // 용량 10,000
+        ReflectionTestUtils.setField(storage, "storedGp", 10000);
 
         vault = GlobalVault.builder().user(user).build();
         ReflectionTestUtils.setField(vault, "storedGp", 5000);
@@ -124,7 +142,7 @@ class GlobalVaultServiceTest {
             GlobalVaultResponse response = globalVaultService.getVault(1L);
 
             assertThat(response.storedGP()).isEqualTo(0);
-            assertThat(response.capacity()).isEqualTo(500);
+            assertThat(response.capacity()).isEqualTo(10000);
             assertThat(response.isTransferAvailable()).isTrue();
         }
 
@@ -148,11 +166,12 @@ class GlobalVaultServiceTest {
     class TransferToVault {
 
         @Test
-        @DisplayName("영토→금고 이전 성공 — 지갑 GP 감소, 금고 GP 증가")
+        @DisplayName("저장소→금고 이전 성공 — 저장소 GP 감소, 금고 GP 증가")
         void toVault_success() {
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
             given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
+                    .willReturn(List.of(storage));
 
             VaultTransferRequest request = new VaultTransferRequest("TO_VAULT", 42L, 3000L);
             VaultTransferResponse response = globalVaultService.transfer(1L, request);
@@ -161,15 +180,17 @@ class GlobalVaultServiceTest {
             assertThat(response.transferredAmount()).isEqualTo(3000L);
             assertThat(response.territoryStorageAfter()).isEqualTo(7000L); // 10000 - 3000
             assertThat(response.vaultStoredAfter()).isEqualTo(8000L); // 5000 + 3000
+            assertThat(storage.getStoredGp()).isEqualTo(7000);
             assertThat(response.nextTransferAvailableAt()).isNotNull();
         }
 
         @Test
-        @DisplayName("지갑 GP 부족 → INSUFFICIENT_GP")
-        void toVault_insufficientWalletGp() {
+        @DisplayName("저장 공간 GP 부족 → INSUFFICIENT_GP")
+        void toVault_insufficientStorageGp() {
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
             given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
+                    .willReturn(List.of(storage));
 
             VaultTransferRequest request = new VaultTransferRequest("TO_VAULT", 42L, 20000L);
             assertThatThrownBy(() -> globalVaultService.transfer(1L, request))
@@ -179,12 +200,28 @@ class GlobalVaultServiceTest {
         }
 
         @Test
+        @DisplayName("저장 건물 없음 → STORAGE_NOT_FOUND")
+        void toVault_noStorage() {
+            given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
+                    .willReturn(List.of());
+
+            VaultTransferRequest request = new VaultTransferRequest("TO_VAULT", 42L, 1000L);
+            assertThatThrownBy(() -> globalVaultService.transfer(1L, request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.STORAGE_NOT_FOUND);
+        }
+
+        @Test
         @DisplayName("금고 용량 초과 → VAULT_CAPACITY_EXCEEDED")
         void toVault_capacityExceeded() {
             ReflectionTestUtils.setField(vault, "storedGp", 49000);
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
             given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
+                    .willReturn(List.of(storage));
 
             VaultTransferRequest request = new VaultTransferRequest("TO_VAULT", 42L, 5000L);
             assertThatThrownBy(() -> globalVaultService.transfer(1L, request))
@@ -199,18 +236,22 @@ class GlobalVaultServiceTest {
     class TransferFromVault {
 
         @Test
-        @DisplayName("금고→영토 이전 성공 — 금고 GP 감소, 지갑 GP 증가")
+        @DisplayName("금고→저장소 이전 성공 — 금고 GP 감소, 저장소 GP 증가")
         void fromVault_success() {
+            // 저장소 용량 10,000 에 이미 3,000 → 여유 7,000
+            ReflectionTestUtils.setField(storage, "storedGp", 3000);
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
             given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
+                    .willReturn(List.of(storage));
 
             VaultTransferRequest request = new VaultTransferRequest("FROM_VAULT", 42L, 2000L);
             VaultTransferResponse response = globalVaultService.transfer(1L, request);
 
             assertThat(response.direction()).isEqualTo("FROM_VAULT");
-            assertThat(response.territoryStorageAfter()).isEqualTo(12000L); // 10000 + 2000
+            assertThat(response.territoryStorageAfter()).isEqualTo(5000L); // 3000 + 2000
             assertThat(response.vaultStoredAfter()).isEqualTo(3000L); // 5000 - 2000
+            assertThat(storage.getStoredGp()).isEqualTo(5000);
         }
 
         @Test
@@ -218,13 +259,31 @@ class GlobalVaultServiceTest {
         void fromVault_insufficientVaultGp() {
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
             given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
+                    .willReturn(List.of(storage));
 
             VaultTransferRequest request = new VaultTransferRequest("FROM_VAULT", 42L, 9999L);
             assertThatThrownBy(() -> globalVaultService.transfer(1L, request))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INSUFFICIENT_GP);
+        }
+
+        @Test
+        @DisplayName("저장 공간 부족 → STORAGE_CAPACITY_EXCEEDED")
+        void fromVault_storageCapacityExceeded() {
+            // 저장소 이미 만재(10,000) → 받을 여유 없음
+            ReflectionTestUtils.setField(storage, "storedGp", 10000);
+            given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
+                    .willReturn(List.of(storage));
+
+            VaultTransferRequest request = new VaultTransferRequest("FROM_VAULT", 42L, 2000L);
+            assertThatThrownBy(() -> globalVaultService.transfer(1L, request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.STORAGE_CAPACITY_EXCEEDED);
         }
     }
 

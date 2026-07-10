@@ -66,6 +66,27 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
     @Query("SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType WHERE b.id = :id")
     Optional<BuildingInstance> findByIdWithLock(@Param("id") Long id);
 
+    /**
+     * 위치(영토)의 GP·식량 저장 건물을 락과 함께 조회한다 — 성·저장소 모두. 정렬은 호출측(GlobalVaultService)에서 명시적으로 한다 — JOIN
+     * FETCH 는 ORDER BY 를 무시할 수 있다. 파괴 여부 무관 — 정산·이전은 파괴된 저장소도 대상이 될 수 있다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(
+            "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType"
+                    + " WHERE b.territory.id = :territoryId"
+                    + " AND b.buildingType.name IN ('STORAGE', 'CASTLE')"
+                    + " AND b.posX >= 0")
+    List<BuildingInstance> findStorageBuildingsByTerritoryIdWithLock(
+            @Param("territoryId") Long territoryId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(
+            "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType"
+                    + " WHERE b.island.id = :islandId"
+                    + " AND b.buildingType.name IN ('STORAGE', 'CASTLE')"
+                    + " AND b.posX >= 0")
+    List<BuildingInstance> findStorageBuildingsByIslandIdWithLock(@Param("islandId") Long islandId);
+
     // 파괴 여부 무관 조회 + 비관적 락 — collect() 전용
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(

@@ -21,8 +21,9 @@ public class GlobalVault {
     @Column(nullable = false)
     private Integer storedGp = 0;
 
+    // 위치 저장 총량(성 5,000 + 저장소 Lv3 15,000 = 20,000) 대비 의미 있는 규모.
     @Column(nullable = false)
-    private Integer capacity = 500;
+    private Integer capacity = 10_000;
 
     private LocalDateTime lastTransferAt;
 
