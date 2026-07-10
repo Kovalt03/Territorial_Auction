@@ -57,6 +57,7 @@ export interface UpgradeBuildingResponse {
   maxLevel: number;
   upgradeCost: number;
   gpRemaining: number;
+  buildCompleteAt: string | null;
 }
 
 export interface PlaceFromInventoryResponse {
@@ -85,6 +86,7 @@ export interface BuildingTypeInfo {
   gpProductionRate: number | null;
   maxBuildings: number | null;
   buildTimeSeconds: number | null;
+  upgradeTimeSeconds: number | null;
   icon: string | null;
   colorHex: string | null;
 }

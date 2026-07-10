@@ -117,7 +117,12 @@ export function PersonalIslandPage() {
       syncGP(result.gpRemaining);
       void reloadIsland();
       setShowBuildingAction(false);
-      showToast(`Lv.${result.newLevel}으로 업그레이드 완료 (${result.upgradeCost.toLocaleString()} GP 소모)`, false);
+      showToast(
+        result.buildCompleteAt
+          ? `Lv.${result.newLevel} 업그레이드 시작 — ${remainingLabel(result.buildCompleteAt, Date.now())} 후 완료 (${result.upgradeCost.toLocaleString()} GP 소모)`
+          : `Lv.${result.newLevel}으로 업그레이드 완료 (${result.upgradeCost.toLocaleString()} GP 소모)`,
+        false,
+      );
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : '업그레이드에 실패했습니다');
     }
