@@ -56,6 +56,25 @@ public class AdminBuildingController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    @GetMapping("/{buildingTypeId}/castle-limits")
+    public ResponseEntity<ApiResponse<java.util.Map<Integer, Integer>>> getCastleLimits(
+            @PathVariable Long buildingTypeId) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminBuildingService.getCastleLimits(buildingTypeId)));
+    }
+
+    @PatchMapping("/{buildingTypeId}/castle-limits")
+    public ResponseEntity<ApiResponse<java.util.Map<Integer, Integer>>> updateCastleLimits(
+            @AuthenticationPrincipal Long adminUserId,
+            @PathVariable Long buildingTypeId,
+            @RequestBody
+                    com.territorial.auction.domain.admin.dto.AdminCastleLimitsRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(
+                        adminBuildingService.updateCastleLimits(
+                                adminUserId, buildingTypeId, request.limits())));
+    }
+
     @GetMapping("/{buildingTypeId}/level-specs")
     public ResponseEntity<ApiResponse<java.util.Map<Integer, LevelSpecValues>>> getLevelSpecs(
             @PathVariable Long buildingTypeId) {

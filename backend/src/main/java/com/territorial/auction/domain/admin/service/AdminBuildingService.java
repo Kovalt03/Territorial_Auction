@@ -28,6 +28,8 @@ public class AdminBuildingService {
     private final BuildingTypeRepository buildingTypeRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final BuildingLevelSpecRepository buildingLevelSpecRepository;
+    private final com.territorial.auction.domain.building.repository.BuildingCastleLimitRepository
+            buildingCastleLimitRepository;
     private final AdminAuditLogger adminAuditLogger;
 
     // 건물별 레벨 스펙 조회: {도달레벨: 값들}. 비어있지 않은 것만 담는다.
@@ -66,8 +68,6 @@ public class AdminBuildingService {
         Integer food = isDecorative ? null : v.foodProductionRate();
         Integer unit = isDecorative ? null : v.unitCapacityPerLevel();
         Integer gp = isDecorative ? null : v.gpProductionRate();
-        // 최대 건물 수는 성 레벨에 따라 결정되므로 성에만 유효.
-        Integer maxBuildings = type.isCastle() ? v.maxBuildings() : null;
         buildingLevelSpecRepository
                 .findByBuildingType_IdAndLevel(type.getId(), level)
                 .ifPresentOrElse(
@@ -79,7 +79,6 @@ public class AdminBuildingService {
                                     food,
                                     unit,
                                     gp,
-                                    maxBuildings,
                                     v.upgradeTimeSeconds());
                             if (spec.isEmpty()) buildingLevelSpecRepository.delete(spec);
                         },
@@ -94,10 +93,61 @@ public class AdminBuildingService {
                                             .foodProductionRate(food)
                                             .unitCapacityPerLevel(unit)
                                             .gpProductionRate(gp)
-                                            .maxBuildings(maxBuildings)
                                             .upgradeTimeSeconds(v.upgradeTimeSeconds())
                                             .build();
                             if (!created.isEmpty()) buildingLevelSpecRepository.save(created);
+                        });
+    }
+
+    // 성 레벨별 건물 개수 상한 조회: {성 레벨: 최대 개수}
+    public Map<Integer, Integer> getCastleLimits(Long buildingTypeId) {
+        findOrThrow(buildingTypeId);
+        Map<Integer, Integer> limits = new LinkedHashMap<>();
+        buildingCastleLimitRepository.findAllByBuildingType_Id(buildingTypeId).stream()
+                .sorted((a, b) -> a.getCastleLevel() - b.getCastleLevel())
+                .forEach(l -> limits.put(l.getCastleLevel(), l.getMaxCount()));
+        return limits;
+    }
+
+    // 값이 null이면 해당 성 레벨의 상한을 제거한다(제한 없음).
+    @Transactional
+    public Map<Integer, Integer> updateCastleLimits(
+            Long adminUserId, Long buildingTypeId, Map<Integer, Integer> limits) {
+        BuildingType type = findOrThrow(buildingTypeId);
+        if (type.isCastle()) {
+            throw new CustomException(ErrorCode.CASTLE_LIMIT_NOT_CONFIGURABLE);
+        }
+        limits.forEach((castleLevel, maxCount) -> applyCastleLimit(type, castleLevel, maxCount));
+
+        adminAuditLogger.record(
+                adminUserId,
+                "BUILDING_CASTLE_LIMIT_UPDATE",
+                "BUILDING_TYPE",
+                buildingTypeId,
+                Map.of("name", type.getName()));
+        return getCastleLimits(buildingTypeId);
+    }
+
+    private void applyCastleLimit(BuildingType type, Integer castleLevel, Integer maxCount) {
+        if (castleLevel == null || castleLevel < 1 || castleLevel > BuildingPolicy.MAX_LEVEL) {
+            throw new CustomException(ErrorCode.INVALID_BUILDING_LEVEL);
+        }
+        buildingCastleLimitRepository
+                .findByBuildingType_IdAndCastleLevel(type.getId(), castleLevel)
+                .ifPresentOrElse(
+                        limit -> {
+                            if (maxCount == null) buildingCastleLimitRepository.delete(limit);
+                            else limit.updateMaxCount(maxCount);
+                        },
+                        () -> {
+                            if (maxCount == null) return;
+                            buildingCastleLimitRepository.save(
+                                    com.territorial.auction.domain.building.entity
+                                            .BuildingCastleLimit.builder()
+                                            .buildingType(type)
+                                            .castleLevel(castleLevel)
+                                            .maxCount(maxCount)
+                                            .build());
                         });
     }
 
@@ -168,8 +218,6 @@ public class AdminBuildingService {
                 isDecorative ? null : request.foodProductionRate(),
                 isDecorative ? null : request.unitCapacityPerLevel(),
                 isDecorative ? null : request.gpProductionRate(),
-                // 최대 건물 수는 성 레벨에 따라 결정되므로 성에만 유효.
-                type.isCastle() ? request.maxBuildings() : null,
                 request.buildTimeSeconds(),
                 request.upgradeTimeSeconds(),
                 blankToNull(request.icon()),
