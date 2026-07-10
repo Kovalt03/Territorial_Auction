@@ -241,7 +241,8 @@ CREATE TABLE IF NOT EXISTS user_season_passes (
     season_pass_id BIGINT      REFERENCES season_passes(id),
     started_at     TIMESTAMPTZ NOT NULL,
     expires_at     TIMESTAMPTZ NOT NULL,
-    is_active      BOOLEAN     NOT NULL DEFAULT true
+    is_active      BOOLEAN     NOT NULL DEFAULT true,
+    bonus_build_time_reduction_pct INTEGER NOT NULL DEFAULT 0
 );
 
 -- island_grades
