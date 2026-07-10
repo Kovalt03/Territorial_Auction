@@ -207,6 +207,38 @@ public class BuildingInstance {
         this.storedGp += amount;
     }
 
+    // 이 건물이 담을 수 있는 남은 GP 공간까지만 넣고, 실제로 넣은 양을 돌려준다.
+    public int fillGp(int amount, int capacity) {
+        int room = Math.max(0, capacity - this.storedGp);
+        int actual = Math.min(amount, room);
+        this.storedGp += actual;
+        return actual;
+    }
+
+    // 이 건물에서 뺄 수 있는 만큼만 빼고, 실제로 뺀 양을 돌려준다.
+    public int drainGp(int amount) {
+        int actual = Math.min(amount, this.storedGp);
+        this.storedGp -= actual;
+        return actual;
+    }
+
+    public void addStoredFood(int amount) {
+        this.storedFood += amount;
+    }
+
+    public int fillFood(int amount, int capacity) {
+        int room = Math.max(0, capacity - this.storedFood);
+        int actual = Math.min(amount, room);
+        this.storedFood += actual;
+        return actual;
+    }
+
+    public int drainFood(int amount) {
+        int actual = Math.min(amount, this.storedFood);
+        this.storedFood -= actual;
+        return actual;
+    }
+
     public LocalDateTime storedAt() {
         return LocalDateTime.now();
     }
