@@ -84,7 +84,6 @@ export interface BuildingTypeInfo {
   foodProductionRate: number | null;
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
-  maxBuildings: number | null;
   buildTimeSeconds: number | null;
   upgradeTimeSeconds: number | null;
   icon: string | null;

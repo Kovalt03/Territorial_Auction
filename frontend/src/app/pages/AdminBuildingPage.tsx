@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 
 import {
   fetchAdminBuildingTypes, createBuildingType, updateBuildingType, deleteBuildingType,
-  fetchLevelSpecs, updateLevelSpecs,
+  fetchLevelSpecs, updateLevelSpecs, fetchCastleLimits, updateCastleLimits,
   type BuildingTypeForm, type LevelSpecValues,
 } from '../api/admin';
 import { ApiError } from '../api/client';
@@ -13,6 +13,8 @@ const input = 'w-full bg-elevated border border-outline rounded px-1.5 h-7 text-
 
 // 최대 레벨 3 → 상세 그리드는 Lv1(기본)·Lv2·Lv3
 const UPGRADE_LEVELS = [2, 3];
+// 성 레벨별 건물 개수 상한 — 성은 하나뿐이라 대상에서 제외
+const CASTLE_LEVELS = [1, 2, 3];
 
 // 정적 속성(레벨과 무관, 메인 행에서 편집)
 const ATTR_FIELDS: { key: keyof BuildingTypeForm; label: string; w: string; nullable?: boolean; text?: boolean; decorativeOnly?: boolean }[] = [
@@ -25,7 +27,7 @@ const ATTR_FIELDS: { key: keyof BuildingTypeForm; label: string; w: string; null
 ];
 
 // 레벨별 값. baseKey=Lv1(건물 기본값), specKey=Lv2·Lv3(레벨 지정값)
-type StatRow = { label: string; baseKey: keyof BuildingTypeForm; specKey: keyof LevelSpecValues; production?: boolean; nullable?: boolean; castleOnly?: boolean };
+type StatRow = { label: string; baseKey: keyof BuildingTypeForm; specKey: keyof LevelSpecValues; production?: boolean; nullable?: boolean };
 const STAT_ROWS: StatRow[] = [
   { label: '비용', baseKey: 'baseCostGp', specKey: 'upgradeCostGp' },
   { label: 'HP', baseKey: 'maxHp', specKey: 'maxHp' },
@@ -34,8 +36,6 @@ const STAT_ROWS: StatRow[] = [
   { label: '식량/시간', baseKey: 'foodProductionRate', specKey: 'foodProductionRate', production: true, nullable: true },
   { label: '유닛/레벨', baseKey: 'unitCapacityPerLevel', specKey: 'unitCapacityPerLevel', production: true, nullable: true },
   { label: 'GP/시간', baseKey: 'gpProductionRate', specKey: 'gpProductionRate', production: true, nullable: true },
-  // 섬의 최대 건물 수는 성 레벨이 결정한다 — 성에서만 편집.
-  { label: '최대 건물 수', baseKey: 'maxBuildings', specKey: 'maxBuildings', castleOnly: true, nullable: true },
 ];
 
 function toForm(b: BuildingTypeInfo): BuildingTypeForm {
@@ -44,7 +44,7 @@ function toForm(b: BuildingTypeInfo): BuildingTypeForm {
     width: b.width, height: b.height, maxHp: b.maxHp, baseCostGp: b.baseCostGp,
     upgradeCostGp: b.upgradeCostGp, apCost: b.apCost, zoneRestriction: b.zoneRestriction, defensePower: b.defensePower,
     foodProductionRate: b.foodProductionRate, unitCapacityPerLevel: b.unitCapacityPerLevel,
-    gpProductionRate: b.gpProductionRate, maxBuildings: b.maxBuildings,
+    gpProductionRate: b.gpProductionRate,
     buildTimeSeconds: b.buildTimeSeconds, upgradeTimeSeconds: b.upgradeTimeSeconds,
     icon: b.icon, colorHex: b.colorHex,
   };
@@ -117,7 +117,20 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
   const [open, setOpen] = useState(false);
   const isDecorative = item.category === 'DECORATIVE';
   const isCastle = item.name === 'CASTLE';
-  const statRows = STAT_ROWS.filter(s => (!s.production || !isDecorative) && (!s.castleOnly || isCastle));
+  const statRows = STAT_ROWS.filter(s => !s.production || !isDecorative);
+
+  // 성 레벨별 최대 개수 (상세 토글 시 로드). castleLimits[성레벨] = 문자열 입력값
+  const [castleLimits, setCastleLimits] = useState<Record<number, string>>({});
+  useEffect(() => {
+    if (!open || isCastle) return;
+    fetchCastleLimits(item.buildingTypeId)
+      .then(r => {
+        const next: Record<number, string> = {};
+        CASTLE_LEVELS.forEach(lv => { next[lv] = r[String(lv)] != null ? String(r[String(lv)]) : ''; });
+        setCastleLimits(next);
+      })
+      .catch(e => { onError(e instanceof ApiError ? e.message : '개수 제한을 불러올 수 없습니다.'); console.warn('[AdminBuilding] castleLimits', e); });
+  }, [open, isCastle, item.buildingTypeId, onError]);
 
   // Lv2·Lv3 지정값 (상세 토글 시 로드). levelSpecs[level][specKey] = 문자열 입력값
   const [levelSpecs, setLevelSpecs] = useState<Record<number, Partial<Record<keyof LevelSpecValues, string>>>>({});
@@ -156,11 +169,16 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
           payload[lv] = {
             upgradeCostGp: num('upgradeCostGp'), maxHp: num('maxHp'), defensePower: num('defensePower'),
             foodProductionRate: num('foodProductionRate'), unitCapacityPerLevel: num('unitCapacityPerLevel'),
-            gpProductionRate: num('gpProductionRate'), maxBuildings: num('maxBuildings'),
+            gpProductionRate: num('gpProductionRate'),
             upgradeTimeSeconds: num('upgradeTimeSeconds'),
           };
         });
         await updateLevelSpecs(item.buildingTypeId, payload);
+      }
+      if (!isCastle && Object.keys(castleLimits).length > 0) {
+        const limits: Record<number, number | null> = {};
+        CASTLE_LEVELS.forEach(lv => { limits[lv] = castleLimits[lv]?.trim() ? Number(castleLimits[lv]) : null; });
+        await updateCastleLimits(item.buildingTypeId, limits);
       }
       onDone(`${item.name} 저장됨`);
     } catch (e) {
@@ -207,7 +225,6 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
           <td colSpan={ATTR_FIELDS.length + 3} className="py-2 px-3">
             <p className="text-[11px] text-dim mb-2">
               레벨별 값 <span className="text-muted">— Lv1은 기본값(시간은 건설 시간), Lv2·Lv3은 비우면 공식 자동</span>
-              {isCastle && <span className="text-muted"> · 최대 건물 수는 성 레벨이 결정 (비우면 무제한)</span>}
             </p>
             <table className="text-[11px]">
               <thead className="text-dim">
@@ -236,6 +253,23 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
                 ))}
               </tbody>
             </table>
+
+            {!isCastle && (
+              <div className="mt-3 pt-3 border-t border-outline-soft">
+                <p className="text-[11px] text-dim mb-2">
+                  성 레벨별 최대 개수 <span className="text-muted">— 섬에 몇 개까지 지을 수 있는지. 비우면 무제한</span>
+                </p>
+                <div className="flex items-end gap-3">
+                  {CASTLE_LEVELS.map(lv => (
+                    <label key={lv} className="text-[11px] text-dim">성 Lv{lv}
+                      <input type="number" min={0} value={castleLimits[lv] ?? ''} placeholder="무제한"
+                        onChange={e => setCastleLimits(c => ({ ...c, [lv]: e.target.value }))}
+                        className={`${input} w-[84px] mt-0.5`} />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </td>
         </tr>
       )}
@@ -244,7 +278,7 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
 }
 
 function CreateForm({ onDone, onError }: { onDone: (m: string) => void; onError: (m: string) => void }) {
-  const empty: BuildingTypeForm = { name: '', displayName: null, width: 1, height: 1, maxHp: 100, baseCostGp: 1000, upgradeCostGp: null, apCost: null, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, maxBuildings: null, buildTimeSeconds: null, upgradeTimeSeconds: null, icon: null, colorHex: null };
+  const empty: BuildingTypeForm = { name: '', displayName: null, width: 1, height: 1, maxHp: 100, baseCostGp: 1000, upgradeCostGp: null, apCost: null, zoneRestriction: null, defensePower: null, foodProductionRate: null, unitCapacityPerLevel: null, gpProductionRate: null, buildTimeSeconds: null, upgradeTimeSeconds: null, icon: null, colorHex: null };
   const [form, setForm] = useState<BuildingTypeForm>(empty);
   const [busy, setBusy] = useState(false);
   const setNum = (k: keyof BuildingTypeForm, v: string, nullable?: boolean) =>

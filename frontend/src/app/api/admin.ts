@@ -308,7 +308,6 @@ export interface BuildingTypeForm {
   foodProductionRate: number | null;
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
-  maxBuildings: number | null;
   buildTimeSeconds: number | null;
   upgradeTimeSeconds: number | null;
   icon: string | null;
@@ -338,8 +337,16 @@ export interface LevelSpecValues {
   foodProductionRate: number | null;
   unitCapacityPerLevel: number | null;
   gpProductionRate: number | null;
-  maxBuildings: number | null;
   upgradeTimeSeconds: number | null;
+}
+
+// {성 레벨: 최대 개수}. 값이 없으면 그 성 레벨에서는 제한 없음.
+export function fetchCastleLimits(id: number) {
+  return apiClient.get<Record<string, number>>(`/admin/building-types/${id}/castle-limits`);
+}
+
+export function updateCastleLimits(id: number, limits: Record<number, number | null>) {
+  return apiClient.patch<Record<string, number>>(`/admin/building-types/${id}/castle-limits`, { limits });
 }
 
 export function fetchLevelSpecs(id: number) {
