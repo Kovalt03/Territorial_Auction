@@ -249,6 +249,25 @@ export function createSeason(startedAt?: string, endedAt?: string) {
   });
 }
 
+export interface AdminSeasonPass {
+  seasonPassId: number;
+  name: string;
+  costAp: number;
+  durationDays: number;
+  islandBonusPct: number;
+  extraBuilders: number;
+  taxExemptBonus: number;
+  buildTimeReductionPct: number;
+}
+
+export function fetchSeasonPasses() {
+  return apiClient.get<AdminSeasonPass[]>('/admin/season-passes');
+}
+
+export function updateSeasonPass(seasonPassId: number, form: Omit<AdminSeasonPass, 'seasonPassId' | 'name'>) {
+  return apiClient.patch<AdminSeasonPass>(`/admin/season-passes/${seasonPassId}`, form);
+}
+
 export function endSeason(seasonId: number) {
   return apiClient.patch<AdminSeason>(`/admin/seasons/${seasonId}/end`, {});
 }
