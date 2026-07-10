@@ -14,7 +14,16 @@ public class UnitType {
     private Long id;
 
     @Column(nullable = false, length = 30)
-    private String name; // INFANTRY / ARCHER / KNIGHT
+    private String name; // INFANTRY / ARCHER / KNIGHT — 서버 식별자, 변경 불가
+
+    @Column(length = 30)
+    private String displayName; // 한글 표시명. NULL이면 프론트 기본 매핑 사용
+
+    @Column(length = 10)
+    private String icon; // 이모지 아이콘
+
+    @Column(length = 7)
+    private String colorHex; // #RRGGBB
 
     @Column(nullable = false)
     private Integer attackPower;
@@ -35,16 +44,42 @@ public class UnitType {
     @Builder
     public UnitType(
             String name,
+            String displayName,
+            String icon,
+            String colorHex,
             Integer attackPower,
             Integer defensePower,
             Integer costGp,
             Integer foodCost,
             Integer level) {
         this.name = name;
+        this.displayName = displayName;
+        this.icon = icon;
+        this.colorHex = colorHex;
         this.attackPower = attackPower;
         this.defensePower = defensePower;
         this.costGp = costGp;
         this.foodCost = foodCost;
         this.level = level != null ? level : 1;
+    }
+
+    // 관리자 편집: 이름(코드)은 서버 식별자라 변경 불가.
+    public void update(
+            String displayName,
+            String icon,
+            String colorHex,
+            Integer attackPower,
+            Integer defensePower,
+            Integer costGp,
+            Integer foodCost,
+            Integer level) {
+        this.displayName = displayName;
+        this.icon = icon;
+        this.colorHex = colorHex;
+        this.attackPower = attackPower;
+        this.defensePower = defensePower;
+        this.costGp = costGp;
+        this.foodCost = foodCost;
+        this.level = level;
     }
 }
