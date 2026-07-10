@@ -52,8 +52,8 @@ public class SeasonPass {
         this.buildTimeReductionPct = buildTimeReductionPct != null ? buildTimeReductionPct : 0;
     }
 
-    // 시드 재적용 — 이름은 식별자라 제외하고 나머지를 yml 값으로 맞춘다.
-    public void syncFromSeed(
+    // 관리자 편집 — 이름은 식별자라 변경 불가.
+    public void update(
             Integer costAp,
             Integer durationDays,
             Integer islandBonusPct,
