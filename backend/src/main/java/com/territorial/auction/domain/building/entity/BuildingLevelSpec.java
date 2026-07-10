@@ -30,7 +30,6 @@ public class BuildingLevelSpec {
     @Column private Integer foodProductionRate; // 이 레벨 식량/시간
     @Column private Integer unitCapacityPerLevel; // 이 레벨 유닛 수용량
     @Column private Integer gpProductionRate; // 이 레벨 GP/시간
-    @Column private Integer maxBuildings; // 성 전용 — 이 성 레벨에서의 최대 건물 수
     @Column private Integer upgradeTimeSeconds; // 이 레벨로 올리는 데 걸리는 시간(초)
 
     @Builder
@@ -43,7 +42,6 @@ public class BuildingLevelSpec {
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
-            Integer maxBuildings,
             Integer upgradeTimeSeconds) {
         this.buildingType = buildingType;
         this.level = level;
@@ -53,7 +51,6 @@ public class BuildingLevelSpec {
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
-        this.maxBuildings = maxBuildings;
         this.upgradeTimeSeconds = upgradeTimeSeconds;
     }
 
@@ -64,7 +61,6 @@ public class BuildingLevelSpec {
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
-            Integer maxBuildings,
             Integer upgradeTimeSeconds) {
         this.upgradeCostGp = upgradeCostGp;
         this.maxHp = maxHp;
@@ -72,7 +68,6 @@ public class BuildingLevelSpec {
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
-        this.maxBuildings = maxBuildings;
         this.upgradeTimeSeconds = upgradeTimeSeconds;
     }
 
@@ -84,7 +79,6 @@ public class BuildingLevelSpec {
                 && foodProductionRate == null
                 && unitCapacityPerLevel == null
                 && gpProductionRate == null
-                && maxBuildings == null
                 && upgradeTimeSeconds == null;
     }
 }

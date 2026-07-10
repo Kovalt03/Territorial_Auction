@@ -51,9 +51,6 @@ public class BuildingType {
 
     @Column private Integer gpProductionRate; // NULL 허용 — WORKSHOP만 값 있음
 
-    // 성(CASTLE) 전용 — 이 성 레벨에서 섬에 지을 수 있는 최대 건물 수. NULL이면 무제한.
-    @Column private Integer maxBuildings;
-
     // 건설 소요 시간(초). NULL이거나 0이면 즉시 완성.
     @Column private Integer buildTimeSeconds;
 
@@ -117,7 +114,6 @@ public class BuildingType {
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
-            Integer maxBuildings,
             Integer buildTimeSeconds,
             Integer upgradeTimeSeconds,
             String icon,
@@ -134,7 +130,6 @@ public class BuildingType {
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
-        this.maxBuildings = maxBuildings;
         this.buildTimeSeconds = buildTimeSeconds;
         this.upgradeTimeSeconds = upgradeTimeSeconds;
         this.icon = icon;
@@ -157,7 +152,6 @@ public class BuildingType {
             Integer foodProductionRate,
             Integer unitCapacityPerLevel,
             Integer gpProductionRate,
-            Integer maxBuildings,
             Integer buildTimeSeconds,
             Integer upgradeTimeSeconds,
             String icon,
@@ -176,7 +170,6 @@ public class BuildingType {
         this.foodProductionRate = foodProductionRate;
         this.unitCapacityPerLevel = unitCapacityPerLevel;
         this.gpProductionRate = gpProductionRate;
-        this.maxBuildings = maxBuildings;
         this.buildTimeSeconds = buildTimeSeconds;
         this.upgradeTimeSeconds = upgradeTimeSeconds;
         this.icon = icon;
