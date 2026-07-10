@@ -78,6 +78,10 @@ class BuildingServiceTest {
     private com.territorial.auction.domain.notification.service.NotificationService
             notificationService;
 
+    @Mock
+    private com.territorial.auction.domain.building.repository.BuildingCastleLimitRepository
+            buildingCastleLimitRepository;
+
     @org.junit.jupiter.api.BeforeEach
     void stubLevelSpecsEmpty() {
         org.mockito.Mockito.lenient()
@@ -697,6 +701,64 @@ class BuildingServiceTest {
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.CASTLE_ALREADY_EXISTS);
+        }
+
+        @Test
+        @DisplayName("성 레벨 상한에 도달한 건물 → BUILDING_LIMIT_EXCEEDED")
+        void building_limit_exceeded() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            BuildingType bt = storage();
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(Collections.emptyList());
+            given(buildingInstanceRepository.findCastleLevelByIslandId(1L))
+                    .willReturn(Optional.of(1));
+            given(buildingCastleLimitRepository.findByBuildingType_IdAndCastleLevel(2L, 1))
+                    .willReturn(
+                            Optional.of(
+                                    com.territorial.auction.domain.building.entity
+                                            .BuildingCastleLimit.builder()
+                                            .buildingType(bt)
+                                            .castleLevel(1)
+                                            .maxCount(2)
+                                            .build()));
+            given(buildingInstanceRepository.countByIslandIdAndBuildingTypeId(1L, 2L))
+                    .willReturn(2L); // 이미 2개 → 상한 도달
+
+            PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
+            assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BUILDING_LIMIT_EXCEEDED);
+        }
+
+        @Test
+        @DisplayName("상한이 설정되지 않은 건물은 개수 제한 없음")
+        void no_limit_configured_allows_placement() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            BuildingType bt = storage();
+
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
+            given(buildingInstanceRepository.findByIslandId(1L))
+                    .willReturn(Collections.emptyList());
+            given(buildingCastleLimitRepository.findByBuildingType_IdAndCastleLevel(2L, 1))
+                    .willReturn(Optional.empty());
+            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.save(any()))
+                    .willAnswer(
+                            inv -> {
+                                BuildingInstance saved = inv.getArgument(0);
+                                ReflectionTestUtils.setField(saved, "id", 210L);
+                                return saved;
+                            });
+
+            PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
+            assertThat(buildingService.placeOnIsland(1L, req).buildingId()).isEqualTo(210L);
         }
 
         @Test
