@@ -22,28 +22,19 @@ public class SeasonPassSeeder implements ApplicationRunner {
 
     private final SeasonPassRepository seasonPassRepository;
 
-    // yml을 단일 진실 공급원으로 삼는다 — 기존 행이 있으면 건너뛰지 않고 값을 맞춘다.
+    // 관리자가 값을 편집할 수 있으므로 yml은 초기값 역할만 한다 — 없는 패스만 새로 만든다.
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         List<Map<String, Object>> entries = loadEntries();
-        entries.forEach(this::upsert);
-        log.info("season_passes 시드 동기화 완료. 건수={}", entries.size());
+        entries.forEach(this::createIfAbsent);
+        log.info("season_passes 시드 확인 완료. 건수={}", entries.size());
     }
 
-    private void upsert(Map<String, Object> m) {
-        seasonPassRepository
-                .findByName((String) m.get("name"))
-                .ifPresentOrElse(
-                        pass ->
-                                pass.syncFromSeed(
-                                        (Integer) m.get("costAp"),
-                                        (Integer) m.get("durationDays"),
-                                        (Integer) m.get("islandBonusPct"),
-                                        (Integer) m.get("extraBuilders"),
-                                        (Integer) m.get("taxExemptBonus"),
-                                        (Integer) m.get("buildTimeReductionPct")),
-                        () -> seasonPassRepository.save(toEntity(m)));
+    private void createIfAbsent(Map<String, Object> m) {
+        String name = (String) m.get("name");
+        if (seasonPassRepository.findByName(name).isPresent()) return;
+        seasonPassRepository.save(toEntity(m));
     }
 
     @SuppressWarnings("unchecked")
