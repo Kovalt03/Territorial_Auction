@@ -343,12 +343,28 @@ CREATE TABLE IF NOT EXISTS global_vaults (
 
 -- unit_types
 CREATE TABLE IF NOT EXISTS unit_types (
-    id                 BIGSERIAL   PRIMARY KEY,
-    name               VARCHAR(30) NOT NULL,
-    attack_power       INTEGER     NOT NULL,
-    defense_power      INTEGER     NOT NULL,
-    cost_gp            INTEGER     NOT NULL,
-    food_cost_per_hour INTEGER     NOT NULL
+    id            BIGSERIAL   PRIMARY KEY,
+    name          VARCHAR(30) NOT NULL,
+    display_name  VARCHAR(30),
+    icon          VARCHAR(10),
+    color_hex     VARCHAR(7),
+    attack_power  INTEGER     NOT NULL,
+    defense_power INTEGER     NOT NULL,
+    cost_gp       INTEGER     NOT NULL,
+    food_cost     INTEGER     NOT NULL,
+    level         INTEGER     NOT NULL DEFAULT 1
+);
+
+-- unit_type_level_specs (유닛 훈련 레벨별 스펙)
+CREATE TABLE IF NOT EXISTS unit_type_level_specs (
+    id                      BIGSERIAL PRIMARY KEY,
+    unit_type_id            BIGINT    NOT NULL REFERENCES unit_types(id),
+    level                   INTEGER   NOT NULL,
+    attack_power            INTEGER   NOT NULL,
+    defense_power           INTEGER   NOT NULL,
+    train_cost_food         INTEGER   NOT NULL,
+    required_barracks_level INTEGER   NOT NULL,
+    UNIQUE (unit_type_id, level)
 );
 
 -- unit_instances

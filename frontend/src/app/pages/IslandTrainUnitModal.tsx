@@ -34,7 +34,13 @@ export function IslandTrainUnitModal({
             <p className="text-muted text-xs mb-2">유닛 선택</p>
             <div className="grid grid-cols-3 gap-2">
               {militaryData.units.map(u => {
-                const meta = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
+                // 관리자 지정 값 우선, 없으면 기본 매핑
+                const fallback = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
+                const meta = {
+                  label: u.displayName ?? fallback.label,
+                  icon: u.icon ?? fallback.icon,
+                  color: u.colorHex ?? fallback.color,
+                };
                 const isSelected = trainUnitTypeId === u.unitTypeId;
                 return (
                   <button
@@ -49,7 +55,7 @@ export function IslandTrainUnitModal({
                   >
                     <span className="text-lg">{meta.icon}</span>
                     <span className="text-[11px] font-semibold">{meta.label}</span>
-                    <span className="text-[10px] text-muted">식량 {u.foodCost}/개</span>
+                    <span className="text-[10px] text-muted">{u.costGp} GP · 식량 {u.foodCost}</span>
                   </button>
                 );
               })}

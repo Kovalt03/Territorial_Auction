@@ -7,10 +7,15 @@ public record UnitListResponse(List<UnitDto> units, Integer availableFood) {
     public record UnitDto(
             Long unitTypeId,
             String name,
+            String displayName,
+            String icon,
+            String colorHex,
             Integer quantity,
             Integer deployedCount,
             Integer idleCount,
             Integer attackPower,
             Integer defensePower,
-            Integer foodCost) {}
+            Integer costGp,
+            Integer foodCost,
+            Integer requiredBarracksLevel) {}
 }

@@ -633,7 +633,13 @@ export function PersonalIslandPage() {
                 </div>
                 {isMilitaryLoading && <LoadingState className="py-4" />}
                 {!isMilitaryLoading && militaryData?.units.map(u => {
-                  const meta = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
+                  // 관리자 지정 값 우선, 없으면 기본 매핑
+                  const fallback = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
+                  const meta = {
+                    label: u.displayName ?? fallback.label,
+                    icon: u.icon ?? fallback.icon,
+                    color: u.colorHex ?? fallback.color,
+                  };
                   return (
                     <div key={u.unitTypeId} className="bg-panel-deep rounded-xl p-3">
                       <div className="flex items-center gap-2 mb-1">

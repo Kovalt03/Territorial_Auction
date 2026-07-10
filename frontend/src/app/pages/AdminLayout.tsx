@@ -7,6 +7,7 @@ const TABS = [
   { to: '/admin/seasons', label: '시즌 운영' },
   { to: '/admin/items', label: '아이템 관리' },
   { to: '/admin/buildings', label: '건물 관리' },
+  { to: '/admin/units', label: '유닛 관리' },
   { to: '/admin/users', label: '사용자 관리' },
   { to: '/admin/chat', label: '채팅 검열' },
   { to: '/admin/announcement', label: '공지 배너' },
