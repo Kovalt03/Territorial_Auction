@@ -1,44 +1,34 @@
 import { HealthBar } from '../components/HealthBar';
 
-type BuildingType = 'castle' | 'workshop' | 'barracks' | 'storage' | 'wall' | 'tower' | 'empty';
-
-interface Cell {
-  type: BuildingType;
-  level?: number;
-  hp?: number;
-  maxHp?: number;
-  zone?: 1 | 2 | 3;
-}
+import type { Cell } from './islandGrid';
 
 interface Props {
   selectedCell: { x: number; y: number };
   cellData: Cell;
-  buildingColors: Record<BuildingType, string>;
-  buildingNames: Record<BuildingType, string>;
+  isUnderConstruction: boolean;
+  color: string;
+  name: string;
+  busy: boolean;
   onStartMove: () => void;
   onStoreBuilding: () => void;
+  onUpgrade: () => void;
   onClose: () => void;
 }
 
 export function TerritoryGridBuildingActionPanel({
-  selectedCell, cellData, buildingColors, buildingNames,
-  onStartMove, onStoreBuilding, onClose,
+  selectedCell, cellData, isUnderConstruction, color, name, busy,
+  onStartMove, onStoreBuilding, onUpgrade, onClose,
 }: Props) {
-  const color = buildingColors[cellData.type];
   const isCastle = cellData.type === 'castle';
+  const canAct = !busy && !isUnderConstruction;
 
   return (
     <div className="modal-sheet-overlay">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="modal-sheet-panel">
-        <div
-          className="modal-header"
-          style={{ background: color + '20', borderBottom: `2px solid ${color}` }}
-        >
+        <div className="modal-header" style={{ background: color + '20', borderBottom: `2px solid ${color}` }}>
           <div>
-            <h3 className="font-bold text-lg" style={{ color }}>
-              {buildingNames[cellData.type]}
-            </h3>
+            <h3 className="font-bold text-lg" style={{ color }}>{name}</h3>
             <p className="text-muted text-xs">
               위치: ({selectedCell.x}, {selectedCell.y}) · Zone {cellData.zone} · Lv.{cellData.level}
             </p>
@@ -54,25 +44,34 @@ export function TerritoryGridBuildingActionPanel({
           <HealthBar hp={cellData.hp ?? 0} maxHp={cellData.maxHp ?? 0} color={color} height="h-2" bg="bg-surface" />
         </div>
 
-        <div className="p-4 flex gap-3">
+        {isUnderConstruction && (
+          <p className="text-center text-gold pt-3 text-[11px]">🔨 건설 중에는 이동·보관·업그레이드를 할 수 없습니다</p>
+        )}
+
+        <div className="p-4 grid grid-cols-2 gap-3">
+          <button
+            onClick={onUpgrade}
+            disabled={!canAct}
+            className="h-12 rounded-xl font-semibold border border-primary/40 text-primary hover:bg-primary/10 transition-all text-[13px] disabled:opacity-40"
+          >
+            ⬆ 업그레이드
+          </button>
           <button
             onClick={onStartMove}
-            className="flex-1 h-12 rounded-xl font-semibold border border-gold/40 text-gold hover:bg-gold/10 transition-all text-[13px]"
+            disabled={!canAct}
+            className="h-12 rounded-xl font-semibold border border-gold/40 text-gold hover:bg-gold/10 transition-all text-[13px] disabled:opacity-40"
           >
             🔄 이동하기
           </button>
           <button
             onClick={onStoreBuilding}
-            disabled={isCastle}
-            className={`flex-1 h-12 rounded-xl font-semibold border transition-all text-[13px] ${isCastle ? 'text-outline border-outline cursor-not-allowed' : 'text-secondary border-secondary/40 cursor-pointer'}`}
+            disabled={!canAct || isCastle}
+            className="h-12 rounded-xl font-semibold border border-secondary/40 text-secondary transition-all text-[13px] disabled:opacity-40 disabled:cursor-not-allowed"
             title={isCastle ? '성은 보관함에 담을 수 없습니다' : ''}
           >
             📦 보관함에 담기
           </button>
-          <button
-            onClick={onClose}
-            className="flex-1 h-12 bg-elevated border border-outline rounded-xl text-muted text-[13px]"
-          >
+          <button onClick={onClose} className="h-12 bg-elevated border border-outline rounded-xl text-muted text-[13px]">
             닫기
           </button>
         </div>

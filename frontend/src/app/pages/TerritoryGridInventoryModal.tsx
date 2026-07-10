@@ -1,28 +1,19 @@
-import { HealthBar } from '../components/HealthBar';
 import { EmptyState } from '../components/EmptyState';
 
-type BuildingType = 'castle' | 'workshop' | 'barracks' | 'storage' | 'wall' | 'tower' | 'empty';
+import { buildingColors, buildingLabels, buildingNames, type BuildingType } from './islandGrid';
 
-interface InventoryItem {
-  type: BuildingType;
-  level: number;
-  hp: number;
-  maxHp: number;
-}
+import type { BuildingTypeInfo, InventoryItem } from '../types/island';
 
 interface Props {
   inventory: InventoryItem[];
-  buildingColors: Record<BuildingType, string>;
-  buildingLabels: Record<BuildingType, string>;
-  buildingNames: Record<BuildingType, string>;
+  catalog: BuildingTypeInfo[];
   onDeploy: (idx: number) => void;
   onClose: () => void;
 }
 
-export function TerritoryGridInventoryModal({
-  inventory, buildingColors, buildingLabels, buildingNames,
-  onDeploy, onClose,
-}: Props) {
+export function TerritoryGridInventoryModal({ inventory, catalog, onDeploy, onClose }: Props) {
+  const catalogById = new Map(catalog.map(c => [c.buildingTypeId, c]));
+
   return (
     <div className="modal-center-overlay">
       <div className="modal-backdrop" onClick={onClose} />
@@ -46,17 +37,21 @@ export function TerritoryGridInventoryModal({
           ) : (
             <div className="space-y-2">
               {inventory.map((item, idx) => {
-                const color = buildingColors[item.type];
+                const type = item.buildingType.toLowerCase() as BuildingType;
+                const info = catalogById.get(item.buildingTypeId);
+                const color = info?.colorHex ?? buildingColors[type] ?? '#8892b0';
+                const icon = info?.icon ?? buildingLabels[type] ?? '🏗';
+                const name = info?.displayName ?? buildingNames[type] ?? item.buildingType;
                 return (
-                  <div key={idx} className="rounded-xl p-3 flex items-center gap-3 bg-elevated" style={{ border: `1px solid ${color}50` }}>
+                  <div key={item.inventoryId} className="rounded-xl p-3 flex items-center gap-3 bg-elevated" style={{ border: `1px solid ${color}50` }}>
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color + '25', border: `1px solid ${color}60` }}>
-                      <span className="text-[22px]" style={{ color }}>{buildingLabels[item.type]}</span>
+                      <span className="text-[22px]">{icon}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm" style={{ color }}>{buildingNames[item.type]}</p>
-                      <p className="text-muted text-[11px]">Lv.{item.level}</p>
-                      <HealthBar hp={item.hp} maxHp={item.maxHp} color={color} height="h-1.5" className="mt-1" />
-                      <span className="text-muted text-[9px]">HP {item.hp}/{item.maxHp}</span>
+                      <p className="font-semibold text-sm" style={{ color }}>{name}</p>
+                      <p className="text-muted text-[11px]">
+                        {info ? `${info.width}×${info.height} · HP ${info.maxHp}` : ''}
+                      </p>
                     </div>
                     <button
                       onClick={() => onDeploy(idx)}
