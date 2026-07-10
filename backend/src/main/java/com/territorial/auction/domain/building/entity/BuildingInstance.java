@@ -52,9 +52,13 @@ public class BuildingInstance {
     @Column(nullable = false)
     private boolean isDestroyed = false;
 
-    // STORAGE 건물만 사용 — DB 스키마에 정의된 필드
+    // 성·저장소가 사용 — 그 위치에 적립된 GP
     @Column(nullable = false)
     private Integer storedGp = 0;
+
+    // 성·저장소가 사용 — 그 위치에 적립된 식량. 약탈·이전 불가
+    @Column(nullable = false)
+    private Integer storedFood = 0;
 
     // WORKSHOP 파괴 후 일정 시간 생산 중단 — null이면 디버프 없음
     @Column private LocalDateTime workshopDebuffUntil;
