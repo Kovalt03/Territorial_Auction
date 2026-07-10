@@ -69,6 +69,11 @@ class MilitaryServiceTest {
     @Mock private AttackTokenRepository attackTokenRepository;
     @Mock private UnitInstanceRepository unitInstanceRepository;
     @Mock private UnitTypeRepository unitTypeRepository;
+
+    @Mock
+    private com.territorial.auction.domain.building.repository.HomeIslandRepository
+            homeIslandRepository;
+
     @Mock private SiegeEventRepository siegeEventRepository;
     @Mock private SiegeResultRepository siegeResultRepository;
     @Mock private UserRepository userRepository;
@@ -89,6 +94,14 @@ class MilitaryServiceTest {
     @BeforeEach
     void setUp() {
         TransactionSynchronizationManager.initSynchronization();
+        // 유닛 귀속지는 아직 홈 아일랜드 고정 (자원 스코프 Stage 2)
+        org.mockito.Mockito.lenient()
+                .when(homeIslandRepository.findByUserId(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(
+                        java.util.Optional.of(
+                                org.mockito.Mockito.mock(
+                                        com.territorial.auction.domain.building.entity.HomeIsland
+                                                .class)));
         attacker =
                 User.builder()
                         .username("attacker1")

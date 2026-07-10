@@ -1,7 +1,9 @@
 package com.territorial.auction.domain.military.service;
 
 import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.military.MilitaryPolicy;
@@ -38,6 +40,7 @@ public class MilitaryService {
     private final AttackTokenRepository attackTokenRepository;
     private final UnitInstanceRepository unitInstanceRepository;
     private final UnitTypeRepository unitTypeRepository;
+    private final HomeIslandRepository homeIslandRepository;
     private final SiegeEventRepository siegeEventRepository;
     private final SiegeResultRepository siegeResultRepository;
     private final UserRepository userRepository;
@@ -276,9 +279,17 @@ public class MilitaryService {
                                             .user(user)
                                             .unitType(unitType)
                                             .quantity(quantity)
+                                            .homeIsland(findHomeIslandOrThrow(userId))
                                             .build();
                             unitInstanceRepository.save(newInstance);
                         });
+    }
+
+    /** 유닛 귀속지 — 아직 위치별 생산이 아니므로 홈 아일랜드로 둔다 (자원 스코프 Stage 2). */
+    private HomeIsland findHomeIslandOrThrow(Long userId) {
+        return homeIslandRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ISLAND_NOT_FOUND));
     }
 
     private Territory findOwnedTerritoryOrThrow(Long territoryId, Long userId) {
@@ -333,6 +344,7 @@ public class MilitaryService {
                                             .user(user)
                                             .unitType(unitType)
                                             .quantity(quantity)
+                                            .homeIsland(findHomeIslandOrThrow(userId))
                                             .build();
                             newInstance.deployTo(territory);
                             unitInstanceRepository.save(newInstance);
