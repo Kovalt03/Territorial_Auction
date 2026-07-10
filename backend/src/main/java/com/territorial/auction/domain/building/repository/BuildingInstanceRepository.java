@@ -14,11 +14,19 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
 
     long countByBuildingType_Id(Long buildingTypeId);
 
-    /** 유저가 지금 짓거나 업그레이드하고 있는 건물 수 — 건축 장인 슬롯 점유량 */
+    /**
+     * 유저가 지금 짓거나 업그레이드하고 있는 건물 수 — 건축 장인 슬롯 점유량.
+     *
+     * <p>건물은 섬 또는 영토 중 한쪽에만 속하므로 암시적 조인(INNER)을 쓰면 두 경로 모두 걸러진다. LEFT JOIN 으로 명시한다.
+     */
     @Query(
             "SELECT COUNT(b) FROM BuildingInstance b"
+                    + " LEFT JOIN b.island i"
+                    + " LEFT JOIN i.user islandOwner"
+                    + " LEFT JOIN b.territory t"
+                    + " LEFT JOIN t.owner territoryOwner"
                     + " WHERE b.buildCompleteAt > :now"
-                    + " AND (b.island.user.id = :userId OR b.territory.owner.id = :userId)")
+                    + " AND (islandOwner.id = :userId OR territoryOwner.id = :userId)")
     long countUnderConstructionByOwnerId(
             @Param("userId") Long userId, @Param("now") LocalDateTime now);
 
@@ -85,8 +93,10 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
             "SELECT COALESCE(SUM(COALESCE(s.unitCapacityPerLevel, b.level * b.buildingType.unitCapacityPerLevel)), 0)"
                     + " FROM BuildingInstance b"
                     + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
-                    + " WHERE b.territory.owner.id = :userId AND b.isDestroyed = false")
-    Integer sumResidenceCapacityByOwnerId(@Param("userId") Long userId);
+                    + " WHERE b.territory.owner.id = :userId AND b.isDestroyed = false"
+                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)")
+    Integer sumResidenceCapacityByOwnerId(
+            @Param("userId") Long userId, @Param("now") LocalDateTime now);
 
     /** 식량 생산량을 소유자별로 합산 — 식량 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
     @Query(
@@ -95,8 +105,9 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
                     + " WHERE b.isDestroyed = false AND b.territory IS NOT NULL"
                     + " AND (b.buildingType.foodProductionRate IS NOT NULL OR s.foodProductionRate IS NOT NULL)"
+                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)"
                     + " GROUP BY b.territory.owner.id")
-    List<Object[]> sumFarmlandFoodProductionGroupedByOwner();
+    List<Object[]> sumFarmlandFoodProductionGroupedByOwner(@Param("now") LocalDateTime now);
 
     /** GP 생산량을 소유자별로 합산 — GP 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
     @Query(
@@ -106,6 +117,7 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " WHERE b.isDestroyed = false AND b.territory IS NOT NULL"
                     + " AND (b.buildingType.gpProductionRate IS NOT NULL OR s.gpProductionRate IS NOT NULL)"
                     + " AND (b.workshopDebuffUntil IS NULL OR b.workshopDebuffUntil < :now)"
+                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)"
                     + " GROUP BY b.territory.owner.id")
     List<Object[]> sumWorkshopGpProductionGroupedByOwner(@Param("now") LocalDateTime now);
 

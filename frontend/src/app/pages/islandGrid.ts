@@ -56,12 +56,24 @@ export function emptyGrid(size: number, zone1Radius: number, zone2Radius: number
   );
 }
 
-export function buildGridFromIsland(island: IslandData): Cell[][] {
-  const size = island.gridSize;
-  const z1 = island.zone1Radius;
-  const z2 = island.zone2Radius;
+// 그리드에 얹을 수 있는 최소 형태 — 섬·영토가 공유한다.
+export interface GridBuilding {
+  buildingId: number;
+  type: string;
+  posX: number;
+  posY: number;
+  width?: number;
+  height?: number;
+  hp: number;
+  maxHp: number;
+  level: number;
+  isDestroyed: boolean;
+  buildCompleteAt: string | null;
+}
+
+export function buildGrid(size: number, z1: number, z2: number, buildings: GridBuilding[]): Cell[][] {
   const grid = emptyGrid(size, z1, z2);
-  for (const b of island.buildings) {
+  for (const b of buildings) {
     if (b.isDestroyed || b.posY >= size || b.posX >= size) continue;
     const w = b.width ?? 1;
     const h = b.height ?? 1;
@@ -87,6 +99,10 @@ export function buildGridFromIsland(island: IslandData): Cell[][] {
     }
   }
   return grid;
+}
+
+export function buildGridFromIsland(island: IslandData): Cell[][] {
+  return buildGrid(island.gridSize, island.zone1Radius, island.zone2Radius, island.buildings);
 }
 
 export function isUnderConstruction(buildCompleteAt: string | null | undefined, now: number): boolean {

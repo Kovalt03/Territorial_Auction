@@ -21,7 +21,8 @@ public class FarmlandScheduler {
     @Transactional
     public void produceFarmlandFood() {
         List<Object[]> productions =
-                buildingInstanceRepository.sumFarmlandFoodProductionGroupedByOwner();
+                buildingInstanceRepository.sumFarmlandFoodProductionGroupedByOwner(
+                        java.time.LocalDateTime.now());
         for (Object[] row : productions) {
             Long ownerId = (Long) row[0];
             int foodAmount = ((Number) row[1]).intValue();

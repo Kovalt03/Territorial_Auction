@@ -161,7 +161,13 @@ public class SiegeService {
         com.territorial.auction.domain.building.BuildingLevelSpecResolver resolver =
                 com.territorial.auction.domain.building.BuildingLevelSpecResolver.of(
                         defenseBuildings, buildingLevelSpecRepository);
-        int buildingDef = defenseBuildings.stream().mapToInt(resolver::defense).sum();
+        // 건설 중인 건물은 방어에 기여하지 않는다. HP는 있으므로 공격 대상은 된다.
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        int buildingDef =
+                defenseBuildings.stream()
+                        .filter(b -> !b.isUnderConstruction(now))
+                        .mapToInt(resolver::defense)
+                        .sum();
         return unitDef + buildingDef;
     }
 

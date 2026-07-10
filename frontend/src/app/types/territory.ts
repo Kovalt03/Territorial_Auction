@@ -6,6 +6,23 @@ export interface TerritoryBuilding {
   maxHp: number;
 }
 
+// GET /map/territories/{id}/buildings — 그리드 렌더용 상세 정보
+export interface TerritoryGridBuilding {
+  buildingId: number;
+  type: string;
+  name: string;
+  posX: number;
+  posY: number;
+  width: number;
+  height: number;
+  hp: number;
+  maxHp: number;
+  level: number;
+  zone: 1 | 2 | 3;
+  isDestroyed: boolean;
+  buildCompleteAt: string | null;
+}
+
 export interface TerritoryOwner {
   userId: number;
   nickname: string;
@@ -26,6 +43,8 @@ export interface TerritoryDetailResponse {
   grade: string;
   gradeMultiplier: number;
   gridSize: number;
+  zone1Radius: number;
+  zone2Radius: number;
   status: string;
   owner: TerritoryOwner | null;
   baseProductionRate: number;

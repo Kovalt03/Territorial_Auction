@@ -60,6 +60,8 @@ class MapServiceTest {
                         .preBuiltCount(1)
                         .spawnRate(new BigDecimal("0.120"))
                         .gridSize(10)
+                        .zone1Radius(2)
+                        .zone2Radius(4)
                         .build();
         ReflectionTestUtils.setField(g, "id", 1L);
         return g;

@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.building.dto;
 
 import com.territorial.auction.domain.building.entity.BuildingInstance;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record TerritoryBuildingResponse(List<BuildingInfo> buildings) {
@@ -17,7 +18,8 @@ public record TerritoryBuildingResponse(List<BuildingInfo> buildings) {
             Integer maxHp,
             Integer level,
             Integer zone,
-            boolean isDestroyed) {
+            boolean isDestroyed,
+            LocalDateTime buildCompleteAt) {
 
         public static BuildingInfo from(BuildingInstance bi) {
             return new BuildingInfo(
@@ -32,7 +34,8 @@ public record TerritoryBuildingResponse(List<BuildingInfo> buildings) {
                     bi.getBuildingType().getMaxHp(),
                     bi.getLevel(),
                     bi.getZone(),
-                    bi.isDestroyed());
+                    bi.isDestroyed(),
+                    bi.getBuildCompleteAt());
         }
     }
 }

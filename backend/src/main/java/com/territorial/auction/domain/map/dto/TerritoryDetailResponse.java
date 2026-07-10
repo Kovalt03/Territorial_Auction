@@ -12,6 +12,8 @@ public record TerritoryDetailResponse(
         String grade,
         BigDecimal gradeMultiplier,
         int gridSize,
+        int zone1Radius,
+        int zone2Radius,
         String status,
         OwnerInfo owner,
         int baseProductionRate,

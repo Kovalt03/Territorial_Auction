@@ -3,6 +3,7 @@ package com.territorial.auction.domain.military.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -238,7 +239,8 @@ class MilitaryServiceTest {
             given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
             given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
                     .willReturn(List.of(2)); // 10 slots
-            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
+            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(eq(1L), any()))
+                    .willReturn(0);
             given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(wallet));
             given(
                             unitInstanceRepository
@@ -269,7 +271,8 @@ class MilitaryServiceTest {
             given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
             given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
                     .willReturn(List.of(1)); // 5 slots
-            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
+            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(eq(1L), any()))
+                    .willReturn(0);
             given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(wallet));
             given(
                             unitInstanceRepository
@@ -339,7 +342,8 @@ class MilitaryServiceTest {
             given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(5); // 현재 5마리
             given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
                     .willReturn(List.of(1)); // 5 slots
-            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
+            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(eq(1L), any()))
+                    .willReturn(0);
 
             // when / then
             assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
@@ -364,7 +368,8 @@ class MilitaryServiceTest {
             given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
             given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
                     .willReturn(List.of(2)); // 10 slots
-            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
+            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(eq(1L), any()))
+                    .willReturn(0);
             given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(poorWallet));
 
             // when / then
@@ -390,7 +395,8 @@ class MilitaryServiceTest {
             given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
             given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
                     .willReturn(List.of(1)); // 5 slots
-            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(1L)).willReturn(0);
+            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(eq(1L), any()))
+                    .willReturn(0);
             given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(hungryWallet));
 
             // when / then
