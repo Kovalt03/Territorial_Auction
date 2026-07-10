@@ -853,6 +853,7 @@ class MilitaryServiceTest {
             UnitInstance deployed = deployedInstance(20);
             given(unitInstanceRepository.findByUserId(1L)).willReturn(List.of(idle, deployed));
             given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(unitTypeRepository.findAll()).willReturn(List.of(unitType));
 
             // when
             UnitListResponse response = militaryService.getUnitList(1L);
