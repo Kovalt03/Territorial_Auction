@@ -496,6 +496,33 @@ class SiegeServiceTest {
         }
 
         @Test
+        @DisplayName("건설 중인 방어 건물 → 방어력 0, 공격자 승리")
+        void resolveOneSiege_underConstructionBuilding_contributesNoDefense() {
+            // given
+            given(event.getAttackZone()).willReturn(1);
+
+            // ATK = 10*5 = 50, WALL defensePower=100 이지만 건설 중이라 DEF=0 → 공격자 승
+            UnitInstance attackerUnit = makeUnit(10, 0, 5);
+            BuildingInstance wall = makeBuilding("WALL", 200, 200, 100, 0, 1);
+            wall.startConstruction(LocalDateTime.now().plusMinutes(5));
+
+            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
+                    .willReturn(List.of(attackerUnit));
+            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
+                    .willReturn(List.of());
+            given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 1))
+                    .willReturn(List.of(wall));
+
+            // when
+            siegeService.resolveOneSiege(event);
+
+            // then — 방어력이 0이라 공격자 승리. 건물은 여전히 공격 대상(HP 존재)
+            ArgumentCaptor<SiegeResult> captor = ArgumentCaptor.forClass(SiegeResult.class);
+            then(siegeResultRepository).should().save(captor.capture());
+            assertThat(captor.getValue().getIsAttackerWin()).isTrue();
+        }
+
+        @Test
         @DisplayName("건물 defensePower null → DEF 합산에서 제외, 공격자 승리")
         void resolveOneSiege_buildingWithNullDefensePower_notCountedInDef() {
             // given
