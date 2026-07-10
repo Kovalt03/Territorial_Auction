@@ -18,7 +18,6 @@ public record AdminUpdateBuildingTypeRequest(
         Integer foodProductionRate,
         Integer unitCapacityPerLevel,
         Integer gpProductionRate,
-        @Positive Integer maxBuildings,
         @PositiveOrZero Integer buildTimeSeconds,
         @PositiveOrZero Integer upgradeTimeSeconds,
         String icon,

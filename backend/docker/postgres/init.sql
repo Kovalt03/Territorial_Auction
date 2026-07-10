@@ -282,7 +282,6 @@ CREATE TABLE IF NOT EXISTS building_types (
     food_production_rate   INTEGER,
     unit_capacity_per_level INTEGER,
     gp_production_rate     INTEGER,
-    max_buildings          INTEGER,
     build_time_seconds     INTEGER,
     upgrade_time_seconds   INTEGER,
     icon                   VARCHAR(10),
@@ -302,9 +301,17 @@ CREATE TABLE IF NOT EXISTS building_level_specs (
     food_production_rate   INTEGER,
     unit_capacity_per_level INTEGER,
     gp_production_rate     INTEGER,
-    max_buildings          INTEGER,
     upgrade_time_seconds   INTEGER,
     UNIQUE (building_type_id, level)
+);
+
+-- building_castle_limits (건물 종류 × 성 레벨별 최대 개수)
+CREATE TABLE IF NOT EXISTS building_castle_limits (
+    id               BIGSERIAL PRIMARY KEY,
+    building_type_id BIGINT    NOT NULL REFERENCES building_types(id),
+    castle_level     INTEGER   NOT NULL,
+    max_count        INTEGER   NOT NULL,
+    UNIQUE (building_type_id, castle_level)
 );
 
 -- building_instances

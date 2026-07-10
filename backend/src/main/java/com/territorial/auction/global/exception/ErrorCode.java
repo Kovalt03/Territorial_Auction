@@ -87,6 +87,8 @@ public enum ErrorCode {
     ZONE_RESTRICTION_VIOLATED(HttpStatus.BAD_REQUEST, "Zone 제약 위반입니다."),
     INSUFFICIENT_GP(HttpStatus.BAD_REQUEST, "GP 잔액이 부족합니다."),
     CASTLE_ALREADY_EXISTS(HttpStatus.CONFLICT, "성은 하나만 지을 수 있습니다."),
+    BUILDING_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "현재 성 레벨에서 더 지을 수 없는 건물입니다."),
+    CASTLE_LIMIT_NOT_CONFIGURABLE(HttpStatus.BAD_REQUEST, "성은 개수 제한을 설정할 수 없습니다."),
     CASTLE_CANNOT_BE_STORED(HttpStatus.BAD_REQUEST, "Castle은 보관할 수 없습니다."),
     CASTLE_CANNOT_BE_MOVED(HttpStatus.BAD_REQUEST, "Castle은 이동할 수 없습니다."),
 
