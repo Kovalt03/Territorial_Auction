@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.building.service;
 
 import com.territorial.auction.domain.building.BuildingPolicy;
+import com.territorial.auction.domain.building.ZonePolicy;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse;
 import com.territorial.auction.domain.building.dto.HarvestIslandGpResponse;
 import com.territorial.auction.domain.building.dto.InventoryResponse;
@@ -27,6 +28,7 @@ import com.territorial.auction.domain.building.repository.BuildingTypeRepository
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import com.territorial.auction.domain.map.entity.Territory;
+import com.territorial.auction.domain.map.entity.TerritoryGrade;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.user.entity.User;
@@ -87,7 +89,7 @@ public class BuildingService {
         List<BuildingInstance> existing = buildingInstanceRepository.findByTerritoryId(territoryId);
 
         int gridSize = territory.getGrade().getGridSize();
-        int zone = calculateZone(request.posX(), request.posY(), gridSize);
+        int zone = calculateTerritoryZone(request.posX(), request.posY(), territory.getGrade());
         validatePosition(existing, buildingType, request.posX(), request.posY(), gridSize);
         validateZoneRestriction(buildingType, zone);
 
@@ -290,7 +292,7 @@ public class BuildingService {
         List<BuildingInstance> existing =
                 buildingInstanceRepository.findByTerritoryId(request.territoryId());
         int gridSize = territory.getGrade().getGridSize();
-        int zone = calculateZone(request.posX(), request.posY(), gridSize);
+        int zone = calculateTerritoryZone(request.posX(), request.posY(), territory.getGrade());
         validatePosition(
                 existing, stored.getBuildingType(), request.posX(), request.posY(), gridSize);
         validateZoneRestriction(stored.getBuildingType(), zone);
@@ -508,28 +510,21 @@ public class BuildingService {
         }
     }
 
-    private int calculateZone(int posX, int posY, int gridSize) {
-        int center = gridSize / 2;
-        int distance = Math.max(Math.abs(posX - center), Math.abs(posY - center));
-        int third = gridSize / 3;
-        if (distance <= third) return 1;
-        if (distance <= third * 2) return 2;
-        return 3;
+    private int calculateTerritoryZone(int posX, int posY, TerritoryGrade grade) {
+        return ZonePolicy.calculateZone(
+                posX, posY, grade.getGridSize(), grade.getZone1Radius(), grade.getZone2Radius());
     }
 
     private int calculateIslandZone(int posX, int posY, HomeIsland island) {
-        int center = island.getGridSize() / 2;
-        int distance = Math.max(Math.abs(posX - center), Math.abs(posY - center));
-        if (distance <= island.getZone1Radius()) return 1;
-        if (distance <= island.getZone2Radius()) return 2;
-        return 3;
+        return ZonePolicy.calculateZone(
+                posX, posY, island.getGridSize(), island.getZone1Radius(), island.getZone2Radius());
     }
 
     private int resolveZone(BuildingInstance building, int posX, int posY) {
         if (building.getIsland() != null) {
             return calculateIslandZone(posX, posY, building.getIsland());
         }
-        return calculateZone(posX, posY, building.getTerritory().getGrade().getGridSize());
+        return calculateTerritoryZone(posX, posY, building.getTerritory().getGrade());
     }
 
     private void validateZoneRestriction(BuildingType buildingType, int zone) {

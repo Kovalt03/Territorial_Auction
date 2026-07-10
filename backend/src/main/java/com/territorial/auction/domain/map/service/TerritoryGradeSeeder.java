@@ -23,16 +23,30 @@ public class TerritoryGradeSeeder implements ApplicationRunner {
 
     private final TerritoryGradeRepository territoryGradeRepository;
 
+    // yml을 단일 진실 공급원으로 삼는다 — 기존 행이 있으면 건너뛰지 않고 값을 맞춘다.
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (territoryGradeRepository.count() > 0) {
-            log.info("territory_grades 이미 존재 — 건너뜀");
-            return;
-        }
-        List<TerritoryGrade> grades = loadEntries().stream().map(this::toEntity).toList();
-        territoryGradeRepository.saveAll(grades);
-        log.info("territory_grades 시드 완료. 건수={}", grades.size());
+        List<Map<String, Object>> entries = loadEntries();
+        entries.forEach(this::upsert);
+        log.info("territory_grades 시드 동기화 완료. 건수={}", entries.size());
+    }
+
+    private void upsert(Map<String, Object> m) {
+        String grade = (String) m.get("grade");
+        territoryGradeRepository
+                .findByGrade(grade)
+                .ifPresentOrElse(
+                        found ->
+                                found.syncFromSeed(
+                                        toBigDecimal(m.get("productionMultiplier")),
+                                        toBigDecimal(m.get("auctionPriceMultiplier")),
+                                        (Integer) m.get("preBuiltCount"),
+                                        toBigDecimal(m.get("spawnRate")),
+                                        (Integer) m.get("gridSize"),
+                                        (Integer) m.get("zone1Radius"),
+                                        (Integer) m.get("zone2Radius")),
+                        () -> territoryGradeRepository.save(toEntity(m)));
     }
 
     @SuppressWarnings("unchecked")
@@ -54,6 +68,8 @@ public class TerritoryGradeSeeder implements ApplicationRunner {
                 .preBuiltCount((Integer) m.get("preBuiltCount"))
                 .spawnRate(toBigDecimal(m.get("spawnRate")))
                 .gridSize((Integer) m.get("gridSize"))
+                .zone1Radius((Integer) m.get("zone1Radius"))
+                .zone2Radius((Integer) m.get("zone2Radius"))
                 .build();
     }
 

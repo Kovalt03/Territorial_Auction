@@ -59,7 +59,9 @@ CREATE TABLE IF NOT EXISTS territory_grades (
     auction_price_multiplier NUMERIC(3,1)  NOT NULL,
     pre_built_count         INTEGER        NOT NULL DEFAULT 0,
     spawn_rate              NUMERIC(4,3)   NOT NULL,
-    grid_size               INTEGER        NOT NULL
+    grid_size               INTEGER        NOT NULL,
+    zone1_radius            INTEGER        NOT NULL,
+    zone2_radius            INTEGER        NOT NULL
 );
 
 -- territories
