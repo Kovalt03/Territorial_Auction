@@ -1,11 +1,16 @@
 package com.territorial.auction.domain.building;
 
 import com.territorial.auction.domain.building.entity.BuildingInstance;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * 한 위치(영토/섬)의 GP·식량 저장 공간을 다룬다.
  *
  * <p>저장 공간은 성(소량·안전)과 저장소(대량·약탈)에 걸쳐 있다. 적립은 저장소부터 채우고 넘치면 성으로, 소진은 반대로 성부터 빼서 저장소에 위험을 몰아준다.
+ *
+ * <p>서비스 의존 없이 여러 도메인이 공유하도록 정적 헬퍼로 둔다. 호출측은 {@code findStorageBuildingsBy...WithLock} 으로 성·저장소를 함께
+ * 가져와 넘긴다.
  */
 public final class StoragePolicy {
 
@@ -23,5 +28,61 @@ public final class StoragePolicy {
                         ? CASTLE_CAPACITY_PER_LEVEL
                         : STORAGE_CAPACITY_PER_LEVEL;
         return building.getLevel() * perLevel;
+    }
+
+    // JOIN FETCH 는 쿼리 ORDER BY 를 무시할 수 있어 정렬은 여기서 한다.
+    private static final Comparator<BuildingInstance> CASTLE_FIRST =
+            Comparator.comparingInt(b -> b.getBuildingType().isCastle() ? 0 : 1);
+    private static final Comparator<BuildingInstance> STORAGE_FIRST =
+            Comparator.comparingInt(b -> b.getBuildingType().isCastle() ? 1 : 0);
+
+    public static int totalGp(List<BuildingInstance> storages) {
+        return storages.stream().mapToInt(BuildingInstance::getStoredGp).sum();
+    }
+
+    public static int roomGp(List<BuildingInstance> storages) {
+        return storages.stream().mapToInt(b -> capacity(b) - b.getStoredGp()).sum();
+    }
+
+    /** 저장소부터 채운다. 다 못 넣으면 넘친 양을 돌려준다. */
+    public static int fillGp(List<BuildingInstance> storages, int amount) {
+        int remaining = amount;
+        for (BuildingInstance b : storages.stream().sorted(STORAGE_FIRST).toList()) {
+            remaining -= b.fillGp(remaining, capacity(b));
+            if (remaining == 0) break;
+        }
+        return remaining;
+    }
+
+    /** 성부터 뺀다. 다 못 빼면 부족한 양을 돌려준다. */
+    public static int drainGp(List<BuildingInstance> storages, int amount) {
+        int remaining = amount;
+        for (BuildingInstance b : storages.stream().sorted(CASTLE_FIRST).toList()) {
+            remaining -= b.drainGp(remaining);
+            if (remaining == 0) break;
+        }
+        return remaining;
+    }
+
+    public static int totalFood(List<BuildingInstance> storages) {
+        return storages.stream().mapToInt(BuildingInstance::getStoredFood).sum();
+    }
+
+    public static int fillFood(List<BuildingInstance> storages, int amount) {
+        int remaining = amount;
+        for (BuildingInstance b : storages.stream().sorted(STORAGE_FIRST).toList()) {
+            remaining -= b.fillFood(remaining, capacity(b));
+            if (remaining == 0) break;
+        }
+        return remaining;
+    }
+
+    public static int drainFood(List<BuildingInstance> storages, int amount) {
+        int remaining = amount;
+        for (BuildingInstance b : storages.stream().sorted(CASTLE_FIRST).toList()) {
+            remaining -= b.drainFood(remaining);
+            if (remaining == 0) break;
+        }
+        return remaining;
     }
 }

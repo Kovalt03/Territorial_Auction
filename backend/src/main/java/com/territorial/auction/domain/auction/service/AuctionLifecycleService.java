@@ -13,6 +13,10 @@ import com.territorial.auction.domain.auction.entity.AuctionHistory;
 import com.territorial.auction.domain.auction.repository.AuctionBidRepository;
 import com.territorial.auction.domain.auction.repository.AuctionHistoryRepository;
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
+import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.BuildingType;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.map.dto.MapUpdateBroadcast;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
@@ -50,6 +54,8 @@ public class AuctionLifecycleService {
     private final AuctionBidRepository auctionBidRepository;
     private final AuctionHistoryRepository auctionHistoryRepository;
     private final TerritoryRepository territoryRepository;
+    private final BuildingInstanceRepository buildingInstanceRepository;
+    private final BuildingTypeRepository buildingTypeRepository;
     private final WalletRepository walletRepository;
     private final SeasonRepository seasonRepository;
     private final AdminSettingRepository adminSettingRepository;
@@ -222,6 +228,28 @@ public class AuctionLifecycleService {
 
     // ── private ───────────────────────────────────────────────────────────────
 
+    // 낙찰 영토에 성을 자동 배치한다. 재점유로 이미 성이 있으면 건너뛴다. 초기 stored_gp 는 0 —
+    // 영토 수입·성 생산으로 채운다.
+    private void createInitialCastle(Territory territory) {
+        if (buildingInstanceRepository.existsCastleOnTerritory(territory.getId())) {
+            return;
+        }
+        BuildingType castleType =
+                buildingTypeRepository
+                        .findByName("CASTLE")
+                        .orElseThrow(() -> new CustomException(ErrorCode.BUILDING_TYPE_NOT_FOUND));
+        int center = (territory.getGrade().getGridSize() / 2) - 1;
+        buildingInstanceRepository.save(
+                BuildingInstance.builder()
+                        .territory(territory)
+                        .buildingType(castleType)
+                        .posX(center)
+                        .posY(center)
+                        .hp(castleType.getMaxHp())
+                        .zone(1)
+                        .build());
+    }
+
     // 전역 마스터 스위치. 설정 행이 없으면 활성으로 간주한다.
     private boolean isGlobalAuctionEnabled() {
         return adminSettingRepository
@@ -237,6 +265,9 @@ public class AuctionLifecycleService {
         if (winner != null) {
             LocalDateTime occupiedUntil = now.plusDays(AuctionPolicy.OCCUPATION_DURATION_DAYS);
             territory.occupy(winner, occupiedUntil);
+
+            // 성이 기본 저장 기능을 가지므로, 낙찰 영토에는 항상 성이 있어야 첫 건물을 지을 수 있다.
+            createInitialCastle(territory);
 
             // 낙찰자 lockedAp 소비
             walletRepository

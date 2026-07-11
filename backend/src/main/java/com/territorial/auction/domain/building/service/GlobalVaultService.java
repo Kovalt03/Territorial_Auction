@@ -74,17 +74,13 @@ public class GlobalVaultService {
     private VaultTransferResponse transferToVault(
             GlobalVault vault, List<BuildingInstance> storages, VaultTransferRequest request) {
         int amount = request.amount().intValue();
-        if (storedGpTotal(storages) < amount) {
+        if (StoragePolicy.totalGp(storages) < amount) {
             throw new CustomException(ErrorCode.INSUFFICIENT_GP);
         }
         if (vault.getStoredGp() + amount > vault.getCapacity()) {
             throw new CustomException(ErrorCode.VAULT_CAPACITY_EXCEEDED);
         }
-        int remaining = amount;
-        for (BuildingInstance b : castleFirst(storages)) {
-            remaining -= b.drainGp(remaining);
-            if (remaining == 0) break;
-        }
+        StoragePolicy.drainGp(storages, amount);
         vault.receiveGp(amount);
         vault.recordTransfer();
         return buildResponse(request, storages, vault);
@@ -97,44 +93,13 @@ public class GlobalVaultService {
         if (vault.getStoredGp() < amount) {
             throw new CustomException(ErrorCode.INSUFFICIENT_GP);
         }
-        if (storedGpRoom(storages) < amount) {
+        if (StoragePolicy.roomGp(storages) < amount) {
             throw new CustomException(ErrorCode.STORAGE_CAPACITY_EXCEEDED);
         }
-        int remaining = amount;
-        for (BuildingInstance b : storageFirst(storages)) {
-            remaining -= b.fillGp(remaining, StoragePolicy.capacity(b));
-            if (remaining == 0) break;
-        }
+        StoragePolicy.fillGp(storages, amount);
         vault.withdrawGp(amount);
         vault.recordTransfer();
         return buildResponse(request, storages, vault);
-    }
-
-    private int storedGpTotal(List<BuildingInstance> storages) {
-        return storages.stream().mapToInt(BuildingInstance::getStoredGp).sum();
-    }
-
-    private int storedGpRoom(List<BuildingInstance> storages) {
-        return storages.stream().mapToInt(b -> StoragePolicy.capacity(b) - b.getStoredGp()).sum();
-    }
-
-    // JOIN FETCH 는 쿼리의 ORDER BY 를 무시할 수 있어 코드에서 명시적으로 정렬한다.
-    // 소진은 성부터(안전한 성을 먼저 비워 저장소에 위험을 남긴다).
-    private List<BuildingInstance> castleFirst(List<BuildingInstance> list) {
-        return list.stream()
-                .sorted(
-                        java.util.Comparator.comparingInt(
-                                b -> b.getBuildingType().isCastle() ? 0 : 1))
-                .toList();
-    }
-
-    // 적립은 저장소부터(즉시 약탈 위험을 감수하게 한다).
-    private List<BuildingInstance> storageFirst(List<BuildingInstance> list) {
-        return list.stream()
-                .sorted(
-                        java.util.Comparator.comparingInt(
-                                b -> b.getBuildingType().isCastle() ? 1 : 0))
-                .toList();
     }
 
     private VaultTransferResponse buildResponse(
@@ -143,7 +108,7 @@ public class GlobalVaultService {
                 request.direction(),
                 request.amount(),
                 request.sourceTerritoryId(),
-                storedGpTotal(storages),
+                StoragePolicy.totalGp(storages),
                 vault.getStoredGp(),
                 vault.getCapacity(),
                 nextTransferAvailableAt(vault));

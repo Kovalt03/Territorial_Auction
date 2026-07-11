@@ -1,9 +1,9 @@
 package com.territorial.auction.domain.map.service;
 
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
+import com.territorial.auction.domain.building.StoragePolicy;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
-import com.territorial.auction.domain.map.TerritoryIncomePolicy;
 import com.territorial.auction.domain.map.dto.GridMapResponse;
 import com.territorial.auction.domain.map.dto.TerritoryDetailResponse;
 import com.territorial.auction.domain.map.entity.ColorHistory;
@@ -16,7 +16,6 @@ import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -106,22 +105,19 @@ public class MapService {
                                                 a.getId(), a.getCurrentPrice(), a.getEndAt()))
                         .orElse(null);
 
-        Optional<BuildingInstance> storageOpt =
+        // 성·저장소가 함께 GP 를 담는다. 점유 중이면 성이 있어 목록이 비지 않는다.
+        List<BuildingInstance> storages =
                 (territory.getStatus() == TerritoryStatus.OCCUPIED)
-                        ? buildingInstanceRepository.findActiveStorageByTerritoryId(territoryId)
-                        : Optional.empty();
+                        ? buildingInstanceRepository.findStorageBuildingsByTerritoryId(territoryId)
+                        : List.of();
+        boolean hasStorage = !storages.isEmpty();
 
         Integer productionRatePerMin =
-                storageOpt
-                        .map(s -> territoryIncomeService.calculateEffectiveRate(territory))
-                        .orElse(null);
-        LocalDateTime lastProducedAt =
-                storageOpt.isPresent() ? territory.getLastProducedAt() : null;
-        Integer storedGp = storageOpt.map(BuildingInstance::getStoredGp).orElse(null);
+                hasStorage ? territoryIncomeService.calculateEffectiveRate(territory) : null;
+        LocalDateTime lastProducedAt = hasStorage ? territory.getLastProducedAt() : null;
+        Integer storedGp = hasStorage ? StoragePolicy.totalGp(storages) : null;
         Integer storageCapacity =
-                storageOpt
-                        .map(s -> s.getLevel() * TerritoryIncomePolicy.STORAGE_CAPACITY_PER_LEVEL)
-                        .orElse(null);
+                hasStorage ? storages.stream().mapToInt(StoragePolicy::capacity).sum() : null;
 
         return new TerritoryDetailResponse(
                 territory.getId(),

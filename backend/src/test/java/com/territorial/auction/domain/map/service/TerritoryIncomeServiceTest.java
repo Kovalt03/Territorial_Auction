@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
 import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.map.dto.CollectTerritoryResponse;
 import com.territorial.auction.domain.map.entity.BonusTile;
@@ -25,6 +26,7 @@ import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -77,6 +79,47 @@ class TerritoryIncomeServiceTest {
         ReflectionTestUtils.setField(territory, "occupiedUntil", LocalDateTime.now().plusDays(1));
     }
 
+    // ─── 위치 저장소 픽스처 (성·저장소) ────────────────────────────────────────
+
+    private BuildingInstance storageBuilding(int level, int storedGp) {
+        BuildingType bt =
+                BuildingType.builder()
+                        .name("STORAGE")
+                        .width(1)
+                        .height(1)
+                        .maxHp(60)
+                        .baseCostGp(500)
+                        .build();
+        return locationStorage(bt, level, storedGp);
+    }
+
+    private BuildingInstance castleBuilding(int level, int storedGp) {
+        BuildingType bt =
+                BuildingType.builder()
+                        .name("CASTLE")
+                        .width(2)
+                        .height(2)
+                        .maxHp(100)
+                        .baseCostGp(1000)
+                        .build();
+        return locationStorage(bt, level, storedGp);
+    }
+
+    private BuildingInstance locationStorage(BuildingType bt, int level, int storedGp) {
+        BuildingInstance b =
+                BuildingInstance.builder()
+                        .buildingType(bt)
+                        .territory(territory)
+                        .posX(0)
+                        .posY(0)
+                        .hp(bt.getMaxHp())
+                        .zone(2)
+                        .build();
+        ReflectionTestUtils.setField(b, "level", level);
+        ReflectionTestUtils.setField(b, "storedGp", storedGp);
+        return b;
+    }
+
     @Nested
     class Collect {
 
@@ -87,14 +130,11 @@ class TerritoryIncomeServiceTest {
             ReflectionTestUtils.setField(
                     territory, "lastProducedAt", LocalDateTime.now().minusMinutes(60));
 
-            BuildingInstance storage = mock(BuildingInstance.class);
-            given(storage.isDestroyed()).willReturn(false);
-            given(storage.getLevel()).willReturn(2);
-            given(storage.getStoredGp()).willReturn(0);
+            BuildingInstance storage = storageBuilding(2, 0); // 용량 10,000
 
             given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.findStorageByTerritoryIdWithLock(10L))
-                    .willReturn(Optional.of(storage));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storage));
             given(bonusTileRepository.findByTerritoryId(10L)).willReturn(Optional.empty());
             given(
                             territoryRepository.countAdjacentOccupiedByOwner(
@@ -108,51 +148,55 @@ class TerritoryIncomeServiceTest {
             // then
             assertThat(response.creditedGp()).isEqualTo(60);
             assertThat(response.productionRatePerMin()).isEqualTo(1);
-            assertThat(response.storageCapacity()).isEqualTo(400);
-            then(storage).should().addStoredGp(60);
+            assertThat(response.storageCapacity()).isEqualTo(10_000);
+            assertThat(storage.getStoredGp()).isEqualTo(60);
             // 보너스 없음 → BASE 로그 1건
             then(productionLogRepository).should(times(1)).save(any(TerritoryProductionLog.class));
         }
 
         @Test
-        @DisplayName("STORAGE 파괴 → creditedGp=0, 로그 미저장, storageCapacity=0")
-        void collect_destroyedStorage_returnsZero() {
-            // given
+        @DisplayName("성·저장소 합산 → 용량 합산, 적립은 저장소부터 채운다")
+        void collect_castleAndStorage_fillsStorageFirst() {
+            // given — 성 Lv1(5,000) + 저장소 Lv1(5,000), elapsed=60분 → 60GP
             ReflectionTestUtils.setField(
                     territory, "lastProducedAt", LocalDateTime.now().minusMinutes(60));
 
-            BuildingInstance destroyedStorage = mock(BuildingInstance.class);
-            given(destroyedStorage.isDestroyed()).willReturn(true);
-            given(destroyedStorage.getStoredGp()).willReturn(50);
+            BuildingInstance castle = castleBuilding(1, 0);
+            BuildingInstance storage = storageBuilding(1, 0);
 
             given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.findStorageByTerritoryIdWithLock(10L))
-                    .willReturn(Optional.of(destroyedStorage));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(castle, storage));
+            given(bonusTileRepository.findByTerritoryId(10L)).willReturn(Optional.empty());
+            given(
+                            territoryRepository.countAdjacentOccupiedByOwner(
+                                    5, 5, 1L, 10L, Territory.TerritoryStatus.OCCUPIED))
+                    .willReturn(0);
+            given(userRepository.getReferenceById(1L)).willReturn(owner);
 
             // when
             CollectTerritoryResponse response = territoryIncomeService.collect(1L, 10L);
 
             // then
-            assertThat(response.creditedGp()).isEqualTo(0);
-            assertThat(response.storedGp()).isEqualTo(50);
-            assertThat(response.productionRatePerMin()).isEqualTo(0);
-            assertThat(response.storageCapacity()).isEqualTo(0);
-            then(productionLogRepository).should(never()).save(any());
+            assertThat(response.creditedGp()).isEqualTo(60);
+            assertThat(response.storageCapacity()).isEqualTo(10_000);
+            assertThat(storage.getStoredGp()).isEqualTo(60); // 저장소부터 채움
+            assertThat(castle.getStoredGp()).isEqualTo(0);
         }
 
         @Test
-        @DisplayName("STORAGE 없음 → BUILDING_NOT_FOUND 예외")
-        void collect_noStorage_throwsBuildingNotFound() {
+        @DisplayName("저장소 없음 → STORAGE_NOT_FOUND 예외")
+        void collect_noStorage_throwsStorageNotFound() {
             // given
             given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.findStorageByTerritoryIdWithLock(10L))
-                    .willReturn(Optional.empty());
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of());
 
             // when / then
             assertThatThrownBy(() -> territoryIncomeService.collect(1L, 10L))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
-                    .isEqualTo(ErrorCode.BUILDING_NOT_FOUND);
+                    .isEqualTo(ErrorCode.STORAGE_NOT_FOUND);
         }
 
         @Test
@@ -186,18 +230,15 @@ class TerritoryIncomeServiceTest {
         @Test
         @DisplayName("저장소 용량 가득 → creditedGp=0, 로그 미저장")
         void collect_storageAtCapacity_creditedGpIsZero() {
-            // given — level 1, capacity 200, storedGp 200 (full)
+            // given — 저장소 Lv1, 용량 5,000, storedGp 5,000 (가득)
             ReflectionTestUtils.setField(
                     territory, "lastProducedAt", LocalDateTime.now().minusMinutes(60));
 
-            BuildingInstance storage = mock(BuildingInstance.class);
-            given(storage.isDestroyed()).willReturn(false);
-            given(storage.getLevel()).willReturn(1);
-            given(storage.getStoredGp()).willReturn(200);
+            BuildingInstance storage = storageBuilding(1, 5_000);
 
             given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.findStorageByTerritoryIdWithLock(10L))
-                    .willReturn(Optional.of(storage));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storage));
             given(bonusTileRepository.findByTerritoryId(10L)).willReturn(Optional.empty());
             given(
                             territoryRepository.countAdjacentOccupiedByOwner(
@@ -209,7 +250,7 @@ class TerritoryIncomeServiceTest {
 
             // then
             assertThat(response.creditedGp()).isEqualTo(0);
-            then(storage).should(never()).addStoredGp(any(Integer.class));
+            assertThat(storage.getStoredGp()).isEqualTo(5_000);
             then(productionLogRepository).should(never()).save(any());
         }
 
@@ -220,14 +261,11 @@ class TerritoryIncomeServiceTest {
             ReflectionTestUtils.setField(
                     territory, "lastProducedAt", LocalDateTime.now().minusSeconds(30));
 
-            BuildingInstance storage = mock(BuildingInstance.class);
-            given(storage.isDestroyed()).willReturn(false);
-            given(storage.getLevel()).willReturn(2);
-            given(storage.getStoredGp()).willReturn(0);
+            BuildingInstance storage = storageBuilding(2, 0);
 
             given(territoryRepository.findByIdWithDetails(10L)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.findStorageByTerritoryIdWithLock(10L))
-                    .willReturn(Optional.of(storage));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storage));
             given(bonusTileRepository.findByTerritoryId(10L)).willReturn(Optional.empty());
             given(
                             territoryRepository.countAdjacentOccupiedByOwner(
@@ -239,7 +277,7 @@ class TerritoryIncomeServiceTest {
 
             // then
             assertThat(response.creditedGp()).isEqualTo(0);
-            then(storage).should(never()).addStoredGp(any(Integer.class));
+            assertThat(storage.getStoredGp()).isEqualTo(0);
         }
     }
 

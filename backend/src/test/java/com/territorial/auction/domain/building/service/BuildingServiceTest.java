@@ -35,9 +35,7 @@ import com.territorial.auction.domain.season.entity.SeasonPass;
 import com.territorial.auction.domain.season.entity.UserSeasonPass;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.user.entity.User;
-import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.math.BigDecimal;
@@ -70,7 +68,6 @@ class BuildingServiceTest {
     @Mock private HomeIslandRepository homeIslandRepository;
     @Mock private IslandGradeRepository islandGradeRepository;
     @Mock private TerritoryRepository territoryRepository;
-    @Mock private WalletRepository walletRepository;
     @Mock private UserRepository userRepository;
     @Mock private UserSeasonPassRepository userSeasonPassRepository;
 
@@ -116,11 +113,19 @@ class BuildingServiceTest {
         return user;
     }
 
-    private Wallet walletWithGp(User user, int gp) {
-        Wallet wallet = Wallet.builder().user(user).build();
-        ReflectionTestUtils.setField(wallet, "availableGp", gp);
-        ReflectionTestUtils.setField(wallet, "availableAp", 0);
-        return wallet;
+    // Lv2 STORAGE 건물 — 용량 10,000. 위치 저장소 스텁으로 사용한다.
+    private BuildingInstance storageWithGp(int gp) {
+        BuildingInstance b =
+                BuildingInstance.builder()
+                        .buildingType(storage())
+                        .posX(0)
+                        .posY(0)
+                        .hp(60)
+                        .zone(2)
+                        .build();
+        ReflectionTestUtils.setField(b, "level", 2);
+        ReflectionTestUtils.setField(b, "storedGp", gp);
+        return b;
     }
 
     private TerritoryGrade gradeA() {
@@ -289,7 +294,8 @@ class BuildingServiceTest {
             given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
             given(buildingInstanceRepository.findByTerritoryId(10L))
                     .willReturn(Collections.emptyList());
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storageWithGp(2000)));
             given(buildingInstanceRepository.save(any()))
                     .willAnswer(
                             inv -> {
@@ -332,8 +338,8 @@ class BuildingServiceTest {
             given(buildingTypeRepository.findById(2L)).willReturn(Optional.of(bt));
             given(buildingInstanceRepository.findByTerritoryId(10L))
                     .willReturn(Collections.emptyList());
-            given(walletRepository.findById(1L))
-                    .willReturn(Optional.of(walletWithGp(user, 100))); // 100 < 500
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storageWithGp(100)));
 
             PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
             assertThatThrownBy(() -> buildingService.placeOnTerritory(1L, 10L, req))
@@ -412,10 +418,10 @@ class BuildingServiceTest {
             Territory territory = territoryOwnedBy(user, gradeA());
             BuildingType bt = storage(); // baseCostGp=500
             BuildingInstance bi = placedInstance(bt, territory, 0, 0); // level=1
-            Wallet wallet = walletWithGp(user, 2000);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storageWithGp(2000)));
 
             UpgradeBuildingResponse response = buildingService.upgrade(1L, 100L);
 
@@ -434,10 +440,10 @@ class BuildingServiceTest {
             BuildingType bt = storage(); // baseCostGp=500
             BuildingInstance bi = placedInstance(bt, territory, 0, 0);
             ReflectionTestUtils.setField(bi, "level", 2);
-            Wallet wallet = walletWithGp(user, 2000);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storageWithGp(2000)));
 
             UpgradeBuildingResponse response = buildingService.upgrade(1L, 100L);
 
@@ -497,10 +503,10 @@ class BuildingServiceTest {
             Territory territory = territoryOwnedBy(user, gradeA());
             BuildingType bt = storage(); // baseCostGp=500, level1 upgrade cost=500
             BuildingInstance bi = placedInstance(bt, territory, 0, 0);
-            Wallet wallet = walletWithGp(user, 100); // too low
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storageWithGp(100)));
 
             assertThatThrownBy(() -> buildingService.upgrade(1L, 100L))
                     .isInstanceOf(CustomException.class)
@@ -523,10 +529,10 @@ class BuildingServiceTest {
             BuildingType bt = storage();
             BuildingInstance bi = placedInstance(bt, territory, 0, 0);
             ReflectionTestUtils.setField(bi, "isDestroyed", true);
-            Wallet wallet = walletWithGp(user, 2000);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storageWithGp(2000)));
 
             RepairBuildingResponse response = buildingService.repair(1L, 100L);
 
@@ -542,10 +548,10 @@ class BuildingServiceTest {
             BuildingInstance bi = placedInstance(bt, territory, 0, 0);
             ReflectionTestUtils.setField(bi, "level", 2);
             ReflectionTestUtils.setField(bi, "isDestroyed", true);
-            Wallet wallet = walletWithGp(user, 2000);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storageWithGp(2000)));
 
             RepairBuildingResponse response = buildingService.repair(1L, 100L);
 
@@ -622,7 +628,8 @@ class BuildingServiceTest {
                     .willReturn(Collections.emptyList());
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
                     .willReturn(Optional.empty());
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(2000)));
             given(buildingInstanceRepository.save(any()))
                     .willAnswer(
                             inv -> {
@@ -650,7 +657,8 @@ class BuildingServiceTest {
                     .willReturn(Collections.emptyList());
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
                     .willReturn(Optional.empty());
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 10)));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(10)));
 
             PlaceBuildingRequest req = new PlaceBuildingRequest(2L, 0, 0);
             assertThatThrownBy(() -> buildingService.placeOnIsland(1L, req))
@@ -748,7 +756,8 @@ class BuildingServiceTest {
                     .willReturn(Collections.emptyList());
             given(buildingCastleLimitRepository.findByBuildingType_IdAndCastleLevel(2L, 1))
                     .willReturn(Optional.empty());
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(2000)));
             given(buildingInstanceRepository.save(any()))
                     .willAnswer(
                             inv -> {
@@ -798,7 +807,8 @@ class BuildingServiceTest {
                                     islandBuilding(bt, island, 98L)));
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
                     .willReturn(Optional.empty());
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(2000)));
             given(buildingInstanceRepository.save(any()))
                     .willAnswer(
                             inv -> {
@@ -822,7 +832,8 @@ class BuildingServiceTest {
                     .willReturn(Collections.emptyList());
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
                     .willReturn(Optional.empty());
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 9000)));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(9000)));
             given(buildingInstanceRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             given(buildingTypeRepository.findById(2L))
@@ -863,7 +874,8 @@ class BuildingServiceTest {
                     .willReturn(1L); // builderCount = 2, 건설 중 = 1 → OK
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
                     .willReturn(Optional.of(userSeasonPass));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(2000)));
             given(buildingInstanceRepository.save(any()))
                     .willAnswer(
                             inv -> {
@@ -1137,7 +1149,8 @@ class BuildingServiceTest {
             BuildingInstance castle = castleAt(castleWithUpgradeTime(600), island, 3, 3);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 5000)));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(5000)));
 
             UpgradeBuildingResponse response = buildingService.upgrade(1L, 100L);
 
@@ -1180,7 +1193,8 @@ class BuildingServiceTest {
                             .build();
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 5000)));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(5000)));
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
                     .willReturn(Optional.of(userPass));
 
@@ -1203,7 +1217,8 @@ class BuildingServiceTest {
             BuildingInstance farmland = farmlandAt(island, 2, 2); // D에서는 Zone2
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 5000)));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(5000)));
             given(islandGradeRepository.findByCastleLevelRequired(2))
                     .willReturn(Optional.of(bGrade));
             given(buildingInstanceRepository.findByIslandId(1L))
@@ -1266,10 +1281,10 @@ class BuildingServiceTest {
             HomeIsland island = islandWithGrade(user, dGrade);
             BuildingType bt = castleWithGpProduction();
             BuildingInstance castle = castleOnIsland(bt, island);
-            Wallet wallet = walletWithGp(user, 5000);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(5000)));
             given(islandGradeRepository.findByCastleLevelRequired(2))
                     .willReturn(Optional.of(bGrade));
 
@@ -1290,10 +1305,10 @@ class BuildingServiceTest {
             HomeIsland island = islandWithGrade(user, dGrade);
             BuildingType bt = castleWithGpProduction();
             BuildingInstance castle = castleOnIsland(bt, island);
-            Wallet wallet = walletWithGp(user, 5000);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(5000)));
             given(islandGradeRepository.findByCastleLevelRequired(2)).willReturn(Optional.empty());
 
             buildingService.upgrade(1L, 100L);
@@ -1309,10 +1324,10 @@ class BuildingServiceTest {
             Territory territory = territoryOwnedBy(user, gradeA());
             BuildingType bt = castleWithGpProduction();
             BuildingInstance castle = placedInstance(bt, territory, 4, 4);
-            Wallet wallet = walletWithGp(user, 5000);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(castle));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storageWithGp(5000)));
 
             buildingService.upgrade(1L, 100L);
 
@@ -1341,7 +1356,8 @@ class BuildingServiceTest {
                     .willReturn(Collections.emptyList());
             given(userSeasonPassRepository.findTopByUserIdAndIsActiveTrueOrderByStartedAtDesc(1L))
                     .willReturn(Optional.empty());
-            given(walletRepository.findById(1L)).willReturn(Optional.of(walletWithGp(user, 2000)));
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(1L))
+                    .willReturn(List.of(storageWithGp(2000)));
             given(buildingInstanceRepository.save(any()))
                     .willAnswer(
                             inv -> {
