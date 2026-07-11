@@ -3,6 +3,7 @@ package com.territorial.auction.domain.auction.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -18,6 +19,10 @@ import com.territorial.auction.domain.auction.entity.AuctionHistory;
 import com.territorial.auction.domain.auction.repository.AuctionBidRepository;
 import com.territorial.auction.domain.auction.repository.AuctionHistoryRepository;
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
+import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.BuildingType;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingTypeRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.entity.Territory.TerritoryStatus;
 import com.territorial.auction.domain.map.entity.TerritoryGrade;
@@ -57,6 +62,8 @@ class AuctionLifecycleServiceTest {
     @Mock private AuctionBidRepository auctionBidRepository;
     @Mock private AuctionHistoryRepository auctionHistoryRepository;
     @Mock private TerritoryRepository territoryRepository;
+    @Mock private BuildingInstanceRepository buildingInstanceRepository;
+    @Mock private BuildingTypeRepository buildingTypeRepository;
     @Mock private WalletRepository walletRepository;
     @Mock private SeasonRepository seasonRepository;
     @Mock private AdminSettingRepository adminSettingRepository;
@@ -70,6 +77,10 @@ class AuctionLifecycleServiceTest {
     @BeforeEach
     void setUp() {
         TransactionSynchronizationManager.initSynchronization();
+        // 기본값: 낙찰 영토에 이미 성이 있다고 보고 자동 생성 경로를 건너뛴다.
+        lenient()
+                .when(buildingInstanceRepository.existsCastleOnTerritory(anyLong()))
+                .thenReturn(true);
     }
 
     @AfterEach
@@ -164,6 +175,41 @@ class AuctionLifecycleServiceTest {
             then(territory).should().occupy(eq(winner), any(LocalDateTime.class));
             then(auctionHistoryRepository).should().save(any(AuctionHistory.class));
             then(auction).should().settle();
+        }
+
+        @Test
+        @DisplayName("낙찰자 있음 + 성 없음 - Zone1 중심에 성 자동 생성 (level 1, stored_gp 0)")
+        void withWinner_noCastle_createsInitialCastle() {
+            User winner = sampleUser(10L);
+            TerritoryGrade grade = mock(TerritoryGrade.class);
+            lenient().when(grade.getGridSize()).thenReturn(8); // 중심 = (8/2)-1 = 3
+            Territory territory = mock(Territory.class);
+            lenient().when(territory.getId()).thenReturn(5L);
+            lenient().when(territory.getGrade()).thenReturn(grade);
+            Auction auction = mockAuction(1L, 3000, winner, territory);
+
+            BuildingType castleType = mock(BuildingType.class);
+            lenient().when(castleType.getMaxHp()).thenReturn(100);
+
+            given(auctionRepository.findAllExpiredUnsettled(any())).willReturn(List.of(auction));
+            given(walletRepository.findById(10L)).willReturn(Optional.empty());
+            given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
+            given(buildingInstanceRepository.existsCastleOnTerritory(5L)).willReturn(false);
+            given(buildingTypeRepository.findByName("CASTLE")).willReturn(Optional.of(castleType));
+
+            lifecycleService.settlePendingAuctions();
+
+            ArgumentCaptor<BuildingInstance> captor =
+                    ArgumentCaptor.forClass(BuildingInstance.class);
+            then(buildingInstanceRepository).should().save(captor.capture());
+            BuildingInstance saved = captor.getValue();
+            assertThat(saved.getBuildingType()).isEqualTo(castleType);
+            assertThat(saved.getTerritory()).isEqualTo(territory);
+            assertThat(saved.getPosX()).isEqualTo(3);
+            assertThat(saved.getPosY()).isEqualTo(3);
+            assertThat(saved.getZone()).isEqualTo(1);
+            assertThat(saved.getLevel()).isEqualTo(1);
+            assertThat(saved.getStoredGp()).isEqualTo(0);
         }
 
         @Test
