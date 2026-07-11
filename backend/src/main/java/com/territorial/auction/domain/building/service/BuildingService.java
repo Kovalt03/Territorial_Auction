@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.building.service;
 
 import com.territorial.auction.domain.building.BuildingPolicy;
+import com.territorial.auction.domain.building.StoragePolicy;
 import com.territorial.auction.domain.building.ZonePolicy;
 import com.territorial.auction.domain.building.dto.BuildingTypeCatalogResponse;
 import com.territorial.auction.domain.building.dto.HarvestIslandGpResponse;
@@ -35,9 +36,7 @@ import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.season.entity.UserSeasonPass;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.user.entity.User;
-import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
@@ -62,7 +61,6 @@ public class BuildingService {
     private final HomeIslandRepository homeIslandRepository;
     private final IslandGradeRepository islandGradeRepository;
     private final TerritoryRepository territoryRepository;
-    private final WalletRepository walletRepository;
     private final UserRepository userRepository;
     private final UserSeasonPassRepository userSeasonPassRepository;
     private final NotificationService notificationService;
@@ -105,9 +103,7 @@ public class BuildingService {
                 (x, y) -> calculateTerritoryZone(x, y, territory.getGrade()));
         validateBuilderAvailable(userId);
 
-        Wallet wallet = findWalletOrThrow(userId);
-        validateGp(wallet, buildingType.getBaseCostGp());
-        wallet.spendGp(buildingType.getBaseCostGp());
+        int gpRemaining = chargeTerritoryGp(territory.getId(), buildingType.getBaseCostGp());
 
         BuildingInstance building =
                 BuildingInstance.builder()
@@ -126,7 +122,7 @@ public class BuildingService {
                 buildingType.getName(),
                 building.getPosX(),
                 building.getPosY(),
-                wallet.getAvailableGp());
+                gpRemaining);
     }
 
     @Transactional
@@ -138,9 +134,7 @@ public class BuildingService {
         validateBuilderAvailable(userId);
 
         int cost = resolveUpgradeCost(building);
-        Wallet wallet = findWalletOrThrow(userId);
-        validateGp(wallet, cost);
-        wallet.spendGp(cost);
+        int gpRemaining = chargeBuildingLocationGp(building, cost);
 
         int targetLevel = building.getLevel() + 1;
         int seconds = applyBuildTimeReduction(userId, resolveUpgradeSeconds(building, targetLevel));
@@ -158,7 +152,7 @@ public class BuildingService {
                 nextLevel,
                 BuildingPolicy.MAX_LEVEL,
                 cost,
-                wallet.getAvailableGp(),
+                gpRemaining,
                 building.getBuildCompleteAt());
     }
 
@@ -298,14 +292,10 @@ public class BuildingService {
         }
 
         int repairCost = building.getBuildingType().getBaseCostGp() / 2;
-        Wallet wallet = findWalletOrThrow(userId);
-        validateGp(wallet, repairCost);
-
-        wallet.spendGp(repairCost);
+        int gpRemaining = chargeBuildingLocationGp(building, repairCost);
         building.repair();
 
-        return new RepairBuildingResponse(
-                building.getId(), building.getHp(), wallet.getAvailableGp());
+        return new RepairBuildingResponse(building.getId(), building.getHp(), gpRemaining);
     }
 
     // 완료된 건설/업그레이드를 여기서 정리하므로 쓰기 트랜잭션이다.
@@ -369,9 +359,7 @@ public class BuildingService {
         validateSingleCastleOnIsland(buildingType, island);
         validateBuildingLimit(buildingType, island);
 
-        Wallet wallet = findWalletOrThrow(userId);
-        validateGp(wallet, buildingType.getBaseCostGp());
-        wallet.spendGp(buildingType.getBaseCostGp());
+        int gpRemaining = chargeIslandGp(island.getId(), buildingType.getBaseCostGp());
 
         BuildingInstance building =
                 BuildingInstance.builder()
@@ -390,7 +378,7 @@ public class BuildingService {
                 buildingType.getName(),
                 building.getPosX(),
                 building.getPosY(),
-                wallet.getAvailableGp());
+                gpRemaining);
     }
 
     public InventoryResponse getInventory(Long userId) {
@@ -563,16 +551,17 @@ public class BuildingService {
         // 분당으로 먼저 나누면 시간당 생산량이 60 미만인 건물은 0이 되어 버린다.
         int gpAmount = (int) (minutesElapsed * productionPerHour / 60);
 
-        Wallet wallet = findWalletOrThrow(userId);
-        if (gpAmount > 0) {
-            wallet.addGp(gpAmount);
-        }
+        // 섬 저장 공간(성 + 저장소)에 적립. 넘친 양은 버려진다.
+        int lost = gpAmount > 0 ? creditIslandGp(island.getId(), gpAmount) : 0;
+        int credited = gpAmount - lost;
         island.recordHarvest();
 
-        log.info("섬 GP 수확 완료. userId={}, harvestedGp={}", userId, gpAmount);
+        List<BuildingInstance> storages =
+                buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(island.getId());
+        log.info("섬 GP 수확 완료. userId={}, credited={}, lost={}", userId, credited, lost);
 
         return new HarvestIslandGpResponse(
-                gpAmount, wallet.getAvailableGp(), island.getLastHarvestAt());
+                credited, StoragePolicy.totalGp(storages), island.getLastHarvestAt());
     }
 
     private LocalDateTime resolveLastHarvest(HomeIsland island) {
@@ -653,10 +642,47 @@ public class BuildingService {
         return building;
     }
 
-    private Wallet findWalletOrThrow(Long userId) {
-        return walletRepository
-                .findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    // ── 위치 저장 공간에서 GP 차감/적립 ──────────────────────────────────────
+
+    /** 영토 저장 공간에서 GP 를 빼고, 남은 저장 GP 총량을 돌려준다. */
+    private int chargeTerritoryGp(Long territoryId, int cost) {
+        List<BuildingInstance> storages =
+                buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(territoryId);
+        return chargeGp(storages, cost);
+    }
+
+    /** 섬 저장 공간에서 GP 를 빼고, 남은 저장 GP 총량을 돌려준다. */
+    private int chargeIslandGp(Long islandId, int cost) {
+        List<BuildingInstance> storages =
+                buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(islandId);
+        return chargeGp(storages, cost);
+    }
+
+    /** 건물이 놓인 위치(영토 또는 섬)의 저장 공간에서 GP 를 뺀다. */
+    private int chargeBuildingLocationGp(BuildingInstance building, int cost) {
+        if (building.getTerritory() != null) {
+            return chargeTerritoryGp(building.getTerritory().getId(), cost);
+        }
+        return chargeIslandGp(building.getIsland().getId(), cost);
+    }
+
+    private int chargeGp(List<BuildingInstance> storages, int cost) {
+        if (storages.isEmpty()) {
+            throw new CustomException(ErrorCode.STORAGE_NOT_FOUND);
+        }
+        if (StoragePolicy.totalGp(storages) < cost) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_GP);
+        }
+        StoragePolicy.drainGp(storages, cost);
+        return StoragePolicy.totalGp(storages);
+    }
+
+    /** 섬 저장 공간에 GP 를 채우고, 넘쳐서 버려진 양을 돌려준다. */
+    private int creditIslandGp(Long islandId, int amount) {
+        List<BuildingInstance> storages =
+                buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(islandId);
+        if (storages.isEmpty()) return amount;
+        return StoragePolicy.fillGp(storages, amount);
     }
 
     private void validateTerritoryOwner(Territory territory, Long userId) {
@@ -675,12 +701,6 @@ public class BuildingService {
     private void validateNotMaxLevel(BuildingInstance building) {
         if (building.getLevel() >= BuildingPolicy.MAX_LEVEL) {
             throw new CustomException(ErrorCode.BUILDING_MAX_LEVEL);
-        }
-    }
-
-    private void validateGp(Wallet wallet, int required) {
-        if (wallet.getAvailableGp() < required) {
-            throw new CustomException(ErrorCode.INSUFFICIENT_GP);
         }
     }
 
