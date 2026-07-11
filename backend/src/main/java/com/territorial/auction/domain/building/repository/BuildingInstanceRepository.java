@@ -87,14 +87,13 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " AND b.posX >= 0")
     List<BuildingInstance> findStorageBuildingsByIslandIdWithLock(@Param("islandId") Long islandId);
 
-    // 파괴 여부 무관 조회 + 비관적 락 — collect() 전용
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    // 락 없는 조회 — 표시용 (읽기 트랜잭션)
     @Query(
             "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType"
                     + " WHERE b.territory.id = :territoryId"
-                    + " AND b.buildingType.name = 'STORAGE'"
+                    + " AND b.buildingType.name IN ('STORAGE', 'CASTLE')"
                     + " AND b.posX >= 0")
-    Optional<BuildingInstance> findStorageByTerritoryIdWithLock(
+    List<BuildingInstance> findStorageBuildingsByTerritoryId(
             @Param("territoryId") Long territoryId);
 
     /** 유저 소유 영토의 활성 BARRACKS 중 최고 레벨 반환 */
@@ -146,6 +145,11 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
             "SELECT COUNT(b) > 0 FROM BuildingInstance b"
                     + " WHERE b.island.id = :islandId AND b.buildingType.name = 'CASTLE'")
     boolean existsCastleOnIsland(@Param("islandId") Long islandId);
+
+    @Query(
+            "SELECT COUNT(b) > 0 FROM BuildingInstance b"
+                    + " WHERE b.territory.id = :territoryId AND b.buildingType.name = 'CASTLE'")
+    boolean existsCastleOnTerritory(@Param("territoryId") Long territoryId);
 
     @Query(
             "SELECT b.level FROM BuildingInstance b"
