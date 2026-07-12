@@ -14,6 +14,14 @@ public interface UnitInstanceRepository extends JpaRepository<UnitInstance, Long
 
     List<UnitInstance> findByUserIdAndDeployedTerritoryId(Long userId, Long territoryId);
 
+    // 영토 상실 정산용 — 그 영토에 귀속됐거나 배치된 소유자 유닛 전부(대기+배치+이동중).
+    // 공격자 유닛도 deployedTerritory 로 잡히므로 반드시 소유자로 필터한다.
+    @Query(
+            "SELECT u FROM UnitInstance u WHERE u.user.id = :userId"
+                    + " AND (u.homeTerritory.id = :territoryId OR u.deployedTerritory.id = :territoryId)")
+    List<UnitInstance> findByOwnerAndTerritoryAssociation(
+            @Param("userId") Long userId, @Param("territoryId") Long territoryId);
+
     // ─── 대기(ready idle) 스택 — 배치 안 됨 + 이동 중 아님. 귀속지별로 유일하게 유지·병합 ──────
 
     Optional<UnitInstance>
