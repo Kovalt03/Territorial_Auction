@@ -28,9 +28,9 @@
 | `user_id` | `BIGINT` | PK, FK → users.id | |
 | `available_ap` | `INTEGER` | NOT NULL, DEFAULT 0 | 사용 가능 Auction Point |
 | `locked_ap` | `INTEGER` | NOT NULL, DEFAULT 0 | 입찰 중 잠금 AP |
-| `available_gp` | `INTEGER` | NOT NULL, DEFAULT 0 | 사용 가능 Grid Point |
-| `available_food` | `INTEGER` | NOT NULL, DEFAULT 100 | 유닛 유지 식량 |
 | `updated_at` | `TIMESTAMPTZ` | NOT NULL | |
+
+> 지갑은 **AP만** 보유한다. GP는 위치 저장소(`building_instances.stored_gp`) + 글로벌 금고(`global_vaults.stored_gp`), 식량은 위치 저장소(`building_instances.stored_food`)로 일원화됐다. 옛 `available_gp`/`available_food` 컬럼은 자원 스코프 전환에서 DROP.
 
 #### notification_settings
 

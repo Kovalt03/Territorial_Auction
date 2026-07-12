@@ -31,7 +31,7 @@
 | ✅ | 회원 탈퇴 | `DELETE /api/v1/users/me` | JWT 블랙리스트 무효화 완료 (be-25) |
 | ✅ | 알림 설정 조회 | `GET /api/v1/users/me/settings` | |
 | ✅ | 알림 수신 설정 변경 | `PATCH /api/v1/users/me/settings` | |
-| 🔄 | GP/AP 잔액 조회 | `GET /api/v1/users/me/wallet` | `lockedAP` 미완성 (식량 생산 보류와 동일) |
+| ✅ | GP/AP 잔액 조회 | `GET /api/v1/users/me/wallet` | GP=금고 잔액, AP=지갑. 식량은 위치 저장소로 분리 |
 | ✅ | 나의 영토 목록 조회 | `GET /api/v1/users/me/territories` | occupiedAt·militaryCount·isInvincible 완료 (be-25) |
 | ✅ | 닉네임 변경 | `PATCH /api/v1/users/me/nickname` | |
 | ✅ | 비밀번호 변경 | `PATCH /api/v1/users/me/password` | |
@@ -314,7 +314,7 @@
 
 | 항목 | 이유 |
 |---|---|
-| **식량 생산 수단** | 가장 마지막 구현 요소. Workshop이 GP만 생산하는지 식량도 생산하는지 별도 기획 필요. `wallets.available_food` 컬럼은 예약됨. |
+| ~~**식량 생산 수단**~~ | ✅ 구현 완료 — 농경지(FARMLAND)가 위치 저장소에 식량 생산(`FarmlandScheduler`), 유닛 생산 시 `foodCost` 차감. 식량은 유닛 생산 예산(시간당 소모·아사 없음). `wallets.available_food`는 DROP. |
 
 ---
 

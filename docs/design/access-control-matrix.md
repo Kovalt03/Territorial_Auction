@@ -76,7 +76,7 @@
 
 ### F-7. 포인트 생산 시스템 (Passive Income)
 
-- **F-7.1 실시간 생산**: 점유 중인 영토마다 `base_rate`로 주기적 GP 생산 → `available_gp` 적립 (비동기 스케줄러)
+- **F-7.1 실시간 생산**: 점유 중인 영토마다 `base_rate`로 주기적 GP 생산 → 그 위치 저장소(`building_instances.stored_gp`) 적립 (비동기 스케줄러)
 - **F-7.2 인접 보너스**: 동일 유저가 상하좌우 인접 영토 동시 점유 시 보너스 적용. 배율 = `1 + (인접 점유 수 × 0.1)`
 - **F-7.3 보너스 칸(Bonus Tile)**: 사전 지정 특수 영토 점유 시 `BonusTile.multiplier` 추가 적용
 - **F-7.4 생산 중단**: `occupied_until` 만료 시 해당 영토 생산 즉시 중단
@@ -127,7 +127,7 @@
   - Storage 파괴: 영토 저장소 자원 N% 약탈 (DB 트랜잭션 보장)
   - Workshop 파괴: 생산량 제로 디버프 T시간
   - Barracks 파괴: 유닛 생산 중단 T시간
-  - Castle 파괴: 영토 강제 경매 전환 + 보호 기간 재시작
+  - Castle 파괴: **공격자 즉시 인계**(저장 GP 80% 공격자 금고·나머지·식량 소멸·방어 유닛 전멸·영토 점유 이전 + 보호 기간 재시작)
 - **F-11.6 공격 쿨다운**: 공격 실패 후 `ATTACK_COOLDOWN_HOURS`(config) 동안 같은 영토 재공격 불가
 - **F-11.7 보호 기간**: 경매 낙찰 후 `PROTECTION_DURATION_HOURS`(config) 동안 공격 수신 불가
 

@@ -232,9 +232,9 @@
 
 | `resultType` | 설명 |
 |---|---|
-| `LOOT` | GP 약탈 |
+| `LOOT` | GP 약탈 (공격자 금고 적립) |
 | `DEBUFF` | 건물 피해 (생산/병영 디버프) |
-| `AUCTION` | 성 파괴 → 영토 강제 경매 전환 |
+| `AUCTION` | Zone 1 공격 성공. 성 파괴 시 **공격자 즉시 인계**(경매 아님). enum 이름은 이력 호환상 유지 |
 
 ### 에러
 
@@ -294,9 +294,9 @@
 | `deployedCount` | `deployed_territory_id`가 NOT NULL인 유닛 수 |
 | `idleCount` | 대기 중인 유닛 수 |
 | `foodCost` | 유닛 타입 1회 생산 식량 비용 (시간당 소모 아님) |
-| `availableFood` | 현재 wallet 식량 잔액 |
+| `availableFood` | 그 위치 저장소 식량 잔액 (`building_instances.stored_food` 합) |
 
-출처: `unit_instances` JOIN `unit_types` JOIN `wallets`
+출처: `unit_instances` JOIN `unit_types`, 위치별 저장 식량은 `building_instances`(성+Storage)에서 집계
 
 ### 에러
 
@@ -463,7 +463,7 @@ DEF = Σ(방어 유닛 defense_power × 수량) + Σ(해당 Zone 방어 건물 d
 | Storage 파괴 | 영토 저장소 자원 N% 약탈 (DB 트랜잭션 보장) |
 | Workshop 파괴 | 생산량 제로 디버프 T시간 |
 | Barracks 파괴 | 유닛 생산 중단 T시간 |
-| Castle 파괴 | 영토 강제 경매 전환 + 보호 기간 재시작 |
+| Castle 파괴 | **공격자 즉시 인계**: 저장 GP 80% 공격자 금고·나머지·식량 소멸·방어 유닛 전멸·영토 점유 이전 + 보호 기간 재시작 |
 | 공격 실패 | 공격 유닛 일부 손실, 전투 리포트 양측 발송 |
 
 ---
@@ -480,5 +480,5 @@ DEF = Σ(방어 유닛 defense_power × 수량) + Σ(해당 Zone 방어 건물 d
 ### 보호 기간 (F-11.7)
 
 - 경매 낙찰 후 `PROTECTION_DURATION_HOURS`(config) 동안 공격 수신 불가
-- Castle 파괴 후 강제 경매 → 재낙찰 시 보호 기간 재시작
+- Castle 파괴 → 공격자 즉시 인계 시 인계받은 공격자에게 보호 기간 재시작
 - 보호 기간 중 공격 선언 시 → `TERRITORY_PROTECTED` 에러 반환

@@ -21,7 +21,7 @@
 | GET | `/api/v1/global-vault` | [글로벌 금고 조회](#글로벌-금고-조회) | ✅ | - |
 | POST | `/api/v1/global-vault/transfer` | [자원 이전](#자원-이전) | ✅ | - |
 
-> **구현 참고:** `territory_storages` 테이블 미존재 → 영토 창고는 `wallets.available_gp`로 매핑. `sourceTerritoryId`는 점유자 검증에만 사용.
+> **구현 참고:** 영토 창고는 `building_instances`(성+Storage)의 `stored_gp`에 실제 저장된다. `sourceTerritoryId`로 그 위치 저장소 ↔ 금고 간 GP를 이전한다.
 
 ---
 

@@ -31,7 +31,7 @@
 |---|---|---|---|
 | **User** | Entity | 사용자 본체 | `id`, `username`, `password`, `created_at` |
 | **UserProfile** | Entity | 프로필 이미지 (1:1) | `user_id`, `profile_image_url`, `updated_at` |
-| **Wallet** | Entity | 포인트 자산 | `available_ap`, `available_gp`, `locked_ap` |
+| **Wallet** | Entity | AP 자산 (GP·식량은 위치 저장소·금고로 분리) | `available_ap`, `locked_ap` |
 | **GlobalVault** | Entity | 유저 개인 GP 금고 | `user_id`, `stored_gp`, `capacity`, `last_transfer_at` |
 | **NotificationSetting** | Entity | 알림 수신 설정 | `user_id`, `is_outbid_enabled`, `is_auction_start_enabled`, `is_marketing_enabled` |
 
@@ -165,10 +165,10 @@
 - 비동기 처리: 생산 적립은 경매 로직과 독립된 스케줄러 담당
 
 **GP 저장 흐름 (Territory-Scoped GP)**:
-1. Workshop 생산 → 해당 영토의 **Storage 건물 `stored_gp`**에 적립 (공격 시 약탈 대상)
-2. Storage 내 GP는 해당 영토 내 건설·업그레이드에만 직접 사용 가능
-3. 일부를 **Global Vault(`global_vaults.stored_gp`)**로 이전 → 어디서든 사용 가능 (이전 쿨다운 적용)
-4. `wallets.available_gp`: 글로벌 금고에서 인출되어 즉시 사용 가능한 GP 잔고
+1. Workshop 생산 → 해당 위치(영토/섬)의 **저장소(성+Storage) `stored_gp`**에 적립 (Storage는 공격 시 약탈 대상)
+2. 위치 저장소 GP는 그 위치 내 건설·업그레이드·유닛 생산에 직접 사용
+3. 일부를 **Global Vault(`global_vaults.stored_gp`)**로 이전 → 어디서든 사용 가능 (이전 쿨다운 적용). 계정 단위 보상 GP(아이템·시즌·시즌패스)와 상실 환수 GP도 금고로 들어간다
+4. 지갑에는 GP가 없다 — GP 잔고 표시는 **금고 + 위치 저장소 합**
 
 ### 3.5 전투 계산
 
@@ -181,9 +181,9 @@
 
 | Zone | 주요 건물 | 결과 유형 | 효과 |
 |---|---|---|---|
-| Zone 3 | Storage | `LOOT` | 공격자: `Wallet.availableGp += lootedGp`, Storage: `storedGp -= lootedGp` |
+| Zone 3 | Storage | `LOOT` | 공격자 **금고** `stored_gp += lootedGp`, Storage `storedGp -= lootedGp` |
 | Zone 2 | Workshop / Tower | `DEBUFF` | 건물 HP 감소 → 0이면 `isDestroyed=true` |
-| Zone 1 | Castle | `AUCTION` | Castle HP 감소 → 0이면 `CastleDestroyedEvent` 발행 → 영토 강제 경매 전환 |
+| Zone 1 | Castle | `AUCTION`* | Castle HP 0 → **공격자 즉시 인계**(경매 없음): 저장 GP 80% 공격자 금고·나머지·식량 소멸, 방어 유닛 전멸, 영토 점유 이전. (\*enum 이름은 이력 호환상 `AUCTION` 유지) |
 
 **유닛 손실** (`MilitaryPolicy` 상수 기준):
 - 공격 성공: 공격자 `ATTACKER_LOSS_RATE(30%)`, 방어자 `DEFENDER_LOSS_RATE(30%)`
@@ -197,6 +197,7 @@
 2. 유예기간(config) 내 납부 없을 시: **최저 등급(D→C→B→A→S) 영토부터 순차 강제 경매 전환**
 3. 강제 경매 낙찰 대금 합계가 미납 세금 이상 되면 **즉시 처분 중단**
 4. 강제 처분 시 **무적 상태·보호 기간 무시** (유일한 무적/보호 우회 예외)
+5. 처분·점유 만료 영토마다 상실 정산: 저장 GP 80% 원소유자 금고 환수(20%·식량 소멸), 방어 유닛 홈 아일랜드 퇴각(섬 수용량 초과분 소멸) — `TerritoryLostEvent`
 
 ### 3.6 시즌 관리
 

@@ -185,7 +185,7 @@
 
 | field | 타입 | 설명 | 출처 |
 |---|---|---|---|
-| `availableGP` | int | 사용 가능 Grid Point | `wallets.available_gp` |
+| `availableGP` | int | 사용 가능 Grid Point (**금고 잔액**) | `global_vaults.stored_gp` |
 | `availableAP` | int | 사용 가능 Auction Point | `wallets.available_ap` |
 | `lockedAP` | int | 진행 중인 경매 입찰로 묶인 AP | `wallets.locked_ap` |
 

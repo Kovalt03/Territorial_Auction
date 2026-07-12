@@ -147,6 +147,8 @@ Response 200:
 }
 ```
 
+> `wallet.availableGP`는 **금고 잔액**(`global_vaults.stored_gp`), `wallet.availableFood`는 **소유 위치(영토+섬) 저장소 식량 합**이다. 지갑에는 GP·식량 컬럼이 없다.
+
 ### 계정 정지/해제
 **PATCH** `/api/v1/admin/users/{userId}/status`
 
@@ -167,7 +169,7 @@ Request:
 ```json
 { "currency": "AP", "amount": 5000, "reason": "CS 보상 - 결제 오류 보정" }
 ```
-- `currency`: `AP` | `GP`
+- `currency`: `AP` | `GP` — `AP`는 지갑, `GP`는 **글로벌 금고**(`global_vaults.stored_gp`)를 조정한다.
 - `amount`: 정수(음수 허용 = 차감). 결과가 0 미만이면 `400`.
 - `reason`: 필수.
 
