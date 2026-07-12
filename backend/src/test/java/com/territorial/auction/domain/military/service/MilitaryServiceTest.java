@@ -29,6 +29,7 @@ import com.territorial.auction.domain.military.entity.AttackToken;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
+import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.military.repository.AttackTokenRepository;
 import com.territorial.auction.domain.military.repository.SiegeEventRepository;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -687,6 +689,90 @@ class MilitaryServiceTest {
             assertThat(terr.unitCapacity()).isEqualTo(5);
             assertThat(terr.units()).hasSize(1);
             assertThat(terr.units().get(0).idleCount()).isEqualTo(7);
+        }
+    }
+
+    @Nested
+    @DisplayName("handleTerritoryLost()")
+    class HandleTerritoryLost {
+
+        // 성 Lv1 → 유닛 슬롯 5, 주거지 0 → 섬 수용량 5
+        private void stubEmptyIslandCapacity() {
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(ownedIsland()));
+            given(buildingInstanceRepository.findCastleLevelByIslandId(ISLAND_ID))
+                    .willReturn(Optional.of(1));
+            given(
+                            buildingInstanceRepository.sumResidenceCapacityByIslandId(
+                                    eq(ISLAND_ID), any(LocalDateTime.class)))
+                    .willReturn(0);
+            given(unitInstanceRepository.sumQuantityByHomeIslandId(ISLAND_ID)).willReturn(0);
+            given(
+                            unitInstanceRepository
+                                    .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                            1L, 1L, ISLAND_ID))
+                    .willReturn(Optional.empty());
+            given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
+        }
+
+        @Test
+        @DisplayName("수용량 이내 → 유닛 전량 섬 대기 스택으로 퇴각, 원 스택 삭제")
+        void withinCapacity_retreatsAll() {
+            Territory lost = ownedTerritory();
+            UnitInstance homed = idleAtTerritory(3, lost);
+            given(unitInstanceRepository.findByOwnerAndTerritoryAssociation(1L, TERR_ID))
+                    .willReturn(new java.util.ArrayList<>(List.of(homed)));
+            stubEmptyIslandCapacity();
+
+            militaryService.handleTerritoryLost(new TerritoryLostEvent(TERR_ID, 1L));
+
+            ArgumentCaptor<UnitInstance> captor = ArgumentCaptor.forClass(UnitInstance.class);
+            then(unitInstanceRepository).should().save(captor.capture());
+            assertThat(captor.getValue().getQuantity()).isEqualTo(3);
+            assertThat(captor.getValue().getHomeIsland().getId()).isEqualTo(ISLAND_ID);
+            then(unitInstanceRepository).should().delete(homed);
+        }
+
+        @Test
+        @DisplayName("섬 슬롯 초과분 소멸 → 수용량(5)까지만 퇴각")
+        void overflow_destroysExcess() {
+            Territory lost = ownedTerritory();
+            UnitInstance homed = idleAtTerritory(8, lost);
+            given(unitInstanceRepository.findByOwnerAndTerritoryAssociation(1L, TERR_ID))
+                    .willReturn(new java.util.ArrayList<>(List.of(homed)));
+            stubEmptyIslandCapacity();
+
+            militaryService.handleTerritoryLost(new TerritoryLostEvent(TERR_ID, 1L));
+
+            ArgumentCaptor<UnitInstance> captor = ArgumentCaptor.forClass(UnitInstance.class);
+            then(unitInstanceRepository).should().save(captor.capture());
+            assertThat(captor.getValue().getQuantity()).isEqualTo(5); // 8 중 5만 수용, 3 소멸
+            then(unitInstanceRepository).should().delete(homed);
+        }
+
+        @Test
+        @DisplayName("섬 없음 → 유닛 전부 소멸")
+        void noIsland_annihilates() {
+            Territory lost = ownedTerritory();
+            List<UnitInstance> units = new java.util.ArrayList<>(List.of(idleAtTerritory(3, lost)));
+            given(unitInstanceRepository.findByOwnerAndTerritoryAssociation(1L, TERR_ID))
+                    .willReturn(units);
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.empty());
+
+            militaryService.handleTerritoryLost(new TerritoryLostEvent(TERR_ID, 1L));
+
+            then(unitInstanceRepository).should().deleteAll(units);
+            then(unitInstanceRepository).should(never()).save(any());
+        }
+
+        @Test
+        @DisplayName("연관 유닛 없음 → 아무 동작 없음")
+        void noUnits_noop() {
+            given(unitInstanceRepository.findByOwnerAndTerritoryAssociation(1L, TERR_ID))
+                    .willReturn(List.of());
+
+            militaryService.handleTerritoryLost(new TerritoryLostEvent(TERR_ID, 1L));
+
+            then(homeIslandRepository).should(never()).findByUserId(any());
         }
     }
 }

@@ -62,6 +62,7 @@ class LandTaxServiceTest {
     @Mock private NotificationService notificationService;
     @Mock private RedisTemplate<String, Object> redisTemplate;
     @Mock private ValueOperations<String, Object> valueOperations;
+    @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @BeforeEach
     void setUpRedis() {

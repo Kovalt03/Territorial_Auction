@@ -2,6 +2,7 @@ package com.territorial.auction.domain.military.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
@@ -18,7 +19,6 @@ import com.territorial.auction.domain.military.entity.SiegeEvent;
 import com.territorial.auction.domain.military.entity.SiegeResult;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
-import com.territorial.auction.domain.military.event.CastleDestroyedEvent;
 import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
@@ -263,8 +263,8 @@ class SiegeServiceTest {
         }
 
         @Test
-        @DisplayName("Zone 1 일반 공격 성공, Castle HP 잔존 → AUCTION 결과, CastleDestroyedEvent 미발행")
-        void resolveOneSiege_zone1_normalAttack_castleNotDestroyed_noEvent() {
+        @DisplayName("Zone 1 일반 공격 성공, Castle HP 잔존 → AUCTION 결과, 인계 없음")
+        void resolveOneSiege_zone1_normalAttack_castleNotDestroyed_noTakeover() {
             // given
             given(event.getAttackZone()).willReturn(1);
             given(event.getTargetBuilding()).willReturn(null);
@@ -283,10 +283,13 @@ class SiegeServiceTest {
             // when
             siegeService.resolveOneSiege(event);
 
-            // then
+            // then — 성이 살아있으면 인계 없음
             assertThat(castle.getHp()).isEqualTo(100);
             assertThat(castle.isDestroyed()).isFalse();
-            then(eventPublisher).should(never()).publishEvent(any());
+            then(territory).should(never()).occupy(any(), any());
+            then(unitInstanceRepository)
+                    .should(never())
+                    .findByOwnerAndTerritoryAssociation(any(), any());
 
             ArgumentCaptor<SiegeResult> captor = ArgumentCaptor.forClass(SiegeResult.class);
             then(siegeResultRepository).should().save(captor.capture());
@@ -294,8 +297,8 @@ class SiegeServiceTest {
         }
 
         @Test
-        @DisplayName("Zone 1 일반 공격 성공, Castle HP 0 → CastleDestroyedEvent 발행")
-        void resolveOneSiege_zone1_normalAttack_castleDestroyed_publishesEvent() {
+        @DisplayName("Zone 1 일반 공격 성공, Castle HP 0 → 공격자 인계: GP 80% 금고·방어 유닛 전멸·영토 점유")
+        void resolveOneSiege_zone1_normalAttack_castleDestroyed_takesOver() {
             // given
             given(event.getAttackZone()).willReturn(1);
             given(event.getTargetBuilding()).willReturn(null);
@@ -311,15 +314,34 @@ class SiegeServiceTest {
             given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 1))
                     .willReturn(List.of(castle));
 
+            // 저장 공간 GP 1000, 식량 500 → 80%(800) 공격자 금고, 20%·식량 소멸
+            BuildingInstance storage = makeBuilding("STORAGE", 200, 200, null, 1000, 1);
+            ReflectionTestUtils.setField(storage, "storedFood", 500);
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storage));
+
+            List<UnitInstance> defenderUnits = List.of(makeUnit(0, 50, 3));
+            given(unitInstanceRepository.findByOwnerAndTerritoryAssociation(2L, 10L))
+                    .willReturn(defenderUnits);
+
+            GlobalVault vault = mock(GlobalVault.class);
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+
             // when
             siegeService.resolveOneSiege(event);
 
-            // then
+            // then — 성 파괴 후 인계 효과
             assertThat(castle.isDestroyed()).isTrue();
-            ArgumentCaptor<CastleDestroyedEvent> captor =
-                    ArgumentCaptor.forClass(CastleDestroyedEvent.class);
-            then(eventPublisher).should().publishEvent(captor.capture());
-            assertThat(captor.getValue().territoryId()).isEqualTo(10L);
+            assertThat(storage.getStoredGp()).isZero();
+            assertThat(storage.getStoredFood()).isZero();
+            then(vault).should().receiveGp(800);
+            then(unitInstanceRepository).should().deleteAll(defenderUnits);
+            then(territory).should().occupy(eq(attacker), any(LocalDateTime.class));
+            then(eventPublisher).should(never()).publishEvent(any());
+
+            ArgumentCaptor<SiegeResult> captor = ArgumentCaptor.forClass(SiegeResult.class);
+            then(siegeResultRepository).should().save(captor.capture());
+            assertThat(captor.getValue().getResultType()).isEqualTo(SiegeResult.ResultType.AUCTION);
         }
 
         @Test
