@@ -1,7 +1,9 @@
 package com.territorial.auction.domain.building.service;
 
+import com.territorial.auction.domain.building.StoragePolicy;
+import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,19 +17,37 @@ import org.springframework.transaction.annotation.Transactional;
 public class FarmlandScheduler {
 
     private final BuildingInstanceRepository buildingInstanceRepository;
-    private final WalletRepository walletRepository;
 
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void produceFarmlandFood() {
-        List<Object[]> productions =
-                buildingInstanceRepository.sumFarmlandFoodProductionGroupedByOwner(
-                        java.time.LocalDateTime.now());
-        for (Object[] row : productions) {
-            Long ownerId = (Long) row[0];
-            int foodAmount = ((Number) row[1]).intValue();
-            walletRepository.findById(ownerId).ifPresent(w -> w.addFood(foodAmount));
+        LocalDateTime now = LocalDateTime.now();
+        int credited = 0;
+        for (Object[] row : buildingInstanceRepository.sumFarmlandFoodGroupedByTerritory(now)) {
+            Long territoryId = (Long) row[0];
+            int amount = ((Number) row[1]).intValue();
+            creditFood(
+                    buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(
+                            territoryId),
+                    amount);
+            credited++;
         }
-        log.info("농경지 식량 생산 완료. 대상 유저 수={}", productions.size());
+        for (Object[] row : buildingInstanceRepository.sumFarmlandFoodGroupedByIsland(now)) {
+            Long islandId = (Long) row[0];
+            int amount = ((Number) row[1]).intValue();
+            creditFood(
+                    buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(islandId),
+                    amount);
+            credited++;
+        }
+        log.info("농경지 식량 생산 완료. 적립 위치 수={}", credited);
+    }
+
+    // 식량은 저장소부터 채우고 넘치면 성으로. 저장 공간이 없으면 그 위치 생산분은 버려진다.
+    private void creditFood(List<BuildingInstance> storages, int amount) {
+        if (storages.isEmpty() || amount <= 0) {
+            return;
+        }
+        StoragePolicy.fillFood(storages, amount);
     }
 }
