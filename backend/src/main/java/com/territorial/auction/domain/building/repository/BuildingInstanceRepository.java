@@ -170,17 +170,42 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " GROUP BY b.island.id")
     List<Object[]> sumFarmlandFoodGroupedByIsland(@Param("now") LocalDateTime now);
 
-    /** GP 생산량을 소유자별로 합산 — GP 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
+    /** GP 생산량을 영토 위치별로 합산 — GP 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
     @Query(
-            "SELECT b.territory.owner.id, SUM(COALESCE(s.gpProductionRate, b.level * b.buildingType.gpProductionRate))"
+            "SELECT b.territory.id, SUM(COALESCE(s.gpProductionRate, b.level * b.buildingType.gpProductionRate))"
                     + " FROM BuildingInstance b"
                     + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
                     + " WHERE b.isDestroyed = false AND b.territory IS NOT NULL"
                     + " AND (b.buildingType.gpProductionRate IS NOT NULL OR s.gpProductionRate IS NOT NULL)"
                     + " AND (b.workshopDebuffUntil IS NULL OR b.workshopDebuffUntil < :now)"
                     + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)"
-                    + " GROUP BY b.territory.owner.id")
-    List<Object[]> sumWorkshopGpProductionGroupedByOwner(@Param("now") LocalDateTime now);
+                    + " GROUP BY b.territory.id")
+    List<Object[]> sumWorkshopGpProductionGroupedByTerritory(@Param("now") LocalDateTime now);
+
+    /** GP 생산량을 섬 위치별로 합산 */
+    @Query(
+            "SELECT b.island.id, SUM(COALESCE(s.gpProductionRate, b.level * b.buildingType.gpProductionRate))"
+                    + " FROM BuildingInstance b"
+                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
+                    + " WHERE b.isDestroyed = false AND b.island IS NOT NULL"
+                    + " AND (b.buildingType.gpProductionRate IS NOT NULL OR s.gpProductionRate IS NOT NULL)"
+                    + " AND (b.workshopDebuffUntil IS NULL OR b.workshopDebuffUntil < :now)"
+                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)"
+                    + " GROUP BY b.island.id")
+    List<Object[]> sumWorkshopGpProductionGroupedByIsland(@Param("now") LocalDateTime now);
+
+    /** 전체 저장 공간(성+저장소)의 GP 총합 — 관리자 경제 지표용 */
+    @Query(
+            "SELECT COALESCE(SUM(b.storedGp), 0) FROM BuildingInstance b"
+                    + " WHERE b.buildingType.name IN ('STORAGE', 'CASTLE') AND b.posX >= 0")
+    long sumAllStoredGp();
+
+    /** 특정 소유자의 저장 공간(소유 영토 + 홈 아일랜드) 식량 총합 */
+    @Query(
+            "SELECT COALESCE(SUM(b.storedFood), 0) FROM BuildingInstance b"
+                    + " WHERE b.buildingType.name IN ('STORAGE', 'CASTLE') AND b.posX >= 0"
+                    + " AND (b.territory.owner.id = :userId OR b.island.user.id = :userId)")
+    int sumStoredFoodByOwnerId(@Param("userId") Long userId);
 
     @Query(
             "SELECT COUNT(b) > 0 FROM BuildingInstance b"
