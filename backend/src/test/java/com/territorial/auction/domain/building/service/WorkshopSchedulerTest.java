@@ -1,17 +1,17 @@
 package com.territorial.auction.domain.building.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
+import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
-import com.territorial.auction.domain.user.entity.Wallet;
-import com.territorial.auction.domain.user.repository.WalletRepository;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class WorkshopSchedulerTest {
@@ -26,67 +27,86 @@ class WorkshopSchedulerTest {
     @InjectMocks private WorkshopScheduler workshopScheduler;
 
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
-    @Mock private WalletRepository walletRepository;
+
+    // Lv2 STORAGE — 용량 10,000
+    private BuildingInstance storage(int gp) {
+        BuildingType bt =
+                BuildingType.builder().name("STORAGE").width(1).height(1).maxHp(60).build();
+        BuildingInstance b =
+                BuildingInstance.builder().buildingType(bt).posX(0).posY(0).hp(60).zone(2).build();
+        ReflectionTestUtils.setField(b, "level", 2);
+        ReflectionTestUtils.setField(b, "storedGp", gp);
+        return b;
+    }
 
     @Nested
     @DisplayName("produceWorkshopGp")
     class ProduceWorkshopGp {
 
         @Test
-        @DisplayName("활성 WORKSHOP 존재 → 소유자별 GP 합산 후 Wallet에 적립")
-        void produceWorkshopGp_success() {
-            // given
-            Object[] row = {1L, 200};
+        @DisplayName("영토 생산 → 해당 위치 저장소에 GP 적립")
+        void produceWorkshopGp_territory_creditsStorage() {
             List<Object[]> rows = new ArrayList<>();
-            rows.add(row);
-            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByOwner(any()))
+            rows.add(new Object[] {10L, 200});
+            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByTerritory(any()))
                     .willReturn(rows);
+            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByIsland(any()))
+                    .willReturn(List.of());
+            BuildingInstance storage = storage(0);
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storage));
 
-            Wallet wallet = mock(Wallet.class);
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
-
-            // when
             workshopScheduler.produceWorkshopGp();
 
-            // then
-            then(wallet).should().addGp(200);
+            assertThat(storage.getStoredGp()).isEqualTo(200);
         }
 
         @Test
-        @DisplayName("활성 WORKSHOP 없음 → Wallet 미접근")
-        void produceWorkshopGp_noActiveWorkshop() {
-            // given
-            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByOwner(any()))
+        @DisplayName("섬 생산 → 섬 저장소에 GP 적립")
+        void produceWorkshopGp_island_creditsStorage() {
+            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByTerritory(any()))
+                    .willReturn(List.of());
+            List<Object[]> rows = new ArrayList<>();
+            rows.add(new Object[] {5L, 150});
+            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByIsland(any()))
+                    .willReturn(rows);
+            BuildingInstance storage = storage(1000);
+            given(buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(5L))
+                    .willReturn(List.of(storage));
+
+            workshopScheduler.produceWorkshopGp();
+
+            assertThat(storage.getStoredGp()).isEqualTo(1150);
+        }
+
+        @Test
+        @DisplayName("생산 위치 없음 → 저장소 조회 없음")
+        void produceWorkshopGp_noProduction() {
+            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByTerritory(any()))
+                    .willReturn(List.of());
+            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByIsland(any()))
                     .willReturn(List.of());
 
-            // when
             workshopScheduler.produceWorkshopGp();
 
-            // then
-            then(walletRepository).should(never()).findById(any());
+            then(buildingInstanceRepository)
+                    .should(never())
+                    .findStorageBuildingsByTerritoryIdWithLock(any());
         }
 
         @Test
-        @DisplayName("Wallet이 존재하지 않는 ownerId → 해당 행 무시, 다른 유저 정상 처리")
-        void produceWorkshopGp_missingWallet_skipped() {
-            // given
-            Object[] row1 = {1L, 100};
-            Object[] row2 = {2L, 150};
+        @DisplayName("저장 공간 없는 위치 → 생산분 소멸, 예외 없음")
+        void produceWorkshopGp_noStorage_dropped() {
             List<Object[]> rows = new ArrayList<>();
-            rows.add(row1);
-            rows.add(row2);
-            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByOwner(any()))
+            rows.add(new Object[] {10L, 200});
+            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByTerritory(any()))
                     .willReturn(rows);
+            given(buildingInstanceRepository.sumWorkshopGpProductionGroupedByIsland(any()))
+                    .willReturn(List.of());
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(eq(10L)))
+                    .willReturn(List.of());
 
-            Wallet wallet2 = mock(Wallet.class);
-            given(walletRepository.findById(1L)).willReturn(Optional.empty());
-            given(walletRepository.findById(2L)).willReturn(Optional.of(wallet2));
-
-            // when
             workshopScheduler.produceWorkshopGp();
-
-            // then
-            then(wallet2).should().addGp(150);
         }
     }
 }

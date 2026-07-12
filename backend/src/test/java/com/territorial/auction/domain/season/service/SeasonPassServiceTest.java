@@ -8,6 +8,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
+import com.territorial.auction.domain.building.entity.GlobalVault;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.item.entity.Item;
 import com.territorial.auction.domain.item.entity.UserItem;
 import com.territorial.auction.domain.item.repository.ItemRepository;
@@ -63,6 +65,7 @@ class SeasonPassServiceTest {
     @Mock private SeasonPassRewardClaimRepository seasonPassRewardClaimRepository;
     @Mock private UserRepository userRepository;
     @Mock private WalletRepository walletRepository;
+    @Mock private GlobalVaultRepository globalVaultRepository;
     @Mock private ItemRepository itemRepository;
     @Mock private UserItemRepository userItemRepository;
     @Mock private RedisTemplate<String, Object> redisTemplate;
@@ -470,8 +473,8 @@ class SeasonPassServiceTest {
                             .quantity(500)
                             .build();
             ReflectionTestUtils.setField(reward, "id", 1L);
-            Wallet wallet = Wallet.builder().user(user).build();
-            ReflectionTestUtils.setField(wallet, "availableGp", 100);
+            GlobalVault vault = GlobalVault.builder().user(user).build();
+            ReflectionTestUtils.setField(vault, "storedGp", 100);
 
             given(seasonPassLevelRewardRepository.findById(1L)).willReturn(Optional.of(reward));
             given(seasonPassProgressRepository.findByUser_IdAndSeason_Id(1L, 1L))
@@ -480,11 +483,11 @@ class SeasonPassServiceTest {
                     .willReturn(false);
             given(user.getId()).willReturn(1L);
             given(userRepository.findById(1L)).willReturn(Optional.of(user));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
 
             seasonPassService.claimReward(1L, 1L);
 
-            assertThat(wallet.getAvailableGp()).isEqualTo(600);
+            assertThat(vault.getStoredGp()).isEqualTo(600);
             then(itemRepository).should(never()).findByItemType(any());
         }
 

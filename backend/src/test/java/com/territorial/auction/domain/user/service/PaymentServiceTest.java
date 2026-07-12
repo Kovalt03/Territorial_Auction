@@ -48,7 +48,6 @@ class PaymentServiceTest {
     private Wallet walletWithAp(User user, int ap) {
         Wallet wallet = Wallet.builder().user(user).build();
         ReflectionTestUtils.setField(wallet, "availableAp", ap);
-        ReflectionTestUtils.setField(wallet, "availableGp", 0);
         return wallet;
     }
 
