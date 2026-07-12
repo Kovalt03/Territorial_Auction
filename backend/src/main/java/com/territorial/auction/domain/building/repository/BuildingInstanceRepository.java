@@ -43,11 +43,6 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
     List<BuildingInstance> findStoredByOwnerId(@Param("userId") Long userId);
 
     @Query(
-            "SELECT COUNT(b) > 0 FROM BuildingInstance b JOIN b.buildingType bt"
-                    + " WHERE b.territory.owner.id = :userId AND bt.name = 'BARRACKS' AND b.isDestroyed = false")
-    boolean existsActiveBarracksByOwnerId(@Param("userId") Long userId);
-
-    @Query(
             "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType"
                     + " WHERE b.territory.id = :territoryId AND b.zone = :zone AND b.isDestroyed = false")
     List<BuildingInstance> findActiveByTerritoryIdAndZone(
@@ -102,28 +97,6 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " AND b.buildingType.name IN ('STORAGE', 'CASTLE')"
                     + " AND b.posX >= 0")
     List<BuildingInstance> findStorageBuildingsByIslandId(@Param("islandId") Long islandId);
-
-    /** 유저 소유 영토의 활성 BARRACKS 중 최고 레벨 반환 */
-    @Query(
-            "SELECT MAX(b.level) FROM BuildingInstance b"
-                    + " WHERE b.territory.owner.id = :userId AND b.buildingType.name = 'BARRACKS' AND b.isDestroyed = false")
-    Optional<Integer> findMaxBarracksLevelByOwnerId(@Param("userId") Long userId);
-
-    /** 유저 소유 영토의 활성 CASTLE 레벨 목록 반환 */
-    @Query(
-            "SELECT b.level FROM BuildingInstance b"
-                    + " WHERE b.territory.owner.id = :userId AND b.buildingType.name = 'CASTLE' AND b.isDestroyed = false")
-    List<Integer> findActiveCastleLevelsByOwnerId(@Param("userId") Long userId);
-
-    /** 유저 소유 영토 건물의 유닛 수용량 합산 — 유닛 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
-    @Query(
-            "SELECT COALESCE(SUM(COALESCE(s.unitCapacityPerLevel, b.level * b.buildingType.unitCapacityPerLevel)), 0)"
-                    + " FROM BuildingInstance b"
-                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
-                    + " WHERE b.territory.owner.id = :userId AND b.isDestroyed = false"
-                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)")
-    Integer sumResidenceCapacityByOwnerId(
-            @Param("userId") Long userId, @Param("now") LocalDateTime now);
 
     // ─── 위치(영토/섬)별 병영·성·주거지 조회 — 유닛 생산 위치 스코핑용 ───────────────
 
@@ -196,17 +169,6 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)"
                     + " GROUP BY b.island.id")
     List<Object[]> sumFarmlandFoodGroupedByIsland(@Param("now") LocalDateTime now);
-
-    /** 식량 생산량을 소유자별로 합산 — 식량 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
-    @Query(
-            "SELECT b.territory.owner.id, SUM(COALESCE(s.foodProductionRate, b.level * b.buildingType.foodProductionRate))"
-                    + " FROM BuildingInstance b"
-                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
-                    + " WHERE b.isDestroyed = false AND b.territory IS NOT NULL"
-                    + " AND (b.buildingType.foodProductionRate IS NOT NULL OR s.foodProductionRate IS NOT NULL)"
-                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)"
-                    + " GROUP BY b.territory.owner.id")
-    List<Object[]> sumFarmlandFoodProductionGroupedByOwner(@Param("now") LocalDateTime now);
 
     /** GP 생산량을 소유자별로 합산 — GP 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
     @Query(
