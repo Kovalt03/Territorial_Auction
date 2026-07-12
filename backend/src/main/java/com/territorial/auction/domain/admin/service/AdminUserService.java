@@ -8,6 +8,8 @@ import com.territorial.auction.domain.admin.dto.AdminChangeUserStatusRequest;
 import com.territorial.auction.domain.admin.dto.AdminUserDetailResponse;
 import com.territorial.auction.domain.admin.dto.AdminUserListResponse;
 import com.territorial.auction.domain.admin.dto.AdminUserResponse;
+import com.territorial.auction.domain.building.entity.GlobalVault;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.UserStatus;
@@ -32,6 +34,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
+    private final GlobalVaultRepository globalVaultRepository;
     private final TerritoryRepository territoryRepository;
     private final AdminAuditLogger adminAuditLogger;
 
@@ -82,7 +85,7 @@ public class AdminUserService {
                         .findByIdWithLock(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
         if (apDelta != 0) wallet.adjustAvailableAp(apDelta);
-        if (gpDelta != 0) wallet.adjustAvailableGp(gpDelta);
+        if (gpDelta != 0) adjustVaultGp(user, gpDelta);
 
         Map<String, Object> detail = new HashMap<>();
         detail.put("apDelta", apDelta);
@@ -108,7 +111,7 @@ public class AdminUserService {
                             .findByIdWithLock(userId)
                             .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
             if (apDelta != 0) wallet.adjustAvailableAp(apDelta);
-            if (gpDelta != 0) wallet.adjustAvailableGp(gpDelta);
+            if (gpDelta != 0) adjustVaultGp(findUserOrThrow(userId), gpDelta);
 
             Map<String, Object> detail = new HashMap<>();
             detail.put("apDelta", apDelta);
@@ -167,6 +170,18 @@ public class AdminUserService {
                 .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
     }
 
+    // GP 는 금고에서 관리되므로 관리자 GP 지급/차감도 금고에 반영한다.
+    private void adjustVaultGp(User user, int gpDelta) {
+        GlobalVault vault =
+                globalVaultRepository
+                        .findById(user.getId())
+                        .orElseGet(
+                                () ->
+                                        globalVaultRepository.save(
+                                                GlobalVault.builder().user(user).build()));
+        vault.receiveGp(gpDelta);
+    }
+
     private AdminUserDetailResponse toDetail(User user, Wallet wallet) {
         long territoryCount = territoryRepository.countByOwnerId(user.getId());
         return new AdminUserDetailResponse(
@@ -179,7 +194,10 @@ public class AdminUserService {
                 user.getCreatedAt(),
                 wallet.getAvailableAp(),
                 wallet.getLockedAp(),
-                wallet.getAvailableGp(),
+                globalVaultRepository
+                        .findById(user.getId())
+                        .map(GlobalVault::getStoredGp)
+                        .orElse(0),
                 wallet.getAvailableFood(),
                 territoryCount);
     }

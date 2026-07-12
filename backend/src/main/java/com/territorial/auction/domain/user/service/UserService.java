@@ -1,7 +1,9 @@
 package com.territorial.auction.domain.user.service;
 
 import com.territorial.auction.domain.auction.AuctionPolicy;
+import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.entity.HomeIsland;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
@@ -46,6 +48,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
+    private final GlobalVaultRepository globalVaultRepository;
     private final HomeIslandRepository homeIslandRepository;
     private final UserSeasonPassRepository userSeasonPassRepository;
     private final TerritoryRepository territoryRepository;
@@ -107,7 +110,7 @@ public class UserService {
                 user.getId(),
                 user.getNickname(),
                 new MyProfileResponse.WalletInfo(
-                        wallet.getAvailableGp(), wallet.getAvailableAp(), wallet.getLockedAp()),
+                        vaultGp(user.getId()), wallet.getAvailableAp(), wallet.getLockedAp()),
                 islandInfo,
                 activePass
                         .map(
@@ -249,9 +252,12 @@ public class UserService {
                 walletRepository
                         .findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        // TODO: 군사 도메인 구현 후 wallet.getAvailableFood()를 MyWalletResponse에 추가
-        return new MyWalletResponse(
-                wallet.getAvailableGp(), wallet.getAvailableAp(), wallet.getLockedAp());
+        // GP 는 위치별 저장소·금고로 이관됐다 — 지갑 화면의 GP 는 금고 잔액을 보여준다.
+        return new MyWalletResponse(vaultGp(userId), wallet.getAvailableAp(), wallet.getLockedAp());
+    }
+
+    private int vaultGp(Long userId) {
+        return globalVaultRepository.findById(userId).map(GlobalVault::getStoredGp).orElse(0);
     }
 
     @Transactional
