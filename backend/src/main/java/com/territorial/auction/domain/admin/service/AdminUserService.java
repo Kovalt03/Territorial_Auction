@@ -9,6 +9,7 @@ import com.territorial.auction.domain.admin.dto.AdminUserDetailResponse;
 import com.territorial.auction.domain.admin.dto.AdminUserListResponse;
 import com.territorial.auction.domain.admin.dto.AdminUserResponse;
 import com.territorial.auction.domain.building.entity.GlobalVault;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.user.entity.User;
@@ -35,6 +36,7 @@ public class AdminUserService {
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
     private final GlobalVaultRepository globalVaultRepository;
+    private final BuildingInstanceRepository buildingInstanceRepository;
     private final TerritoryRepository territoryRepository;
     private final AdminAuditLogger adminAuditLogger;
 
@@ -198,7 +200,7 @@ public class AdminUserService {
                         .findById(user.getId())
                         .map(GlobalVault::getStoredGp)
                         .orElse(0),
-                wallet.getAvailableFood(),
+                buildingInstanceRepository.sumStoredFoodByOwnerId(user.getId()),
                 territoryCount);
     }
 }

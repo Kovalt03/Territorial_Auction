@@ -16,7 +16,4 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 
     @Query("SELECT COALESCE(SUM(w.availableAp), 0) FROM Wallet w")
     long sumAvailableAp();
-
-    @Query("SELECT COALESCE(SUM(w.availableGp), 0) FROM Wallet w")
-    long sumAvailableGp();
 }
