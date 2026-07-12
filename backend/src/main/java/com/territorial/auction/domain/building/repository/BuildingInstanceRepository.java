@@ -96,6 +96,13 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
     List<BuildingInstance> findStorageBuildingsByTerritoryId(
             @Param("territoryId") Long territoryId);
 
+    @Query(
+            "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType"
+                    + " WHERE b.island.id = :islandId"
+                    + " AND b.buildingType.name IN ('STORAGE', 'CASTLE')"
+                    + " AND b.posX >= 0")
+    List<BuildingInstance> findStorageBuildingsByIslandId(@Param("islandId") Long islandId);
+
     /** 유저 소유 영토의 활성 BARRACKS 중 최고 레벨 반환 */
     @Query(
             "SELECT MAX(b.level) FROM BuildingInstance b"
@@ -117,6 +124,78 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)")
     Integer sumResidenceCapacityByOwnerId(
             @Param("userId") Long userId, @Param("now") LocalDateTime now);
+
+    // ─── 위치(영토/섬)별 병영·성·주거지 조회 — 유닛 생산 위치 스코핑용 ───────────────
+
+    @Query(
+            "SELECT COUNT(b) > 0 FROM BuildingInstance b"
+                    + " WHERE b.territory.id = :territoryId AND b.buildingType.name = 'BARRACKS'"
+                    + " AND b.isDestroyed = false")
+    boolean existsActiveBarracksByTerritoryId(@Param("territoryId") Long territoryId);
+
+    @Query(
+            "SELECT COUNT(b) > 0 FROM BuildingInstance b"
+                    + " WHERE b.island.id = :islandId AND b.buildingType.name = 'BARRACKS'"
+                    + " AND b.isDestroyed = false")
+    boolean existsActiveBarracksByIslandId(@Param("islandId") Long islandId);
+
+    @Query(
+            "SELECT MAX(b.level) FROM BuildingInstance b"
+                    + " WHERE b.territory.id = :territoryId AND b.buildingType.name = 'BARRACKS'"
+                    + " AND b.isDestroyed = false")
+    Optional<Integer> findMaxBarracksLevelByTerritoryId(@Param("territoryId") Long territoryId);
+
+    @Query(
+            "SELECT MAX(b.level) FROM BuildingInstance b"
+                    + " WHERE b.island.id = :islandId AND b.buildingType.name = 'BARRACKS'"
+                    + " AND b.isDestroyed = false")
+    Optional<Integer> findMaxBarracksLevelByIslandId(@Param("islandId") Long islandId);
+
+    @Query(
+            "SELECT b.level FROM BuildingInstance b"
+                    + " WHERE b.territory.id = :territoryId AND b.buildingType.name = 'CASTLE'"
+                    + " AND b.isDestroyed = false")
+    Optional<Integer> findCastleLevelByTerritoryId(@Param("territoryId") Long territoryId);
+
+    @Query(
+            "SELECT COALESCE(SUM(COALESCE(s.unitCapacityPerLevel, b.level * b.buildingType.unitCapacityPerLevel)), 0)"
+                    + " FROM BuildingInstance b"
+                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
+                    + " WHERE b.territory.id = :territoryId AND b.isDestroyed = false"
+                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)")
+    Integer sumResidenceCapacityByTerritoryId(
+            @Param("territoryId") Long territoryId, @Param("now") LocalDateTime now);
+
+    @Query(
+            "SELECT COALESCE(SUM(COALESCE(s.unitCapacityPerLevel, b.level * b.buildingType.unitCapacityPerLevel)), 0)"
+                    + " FROM BuildingInstance b"
+                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
+                    + " WHERE b.island.id = :islandId AND b.isDestroyed = false"
+                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)")
+    Integer sumResidenceCapacityByIslandId(
+            @Param("islandId") Long islandId, @Param("now") LocalDateTime now);
+
+    // ─── 위치별 농지 식량 생산 합산 — FarmlandScheduler 위치 적립용 ─────────────────
+
+    @Query(
+            "SELECT b.territory.id, SUM(COALESCE(s.foodProductionRate, b.level * b.buildingType.foodProductionRate))"
+                    + " FROM BuildingInstance b"
+                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
+                    + " WHERE b.isDestroyed = false AND b.territory IS NOT NULL"
+                    + " AND (b.buildingType.foodProductionRate IS NOT NULL OR s.foodProductionRate IS NOT NULL)"
+                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)"
+                    + " GROUP BY b.territory.id")
+    List<Object[]> sumFarmlandFoodGroupedByTerritory(@Param("now") LocalDateTime now);
+
+    @Query(
+            "SELECT b.island.id, SUM(COALESCE(s.foodProductionRate, b.level * b.buildingType.foodProductionRate))"
+                    + " FROM BuildingInstance b"
+                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
+                    + " WHERE b.isDestroyed = false AND b.island IS NOT NULL"
+                    + " AND (b.buildingType.foodProductionRate IS NOT NULL OR s.foodProductionRate IS NOT NULL)"
+                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)"
+                    + " GROUP BY b.island.id")
+    List<Object[]> sumFarmlandFoodGroupedByIsland(@Param("now") LocalDateTime now);
 
     /** 식량 생산량을 소유자별로 합산 — 식량 값(기본/레벨지정)이 있는 건물이면 어떤 종류든 포함 */
     @Query(
