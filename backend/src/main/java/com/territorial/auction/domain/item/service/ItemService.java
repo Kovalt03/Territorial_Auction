@@ -1,5 +1,7 @@
 package com.territorial.auction.domain.item.service;
 
+import com.territorial.auction.domain.building.entity.GlobalVault;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.item.dto.ItemInventoryResponse;
 import com.territorial.auction.domain.item.dto.ItemInventoryResponse.UserItemInfo;
 import com.territorial.auction.domain.item.dto.ItemListResponse;
@@ -55,6 +57,7 @@ public class ItemService {
     private final UserItemRepository userItemRepository;
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
+    private final GlobalVaultRepository globalVaultRepository;
     private final TerritoryRepository territoryRepository;
     private final AttackTokenRepository attackTokenRepository;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -95,7 +98,7 @@ public class ItemService {
         int totalOwned = 0;
         if (item.getItemType() == ItemType.GP_PURCHASE) {
             int gpReward = item.getGpReward() != null ? item.getGpReward() : 0;
-            wallet.addGp(gpReward * request.quantity());
+            creditVault(userId, gpReward * request.quantity());
         } else {
             totalOwned = upsertUserItem(userId, item, request.quantity());
         }
@@ -161,6 +164,20 @@ public class ItemService {
         if (todayCount + requestedQuantity > item.getDailyLimit()) {
             throw new CustomException(ErrorCode.DAILY_LIMIT_EXCEEDED);
         }
+    }
+
+    // 보상 GP는 위치가 없으므로 금고로 적립한다. 금고가 없으면 만든다.
+    private void creditVault(Long userId, int amount) {
+        if (amount <= 0) return;
+        globalVaultRepository
+                .findById(userId)
+                .orElseGet(
+                        () ->
+                                globalVaultRepository.save(
+                                        GlobalVault.builder()
+                                                .user(userRepository.getReferenceById(userId))
+                                                .build()))
+                .receiveGp(amount);
     }
 
     private int upsertUserItem(Long userId, Item item, int quantity) {
