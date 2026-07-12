@@ -1,7 +1,9 @@
 package com.territorial.auction.domain.military.service;
 
 import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.military.MilitaryPolicy;
 import com.territorial.auction.domain.military.dto.SiegeAlert;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
@@ -13,7 +15,7 @@ import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
 import com.territorial.auction.domain.season.entity.Season;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
+import com.territorial.auction.domain.user.entity.User;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +38,7 @@ public class SiegeService {
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository
             buildingLevelSpecRepository;
-    private final WalletRepository walletRepository;
+    private final GlobalVaultRepository globalVaultRepository;
     private final SeasonRepository seasonRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SimpMessagingTemplate messagingTemplate;
@@ -237,12 +239,21 @@ public class SiegeService {
         }
 
         if (totalLooted > 0) {
-            final int lootedGp = totalLooted;
-            walletRepository
-                    .findById(event.getAttacker().getId())
-                    .ifPresent(w -> w.addGp(lootedGp));
+            creditAttackerVault(event.getAttacker(), totalLooted);
         }
         return totalLooted;
+    }
+
+    // 약탈 GP 는 공격자 금고로 들어간다 — 위치별 GP 원칙상 지갑이 아니라 금고가 유일한 위치 간 이동 수단.
+    private void creditAttackerVault(User attacker, int amount) {
+        GlobalVault vault =
+                globalVaultRepository
+                        .findById(attacker.getId())
+                        .orElseGet(
+                                () ->
+                                        globalVaultRepository.save(
+                                                GlobalVault.builder().user(attacker).build()));
+        vault.receiveGp(amount);
     }
 
     private void applyDebuff(SiegeEvent event) {
