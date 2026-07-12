@@ -2,6 +2,8 @@ package com.territorial.auction.domain.admin.service;
 
 import com.territorial.auction.domain.admin.dto.AdminDashboardResponse;
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.season.entity.Season;
@@ -23,6 +25,8 @@ public class AdminDashboardService {
     private final AuctionRepository auctionRepository;
     private final TerritoryRepository territoryRepository;
     private final WalletRepository walletRepository;
+    private final GlobalVaultRepository globalVaultRepository;
+    private final BuildingInstanceRepository buildingInstanceRepository;
     private final SeasonRepository seasonRepository;
 
     public AdminDashboardResponse getDashboard() {
@@ -37,7 +41,7 @@ public class AdminDashboardService {
                 territoryRepository.countByStatus(Territory.TerritoryStatus.OCCUPIED),
                 territoryRepository.countByStatus(Territory.TerritoryStatus.IDLE),
                 walletRepository.sumAvailableAp(),
-                walletRepository.sumAvailableGp(),
+                globalVaultRepository.sumStoredGp() + buildingInstanceRepository.sumAllStoredGp(),
                 season != null ? season.getSeasonNumber() : null,
                 season != null ? season.getStartedAt() : null,
                 season != null ? season.getEndedAt() : null);

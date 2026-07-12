@@ -28,12 +28,6 @@ public class Wallet {
     @Column(nullable = false)
     private Integer lockedAp = 0;
 
-    @Column(nullable = false)
-    private Integer availableGp = 0;
-
-    @Column(nullable = false, columnDefinition = "INT DEFAULT 100")
-    private Integer availableFood = 100;
-
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
@@ -61,10 +55,6 @@ public class Wallet {
         this.availableAp -= amount;
     }
 
-    public void addGp(int amount) {
-        this.availableGp += amount;
-    }
-
     public void addAp(int amount) {
         this.availableAp += amount;
     }
@@ -75,24 +65,5 @@ public class Wallet {
             throw new CustomException(ErrorCode.INSUFFICIENT_AP);
         }
         this.availableAp += delta;
-    }
-
-    public void adjustAvailableGp(int delta) {
-        if (this.availableGp + delta < 0) {
-            throw new CustomException(ErrorCode.INSUFFICIENT_GP);
-        }
-        this.availableGp += delta;
-    }
-
-    public void spendGp(int amount) {
-        this.availableGp -= amount;
-    }
-
-    public void addFood(int amount) {
-        this.availableFood += amount;
-    }
-
-    public void spendFood(int amount) {
-        this.availableFood -= amount;
     }
 }

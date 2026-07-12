@@ -1,5 +1,7 @@
 package com.territorial.auction.domain.season.service;
 
+import com.territorial.auction.domain.building.entity.GlobalVault;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.item.entity.Item;
 import com.territorial.auction.domain.item.entity.UserItem;
 import com.territorial.auction.domain.item.repository.ItemRepository;
@@ -57,6 +59,7 @@ public class SeasonPassService {
     private final SeasonPassRewardClaimRepository seasonPassRewardClaimRepository;
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
+    private final GlobalVaultRepository globalVaultRepository;
     private final ItemRepository itemRepository;
     private final UserItemRepository userItemRepository;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -359,12 +362,18 @@ public class SeasonPassService {
         userSeasonPass.addBuildTimeReduction(pct);
     }
 
+    // 시즌패스 보상 GP는 위치가 없으므로 금고로 적립한다. 금고가 없으면 만든다.
     private void grantGp(Long userId, int amount) {
-        Wallet wallet =
-                walletRepository
-                        .findById(userId)
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        wallet.addGp(amount);
+        if (amount <= 0) return;
+        globalVaultRepository
+                .findById(userId)
+                .orElseGet(
+                        () ->
+                                globalVaultRepository.save(
+                                        GlobalVault.builder()
+                                                .user(userRepository.getReferenceById(userId))
+                                                .build()))
+                .receiveGp(amount);
     }
 
     private void grantItem(User user, Item.ItemType itemType, int quantity) {

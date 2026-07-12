@@ -99,7 +99,6 @@ class UserServiceTest {
 
     private Wallet sampleWallet(User user) {
         Wallet wallet = Wallet.builder().user(user).build();
-        ReflectionTestUtils.setField(wallet, "availableGp", 1500);
         ReflectionTestUtils.setField(wallet, "availableAp", 300);
         ReflectionTestUtils.setField(wallet, "lockedAp", 0);
         return wallet;

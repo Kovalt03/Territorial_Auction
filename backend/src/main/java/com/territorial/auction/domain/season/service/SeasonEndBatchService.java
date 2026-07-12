@@ -1,5 +1,7 @@
 package com.territorial.auction.domain.season.service;
 
+import com.territorial.auction.domain.building.entity.GlobalVault;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.military.entity.AttackToken;
 import com.territorial.auction.domain.military.repository.AttackTokenRepository;
 import com.territorial.auction.domain.season.entity.Season;
@@ -10,7 +12,7 @@ import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.season.repository.SeasonRewardRepository;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.season.repository.UserTrophyRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
+import com.territorial.auction.domain.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +40,8 @@ public class SeasonEndBatchService {
     private final SeasonRepository seasonRepository;
     private final UserTrophyRepository userTrophyRepository;
     private final SeasonRewardRepository seasonRewardRepository;
-    private final WalletRepository walletRepository;
+    private final GlobalVaultRepository globalVaultRepository;
+    private final UserRepository userRepository;
     private final AttackTokenRepository attackTokenRepository;
     private final UserSeasonPassRepository userSeasonPassRepository;
 
@@ -71,7 +74,7 @@ public class SeasonEndBatchService {
             }
             RewardSpec spec = REWARD_TABLE.get(trophy.getLeague());
             saveRewardRecord(trophy, season, spec);
-            creditWallet(trophy.getUserId(), spec);
+            creditVault(trophy.getUserId(), spec);
             creditAttackTokens(trophy.getUserId(), spec);
         }
     }
@@ -89,8 +92,18 @@ public class SeasonEndBatchService {
                         .build());
     }
 
-    private void creditWallet(Long userId, RewardSpec spec) {
-        walletRepository.findByIdWithLock(userId).ifPresent(w -> w.addGp(spec.gp()));
+    // 시즌 보상 GP는 위치가 없으므로 금고로 적립한다. 금고가 없으면 만든다.
+    private void creditVault(Long userId, RewardSpec spec) {
+        if (spec.gp() <= 0) return;
+        globalVaultRepository
+                .findById(userId)
+                .orElseGet(
+                        () ->
+                                globalVaultRepository.save(
+                                        GlobalVault.builder()
+                                                .user(userRepository.getReferenceById(userId))
+                                                .build()))
+                .receiveGp(spec.gp());
     }
 
     private void creditAttackTokens(Long userId, RewardSpec spec) {

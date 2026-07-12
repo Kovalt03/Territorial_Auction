@@ -48,6 +48,10 @@ class AdminUserServiceTest {
     private com.territorial.auction.domain.building.repository.GlobalVaultRepository
             globalVaultRepository;
 
+    @Mock
+    private com.territorial.auction.domain.building.repository.BuildingInstanceRepository
+            buildingInstanceRepository;
+
     @Mock private TerritoryRepository territoryRepository;
     @Mock private AdminAuditLogger adminAuditLogger;
 
@@ -78,7 +82,6 @@ class AdminUserServiceTest {
         Wallet w = Wallet.builder().user(user).build();
         ReflectionTestUtils.setField(w, "userId", user.getId());
         ReflectionTestUtils.setField(w, "availableAp", ap);
-        ReflectionTestUtils.setField(w, "availableGp", gp);
         return w;
     }
 

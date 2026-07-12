@@ -96,7 +96,6 @@ class AuctionServiceTest {
         Wallet wallet = Wallet.builder().user(user).build();
         ReflectionTestUtils.setField(wallet, "availableAp", availableAp);
         ReflectionTestUtils.setField(wallet, "lockedAp", 0);
-        ReflectionTestUtils.setField(wallet, "availableGp", 0);
         return wallet;
     }
 

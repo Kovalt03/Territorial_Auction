@@ -1,7 +1,8 @@
 package com.territorial.auction.domain.building.service;
 
+import com.territorial.auction.domain.building.StoragePolicy;
+import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -16,26 +17,39 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkshopScheduler {
 
     private final BuildingInstanceRepository buildingInstanceRepository;
-    private final WalletRepository walletRepository;
 
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void produceWorkshopGp() {
         LocalDateTime now = LocalDateTime.now();
-
-        List<Object[]> territoryProductions =
-                buildingInstanceRepository.sumWorkshopGpProductionGroupedByOwner(now);
-
-        produceGp(territoryProductions);
-
-        log.info("영토 생산소 GP 생산 완료. 대상 유저 수={}", territoryProductions.size());
+        int credited = 0;
+        for (Object[] row :
+                buildingInstanceRepository.sumWorkshopGpProductionGroupedByTerritory(now)) {
+            Long territoryId = (Long) row[0];
+            int amount = ((Number) row[1]).intValue();
+            creditGp(
+                    buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(
+                            territoryId),
+                    amount);
+            credited++;
+        }
+        for (Object[] row :
+                buildingInstanceRepository.sumWorkshopGpProductionGroupedByIsland(now)) {
+            Long islandId = (Long) row[0];
+            int amount = ((Number) row[1]).intValue();
+            creditGp(
+                    buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(islandId),
+                    amount);
+            credited++;
+        }
+        log.info("생산소 GP 생산 완료. 적립 위치 수={}", credited);
     }
 
-    private void produceGp(List<Object[]> productions) {
-        for (Object[] row : productions) {
-            Long ownerId = (Long) row[0];
-            int gpAmount = ((Number) row[1]).intValue();
-            walletRepository.findById(ownerId).ifPresent(w -> w.addGp(gpAmount));
+    // GP는 저장소부터 채우고 넘치면 성으로. 저장 공간이 없으면 그 위치 생산분은 버려진다.
+    private void creditGp(List<BuildingInstance> storages, int amount) {
+        if (storages.isEmpty() || amount <= 0) {
+            return;
         }
+        StoragePolicy.fillGp(storages, amount);
     }
 }
