@@ -11,6 +11,7 @@ import com.territorial.auction.domain.military.LocationType;
 import com.territorial.auction.domain.military.MilitaryPolicy;
 import com.territorial.auction.domain.military.dto.*;
 import com.territorial.auction.domain.military.entity.*;
+import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.military.repository.*;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -232,6 +234,79 @@ public class MilitaryService {
                 siegeEventRepository.findMyHistory(
                         userId, SiegeEvent.SiegeStatus.RESOLVED, pageable);
         return buildHistoryResponse(userId, page, resultFilter);
+    }
+
+    // 영토 상실(토지세 미납·점유 만료) 시 그 영토에 귀속·배치됐던 소유자 유닛을 홈 아일랜드로 퇴각시킨다.
+    // 섬 수용량을 넘는 분은 소멸한다. 섬이 없으면 전부 소멸한다.
+    @EventListener
+    @Transactional
+    public void handleTerritoryLost(TerritoryLostEvent event) {
+        List<UnitInstance> units =
+                unitInstanceRepository.findByOwnerAndTerritoryAssociation(
+                        event.formerOwnerId(), event.territoryId());
+        if (units.isEmpty()) {
+            return;
+        }
+        homeIslandRepository
+                .findByUserId(event.formerOwnerId())
+                .ifPresentOrElse(
+                        island -> retreatUnitsToIsland(event.formerOwnerId(), island, units),
+                        () -> unitInstanceRepository.deleteAll(units));
+    }
+
+    private void retreatUnitsToIsland(Long userId, HomeIsland island, List<UnitInstance> units) {
+        int free =
+                Math.max(
+                        0,
+                        islandCapacity(island.getId())
+                                - nullSafe(
+                                        unitInstanceRepository.sumQuantityByHomeIslandId(
+                                                island.getId())));
+        for (UnitInstance unit : units) {
+            // 이미 섬 귀속(섬→영토 배치분)이면 수용량에 이미 포함 → 전량 유지, 아니면 남은 슬롯까지만.
+            boolean alreadyOnIsland =
+                    unit.getHomeIsland() != null
+                            && unit.getHomeIsland().getId().equals(island.getId());
+            int accepted =
+                    alreadyOnIsland ? unit.getQuantity() : Math.min(unit.getQuantity(), free);
+            if (!alreadyOnIsland) {
+                free -= accepted;
+            }
+            if (accepted > 0) {
+                addIslandIdle(userId, unit.getUnitType(), island, accepted);
+            }
+            unitInstanceRepository.delete(unit);
+        }
+        log.info(
+                "영토 상실 유닛 섬 퇴각. userId={}, islandId={}, stacks={}",
+                userId,
+                island.getId(),
+                units.size());
+    }
+
+    private void addIslandIdle(Long userId, UnitType unitType, HomeIsland island, int quantity) {
+        unitInstanceRepository
+                .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                        userId, unitType.getId(), island.getId())
+                .ifPresentOrElse(
+                        e -> e.addQuantity(quantity),
+                        () ->
+                                unitInstanceRepository.save(
+                                        UnitInstance.builder()
+                                                .user(findUserOrThrow(userId))
+                                                .unitType(unitType)
+                                                .quantity(quantity)
+                                                .homeIsland(island)
+                                                .build()));
+    }
+
+    private int islandCapacity(Long islandId) {
+        int castleLevel = buildingInstanceRepository.findCastleLevelByIslandId(islandId).orElse(0);
+        int residence =
+                nullSafe(
+                        buildingInstanceRepository.sumResidenceCapacityByIslandId(
+                                islandId, LocalDateTime.now()));
+        return MilitaryPolicy.castleUnitSlots(castleLevel) + residence;
     }
 
     // --- private helpers ---
