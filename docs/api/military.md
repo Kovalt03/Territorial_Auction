@@ -149,6 +149,45 @@
 
 ---
 
+## 유닛 위치 간 이동
+**POST** `/api/v1/military/units/move`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+대기 유닛을 다른 위치(영토/섬)로 이동시킵니다. 출발지 저장소에서 `UNIT_MOVE_COST_GP × 수량` 차감, `UNIT_MOVE_MINUTES` 후 도착. 도착 전까지 이동 중 상태(방어·배치·재이동 불가).
+
+### Request
+
+```json
+{
+  "unitTypeId": 1,
+  "quantity": 10,
+  "sourceLocationId": 5,
+  "sourceLocationType": "TERRITORY",
+  "destLocationId": 1,
+  "destLocationType": "ISLAND"
+}
+```
+
+- `sourceLocationType` / `destLocationType`: `TERRITORY` | `ISLAND`
+- 도착지 수용량 초과 시 `UNIT_CAPACITY_EXCEEDED`, 출발지 GP 부족 시 `INSUFFICIENT_GP`
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "movedCount": 10,
+    "gpRemaining": 320,
+    "moveCompleteAt": "2026-04-08T12:10:00Z"
+  }
+}
+```
+
+---
+
 ## 공격 선언
 
 **POST** `/api/v1/military/siege`

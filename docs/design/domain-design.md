@@ -125,7 +125,7 @@
 
 | 객체명 | 타입 | 설명 | 핵심 속성 |
 |---|---|---|---|
-| **UnitType** | Entity | 유닛 종류 정의 | `id`, `name`, `attack_power`, `defense_power`, `cost_gp`, `food_cost_per_hour` |
+| **UnitType** | Entity | 유닛 종류 정의 | `id`, `name`, `attack_power`, `defense_power`, `cost_gp`, `food_cost`(1회 소모), `level`(필요 병영 레벨) |
 | **UnitInstance** | Entity | 유저 보유 유닛 | `id`, `user_id`, `unit_type_id`, `quantity`, `deployed_territory_id` |
 | **AttackToken** | Entity | 공격권 보유 현황 | `user_id`(PK), `normal_count`, `precision_count` |
 | **SiegeEvent** | Entity | 공성 이벤트 | `id`, `attacker_id`, `defender_id`, `target_territory_id`, `attack_zone`, `status`, `resolve_at` |

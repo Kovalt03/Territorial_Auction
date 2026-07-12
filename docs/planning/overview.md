@@ -84,7 +84,7 @@ Zone 3 (외곽) → Zone 2 (중간) → Zone 1 (핵심·성)
 
 ### 4.6 이중 저장소 시스템
 - **영토 저장소**: 영토에 건설한 건물. 공격 시 약탈 대상.
-- **글로벌 금고**: 계정 귀속, 공격 불가. 기본 용량 + 업그레이드 가능
+- **글로벌 금고**: 계정 귀속, 공격 불가. 고정 용량(현재 업그레이드 미구현)
 - 저장소 ↔ 금고 이전: **이전 쿨다운(config)** 존재
 
 ### 4.7 영토 등급 시스템
@@ -254,7 +254,7 @@ OCCUPATION_DURATION_HOURS: 24
 BASE_GP_PRODUCTION_RATE: 1
 HOME_ISLAND_PRODUCTION_RATE: 0.5
 ADJACENT_BONUS_RATE: 0.1
-GLOBAL_VAULT_BASE_CAPACITY: 500
+GLOBAL_VAULT_BASE_CAPACITY: 10000   # GlobalVault 엔티티 기본값(고정)
 VAULT_TRANSFER_COOLDOWN_MINUTES: 10
 ATTACK_TOKEN_GP_COST: 500
 ATTACK_TOKEN_AP_COST: 100
@@ -263,6 +263,12 @@ ATTACK_TOKEN_AP_COST: 100
 ATTACKER_LOSS_RATE: 0.3
 ATTACKER_FAIL_LOSS_RATE: 0.5
 DEFENDER_LOSS_RATE: 0.3
+LOOT_RATE: 0.5                       # Zone3 저장소 GP 약탈률
+TERRITORY_LOSS_TRANSFER_RATE: 0.8    # 영토 상실 시 저장 GP 환수율(나머지 소멸)
+
+# 유닛 위치 간 이동
+UNIT_MOVE_COST_GP: 10                # 유닛 1기당 이동 비용(출발지 저장소 차감)
+UNIT_MOVE_MINUTES: 10               # 이동 소요 시간(도착 전 방어·배치 불가)
 
 # 리그 경계
 LEAGUE_SILVER_MIN: 500
