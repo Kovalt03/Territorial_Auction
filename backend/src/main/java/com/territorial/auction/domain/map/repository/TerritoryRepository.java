@@ -95,6 +95,8 @@ public interface TerritoryRepository extends JpaRepository<Territory, Long> {
             "SELECT DISTINCT t.owner.id FROM Territory t WHERE t.owner IS NOT NULL AND t.status = :status")
     List<Long> findAllDistinctOwnerIds(@Param("status") Territory.TerritoryStatus status);
 
+    List<Territory> findByOwnerId(Long ownerId);
+
     @Query("SELECT t FROM Territory t WHERE t.owner.id = :userId AND t.status = :status")
     List<Territory> findAllOccupiedByOwnerId(
             @Param("userId") Long userId, @Param("status") Territory.TerritoryStatus status);

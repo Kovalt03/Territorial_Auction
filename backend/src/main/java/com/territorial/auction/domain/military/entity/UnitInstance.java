@@ -4,6 +4,7 @@ import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.user.entity.User;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.*;
 
 @Entity
@@ -40,18 +41,33 @@ public class UnitInstance {
     @JoinColumn(name = "deployed_territory_id")
     private Territory deployedTerritory; // NULL이면 대기 중
 
+    // 위치 간 이동 중이면 도착 예정 시각. NULL이면 이동 중 아님(대기/배치 상태).
+    // 이동 중 유닛은 귀속지가 이미 도착지로 설정돼 있으나 도착 전까지 방어·배치·재이동 불가.
+    @Column private LocalDateTime moveCompleteAt;
+
     @Builder
     public UnitInstance(
             User user,
             UnitType unitType,
             Integer quantity,
             Territory homeTerritory,
-            HomeIsland homeIsland) {
+            HomeIsland homeIsland,
+            LocalDateTime moveCompleteAt) {
         this.user = user;
         this.unitType = unitType;
         this.quantity = quantity;
         this.homeTerritory = homeTerritory;
         this.homeIsland = homeIsland;
+        this.moveCompleteAt = moveCompleteAt;
+    }
+
+    public boolean isInTransit() {
+        return this.moveCompleteAt != null;
+    }
+
+    /** 이동 완료 처리 — 이동 중 표시를 지운다. */
+    public void finishMove() {
+        this.moveCompleteAt = null;
     }
 
     /** 귀속 위치 설정 — 영토와 섬은 배타적이다. */

@@ -31,4 +31,10 @@ public final class MilitaryPolicy {
         }
         return CASTLE_UNIT_SLOTS[level];
     }
+
+    /** 유닛 1기당 위치 간 이동 비용(GP) — 출발지 저장소에서 차감 */
+    public static final int UNIT_MOVE_COST_GP = 10;
+
+    /** 유닛 위치 간 이동 소요 시간(분) — 도착 전까지 방어·배치·재이동 불가 */
+    public static final int UNIT_MOVE_MINUTES = 10;
 }

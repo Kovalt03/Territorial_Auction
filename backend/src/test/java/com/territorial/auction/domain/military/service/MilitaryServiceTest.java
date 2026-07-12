@@ -8,26 +8,25 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
+import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.BuildingType;
+import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
-import com.territorial.auction.domain.map.entity.TerritoryGrade;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.military.LocationType;
 import com.territorial.auction.domain.military.dto.AttackTokenResponse;
 import com.territorial.auction.domain.military.dto.DeclareSiegeRequest;
-import com.territorial.auction.domain.military.dto.DeclareSiegeResponse;
 import com.territorial.auction.domain.military.dto.DeployUnitRequest;
-import com.territorial.auction.domain.military.dto.DeployUnitResponse;
-import com.territorial.auction.domain.military.dto.MySiegeHistoryResponse;
+import com.territorial.auction.domain.military.dto.MoveUnitRequest;
+import com.territorial.auction.domain.military.dto.MoveUnitResponse;
 import com.territorial.auction.domain.military.dto.ProduceUnitRequest;
 import com.territorial.auction.domain.military.dto.ProduceUnitResponse;
 import com.territorial.auction.domain.military.dto.RecallUnitRequest;
-import com.territorial.auction.domain.military.dto.RecallUnitResponse;
-import com.territorial.auction.domain.military.dto.SiegeEventListResponse;
-import com.territorial.auction.domain.military.dto.SiegeResultResponse;
 import com.territorial.auction.domain.military.dto.UnitListResponse;
 import com.territorial.auction.domain.military.entity.AttackToken;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
-import com.territorial.auction.domain.military.entity.SiegeResult;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
 import com.territorial.auction.domain.military.repository.AttackTokenRepository;
@@ -36,13 +35,10 @@ import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
 import com.territorial.auction.domain.military.repository.UnitTypeRepository;
 import com.territorial.auction.domain.user.entity.User;
-import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -54,9 +50,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -69,60 +62,27 @@ class MilitaryServiceTest {
     @Mock private AttackTokenRepository attackTokenRepository;
     @Mock private UnitInstanceRepository unitInstanceRepository;
     @Mock private UnitTypeRepository unitTypeRepository;
-
-    @Mock
-    private com.territorial.auction.domain.building.repository.HomeIslandRepository
-            homeIslandRepository;
-
+    @Mock private HomeIslandRepository homeIslandRepository;
     @Mock private SiegeEventRepository siegeEventRepository;
     @Mock private SiegeResultRepository siegeResultRepository;
     @Mock private UserRepository userRepository;
-    @Mock private WalletRepository walletRepository;
     @Mock private TerritoryRepository territoryRepository;
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private SimpMessagingTemplate messagingTemplate;
 
-    // --- fixtures ---
+    private static final long TERR_ID = 10L;
+    private static final long ISLAND_ID = 1L;
 
     private User attacker;
     private User defender;
-    private Territory territory;
     private UnitType unitType;
-    private Wallet wallet;
     private AttackToken attackToken;
 
     @BeforeEach
     void setUp() {
         TransactionSynchronizationManager.initSynchronization();
-        // 유닛 귀속지는 아직 홈 아일랜드 고정 (자원 스코프 Stage 2)
-        org.mockito.Mockito.lenient()
-                .when(homeIslandRepository.findByUserId(org.mockito.ArgumentMatchers.any()))
-                .thenReturn(
-                        java.util.Optional.of(
-                                org.mockito.Mockito.mock(
-                                        com.territorial.auction.domain.building.entity.HomeIsland
-                                                .class)));
-        attacker =
-                User.builder()
-                        .username("attacker1")
-                        .email("a@e.com")
-                        .passwordHash("hash")
-                        .nickname("공격자")
-                        .build();
-        ReflectionTestUtils.setField(attacker, "id", 1L);
-
-        defender =
-                User.builder()
-                        .username("defender1")
-                        .email("d@e.com")
-                        .passwordHash("hash")
-                        .nickname("방어자")
-                        .build();
-        ReflectionTestUtils.setField(defender, "id", 2L);
-
-        territory = Territory.builder().coordX(3).coordY(4).continent(null).grade(null).build();
-        ReflectionTestUtils.setField(territory, "id", 10L);
-
+        attacker = user(1L, "attacker1", "공격자");
+        defender = user(2L, "defender1", "방어자");
         unitType =
                 UnitType.builder()
                         .name("INFANTRY")
@@ -133,11 +93,6 @@ class MilitaryServiceTest {
                         .level(1)
                         .build();
         ReflectionTestUtils.setField(unitType, "id", 1L);
-
-        wallet = Wallet.builder().user(attacker).build();
-        ReflectionTestUtils.setField(wallet, "availableGp", 5000);
-        ReflectionTestUtils.setField(wallet, "availableFood", 500);
-
         attackToken = AttackToken.builder().user(attacker).build();
         ReflectionTestUtils.setField(attackToken, "normalCount", 3);
         ReflectionTestUtils.setField(attackToken, "precisionCount", 1);
@@ -148,51 +103,79 @@ class MilitaryServiceTest {
         TransactionSynchronizationManager.clearSynchronization();
     }
 
-    // --- helper factories ---
+    // --- fixtures ---
 
-    private UnitInstance idleInstance(int qty) {
+    private User user(Long id, String username, String nickname) {
+        User u =
+                User.builder()
+                        .username(username)
+                        .email(username + "@e.com")
+                        .passwordHash("hash")
+                        .nickname(nickname)
+                        .build();
+        ReflectionTestUtils.setField(u, "id", id);
+        return u;
+    }
+
+    private Territory ownedTerritory() {
+        Territory t = Territory.builder().coordX(3).coordY(4).build();
+        ReflectionTestUtils.setField(t, "id", TERR_ID);
+        ReflectionTestUtils.setField(t, "owner", attacker);
+        ReflectionTestUtils.setField(t, "status", Territory.TerritoryStatus.OCCUPIED);
+        ReflectionTestUtils.setField(t, "occupiedUntil", LocalDateTime.now().plusDays(1));
+        return t;
+    }
+
+    private HomeIsland ownedIsland() {
+        HomeIsland island = HomeIsland.builder().user(attacker).build();
+        ReflectionTestUtils.setField(island, "id", ISLAND_ID);
+        return island;
+    }
+
+    // Lv2 STORAGE — 용량 10,000. GP·식량 저장 스텁으로 사용.
+    private BuildingInstance storage(int gp, int food) {
+        BuildingType bt =
+                BuildingType.builder().name("STORAGE").width(1).height(1).maxHp(60).build();
+        BuildingInstance b =
+                BuildingInstance.builder().buildingType(bt).posX(0).posY(0).hp(60).zone(2).build();
+        ReflectionTestUtils.setField(b, "level", 2);
+        ReflectionTestUtils.setField(b, "storedGp", gp);
+        ReflectionTestUtils.setField(b, "storedFood", food);
+        return b;
+    }
+
+    private UnitInstance idleAtTerritory(int qty, Territory home) {
         UnitInstance inst =
-                UnitInstance.builder().user(attacker).unitType(unitType).quantity(qty).build();
+                UnitInstance.builder()
+                        .user(attacker)
+                        .unitType(unitType)
+                        .quantity(qty)
+                        .homeTerritory(home)
+                        .build();
         ReflectionTestUtils.setField(inst, "id", 100L);
         return inst;
     }
 
-    private UnitInstance deployedInstance(int qty) {
-        UnitInstance inst =
-                UnitInstance.builder().user(attacker).unitType(unitType).quantity(qty).build();
+    private UnitInstance deployedFromTerritory(int qty, Territory home, Territory deployed) {
+        UnitInstance inst = idleAtTerritory(qty, home);
         ReflectionTestUtils.setField(inst, "id", 101L);
-        inst.deployTo(territory);
+        inst.deployTo(deployed);
         return inst;
     }
 
-    private SiegeEvent buildSiege(User atk, User def, Territory tgt, int zone) {
-        LocalDateTime now = LocalDateTime.now();
-        SiegeEvent siege =
-                SiegeEvent.builder()
-                        .attacker(atk)
-                        .defender(def)
-                        .targetTerritory(tgt)
-                        .targetBuilding(null)
-                        .attackZone(zone)
-                        .siegeStartAt(now)
-                        .resolveAt(now.plusMinutes(30))
-                        .build();
-        ReflectionTestUtils.setField(siege, "id", 99L);
-        return siege;
-    }
-
-    private SiegeResult buildResult(SiegeEvent siege, boolean attackerWin) {
-        SiegeResult result =
-                SiegeResult.builder()
-                        .siege(siege)
-                        .isAttackerWin(attackerWin)
-                        .attackerUnitsLost(5)
-                        .defenderUnitsLost(10)
-                        .lootedGp(300)
-                        .resultType(SiegeResult.ResultType.LOOT)
-                        .build();
-        ReflectionTestUtils.setField(result, "id", 200L);
-        return result;
+    // 영토 위치를 소유자로 확인하고 병영·성·주거지·저장소를 성공 경로로 스텁한다.
+    private void stubTerritoryLocation(Territory territory, int gp, int food, int currentUnits) {
+        given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
+        given(buildingInstanceRepository.existsActiveBarracksByTerritoryId(TERR_ID))
+                .willReturn(true);
+        given(buildingInstanceRepository.findMaxBarracksLevelByTerritoryId(TERR_ID))
+                .willReturn(Optional.of(1));
+        given(buildingInstanceRepository.findCastleLevelByTerritoryId(TERR_ID))
+                .willReturn(Optional.of(1));
+        given(buildingInstanceRepository.sumResidenceCapacityByTerritoryId(eq(TERR_ID), any()))
+                .willReturn(0);
+        given(unitInstanceRepository.sumQuantityByHomeTerritoryId(TERR_ID))
+                .willReturn(currentUnits);
     }
 
     // ==========================================================
@@ -205,215 +188,153 @@ class MilitaryServiceTest {
 
         @Test
         @DisplayName("공격권 레코드 있음 → normalCount, precisionCount 반환")
-        void getAttackTokens_found() {
-            // given
+        void success() {
             given(attackTokenRepository.findByUserId(1L)).willReturn(Optional.of(attackToken));
-
-            // when
             AttackTokenResponse response = militaryService.getAttackTokens(1L);
-
-            // then
             assertThat(response.normalCount()).isEqualTo(3);
             assertThat(response.precisionCount()).isEqualTo(1);
         }
 
         @Test
         @DisplayName("공격권 레코드 없음 → (0, 0) 반환")
-        void getAttackTokens_notFound() {
-            // given
+        void empty() {
             given(attackTokenRepository.findByUserId(1L)).willReturn(Optional.empty());
-
-            // when
             AttackTokenResponse response = militaryService.getAttackTokens(1L);
-
-            // then
             assertThat(response.normalCount()).isEqualTo(0);
             assertThat(response.precisionCount()).isEqualTo(0);
         }
     }
 
     // ==========================================================
-    // ProduceUnit
+    // ProduceUnit — 생산 위치 스코핑
     // ==========================================================
 
     @Nested
     @DisplayName("ProduceUnit")
     class ProduceUnit {
 
+        private ProduceUnitRequest req(int quantity) {
+            return new ProduceUnitRequest(1L, quantity, TERR_ID, LocationType.TERRITORY);
+        }
+
         @Test
-        @DisplayName("병영 있음 + GP/식량 충분 + idle 없음 → 새 인스턴스 save + GP/식량 차감 + 응답 반환")
-        void produceUnit_success_newInstance() {
-            // given
-            ProduceUnitRequest req = new ProduceUnitRequest(1L, 10);
+        @DisplayName("병영·GP·식량 충분 + 대기 스택 없음 → 새 인스턴스 save + 위치 저장소 차감")
+        void success_newStack() {
+            Territory territory = ownedTerritory();
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
-            given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
-            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
-                    .willReturn(Optional.of(1));
-            given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
-            given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
-                    .willReturn(List.of(2)); // 10 slots
-            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(eq(1L), any()))
-                    .willReturn(0);
-            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(wallet));
+            stubTerritoryLocation(territory, 5000, 500, 0);
+            BuildingInstance storage = storage(5000, 500);
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(TERR_ID))
+                    .willReturn(List.of(storage));
             given(
                             unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
+                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                            1L, 1L, TERR_ID))
                     .willReturn(Optional.empty());
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
 
-            // when
-            ProduceUnitResponse response = militaryService.produceUnit(1L, req);
+            ProduceUnitResponse response = militaryService.produceUnit(1L, req(3));
 
-            // then
-            assertThat(response.unitTypeId()).isEqualTo(1L);
-            assertThat(response.quantity()).isEqualTo(10);
-            assertThat(response.gpRemaining()).isEqualTo(4000); // 5000 - 100*10
+            // GP 300, 식량 6 차감 후 남은 GP 4700
+            assertThat(response.gpRemaining()).isEqualTo(4700);
+            assertThat(storage.getStoredGp()).isEqualTo(4700);
+            assertThat(storage.getStoredFood()).isEqualTo(494);
             then(unitInstanceRepository).should().save(any(UnitInstance.class));
         }
 
         @Test
-        @DisplayName("병영 있음 + GP/식량 충분 + idle 이미 존재 → addQuantity 호출, save 미호출")
-        void produceUnit_success_existingInstance() {
-            // given
-            ProduceUnitRequest req = new ProduceUnitRequest(1L, 5);
-            UnitInstance existing = idleInstance(20);
+        @DisplayName("대기 스택 이미 존재 → addQuantity, save 미호출")
+        void success_existingStack() {
+            Territory territory = ownedTerritory();
+            UnitInstance idle = idleAtTerritory(3, territory);
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
-            given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
-            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
-                    .willReturn(Optional.of(1));
-            given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
-            given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
-                    .willReturn(List.of(1)); // 5 slots
-            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(eq(1L), any()))
-                    .willReturn(0);
-            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(wallet));
+            stubTerritoryLocation(territory, 5000, 500, 3); // 성 Lv1 슬롯 5, 현재 3 + 2 = 5 OK
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(TERR_ID))
+                    .willReturn(List.of(storage(5000, 500)));
             given(
                             unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
-                    .willReturn(Optional.of(existing));
+                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                            1L, 1L, TERR_ID))
+                    .willReturn(Optional.of(idle));
 
-            // when
-            militaryService.produceUnit(1L, req);
+            militaryService.produceUnit(1L, req(2));
 
-            // then
-            assertThat(existing.getQuantity()).isEqualTo(25);
+            assertThat(idle.getQuantity()).isEqualTo(5);
             then(unitInstanceRepository).should(never()).save(any());
         }
 
         @Test
-        @DisplayName("병영 없음 → NO_BARRACKS")
-        void produceUnit_noBarracks() {
-            // given
-            ProduceUnitRequest req = new ProduceUnitRequest(1L, 10);
+        @DisplayName("위치에 병영 없음 → NO_BARRACKS")
+        void noBarracks() {
+            Territory territory = ownedTerritory();
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
-            given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(false);
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
+            given(buildingInstanceRepository.existsActiveBarracksByTerritoryId(TERR_ID))
+                    .willReturn(false);
 
-            // when / then
-            assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
+            assertThatThrownBy(() -> militaryService.produceUnit(1L, req(1)))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.NO_BARRACKS);
         }
 
         @Test
-        @DisplayName("병영 레벨 부족 → BARRACKS_LEVEL_INSUFFICIENT")
-        void produceUnit_barracksLevelInsufficient() {
-            // given — unitType.level=1 이지만 병영 최고 레벨=0 (또는 없음)
-            UnitType highLevelUnit =
-                    UnitType.builder()
-                            .name("KNIGHT")
-                            .attackPower(30)
-                            .defensePower(20)
-                            .costGp(300)
-                            .foodCost(10)
-                            .level(3)
-                            .build();
-            ReflectionTestUtils.setField(highLevelUnit, "id", 3L);
+        @DisplayName("위치 병영 레벨 부족 → BARRACKS_LEVEL_INSUFFICIENT")
+        void barracksLevelInsufficient() {
+            Territory territory = ownedTerritory();
+            ReflectionTestUtils.setField(unitType, "level", 3);
+            given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
+            given(buildingInstanceRepository.existsActiveBarracksByTerritoryId(TERR_ID))
+                    .willReturn(true);
+            given(buildingInstanceRepository.findMaxBarracksLevelByTerritoryId(TERR_ID))
+                    .willReturn(Optional.of(1));
 
-            ProduceUnitRequest req = new ProduceUnitRequest(3L, 1);
-            given(unitTypeRepository.findById(3L)).willReturn(Optional.of(highLevelUnit));
-            given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
-            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
-                    .willReturn(Optional.of(2)); // 레벨 2 병영, 레벨 3 유닛 생산 불가
-
-            // when / then
-            assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
+            assertThatThrownBy(() -> militaryService.produceUnit(1L, req(1)))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.BARRACKS_LEVEL_INSUFFICIENT);
         }
 
         @Test
-        @DisplayName("유닛 상한 초과 → UNIT_CAPACITY_EXCEEDED")
-        void produceUnit_unitCapacityExceeded() {
-            // given — 현재 5마리, 상한 5, 추가 1 → 초과
-            ProduceUnitRequest req = new ProduceUnitRequest(1L, 1);
+        @DisplayName("위치 유닛 슬롯 초과 → UNIT_CAPACITY_EXCEEDED")
+        void capacityExceeded() {
+            Territory territory = ownedTerritory();
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
-            given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
-            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
-                    .willReturn(Optional.of(1));
-            given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(5); // 현재 5마리
-            given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
-                    .willReturn(List.of(1)); // 5 slots
-            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(eq(1L), any()))
-                    .willReturn(0);
+            // 성 Lv1 슬롯 5, 주거지 0 → 용량 5. 현재 5 + 1 > 5
+            stubTerritoryLocation(territory, 5000, 500, 5);
 
-            // when / then
-            assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
+            assertThatThrownBy(() -> militaryService.produceUnit(1L, req(1)))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.UNIT_CAPACITY_EXCEEDED);
         }
 
         @Test
-        @DisplayName("GP 부족 → INSUFFICIENT_GP")
-        void produceUnit_insufficientGp() {
-            // given — qty=10, GP cost=1000 > 500 (wallet GP를 500으로 조정)
-            ProduceUnitRequest req = new ProduceUnitRequest(1L, 10);
-            Wallet poorWallet = Wallet.builder().user(attacker).build();
-            ReflectionTestUtils.setField(poorWallet, "availableGp", 500);
-            ReflectionTestUtils.setField(poorWallet, "availableFood", 500);
-
+        @DisplayName("위치 저장소 GP 부족 → INSUFFICIENT_GP")
+        void insufficientGp() {
+            Territory territory = ownedTerritory();
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
-            given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
-            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
-                    .willReturn(Optional.of(1));
-            given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
-            given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
-                    .willReturn(List.of(2)); // 10 slots
-            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(eq(1L), any()))
-                    .willReturn(0);
-            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(poorWallet));
+            stubTerritoryLocation(territory, 100, 500, 0);
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(TERR_ID))
+                    .willReturn(List.of(storage(100, 500))); // GP 100 < 300
 
-            // when / then
-            assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
+            assertThatThrownBy(() -> militaryService.produceUnit(1L, req(3)))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INSUFFICIENT_GP);
         }
 
         @Test
-        @DisplayName("식량 부족 → FOOD_INSUFFICIENT")
-        void produceUnit_foodInsufficient() {
-            // given — qty=5, food cost=10, wallet food=5
-            ProduceUnitRequest req = new ProduceUnitRequest(1L, 5);
-            Wallet hungryWallet = Wallet.builder().user(attacker).build();
-            ReflectionTestUtils.setField(hungryWallet, "availableGp", 5000);
-            ReflectionTestUtils.setField(hungryWallet, "availableFood", 5); // 5 < 10(=2*5)
-
+        @DisplayName("위치 저장소 식량 부족 → FOOD_INSUFFICIENT")
+        void insufficientFood() {
+            Territory territory = ownedTerritory();
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
-            given(buildingInstanceRepository.existsActiveBarracksByOwnerId(1L)).willReturn(true);
-            given(buildingInstanceRepository.findMaxBarracksLevelByOwnerId(1L))
-                    .willReturn(Optional.of(1));
-            given(unitInstanceRepository.sumQuantityByUserId(1L)).willReturn(0);
-            given(buildingInstanceRepository.findActiveCastleLevelsByOwnerId(1L))
-                    .willReturn(List.of(1)); // 5 slots
-            given(buildingInstanceRepository.sumResidenceCapacityByOwnerId(eq(1L), any()))
-                    .willReturn(0);
-            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(hungryWallet));
+            stubTerritoryLocation(territory, 5000, 2, 0);
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(TERR_ID))
+                    .willReturn(List.of(storage(5000, 2))); // 식량 2 < 6
 
-            // when / then
-            assertThatThrownBy(() -> militaryService.produceUnit(1L, req))
+            assertThatThrownBy(() -> militaryService.produceUnit(1L, req(3)))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.FOOD_INSUFFICIENT);
@@ -421,73 +342,67 @@ class MilitaryServiceTest {
     }
 
     // ==========================================================
-    // DeployUnit
+    // DeployUnit — 출발 위치 대기 스택에서 배치
     // ==========================================================
 
     @Nested
     @DisplayName("DeployUnit")
     class DeployUnit {
 
-        @BeforeEach
-        void ownTerritory() {
-            territory.occupy(attacker, LocalDateTime.now().minusHours(1));
+        private DeployUnitRequest req(int quantity) {
+            return new DeployUnitRequest(TERR_ID, 1L, quantity, TERR_ID, LocationType.TERRITORY);
         }
 
         @Test
-        @DisplayName("영토 소유자 + idle 유닛 충분 → subtractQuantity 호출 + 응답 반환")
-        void deployUnit_success() {
-            // given
-            DeployUnitRequest req = new DeployUnitRequest(10L, 1L, 20);
-            UnitInstance idle = idleInstance(50);
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
+        @DisplayName("소유 영토 + 출발지 대기 유닛 충분 → subtract + 배치 스택 save")
+        void success() {
+            Territory territory = ownedTerritory();
+            UnitInstance idle = idleAtTerritory(10, territory);
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
             given(
                             unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
+                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                            1L, 1L, TERR_ID))
                     .willReturn(Optional.of(idle));
             given(
-                            unitInstanceRepository.findByUserIdAndUnitTypeIdAndDeployedTerritoryId(
-                                    1L, 1L, 10L))
+                            unitInstanceRepository
+                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryId(
+                                            1L, 1L, TERR_ID, TERR_ID))
                     .willReturn(Optional.empty());
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
 
-            // when
-            DeployUnitResponse response = militaryService.deployUnit(1L, req);
+            militaryService.deployUnit(1L, req(4));
 
-            // then
-            assertThat(response.deployedCount()).isEqualTo(20);
-            assertThat(response.territoryId()).isEqualTo(10L);
-            assertThat(idle.getQuantity()).isEqualTo(30); // 50 - 20
+            assertThat(idle.getQuantity()).isEqualTo(6);
+            then(unitInstanceRepository).should().save(any(UnitInstance.class));
         }
 
         @Test
         @DisplayName("영토 소유자 아님 → NOT_TERRITORY_OWNER")
-        void deployUnit_notOwner() {
-            // given — territory is owned by defender (id=2), not attacker (id=1)
-            territory.occupy(defender, LocalDateTime.now().minusHours(1));
-            DeployUnitRequest req = new DeployUnitRequest(10L, 1L, 20);
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
+        void notOwner() {
+            Territory territory = Territory.builder().coordX(3).coordY(4).build();
+            ReflectionTestUtils.setField(territory, "id", TERR_ID);
+            ReflectionTestUtils.setField(territory, "owner", defender);
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
 
-            // when / then
-            assertThatThrownBy(() -> militaryService.deployUnit(1L, req))
+            assertThatThrownBy(() -> militaryService.deployUnit(1L, req(1)))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.NOT_TERRITORY_OWNER);
         }
 
         @Test
-        @DisplayName("idle 유닛 부족 → INSUFFICIENT_UNITS")
-        void deployUnit_insufficientUnits() {
-            // given
-            DeployUnitRequest req = new DeployUnitRequest(10L, 1L, 100);
-            UnitInstance idle = idleInstance(5);
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
+        @DisplayName("출발지 대기 유닛 부족 → INSUFFICIENT_UNITS")
+        void insufficient() {
+            Territory territory = ownedTerritory();
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
             given(
                             unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
-                    .willReturn(Optional.of(idle));
+                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                            1L, 1L, TERR_ID))
+                    .willReturn(Optional.of(idleAtTerritory(2, territory)));
 
-            // when / then
-            assertThatThrownBy(() -> militaryService.deployUnit(1L, req))
+            assertThatThrownBy(() -> militaryService.deployUnit(1L, req(5)))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INSUFFICIENT_UNITS);
@@ -495,72 +410,67 @@ class MilitaryServiceTest {
     }
 
     // ==========================================================
-    // RecallUnit
+    // RecallUnit — 배치 유닛을 귀속지 대기 스택으로 회수
     // ==========================================================
 
     @Nested
     @DisplayName("RecallUnit")
     class RecallUnit {
 
-        @BeforeEach
-        void ownTerritory() {
-            territory.occupy(attacker, LocalDateTime.now().minusHours(1));
+        private RecallUnitRequest req(int quantity) {
+            return new RecallUnitRequest(TERR_ID, 1L, quantity);
         }
 
         @Test
-        @DisplayName("deployed 유닛 충분 → subtractQuantity 호출 + idle 추가")
-        void recallUnit_success() {
-            // given
-            RecallUnitRequest req = new RecallUnitRequest(10L, 1L, 10);
-            UnitInstance deployed = deployedInstance(30);
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
-            given(
-                            unitInstanceRepository.findByUserIdAndUnitTypeIdAndDeployedTerritoryId(
-                                    1L, 1L, 10L))
-                    .willReturn(Optional.of(deployed));
+        @DisplayName("배치 유닛 충분 → subtract + 귀속지 대기 스택으로 병합")
+        void success() {
+            Territory territory = ownedTerritory();
+            UnitInstance deployed = deployedFromTerritory(10, territory, territory);
+            UnitInstance homeIdle = idleAtTerritory(1, territory);
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
             given(
                             unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
-                    .willReturn(Optional.empty());
-            given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
+                                    .findByUserIdAndUnitTypeIdAndDeployedTerritoryIdOrderByIdAsc(
+                                            1L, 1L, TERR_ID))
+                    .willReturn(List.of(deployed));
+            given(
+                            unitInstanceRepository
+                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                            1L, 1L, TERR_ID))
+                    .willReturn(Optional.of(homeIdle));
 
-            // when
-            RecallUnitResponse response = militaryService.recallUnit(1L, req);
+            militaryService.recallUnit(1L, req(4));
 
-            // then
-            assertThat(response.recalledCount()).isEqualTo(10);
-            assertThat(deployed.getQuantity()).isEqualTo(20); // 30 - 10
+            assertThat(deployed.getQuantity()).isEqualTo(6);
+            assertThat(homeIdle.getQuantity()).isEqualTo(5);
         }
 
         @Test
         @DisplayName("영토 소유자 아님 → NOT_TERRITORY_OWNER")
-        void recallUnit_notOwner() {
-            // given
-            territory.occupy(defender, LocalDateTime.now().minusHours(1));
-            RecallUnitRequest req = new RecallUnitRequest(10L, 1L, 10);
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
+        void notOwner() {
+            Territory territory = Territory.builder().coordX(3).coordY(4).build();
+            ReflectionTestUtils.setField(territory, "id", TERR_ID);
+            ReflectionTestUtils.setField(territory, "owner", defender);
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
 
-            // when / then
-            assertThatThrownBy(() -> militaryService.recallUnit(1L, req))
+            assertThatThrownBy(() -> militaryService.recallUnit(1L, req(1)))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.NOT_TERRITORY_OWNER);
         }
 
         @Test
-        @DisplayName("deployed 유닛 부족 → INSUFFICIENT_UNITS")
-        void recallUnit_insufficientUnits() {
-            // given
-            RecallUnitRequest req = new RecallUnitRequest(10L, 1L, 50);
-            UnitInstance deployed = deployedInstance(5);
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
+        @DisplayName("배치 유닛 부족 → INSUFFICIENT_UNITS")
+        void insufficient() {
+            Territory territory = ownedTerritory();
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
             given(
-                            unitInstanceRepository.findByUserIdAndUnitTypeIdAndDeployedTerritoryId(
-                                    1L, 1L, 10L))
-                    .willReturn(Optional.of(deployed));
+                            unitInstanceRepository
+                                    .findByUserIdAndUnitTypeIdAndDeployedTerritoryIdOrderByIdAsc(
+                                            1L, 1L, TERR_ID))
+                    .willReturn(List.of(deployedFromTerritory(2, territory, territory)));
 
-            // when / then
-            assertThatThrownBy(() -> militaryService.recallUnit(1L, req))
+            assertThatThrownBy(() -> militaryService.recallUnit(1L, req(5)))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.INSUFFICIENT_UNITS);
@@ -568,275 +478,174 @@ class MilitaryServiceTest {
     }
 
     // ==========================================================
-    // DeclareSiege
+    // MoveUnit — 위치 간 이동 (GP 비용 + 이동 시간)
+    // ==========================================================
+
+    @Nested
+    @DisplayName("MoveUnit")
+    class MoveUnit {
+
+        // MoveUnitRequest 시그니처: (unitTypeId, quantity, sourceId, sourceType, destId, destType)
+        private MoveUnitRequest moveReq(int quantity) {
+            return new MoveUnitRequest(
+                    1L, quantity, TERR_ID, LocationType.TERRITORY, ISLAND_ID, LocationType.ISLAND);
+        }
+
+        @Test
+        @DisplayName("영토→섬 이동 → 출발지 GP 차감 + 이동중 스택 save + moveCompleteAt 설정")
+        void success() {
+            Territory source = ownedTerritory();
+            HomeIsland dest = ownedIsland();
+            UnitInstance idle = idleAtTerritory(10, source);
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(source));
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(dest));
+            given(
+                            unitInstanceRepository
+                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                            1L, 1L, TERR_ID))
+                    .willReturn(Optional.of(idle));
+            // 도착지(섬) 슬롯 확인
+            given(unitInstanceRepository.sumQuantityByHomeIslandId(ISLAND_ID)).willReturn(0);
+            given(buildingInstanceRepository.findCastleLevelByIslandId(ISLAND_ID))
+                    .willReturn(Optional.of(1));
+            given(buildingInstanceRepository.sumResidenceCapacityByIslandId(eq(ISLAND_ID), any()))
+                    .willReturn(0);
+            BuildingInstance storage = storage(5000, 0);
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(TERR_ID))
+                    .willReturn(List.of(storage));
+            given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
+
+            MoveUnitResponse response = militaryService.moveUnit(1L, moveReq(4));
+
+            // 이동 비용 = 4 × 10 = 40, 남은 GP 4960
+            assertThat(response.movedCount()).isEqualTo(4);
+            assertThat(response.gpRemaining()).isEqualTo(4960);
+            assertThat(response.moveCompleteAt()).isNotNull();
+            assertThat(idle.getQuantity()).isEqualTo(6);
+            assertThat(storage.getStoredGp()).isEqualTo(4960);
+            then(unitInstanceRepository).should().save(any(UnitInstance.class));
+        }
+
+        @Test
+        @DisplayName("출발지 = 도착지 → INVALID_INPUT")
+        void sameLocation() {
+            Territory territory = ownedTerritory();
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
+
+            MoveUnitRequest sameReq =
+                    new MoveUnitRequest(
+                            1L,
+                            2,
+                            TERR_ID,
+                            LocationType.TERRITORY,
+                            TERR_ID,
+                            LocationType.TERRITORY);
+            assertThatThrownBy(() -> militaryService.moveUnit(1L, sameReq))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INVALID_INPUT);
+        }
+
+        @Test
+        @DisplayName("출발지 대기 유닛 부족 → INSUFFICIENT_UNITS")
+        void insufficient() {
+            Territory source = ownedTerritory();
+            HomeIsland dest = ownedIsland();
+            given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(source));
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(dest));
+            given(
+                            unitInstanceRepository
+                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                            1L, 1L, TERR_ID))
+                    .willReturn(Optional.of(idleAtTerritory(2, source)));
+
+            assertThatThrownBy(() -> militaryService.moveUnit(1L, moveReq(5)))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INSUFFICIENT_UNITS);
+        }
+    }
+
+    // ==========================================================
+    // DeclareSiege — 대기 유닛 가용량 합산 검증 (핵심 경로)
     // ==========================================================
 
     @Nested
     @DisplayName("DeclareSiege")
     class DeclareSiege {
 
-        private DeclareSiegeRequest validRequest;
-
-        @BeforeEach
-        void occupyByDefender() {
-            territory.occupy(
-                    defender, LocalDateTime.now().minusHours(2)); // occupiedUntil = 과거 → 보호 없음
-            validRequest = new DeclareSiegeRequest(10L, null, 1, 1L, 10);
+        private Territory targetTerritory() {
+            Territory t = Territory.builder().coordX(5).coordY(6).build();
+            ReflectionTestUtils.setField(t, "id", 20L);
+            ReflectionTestUtils.setField(t, "owner", defender);
+            ReflectionTestUtils.setField(t, "status", Territory.TerritoryStatus.OCCUPIED);
+            ReflectionTestUtils.setField(t, "occupiedUntil", LocalDateTime.now().minusHours(1));
+            return t;
         }
 
-        private void stubValidPath() {
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
-            given(
-                            siegeEventRepository.findRecentByTerritoryAndAttacker(
-                                    10L, 1L, SiegeEvent.SiegeStatus.RESOLVED))
-                    .willReturn(Collections.emptyList());
+        private DeclareSiegeRequest req() {
+            // (targetTerritoryId, targetBuildingId, attackZone, unitTypeId, unitQuantity)
+            return new DeclareSiegeRequest(20L, null, 1, 1L, 3);
+        }
+
+        @Test
+        @DisplayName("모든 조건 통과 → SiegeEvent 저장 + 응답 반환")
+        void success() {
+            Territory target = targetTerritory();
+            given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
+            given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
+                    .willReturn(List.of());
             given(attackTokenRepository.findByUserIdWithLock(1L))
                     .willReturn(Optional.of(attackToken));
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(1L, 1L))
-                    .willReturn(Optional.of(idleInstance(50)));
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
             given(siegeEventRepository.save(any(SiegeEvent.class)))
                     .willAnswer(
                             inv -> {
-                                SiegeEvent saved = inv.getArgument(0);
-                                ReflectionTestUtils.setField(saved, "id", 99L);
-                                return saved;
+                                SiegeEvent s = inv.getArgument(0);
+                                ReflectionTestUtils.setField(s, "id", 99L);
+                                return s;
                             });
-        }
 
-        @Test
-        @DisplayName("모든 조건 통과 → SiegeEvent 저장 + DeclareSiegeResponse 반환")
-        void declareSiege_success() {
-            // given
-            stubValidPath();
+            var response = militaryService.declareSiege(1L, req());
 
-            // when
-            DeclareSiegeResponse response = militaryService.declareSiege(1L, validRequest);
-
-            // then
             assertThat(response.siegeId()).isEqualTo(99L);
-            assertThat(response.attackTokenRemaining()).isEqualTo(2); // 3 - 1
             then(siegeEventRepository).should().save(any(SiegeEvent.class));
         }
 
         @Test
-        @DisplayName("자기 영토 공격 → CANNOT_ATTACK_OWN_TERRITORY")
-        void declareSiege_ownTerritory() {
-            // given — territory owned by attacker (id=1)
-            territory.occupy(attacker, LocalDateTime.now().minusHours(2));
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
+        @DisplayName("대기 유닛 부족 → INSUFFICIENT_UNITS")
+        void insufficientUnits() {
+            Territory target = targetTerritory();
+            given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
+            given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
+                    .willReturn(List.of());
+            given(attackTokenRepository.findByUserIdWithLock(1L))
+                    .willReturn(Optional.of(attackToken));
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(1);
 
-            // when / then
-            assertThatThrownBy(() -> militaryService.declareSiege(1L, validRequest))
+            assertThatThrownBy(() -> militaryService.declareSiege(1L, req()))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INSUFFICIENT_UNITS);
+        }
+
+        @Test
+        @DisplayName("자기 영토 공격 → CANNOT_ATTACK_OWN_TERRITORY")
+        void ownTerritory() {
+            Territory target = targetTerritory();
+            ReflectionTestUtils.setField(target, "owner", attacker);
+            given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
+
+            assertThatThrownBy(() -> militaryService.declareSiege(1L, req()))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.CANNOT_ATTACK_OWN_TERRITORY);
         }
-
-        @Test
-        @DisplayName("영토 IDLE 상태 → TERRITORY_NOT_OCCUPIED")
-        void declareSiege_territoryIdle() {
-            // given — territory is IDLE (no owner)
-            Territory idleTerritory =
-                    Territory.builder().coordX(1).coordY(1).continent(null).grade(null).build();
-            ReflectionTestUtils.setField(idleTerritory, "id", 10L);
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(idleTerritory));
-
-            // when / then
-            assertThatThrownBy(() -> militaryService.declareSiege(1L, validRequest))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.TERRITORY_NOT_OCCUPIED);
-        }
-
-        @Test
-        @DisplayName("보호기간 중 → TERRITORY_PROTECTED")
-        void declareSiege_territoryProtected() {
-            // given — occupiedUntil is in the future
-            ReflectionTestUtils.setField(
-                    territory, "occupiedUntil", LocalDateTime.now().plusHours(1));
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
-
-            // when / then
-            assertThatThrownBy(() -> militaryService.declareSiege(1L, validRequest))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.TERRITORY_PROTECTED);
-        }
-
-        @Test
-        @DisplayName("공격 쿨다운 → ATTACK_COOLDOWN")
-        void declareSiege_attackCooldown() {
-            // given — recent RESOLVED siege where attacker lost, within 2-hour cooldown window
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
-            SiegeEvent lastSiege = buildSiege(attacker, defender, territory, 1);
-            // resolveAt = 1 hour ago → still within 2-hour cooldown
-            ReflectionTestUtils.setField(lastSiege, "resolveAt", LocalDateTime.now().minusHours(1));
-            given(
-                            siegeEventRepository.findRecentByTerritoryAndAttacker(
-                                    10L, 1L, SiegeEvent.SiegeStatus.RESOLVED))
-                    .willReturn(List.of(lastSiege));
-            SiegeResult loseResult = buildResult(lastSiege, false);
-            given(siegeResultRepository.findBySiegeId(99L)).willReturn(Optional.of(loseResult));
-
-            // when / then
-            assertThatThrownBy(() -> militaryService.declareSiege(1L, validRequest))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.ATTACK_COOLDOWN);
-        }
-
-        @Test
-        @DisplayName("이전 Zone 미클리어 → ZONE_NOT_CLEARED")
-        void declareSiege_zoneNotCleared() {
-            // given — attacking zone 2 but zone 1 not cleared
-            DeclareSiegeRequest zone2Request = new DeclareSiegeRequest(10L, null, 2, 1L, 10);
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
-            // findRecentByTerritoryAndAttacker returns a zone-1 siege that was lost
-            SiegeEvent zone1Siege = buildSiege(attacker, defender, territory, 1);
-            given(
-                            siegeEventRepository.findRecentByTerritoryAndAttacker(
-                                    10L, 1L, SiegeEvent.SiegeStatus.RESOLVED))
-                    .willReturn(List.of(zone1Siege));
-            // cooldown check: zone1Siege result → win=true so no cooldown
-            given(siegeResultRepository.findBySiegeId(99L)).willReturn(Optional.empty());
-
-            // when / then
-            assertThatThrownBy(() -> militaryService.declareSiege(1L, zone2Request))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.ZONE_NOT_CLEARED);
-        }
-
-        @Test
-        @DisplayName("공격권 없음 → NO_ATTACK_TOKEN")
-        void declareSiege_noAttackToken() {
-            // given
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
-            given(
-                            siegeEventRepository.findRecentByTerritoryAndAttacker(
-                                    10L, 1L, SiegeEvent.SiegeStatus.RESOLVED))
-                    .willReturn(Collections.emptyList());
-            given(attackTokenRepository.findByUserIdWithLock(1L)).willReturn(Optional.empty());
-
-            // when / then
-            assertThatThrownBy(() -> militaryService.declareSiege(1L, validRequest))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.NO_ATTACK_TOKEN);
-        }
-
-        @Test
-        @DisplayName("normalCount=0 → NO_ATTACK_TOKEN")
-        void declareSiege_normalTokenExhausted() {
-            // given
-            ReflectionTestUtils.setField(attackToken, "normalCount", 0);
-            given(territoryRepository.findById(10L)).willReturn(Optional.of(territory));
-            given(
-                            siegeEventRepository.findRecentByTerritoryAndAttacker(
-                                    10L, 1L, SiegeEvent.SiegeStatus.RESOLVED))
-                    .willReturn(Collections.emptyList());
-            given(attackTokenRepository.findByUserIdWithLock(1L))
-                    .willReturn(Optional.of(attackToken));
-
-            // when / then
-            assertThatThrownBy(() -> militaryService.declareSiege(1L, validRequest))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.NO_ATTACK_TOKEN);
-        }
     }
 
     // ==========================================================
-    // GetSiegeResult
-    // ==========================================================
-
-    @Nested
-    @DisplayName("GetSiegeResult")
-    class GetSiegeResult {
-
-        @Test
-        @DisplayName("공격자로서 조회 → SiegeResultResponse 반환")
-        void getSiegeResult_asAttacker() {
-            // given
-            SiegeEvent siege = buildSiege(attacker, defender, territory, 1);
-            siege.resolve();
-            SiegeResult result = buildResult(siege, true);
-            given(siegeEventRepository.findById(99L)).willReturn(Optional.of(siege));
-            given(siegeResultRepository.findBySiegeId(99L)).willReturn(Optional.of(result));
-
-            // when
-            SiegeResultResponse response = militaryService.getSiegeResult(1L, 99L);
-
-            // then
-            assertThat(response.siegeId()).isEqualTo(99L);
-            assertThat(response.isAttackerWin()).isTrue();
-        }
-
-        @Test
-        @DisplayName("방어자로서 조회 → SiegeResultResponse 반환")
-        void getSiegeResult_asDefender() {
-            // given
-            SiegeEvent siege = buildSiege(attacker, defender, territory, 1);
-            siege.resolve();
-            SiegeResult result = buildResult(siege, false);
-            given(siegeEventRepository.findById(99L)).willReturn(Optional.of(siege));
-            given(siegeResultRepository.findBySiegeId(99L)).willReturn(Optional.of(result));
-
-            // when
-            SiegeResultResponse response = militaryService.getSiegeResult(2L, 99L); // defender id=2
-
-            // then
-            assertThat(response.isAttackerWin()).isFalse();
-        }
-
-        @Test
-        @DisplayName("공성전 없음 → SIEGE_NOT_FOUND")
-        void getSiegeResult_siegeNotFound() {
-            // given
-            given(siegeEventRepository.findById(99L)).willReturn(Optional.empty());
-
-            // when / then
-            assertThatThrownBy(() -> militaryService.getSiegeResult(1L, 99L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.SIEGE_NOT_FOUND);
-        }
-
-        @Test
-        @DisplayName("참여자 아님 → SIEGE_FORBIDDEN")
-        void getSiegeResult_notParticipant() {
-            // given — userId=3 is neither attacker(1) nor defender(2)
-            SiegeEvent siege = buildSiege(attacker, defender, territory, 1);
-            given(siegeEventRepository.findById(99L)).willReturn(Optional.of(siege));
-
-            // when / then
-            assertThatThrownBy(() -> militaryService.getSiegeResult(3L, 99L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.SIEGE_FORBIDDEN);
-        }
-
-        @Test
-        @DisplayName("결과 아직 없음(PENDING) → SIEGE_RESULT_NOT_FOUND")
-        void getSiegeResult_resultPending() {
-            // given
-            SiegeEvent siege = buildSiege(attacker, defender, territory, 1); // status=PENDING
-            given(siegeEventRepository.findById(99L)).willReturn(Optional.of(siege));
-            given(siegeResultRepository.findBySiegeId(99L)).willReturn(Optional.empty());
-
-            // when / then
-            assertThatThrownBy(() -> militaryService.getSiegeResult(1L, 99L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.SIEGE_RESULT_NOT_FOUND);
-        }
-    }
-
-    // ==========================================================
-    // GetUnitList
+    // GetUnitList — 위치별 그룹핑
     // ==========================================================
 
     @Nested
@@ -844,196 +653,40 @@ class MilitaryServiceTest {
     class GetUnitList {
 
         @Test
-        @DisplayName("유닛 없음 → 빈 리스트 + availableFood 반환")
-        void getUnitList_empty() {
-            // given
-            given(unitInstanceRepository.findByUserId(1L)).willReturn(Collections.emptyList());
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+        @DisplayName("소유 영토 + 홈 아일랜드별로 유닛·수용량·저장 식량을 그룹핑")
+        void grouping() {
+            Territory territory = ownedTerritory();
+            HomeIsland island = ownedIsland();
+            UnitInstance idle = idleAtTerritory(7, territory);
 
-            // when
+            given(unitInstanceRepository.findByUserId(1L)).willReturn(List.of(idle));
+            given(territoryRepository.findByOwnerId(1L)).willReturn(List.of(territory));
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryId(TERR_ID))
+                    .willReturn(List.of(storage(0, 120)));
+            given(buildingInstanceRepository.findCastleLevelByTerritoryId(TERR_ID))
+                    .willReturn(Optional.of(1));
+            given(buildingInstanceRepository.sumResidenceCapacityByTerritoryId(eq(TERR_ID), any()))
+                    .willReturn(0);
+            given(buildingInstanceRepository.findStorageBuildingsByIslandId(ISLAND_ID))
+                    .willReturn(List.of());
+            given(buildingInstanceRepository.findCastleLevelByIslandId(ISLAND_ID))
+                    .willReturn(Optional.of(1));
+            given(buildingInstanceRepository.sumResidenceCapacityByIslandId(eq(ISLAND_ID), any()))
+                    .willReturn(0);
+
             UnitListResponse response = militaryService.getUnitList(1L);
 
-            // then
-            assertThat(response.units()).isEmpty();
-            assertThat(response.availableFood()).isEqualTo(500);
-        }
-
-        @Test
-        @DisplayName("idle/deployed 혼재 → deployedCount/idleCount 정확히 계산, foodCost 단가 반환")
-        void getUnitList_mixedInstances() {
-            // given
-            UnitInstance idle = idleInstance(30);
-            UnitInstance deployed = deployedInstance(20);
-            given(unitInstanceRepository.findByUserId(1L)).willReturn(List.of(idle, deployed));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
-            given(unitTypeRepository.findAll()).willReturn(List.of(unitType));
-
-            // when
-            UnitListResponse response = militaryService.getUnitList(1L);
-
-            // then
-            assertThat(response.units()).hasSize(1);
-            UnitListResponse.UnitDto dto = response.units().get(0);
-            assertThat(dto.quantity()).isEqualTo(50); // 30 + 20
-            assertThat(dto.deployedCount()).isEqualTo(20);
-            assertThat(dto.idleCount()).isEqualTo(30);
-            assertThat(dto.foodCost()).isEqualTo(2); // 유닛 타입 단가
-            assertThat(response.availableFood()).isEqualTo(500);
-        }
-    }
-
-    // ==========================================================
-    // GetSiegeEvents
-    // ==========================================================
-
-    @Nested
-    @DisplayName("GetSiegeEvents")
-    class GetSiegeEvents {
-
-        @Test
-        @DisplayName("status=PENDING → Page 반환")
-        void getSiegeEvents_pending() {
-            // given
-            SiegeEvent siege = buildSiege(attacker, defender, territory, 1);
-            PageRequest pageable = PageRequest.of(0, 20);
-            Page<SiegeEvent> page = new PageImpl<>(List.of(siege), pageable, 1);
-            given(siegeEventRepository.findByStatus(SiegeEvent.SiegeStatus.PENDING, pageable))
-                    .willReturn(page);
-
-            // when
-            SiegeEventListResponse response = militaryService.getSiegeEvents("PENDING", pageable);
-
-            // then
-            assertThat(response.totalCount()).isEqualTo(1);
-            assertThat(response.sieges()).hasSize(1);
-            assertThat(response.sieges().get(0).siegeId()).isEqualTo(99L);
-        }
-
-        @Test
-        @DisplayName("status 잘못됨(INVALID) → PENDING으로 기본값 처리")
-        void getSiegeEvents_invalidStatus_fallbackToPending() {
-            // given
-            PageRequest pageable = PageRequest.of(0, 20);
-            Page<SiegeEvent> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
-            given(siegeEventRepository.findByStatus(SiegeEvent.SiegeStatus.PENDING, pageable))
-                    .willReturn(emptyPage);
-
-            // when
-            SiegeEventListResponse response = militaryService.getSiegeEvents("INVALID", pageable);
-
-            // then
-            assertThat(response.totalCount()).isEqualTo(0);
-            then(siegeEventRepository)
-                    .should()
-                    .findByStatus(SiegeEvent.SiegeStatus.PENDING, pageable);
-        }
-    }
-
-    // ==========================================================
-    // GetMySiegeHistory
-    // ==========================================================
-
-    @Nested
-    @DisplayName("GetMySiegeHistory")
-    class GetMySiegeHistory {
-
-        private TerritoryGrade grade;
-
-        @BeforeEach
-        void attachGrade() {
-            grade =
-                    TerritoryGrade.builder()
-                            .grade("A")
-                            .productionMultiplier(java.math.BigDecimal.ONE)
-                            .auctionPriceMultiplier(java.math.BigDecimal.ONE)
-                            .preBuiltCount(0)
-                            .spawnRate(java.math.BigDecimal.ONE)
-                            .gridSize(10)
-                            .build();
-            ReflectionTestUtils.setField(grade, "id", 1L);
-            ReflectionTestUtils.setField(territory, "grade", grade);
-        }
-
-        @Test
-        @DisplayName("ALL 필터: WIN/LOSE 모두 포함")
-        void getMySiegeHistory_all() {
-            // given
-            SiegeEvent win = buildSiege(attacker, defender, territory, 1);
-            SiegeEvent lose = buildSiege(attacker, defender, territory, 1);
-            ReflectionTestUtils.setField(lose, "id", 100L);
-
-            PageRequest pageable = PageRequest.of(0, 20);
-            Page<SiegeEvent> page = new PageImpl<>(List.of(win, lose), pageable, 2);
-            given(siegeEventRepository.findMyHistory(1L, SiegeEvent.SiegeStatus.RESOLVED, pageable))
-                    .willReturn(page);
-
-            SiegeResult winResult = buildResult(win, true);
-            SiegeResult loseResult = buildResult(lose, false);
-            given(siegeResultRepository.findBySiegeId(99L)).willReturn(Optional.of(winResult));
-            given(siegeResultRepository.findBySiegeId(100L)).willReturn(Optional.of(loseResult));
-
-            // when
-            MySiegeHistoryResponse response =
-                    militaryService.getMySiegeHistory(1L, "ALL", pageable);
-
-            // then
-            assertThat(response.wins()).isEqualTo(1);
-            assertThat(response.losses()).isEqualTo(1);
-            assertThat(response.history()).hasSize(2);
-        }
-
-        @Test
-        @DisplayName("WIN 필터: WIN만 반환")
-        void getMySiegeHistory_winFilter() {
-            // given
-            SiegeEvent win = buildSiege(attacker, defender, territory, 1);
-            SiegeEvent lose = buildSiege(attacker, defender, territory, 1);
-            ReflectionTestUtils.setField(lose, "id", 100L);
-
-            PageRequest pageable = PageRequest.of(0, 20);
-            Page<SiegeEvent> page = new PageImpl<>(List.of(win, lose), pageable, 2);
-            given(siegeEventRepository.findMyHistory(1L, SiegeEvent.SiegeStatus.RESOLVED, pageable))
-                    .willReturn(page);
-
-            SiegeResult winResult = buildResult(win, true);
-            SiegeResult loseResult = buildResult(lose, false);
-            given(siegeResultRepository.findBySiegeId(99L)).willReturn(Optional.of(winResult));
-            given(siegeResultRepository.findBySiegeId(100L)).willReturn(Optional.of(loseResult));
-
-            // when
-            MySiegeHistoryResponse response =
-                    militaryService.getMySiegeHistory(1L, "WIN", pageable);
-
-            // then
-            assertThat(response.wins()).isEqualTo(1);
-            assertThat(response.losses()).isEqualTo(1);
-            assertThat(response.history()).hasSize(1);
-            assertThat(response.history().get(0).result()).isEqualTo("WIN");
-        }
-
-        @Test
-        @DisplayName("wins/losses 카운트 정확성 — 방어자 시점")
-        void getMySiegeHistory_defenderPerspective() {
-            // given — userId=2 (defender), attacker won → defender loses
-            SiegeEvent siege = buildSiege(attacker, defender, territory, 1);
-
-            PageRequest pageable = PageRequest.of(0, 20);
-            Page<SiegeEvent> page = new PageImpl<>(List.of(siege), pageable, 1);
-            given(siegeEventRepository.findMyHistory(2L, SiegeEvent.SiegeStatus.RESOLVED, pageable))
-                    .willReturn(page);
-
-            SiegeResult result = buildResult(siege, true); // attacker won
-            given(siegeResultRepository.findBySiegeId(99L)).willReturn(Optional.of(result));
-
-            // when
-            MySiegeHistoryResponse response =
-                    militaryService.getMySiegeHistory(2L, "ALL", pageable);
-
-            // then
-            assertThat(response.wins()).isEqualTo(0);
-            assertThat(response.losses()).isEqualTo(1);
-            assertThat(response.history().get(0).role()).isEqualTo("DEFENDER");
-            assertThat(response.history().get(0).result()).isEqualTo("LOSE");
+            assertThat(response.locations()).hasSize(2);
+            UnitListResponse.LocationUnits terr =
+                    response.locations().stream()
+                            .filter(l -> l.locationType().equals("TERRITORY"))
+                            .findFirst()
+                            .orElseThrow();
+            assertThat(terr.storedFood()).isEqualTo(120);
+            assertThat(terr.unitCapacity()).isEqualTo(5);
+            assertThat(terr.units()).hasSize(1);
+            assertThat(terr.units().get(0).idleCount()).isEqualTo(7);
         }
     }
 }

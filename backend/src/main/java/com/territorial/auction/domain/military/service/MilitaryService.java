@@ -1,19 +1,19 @@
 package com.territorial.auction.domain.military.service;
 
+import com.territorial.auction.domain.building.StoragePolicy;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.military.LocationType;
 import com.territorial.auction.domain.military.MilitaryPolicy;
 import com.territorial.auction.domain.military.dto.*;
 import com.territorial.auction.domain.military.entity.*;
 import com.territorial.auction.domain.military.repository.*;
 import com.territorial.auction.domain.user.entity.User;
-import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -44,7 +45,6 @@ public class MilitaryService {
     private final SiegeEventRepository siegeEventRepository;
     private final SiegeResultRepository siegeResultRepository;
     private final UserRepository userRepository;
-    private final WalletRepository walletRepository;
     private final TerritoryRepository territoryRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final SimpMessagingTemplate messagingTemplate;
@@ -59,48 +59,85 @@ public class MilitaryService {
     @Transactional
     public ProduceUnitResponse produceUnit(Long userId, ProduceUnitRequest request) {
         UnitType unitType = findUnitTypeOrThrow(request.unitTypeId());
-        validateBarracksExists(userId);
-        validateBarracksLevel(userId, unitType.getLevel());
-        validateUnitCapacity(userId, request.quantity());
+        LocationRef loc =
+                resolveOwnedLocation(userId, request.locationId(), request.locationType());
+        validateBarracksAtLocation(loc, unitType.getLevel());
+        validateUnitCapacityAtLocation(loc, request.quantity());
 
-        Wallet wallet = findWalletWithLockOrThrow(userId);
         int gpCost = unitType.getCostGp() * request.quantity();
         int foodCost = unitType.getFoodCost() * request.quantity();
-        validateGp(wallet, gpCost);
-        validateFood(wallet, foodCost);
-        wallet.spendGp(gpCost);
-        wallet.spendFood(foodCost);
+        List<BuildingInstance> storages = findLocationStoragesWithLock(loc);
+        int gpRemaining = chargeLocationGpAndFood(storages, gpCost, foodCost);
 
-        addIdleUnits(userId, unitType, request.quantity());
+        addReadyIdleAtLocation(userId, unitType, loc, request.quantity());
         log.info(
-                "유닛 생산 완료. userId={}, unitTypeId={}, quantity={}",
+                "유닛 생산 완료. userId={}, unitTypeId={}, quantity={}, {}={}",
                 userId,
                 unitType.getId(),
-                request.quantity());
-        return ProduceUnitResponse.of(unitType, request.quantity(), wallet.getAvailableGp());
+                request.quantity(),
+                loc.type(),
+                loc.id());
+        return ProduceUnitResponse.of(unitType, request.quantity(), gpRemaining);
     }
 
     @Transactional
     public DeployUnitResponse deployUnit(Long userId, DeployUnitRequest request) {
         Territory territory = findOwnedTerritoryOrThrow(request.territoryId(), userId);
+        LocationRef source =
+                resolveOwnedLocation(
+                        userId, request.sourceLocationId(), request.sourceLocationType());
         UnitInstance idle =
-                findSufficientIdleUnit(userId, request.unitTypeId(), request.quantity());
+                findReadyIdleAtLocationOrThrow(
+                        userId, request.unitTypeId(), source, request.quantity());
 
         idle.subtractQuantity(request.quantity());
-        addDeployedUnits(userId, idle.getUnitType(), territory, request.quantity());
+        addDeployedUnits(userId, idle.getUnitType(), source, territory, request.quantity());
         return new DeployUnitResponse(request.quantity(), request.territoryId());
     }
 
     @Transactional
     public RecallUnitResponse recallUnit(Long userId, RecallUnitRequest request) {
         findOwnedTerritoryOrThrow(request.territoryId(), userId);
-        UnitInstance deployed =
-                findSufficientDeployedUnit(
-                        userId, request.unitTypeId(), request.territoryId(), request.quantity());
+        List<UnitInstance> deployedStacks =
+                unitInstanceRepository.findByUserIdAndUnitTypeIdAndDeployedTerritoryIdOrderByIdAsc(
+                        userId, request.unitTypeId(), request.territoryId());
+        int recalled = recallFromDeployed(deployedStacks, request.quantity());
+        int remaining = deployedStacks.stream().mapToInt(UnitInstance::getQuantity).sum();
+        return new RecallUnitResponse(recalled, remaining);
+    }
 
-        deployed.subtractQuantity(request.quantity());
-        addIdleUnits(userId, deployed.getUnitType(), request.quantity());
-        return new RecallUnitResponse(request.quantity(), deployed.getQuantity());
+    @Transactional
+    public MoveUnitResponse moveUnit(Long userId, MoveUnitRequest request) {
+        LocationRef source =
+                resolveOwnedLocation(
+                        userId, request.sourceLocationId(), request.sourceLocationType());
+        LocationRef dest =
+                resolveOwnedLocation(userId, request.destLocationId(), request.destLocationType());
+        validateDifferentLocation(source, dest);
+
+        UnitInstance idle =
+                findReadyIdleAtLocationOrThrow(
+                        userId, request.unitTypeId(), source, request.quantity());
+        validateUnitCapacityAtLocation(dest, request.quantity());
+
+        int gpCost = MilitaryPolicy.UNIT_MOVE_COST_GP * request.quantity();
+        List<BuildingInstance> storages = findLocationStoragesWithLock(source);
+        int gpRemaining = chargeLocationGp(storages, gpCost);
+
+        idle.subtractQuantity(request.quantity());
+        LocalDateTime completeAt =
+                LocalDateTime.now().plusMinutes(MilitaryPolicy.UNIT_MOVE_MINUTES);
+        saveInTransitUnit(userId, idle.getUnitType(), dest, request.quantity(), completeAt);
+        log.info(
+                "유닛 이동 시작. userId={}, unitTypeId={}, quantity={}, {}={} -> {}={}",
+                userId,
+                request.unitTypeId(),
+                request.quantity(),
+                source.type(),
+                source.id(),
+                dest.type(),
+                dest.id());
+        return new MoveUnitResponse(request.quantity(), gpRemaining, completeAt);
     }
 
     @Transactional
@@ -116,7 +153,7 @@ public class MilitaryService {
         BuildingInstance targetBuilding = resolveTargetBuilding(request.targetBuildingId());
         consumeAttackToken(token, targetBuilding);
 
-        findSufficientIdleUnit(userId, request.unitTypeId(), request.unitQuantity());
+        validateReadyIdleAvailable(userId, request.unitTypeId(), request.unitQuantity());
 
         User attacker = findUserOrThrow(userId);
         SiegeEvent siege = buildSiegeEvent(attacker, target, targetBuilding, request);
@@ -178,8 +215,7 @@ public class MilitaryService {
 
     public UnitListResponse getUnitList(Long userId) {
         List<UnitInstance> instances = unitInstanceRepository.findByUserId(userId);
-        Wallet wallet = findWalletOrThrow(userId);
-        return buildUnitListResponse(instances, wallet.getAvailableFood());
+        return buildUnitListResponse(userId, instances);
     }
 
     public SiegeEventListResponse getSiegeEvents(String statusParam, Pageable pageable) {
@@ -206,90 +242,264 @@ public class MilitaryService {
                 .orElseThrow(() -> new CustomException(ErrorCode.UNIT_TYPE_NOT_FOUND));
     }
 
-    private void validateBarracksExists(Long userId) {
-        if (!buildingInstanceRepository.existsActiveBarracksByOwnerId(userId)) {
-            throw new CustomException(ErrorCode.NO_BARRACKS);
+    /** 유닛이 귀속·생산되는 위치. 영토 또는 섬 중 하나. */
+    private record LocationRef(
+            LocationType type, Long id, Territory territory, HomeIsland island) {}
+
+    private LocationRef resolveOwnedLocation(Long userId, Long locationId, LocationType type) {
+        if (type == LocationType.TERRITORY) {
+            return new LocationRef(
+                    type, locationId, findOwnedTerritoryOrThrow(locationId, userId), null);
         }
+        return new LocationRef(type, locationId, null, findOwnedIslandOrThrow(locationId, userId));
     }
 
-    private void validateBarracksLevel(Long userId, int requiredLevel) {
-        int maxLevel = buildingInstanceRepository.findMaxBarracksLevelByOwnerId(userId).orElse(0);
+    private HomeIsland findOwnedIslandOrThrow(Long islandId, Long userId) {
+        HomeIsland island =
+                homeIslandRepository
+                        .findByUserId(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.ISLAND_NOT_FOUND));
+        if (!island.getId().equals(islandId)) {
+            throw new CustomException(ErrorCode.ISLAND_NOT_FOUND);
+        }
+        return island;
+    }
+
+    private void validateBarracksAtLocation(LocationRef loc, int requiredLevel) {
+        boolean exists =
+                loc.type() == LocationType.TERRITORY
+                        ? buildingInstanceRepository.existsActiveBarracksByTerritoryId(loc.id())
+                        : buildingInstanceRepository.existsActiveBarracksByIslandId(loc.id());
+        if (!exists) {
+            throw new CustomException(ErrorCode.NO_BARRACKS);
+        }
+        int maxLevel =
+                (loc.type() == LocationType.TERRITORY
+                                ? buildingInstanceRepository.findMaxBarracksLevelByTerritoryId(
+                                        loc.id())
+                                : buildingInstanceRepository.findMaxBarracksLevelByIslandId(
+                                        loc.id()))
+                        .orElse(0);
         if (maxLevel < requiredLevel) {
             throw new CustomException(ErrorCode.BARRACKS_LEVEL_INSUFFICIENT);
         }
     }
 
-    private void validateUnitCapacity(Long userId, int quantity) {
-        int current = nullSafe(unitInstanceRepository.sumQuantityByUserId(userId));
-        int capacity = calculateTotalUnitCapacity(userId);
-        if (current + quantity > capacity) {
+    private void validateUnitCapacityAtLocation(LocationRef loc, int quantity) {
+        int current =
+                nullSafe(
+                        loc.type() == LocationType.TERRITORY
+                                ? unitInstanceRepository.sumQuantityByHomeTerritoryId(loc.id())
+                                : unitInstanceRepository.sumQuantityByHomeIslandId(loc.id()));
+        if (current + quantity > locationCapacity(loc)) {
             throw new CustomException(ErrorCode.UNIT_CAPACITY_EXCEEDED);
         }
     }
 
-    private int calculateTotalUnitCapacity(Long userId) {
-        List<Integer> castleLevels =
-                buildingInstanceRepository.findActiveCastleLevelsByOwnerId(userId);
-        int castleSlots = castleLevels.stream().mapToInt(MilitaryPolicy::castleUnitSlots).sum();
-        int residenceSlots =
+    private int locationCapacity(LocationRef loc) {
+        int castleLevel =
+                (loc.type() == LocationType.TERRITORY
+                                ? buildingInstanceRepository.findCastleLevelByTerritoryId(loc.id())
+                                : buildingInstanceRepository.findCastleLevelByIslandId(loc.id()))
+                        .orElse(0);
+        int residence =
                 nullSafe(
-                        buildingInstanceRepository.sumResidenceCapacityByOwnerId(
-                                userId, java.time.LocalDateTime.now()));
-        return (castleLevels.isEmpty() ? MilitaryPolicy.DEFAULT_UNIT_SLOTS : castleSlots)
-                + residenceSlots;
+                        loc.type() == LocationType.TERRITORY
+                                ? buildingInstanceRepository.sumResidenceCapacityByTerritoryId(
+                                        loc.id(), LocalDateTime.now())
+                                : buildingInstanceRepository.sumResidenceCapacityByIslandId(
+                                        loc.id(), LocalDateTime.now()));
+        return MilitaryPolicy.castleUnitSlots(castleLevel) + residence;
+    }
+
+    private List<BuildingInstance> findLocationStoragesWithLock(LocationRef loc) {
+        return loc.type() == LocationType.TERRITORY
+                ? buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(loc.id())
+                : buildingInstanceRepository.findStorageBuildingsByIslandIdWithLock(loc.id());
+    }
+
+    private int chargeLocationGpAndFood(List<BuildingInstance> storages, int gpCost, int foodCost) {
+        if (storages.isEmpty()) {
+            throw new CustomException(ErrorCode.STORAGE_NOT_FOUND);
+        }
+        if (StoragePolicy.totalGp(storages) < gpCost) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_GP);
+        }
+        if (StoragePolicy.totalFood(storages) < foodCost) {
+            throw new CustomException(ErrorCode.FOOD_INSUFFICIENT);
+        }
+        StoragePolicy.drainGp(storages, gpCost);
+        StoragePolicy.drainFood(storages, foodCost);
+        return StoragePolicy.totalGp(storages);
+    }
+
+    private int chargeLocationGp(List<BuildingInstance> storages, int gpCost) {
+        if (storages.isEmpty()) {
+            throw new CustomException(ErrorCode.STORAGE_NOT_FOUND);
+        }
+        if (StoragePolicy.totalGp(storages) < gpCost) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_GP);
+        }
+        StoragePolicy.drainGp(storages, gpCost);
+        return StoragePolicy.totalGp(storages);
+    }
+
+    private void validateDifferentLocation(LocationRef source, LocationRef dest) {
+        if (source.type() == dest.type() && source.id().equals(dest.id())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
     }
 
     private int nullSafe(Integer value) {
         return value != null ? value : 0;
     }
 
-    private void validateFood(Wallet wallet, int cost) {
-        if (wallet.getAvailableFood() < cost) {
-            throw new CustomException(ErrorCode.FOOD_INSUFFICIENT);
+    private UnitInstance newUnitAtLocation(
+            Long userId,
+            UnitType unitType,
+            LocationRef home,
+            int quantity,
+            Territory deployed,
+            LocalDateTime moveCompleteAt) {
+        User user = findUserOrThrow(userId);
+        UnitInstance.UnitInstanceBuilder builder =
+                UnitInstance.builder()
+                        .user(user)
+                        .unitType(unitType)
+                        .quantity(quantity)
+                        .moveCompleteAt(moveCompleteAt);
+        if (home.type() == LocationType.TERRITORY) {
+            builder.homeTerritory(home.territory());
+        } else {
+            builder.homeIsland(home.island());
         }
-    }
-
-    private Wallet findWalletOrThrow(Long userId) {
-        return walletRepository
-                .findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    }
-
-    private Wallet findWalletWithLockOrThrow(Long userId) {
-        return walletRepository
-                .findByIdWithLock(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    }
-
-    private void validateGp(Wallet wallet, int cost) {
-        if (wallet.getAvailableGp() < cost) {
-            throw new CustomException(ErrorCode.INSUFFICIENT_GP);
+        UnitInstance instance = builder.build();
+        if (deployed != null) {
+            instance.deployTo(deployed);
         }
+        return instance;
     }
 
-    private void addIdleUnits(Long userId, UnitType unitType, int quantity) {
-        unitInstanceRepository
-                .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(userId, unitType.getId())
+    /** 대기(ready idle) 스택에 병합한다. 없으면 그 위치 귀속으로 새로 만든다. */
+    private void addReadyIdleAtLocation(
+            Long userId, UnitType unitType, LocationRef loc, int quantity) {
+        findReadyIdleAtLocation(userId, unitType.getId(), loc)
                 .ifPresentOrElse(
-                        existing -> existing.addQuantity(quantity),
-                        () -> {
-                            User user = findUserOrThrow(userId);
-                            UnitInstance newInstance =
-                                    UnitInstance.builder()
-                                            .user(user)
-                                            .unitType(unitType)
-                                            .quantity(quantity)
-                                            .homeIsland(findHomeIslandOrThrow(userId))
-                                            .build();
-                            unitInstanceRepository.save(newInstance);
-                        });
+                        e -> e.addQuantity(quantity),
+                        () ->
+                                unitInstanceRepository.save(
+                                        newUnitAtLocation(
+                                                userId, unitType, loc, quantity, null, null)));
     }
 
-    /** 유닛 귀속지 — 아직 위치별 생산이 아니므로 홈 아일랜드로 둔다 (자원 스코프 Stage 2). */
-    private HomeIsland findHomeIslandOrThrow(Long userId) {
-        return homeIslandRepository
-                .findByUserId(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ISLAND_NOT_FOUND));
+    private Optional<UnitInstance> findReadyIdleAtLocation(
+            Long userId, Long unitTypeId, LocationRef loc) {
+        return loc.type() == LocationType.TERRITORY
+                ? unitInstanceRepository
+                        .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                userId, unitTypeId, loc.id())
+                : unitInstanceRepository
+                        .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                userId, unitTypeId, loc.id());
+    }
+
+    private UnitInstance findReadyIdleAtLocationOrThrow(
+            Long userId, Long unitTypeId, LocationRef loc, int required) {
+        UnitInstance idle =
+                findReadyIdleAtLocation(userId, unitTypeId, loc)
+                        .orElseThrow(() -> new CustomException(ErrorCode.INSUFFICIENT_UNITS));
+        if (idle.getQuantity() < required) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_UNITS);
+        }
+        return idle;
+    }
+
+    /** 배치(deployed) 스택에 병합한다 — (귀속지·배치영토)가 같은 스택으로. */
+    private void addDeployedUnits(
+            Long userId, UnitType unitType, LocationRef source, Territory territory, int quantity) {
+        Optional<UnitInstance> existing =
+                source.type() == LocationType.TERRITORY
+                        ? unitInstanceRepository
+                                .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryId(
+                                        userId, unitType.getId(), source.id(), territory.getId())
+                        : unitInstanceRepository
+                                .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryId(
+                                        userId, unitType.getId(), source.id(), territory.getId());
+        existing.ifPresentOrElse(
+                e -> e.addQuantity(quantity),
+                () ->
+                        unitInstanceRepository.save(
+                                newUnitAtLocation(
+                                        userId, unitType, source, quantity, territory, null)));
+    }
+
+    /** 배치 스택들에서 회수해 각자의 귀속지 대기 스택으로 되돌린다. */
+    private int recallFromDeployed(List<UnitInstance> deployedStacks, int quantity) {
+        int available = deployedStacks.stream().mapToInt(UnitInstance::getQuantity).sum();
+        if (available < quantity) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_UNITS);
+        }
+        int remaining = quantity;
+        for (UnitInstance deployed : deployedStacks) {
+            if (remaining == 0) break;
+            int take = Math.min(remaining, deployed.getQuantity());
+            deployed.subtractQuantity(take);
+            returnToHomeIdle(deployed, take);
+            remaining -= take;
+        }
+        return quantity;
+    }
+
+    private void returnToHomeIdle(UnitInstance deployed, int quantity) {
+        Long userId = deployed.getUser().getId();
+        UnitType unitType = deployed.getUnitType();
+        if (deployed.getHomeTerritory() != null) {
+            Territory home = deployed.getHomeTerritory();
+            unitInstanceRepository
+                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                            userId, unitType.getId(), home.getId())
+                    .ifPresentOrElse(
+                            e -> e.addQuantity(quantity),
+                            () ->
+                                    unitInstanceRepository.save(
+                                            UnitInstance.builder()
+                                                    .user(deployed.getUser())
+                                                    .unitType(unitType)
+                                                    .quantity(quantity)
+                                                    .homeTerritory(home)
+                                                    .build()));
+        } else {
+            HomeIsland home = deployed.getHomeIsland();
+            unitInstanceRepository
+                    .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                            userId, unitType.getId(), home.getId())
+                    .ifPresentOrElse(
+                            e -> e.addQuantity(quantity),
+                            () ->
+                                    unitInstanceRepository.save(
+                                            UnitInstance.builder()
+                                                    .user(deployed.getUser())
+                                                    .unitType(unitType)
+                                                    .quantity(quantity)
+                                                    .homeIsland(home)
+                                                    .build()));
+        }
+    }
+
+    private void saveInTransitUnit(
+            Long userId,
+            UnitType unitType,
+            LocationRef dest,
+            int quantity,
+            LocalDateTime completeAt) {
+        unitInstanceRepository.save(
+                newUnitAtLocation(userId, unitType, dest, quantity, null, completeAt));
+    }
+
+    private void validateReadyIdleAvailable(Long userId, Long unitTypeId, int quantity) {
+        if (nullSafe(unitInstanceRepository.sumReadyIdleQuantity(userId, unitTypeId)) < quantity) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_UNITS);
+        }
     }
 
     private Territory findOwnedTerritoryOrThrow(Long territoryId, Long userId) {
@@ -304,51 +514,6 @@ public class MilitaryService {
         return territoryRepository
                 .findById(territoryId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TERRITORY_NOT_FOUND));
-    }
-
-    private UnitInstance findSufficientIdleUnit(Long userId, Long unitTypeId, int required) {
-        UnitInstance idle =
-                unitInstanceRepository
-                        .findByUserIdAndUnitTypeIdAndDeployedTerritoryIsNull(userId, unitTypeId)
-                        .orElseThrow(() -> new CustomException(ErrorCode.INSUFFICIENT_UNITS));
-        if (idle.getQuantity() < required) {
-            throw new CustomException(ErrorCode.INSUFFICIENT_UNITS);
-        }
-        return idle;
-    }
-
-    private UnitInstance findSufficientDeployedUnit(
-            Long userId, Long unitTypeId, Long territoryId, int required) {
-        UnitInstance deployed =
-                unitInstanceRepository
-                        .findByUserIdAndUnitTypeIdAndDeployedTerritoryId(
-                                userId, unitTypeId, territoryId)
-                        .orElseThrow(() -> new CustomException(ErrorCode.INSUFFICIENT_UNITS));
-        if (deployed.getQuantity() < required) {
-            throw new CustomException(ErrorCode.INSUFFICIENT_UNITS);
-        }
-        return deployed;
-    }
-
-    private void addDeployedUnits(
-            Long userId, UnitType unitType, Territory territory, int quantity) {
-        unitInstanceRepository
-                .findByUserIdAndUnitTypeIdAndDeployedTerritoryId(
-                        userId, unitType.getId(), territory.getId())
-                .ifPresentOrElse(
-                        existing -> existing.addQuantity(quantity),
-                        () -> {
-                            User user = findUserOrThrow(userId);
-                            UnitInstance newInstance =
-                                    UnitInstance.builder()
-                                            .user(user)
-                                            .unitType(unitType)
-                                            .quantity(quantity)
-                                            .homeIsland(findHomeIslandOrThrow(userId))
-                                            .build();
-                            newInstance.deployTo(territory);
-                            unitInstanceRepository.save(newInstance);
-                        });
     }
 
     private void validateNotOwnTerritory(Territory territory, Long userId) {
@@ -481,41 +646,99 @@ public class MilitaryService {
         }
     }
 
-    /** 보유 유닛이 없어도 전체 유닛 종류를 돌려준다 — 훈련 화면이 이 목록으로 생산 대상을 고른다. */
-    private UnitListResponse buildUnitListResponse(
-            List<UnitInstance> instances, int availableFood) {
-        Map<Long, List<UnitInstance>> grouped = new LinkedHashMap<>();
+    /** 유저의 위치(소유 영토 + 홈 아일랜드)별로 유닛·수용량·저장 식량을 묶어 돌려준다. */
+    private UnitListResponse buildUnitListResponse(Long userId, List<UnitInstance> instances) {
+        Map<String, List<UnitInstance>> byLocation = new LinkedHashMap<>();
         for (UnitInstance inst : instances) {
-            grouped.computeIfAbsent(inst.getUnitType().getId(), k -> new ArrayList<>()).add(inst);
+            byLocation.computeIfAbsent(locationKey(inst), k -> new ArrayList<>()).add(inst);
         }
 
-        List<UnitListResponse.UnitDto> dtos = new ArrayList<>();
-
-        for (UnitType unitType : unitTypeRepository.findAll()) {
-            List<UnitInstance> owned = grouped.getOrDefault(unitType.getId(), List.of());
-            int total = owned.stream().mapToInt(UnitInstance::getQuantity).sum();
-            int deployed =
-                    owned.stream()
-                            .filter(i -> i.getDeployedTerritory() != null)
-                            .mapToInt(UnitInstance::getQuantity)
-                            .sum();
-            dtos.add(
-                    new UnitListResponse.UnitDto(
-                            unitType.getId(),
-                            unitType.getName(),
-                            unitType.getDisplayName(),
-                            unitType.getIcon(),
-                            unitType.getColorHex(),
-                            total,
-                            deployed,
-                            total - deployed,
-                            unitType.getAttackPower(),
-                            unitType.getDefensePower(),
-                            unitType.getCostGp(),
-                            unitType.getFoodCost(),
-                            unitType.getLevel()));
+        List<UnitListResponse.LocationUnits> locations = new ArrayList<>();
+        for (Territory t : territoryRepository.findByOwnerId(userId)) {
+            LocationRef loc = new LocationRef(LocationType.TERRITORY, t.getId(), t, null);
+            locations.add(
+                    toLocationUnits(
+                            loc,
+                            t.getCoordX(),
+                            t.getCoordY(),
+                            byLocation.getOrDefault("T" + t.getId(), List.of())));
         }
-        return new UnitListResponse(dtos, availableFood);
+        homeIslandRepository
+                .findByUserId(userId)
+                .ifPresent(
+                        island -> {
+                            LocationRef loc =
+                                    new LocationRef(
+                                            LocationType.ISLAND, island.getId(), null, island);
+                            locations.add(
+                                    toLocationUnits(
+                                            loc,
+                                            null,
+                                            null,
+                                            byLocation.getOrDefault(
+                                                    "I" + island.getId(), List.of())));
+                        });
+        return new UnitListResponse(locations);
+    }
+
+    private String locationKey(UnitInstance inst) {
+        return inst.getHomeTerritory() != null
+                ? "T" + inst.getHomeTerritory().getId()
+                : "I" + inst.getHomeIsland().getId();
+    }
+
+    private UnitListResponse.LocationUnits toLocationUnits(
+            LocationRef loc, Integer coordX, Integer coordY, List<UnitInstance> units) {
+        List<BuildingInstance> storages =
+                loc.type() == LocationType.TERRITORY
+                        ? buildingInstanceRepository.findStorageBuildingsByTerritoryId(loc.id())
+                        : buildingInstanceRepository.findStorageBuildingsByIslandId(loc.id());
+        Map<Long, List<UnitInstance>> byType = new LinkedHashMap<>();
+        for (UnitInstance u : units) {
+            byType.computeIfAbsent(u.getUnitType().getId(), k -> new ArrayList<>()).add(u);
+        }
+        List<UnitListResponse.UnitDto> unitDtos = new ArrayList<>();
+        for (List<UnitInstance> group : byType.values()) {
+            unitDtos.add(toUnitDto(group));
+        }
+        return new UnitListResponse.LocationUnits(
+                loc.type().name(),
+                loc.id(),
+                coordX,
+                coordY,
+                locationCapacity(loc),
+                StoragePolicy.totalFood(storages),
+                unitDtos);
+    }
+
+    private UnitListResponse.UnitDto toUnitDto(List<UnitInstance> group) {
+        UnitType ut = group.get(0).getUnitType();
+        int total = group.stream().mapToInt(UnitInstance::getQuantity).sum();
+        int deployed =
+                group.stream()
+                        .filter(u -> u.getDeployedTerritory() != null)
+                        .mapToInt(UnitInstance::getQuantity)
+                        .sum();
+        int inTransit =
+                group.stream()
+                        .filter(UnitInstance::isInTransit)
+                        .mapToInt(UnitInstance::getQuantity)
+                        .sum();
+        return new UnitListResponse.UnitDto(
+                ut.getId(),
+                ut.getName(),
+                ut.getDisplayName(),
+                ut.getIcon(),
+                ut.getColorHex(),
+                total,
+                deployed,
+                total - deployed - inTransit,
+                inTransit,
+                ut.getAttackPower(),
+                ut.getDefensePower(),
+                ut.getCostGp(),
+                ut.getFoodCost(),
+                ut.getLevel());
     }
 
     private SiegeEvent.SiegeStatus parseSiegeStatus(String statusParam) {
