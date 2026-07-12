@@ -62,6 +62,11 @@ class UserServiceTest {
 
     @Mock private UserRepository userRepository;
     @Mock private WalletRepository walletRepository;
+
+    @Mock
+    private com.territorial.auction.domain.building.repository.GlobalVaultRepository
+            globalVaultRepository;
+
     @Mock private HomeIslandRepository homeIslandRepository;
     @Mock private UserSeasonPassRepository userSeasonPassRepository;
     @Mock private TerritoryRepository territoryRepository;
@@ -98,6 +103,14 @@ class UserServiceTest {
         ReflectionTestUtils.setField(wallet, "availableAp", 300);
         ReflectionTestUtils.setField(wallet, "lockedAp", 0);
         return wallet;
+    }
+
+    // 지갑 화면의 GP 는 금고 잔액을 보여준다 — 금고에 1500 을 둔다.
+    private void stubVaultGp(Long userId, int gp) {
+        com.territorial.auction.domain.building.entity.GlobalVault vault =
+                com.territorial.auction.domain.building.entity.GlobalVault.builder().build();
+        ReflectionTestUtils.setField(vault, "storedGp", gp);
+        given(globalVaultRepository.findById(userId)).willReturn(java.util.Optional.of(vault));
     }
 
     private HomeIsland sampleIsland(User user) {
@@ -151,6 +164,7 @@ class UserServiceTest {
                     .willReturn(Optional.empty());
             given(territoryRepository.countByOwnerId(1L)).willReturn(3L);
 
+            stubVaultGp(1L, 1500);
             MyProfileResponse response = userService.getMyProfile(1L);
 
             assertThat(response.userId()).isEqualTo(1L);
@@ -489,6 +503,7 @@ class UserServiceTest {
 
             given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
 
+            stubVaultGp(1L, 1500);
             MyWalletResponse response = userService.getMyWallet(1L);
 
             assertThat(response.availableGP()).isEqualTo(1500);
