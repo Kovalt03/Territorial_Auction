@@ -43,8 +43,22 @@ class AdminUserServiceTest {
 
     @Mock private UserRepository userRepository;
     @Mock private WalletRepository walletRepository;
+
+    @Mock
+    private com.territorial.auction.domain.building.repository.GlobalVaultRepository
+            globalVaultRepository;
+
     @Mock private TerritoryRepository territoryRepository;
     @Mock private AdminAuditLogger adminAuditLogger;
+
+    private com.territorial.auction.domain.building.entity.GlobalVault vault(User user, int gp) {
+        com.territorial.auction.domain.building.entity.GlobalVault v =
+                com.territorial.auction.domain.building.entity.GlobalVault.builder()
+                        .user(user)
+                        .build();
+        ReflectionTestUtils.setField(v, "storedGp", gp);
+        return v;
+    }
 
     private User user(long id, UserStatus status, UserRole role) {
         User u =
@@ -98,7 +112,8 @@ class AdminUserServiceTest {
         void getUser_success() {
             User u = user(1L, UserStatus.ACTIVE, UserRole.USER);
             given(userRepository.findById(1L)).willReturn(Optional.of(u));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet(u, 500, 30)));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet(u, 500, 0)));
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(u, 30)));
             given(territoryRepository.countByOwnerId(1L)).willReturn(3L);
 
             AdminUserDetailResponse res = adminUserService.getUser(1L);
@@ -187,9 +202,10 @@ class AdminUserServiceTest {
         @DisplayName("AP 차감·GP 지급 성공")
         void adjust_success() {
             User u = user(1L, UserStatus.ACTIVE, UserRole.USER);
-            Wallet w = wallet(u, 1000, 50);
+            Wallet w = wallet(u, 1000, 0);
             given(userRepository.findById(1L)).willReturn(Optional.of(u));
             given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(w));
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(u, 50)));
             given(territoryRepository.countByOwnerId(1L)).willReturn(0L);
 
             AdminUserDetailResponse res =
@@ -249,6 +265,10 @@ class AdminUserServiceTest {
                     .willReturn(Optional.of(wallet(u1, 1000, 0)));
             given(walletRepository.findByIdWithLock(2L))
                     .willReturn(Optional.of(wallet(u2, 1000, 0)));
+            given(userRepository.findById(1L)).willReturn(Optional.of(u1));
+            given(userRepository.findById(2L)).willReturn(Optional.of(u2));
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(u1, 0)));
+            given(globalVaultRepository.findById(2L)).willReturn(Optional.of(vault(u2, 0)));
 
             AdminBulkResultResponse res =
                     adminUserService.bulkAdjustWallet(

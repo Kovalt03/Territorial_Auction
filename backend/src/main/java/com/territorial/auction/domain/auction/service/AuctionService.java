@@ -18,7 +18,6 @@ import com.territorial.auction.domain.auction.repository.AuctionHistoryRepositor
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
-import com.territorial.auction.domain.military.event.CastleDestroyedEvent;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
@@ -30,7 +29,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -289,36 +287,5 @@ public class AuctionService {
         if (!endAt.isAfter(now.plusSeconds(AuctionPolicy.ANTI_SNIPE_WINDOW_SECONDS))) {
             auction.extendEndAt(endAt.plusSeconds(AuctionPolicy.ANTI_SNIPE_EXTEND_SECONDS));
         }
-    }
-
-    @EventListener
-    @Transactional
-    public void handleCastleDestroyed(CastleDestroyedEvent event) {
-        Territory territory =
-                territoryRepository
-                        .findById(event.territoryId())
-                        .orElseThrow(() -> new CustomException(ErrorCode.TERRITORY_NOT_FOUND));
-        territory.release(LocalDateTime.now());
-        createForcedAuction(territory);
-        log.info("Castle 파괴로 인한 강제 경매 생성. territoryId={}", event.territoryId());
-    }
-
-    private void createForcedAuction(Territory territory) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime endAt = now.plusHours(AuctionPolicy.AUCTION_DURATION_HOURS);
-        String grade = territory.getGrade() != null ? territory.getGrade().getGrade() : "";
-        int startPrice =
-                AuctionPolicy.GRADE_START_PRICES.getOrDefault(
-                        grade, AuctionPolicy.DEFAULT_START_PRICE);
-        Auction auction =
-                Auction.builder()
-                        .territory(territory)
-                        .currentPrice(startPrice)
-                        .startAt(now)
-                        .endAt(endAt)
-                        .maxExtendUntil(endAt.plusMinutes(AuctionPolicy.MAX_EXTEND_UNTIL_MINUTES))
-                        .build();
-        auctionRepository.save(auction);
-        territory.startBidding();
     }
 }

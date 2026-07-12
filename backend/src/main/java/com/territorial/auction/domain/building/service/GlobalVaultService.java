@@ -10,6 +10,7 @@ import com.territorial.auction.domain.building.repository.BuildingInstanceReposi
 import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.global.exception.CustomException;
@@ -17,9 +18,12 @@ import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -66,6 +70,30 @@ public class GlobalVaultService {
         } else {
             return transferFromVault(vault, storages, request);
         }
+    }
+
+    // 영토 상실(토지세 미납·점유 만료) 시 저장 GP 일부를 원소유자 금고로 환수하고 나머지·식량은 소멸시킨다.
+    // 성 파괴 인계는 SiegeService가 직접 공격자 금고로 넣으므로 여기서 다루지 않는다.
+    @EventListener
+    @Transactional
+    public void handleTerritoryLost(TerritoryLostEvent event) {
+        List<BuildingInstance> storages =
+                buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(
+                        event.territoryId());
+        if (storages.isEmpty()) {
+            return;
+        }
+        int totalGp = StoragePolicy.drainAllGp(storages);
+        StoragePolicy.drainAllFood(storages);
+        int recovered = (int) Math.floor(totalGp * StoragePolicy.TERRITORY_LOSS_TRANSFER_RATE);
+        if (recovered > 0) {
+            findOrCreateVault(event.formerOwnerId()).receiveGp(recovered);
+        }
+        log.info(
+                "영토 상실 저장 GP 환수. territoryId={}, formerOwnerId={}, recoveredGp={}",
+                event.territoryId(),
+                event.formerOwnerId(),
+                recovered);
     }
 
     // ── private helpers ────────────────────────────────────────────────────────

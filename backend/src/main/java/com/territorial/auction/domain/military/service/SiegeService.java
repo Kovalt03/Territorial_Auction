@@ -1,19 +1,24 @@
 package com.territorial.auction.domain.military.service;
 
+import com.territorial.auction.domain.auction.AuctionPolicy;
+import com.territorial.auction.domain.building.StoragePolicy;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
+import com.territorial.auction.domain.map.dto.MapUpdateBroadcast;
+import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.military.MilitaryPolicy;
 import com.territorial.auction.domain.military.dto.SiegeAlert;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
 import com.territorial.auction.domain.military.entity.SiegeResult;
 import com.territorial.auction.domain.military.entity.UnitInstance;
-import com.territorial.auction.domain.military.event.CastleDestroyedEvent;
 import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
 import com.territorial.auction.domain.season.entity.Season;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
+import com.territorial.auction.domain.user.entity.User;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +41,7 @@ public class SiegeService {
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository
             buildingLevelSpecRepository;
-    private final WalletRepository walletRepository;
+    private final GlobalVaultRepository globalVaultRepository;
     private final SeasonRepository seasonRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SimpMessagingTemplate messagingTemplate;
@@ -237,12 +242,21 @@ public class SiegeService {
         }
 
         if (totalLooted > 0) {
-            final int lootedGp = totalLooted;
-            walletRepository
-                    .findById(event.getAttacker().getId())
-                    .ifPresent(w -> w.addGp(lootedGp));
+            creditAttackerVault(event.getAttacker(), totalLooted);
         }
         return totalLooted;
+    }
+
+    // 약탈 GP 는 공격자 금고로 들어간다 — 위치별 GP 원칙상 지갑이 아니라 금고가 유일한 위치 간 이동 수단.
+    private void creditAttackerVault(User attacker, int amount) {
+        GlobalVault vault =
+                globalVaultRepository
+                        .findById(attacker.getId())
+                        .orElseGet(
+                                () ->
+                                        globalVaultRepository.save(
+                                                GlobalVault.builder().user(attacker).build()));
+        vault.receiveGp(amount);
     }
 
     private void applyDebuff(SiegeEvent event) {
@@ -261,27 +275,27 @@ public class SiegeService {
     }
 
     private void applyCastleDamage(SiegeEvent event) {
-        Long territoryId = event.getTargetTerritory().getId();
         List<BuildingInstance> zone1Buildings =
-                buildingInstanceRepository.findActiveByTerritoryIdAndZone(territoryId, 1);
+                buildingInstanceRepository.findActiveByTerritoryIdAndZone(
+                        event.getTargetTerritory().getId(), 1);
 
-        if (event.getTargetBuilding() != null) {
-            applyDamageToTarget(event.getTargetBuilding(), territoryId);
-        } else {
-            applyDamageEvenly(zone1Buildings, territoryId);
+        boolean castleDestroyed =
+                event.getTargetBuilding() != null
+                        ? applyDamageToTarget(event.getTargetBuilding())
+                        : applyDamageEvenly(zone1Buildings);
+        if (castleDestroyed) {
+            takeOverTerritory(event);
         }
     }
 
-    private void applyDamageToTarget(BuildingInstance target, Long territoryId) {
+    private boolean applyDamageToTarget(BuildingInstance target) {
         int damage = target.getBuildingType().getMaxHp() / 2;
         target.takeDamage(damage);
-        if (target.isDestroyed() && "CASTLE".equals(target.getBuildingType().getName())) {
-            eventPublisher.publishEvent(new CastleDestroyedEvent(territoryId));
-        }
+        return target.isDestroyed() && "CASTLE".equals(target.getBuildingType().getName());
     }
 
-    private void applyDamageEvenly(List<BuildingInstance> buildings, Long territoryId) {
-        if (buildings.isEmpty()) return;
+    private boolean applyDamageEvenly(List<BuildingInstance> buildings) {
+        if (buildings.isEmpty()) return false;
         int damageEach = 100 / buildings.size();
         boolean castleDestroyed = false;
         for (BuildingInstance b : buildings) {
@@ -290,9 +304,56 @@ public class SiegeService {
                 castleDestroyed = true;
             }
         }
-        if (castleDestroyed) {
-            eventPublisher.publishEvent(new CastleDestroyedEvent(territoryId));
+        return castleDestroyed;
+    }
+
+    // 성 파괴 = 공격자 즉시 인계. 저장 GP 80%를 공격자 금고로(20% 소멸), 식량은 소멸,
+    // 방어 유닛은 전멸시키고 영토를 공격자에게 넘긴다. 건물은 그대로 인계(파괴된 성은 공격자가 수리).
+    private void takeOverTerritory(SiegeEvent event) {
+        Territory territory = event.getTargetTerritory();
+        List<BuildingInstance> storages =
+                buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(
+                        territory.getId());
+        int totalGp = StoragePolicy.drainAllGp(storages);
+        StoragePolicy.drainAllFood(storages);
+        int recovered = (int) Math.floor(totalGp * StoragePolicy.TERRITORY_LOSS_TRANSFER_RATE);
+        if (recovered > 0) {
+            creditAttackerVault(event.getAttacker(), recovered);
         }
+        annihilateDefenderUnits(event.getDefender().getId(), territory.getId());
+
+        territory.occupy(
+                event.getAttacker(),
+                LocalDateTime.now().plusDays(AuctionPolicy.OCCUPATION_DURATION_DAYS));
+        broadcastTakeoverAfterCommit(territory, event.getAttacker());
+        log.info(
+                "성 파괴로 영토 인계. territoryId={}, attackerId={}, recoveredGp={}",
+                territory.getId(),
+                event.getAttacker().getId(),
+                recovered);
+    }
+
+    private void annihilateDefenderUnits(Long defenderId, Long territoryId) {
+        unitInstanceRepository.deleteAll(
+                unitInstanceRepository.findByOwnerAndTerritoryAssociation(defenderId, territoryId));
+    }
+
+    private void broadcastTakeoverAfterCommit(Territory territory, User attacker) {
+        MapUpdateBroadcast update =
+                new MapUpdateBroadcast(
+                        territory.getId(),
+                        territory.getCoordX(),
+                        territory.getCoordY(),
+                        attacker.getId(),
+                        attacker.getNickname(),
+                        "OCCUPIED");
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        messagingTemplate.convertAndSend("/sub/map/update", update);
+                    }
+                });
     }
 
     private int sumQuantity(List<UnitInstance> units) {

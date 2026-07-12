@@ -22,6 +22,9 @@ public final class StoragePolicy {
     /** 저장소 레벨당 저장 용량 (GP·식량 각각). 저장소는 약탈 대상이다. */
     public static final int STORAGE_CAPACITY_PER_LEVEL = 5_000;
 
+    /** 영토 상실(성 파괴 인계·토지세 미납·점유 만료) 시 저장 GP를 회수하는 비율. 나머지는 소멸한다. */
+    public static final double TERRITORY_LOSS_TRANSFER_RATE = 0.8;
+
     public static int capacity(BuildingInstance building) {
         int perLevel =
                 building.getBuildingType().isCastle()
@@ -64,8 +67,26 @@ public final class StoragePolicy {
         return remaining;
     }
 
+    /** 모든 저장 공간의 GP를 전부 뺀다(영토 상실 정산용). 뺀 총량을 돌려준다. */
+    public static int drainAllGp(List<BuildingInstance> storages) {
+        int total = totalGp(storages);
+        for (BuildingInstance b : storages) {
+            b.drainGp(b.getStoredGp());
+        }
+        return total;
+    }
+
     public static int totalFood(List<BuildingInstance> storages) {
         return storages.stream().mapToInt(BuildingInstance::getStoredFood).sum();
+    }
+
+    /** 모든 저장 공간의 식량을 전부 뺀다(영토 상실 시 소멸). 뺀 총량을 돌려준다. */
+    public static int drainAllFood(List<BuildingInstance> storages) {
+        int total = totalFood(storages);
+        for (BuildingInstance b : storages) {
+            b.drainFood(b.getStoredFood());
+        }
+        return total;
     }
 
     public static int fillFood(List<BuildingInstance> storages, int amount) {

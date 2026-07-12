@@ -1,6 +1,11 @@
 package com.territorial.auction.domain.map.service;
 
 import com.territorial.auction.domain.auction.AuctionPolicy;
+import com.territorial.auction.domain.building.StoragePolicy;
+import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.GlobalVault;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.map.LandTaxPolicy;
 import com.territorial.auction.domain.map.dto.TaxLogResponse;
 import com.territorial.auction.domain.map.dto.TaxStatusResponse;
@@ -9,15 +14,12 @@ import com.territorial.auction.domain.map.entity.LandTaxLog.TaxStatus;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.LandTaxLogRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.notification.entity.NotificationLog.NotificationType;
 import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.user.entity.User;
-import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
-import com.territorial.auction.domain.user.repository.WalletRepository;
-import com.territorial.auction.global.exception.CustomException;
-import com.territorial.auction.global.exception.ErrorCode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -48,10 +51,12 @@ public class LandTaxService {
     private final TerritoryRepository territoryRepository;
     private final LandTaxLogRepository landTaxLogRepository;
     private final UserSeasonPassRepository userSeasonPassRepository;
-    private final WalletRepository walletRepository;
+    private final GlobalVaultRepository globalVaultRepository;
+    private final BuildingInstanceRepository buildingInstanceRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     public TaxStatusResponse getLandTaxStatus(Long userId) {
         String cacheKey = CACHE_KEY_PREFIX + userId;
@@ -165,13 +170,11 @@ public class LandTaxService {
     }
 
     private void applyTaxOrEvict(Long userId, int territoryCount, int taxAmount) {
-        Wallet wallet =
-                walletRepository
-                        .findById(userId)
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        if (wallet.getAvailableGp() >= taxAmount) {
-            wallet.spendGp(taxAmount);
+        // 위치별 GP 원칙의 유일한 예외 — 세금 회피 방지를 위해 금고에서 먼저,
+        // 부족하면 영토 저장소에서 자동 수금한다.
+        List<BuildingInstance> storages = collectTerritoryStorages(userId);
+        if (taxFundsAvailable(userId, storages) >= taxAmount) {
+            chargeTax(userId, taxAmount, storages);
             saveLog(userId, territoryCount, taxAmount, TaxStatus.PAID);
             clearGraceKey(userId);
             log.info(
@@ -208,6 +211,38 @@ public class LandTaxService {
         }
     }
 
+    // 유저의 모든 점유 영토 저장 공간(성+저장소)을 락과 함께 모은다.
+    private List<BuildingInstance> collectTerritoryStorages(Long userId) {
+        return territoryRepository
+                .findAllOccupiedByOwnerId(userId, Territory.TerritoryStatus.OCCUPIED)
+                .stream()
+                .flatMap(
+                        t ->
+                                buildingInstanceRepository
+                                        .findStorageBuildingsByTerritoryIdWithLock(t.getId())
+                                        .stream())
+                .toList();
+    }
+
+    private int taxFundsAvailable(Long userId, List<BuildingInstance> storages) {
+        int vaultGp =
+                globalVaultRepository.findById(userId).map(GlobalVault::getStoredGp).orElse(0);
+        return vaultGp + StoragePolicy.totalGp(storages);
+    }
+
+    private void chargeTax(Long userId, int taxAmount, List<BuildingInstance> storages) {
+        int remaining = taxAmount;
+        GlobalVault vault = globalVaultRepository.findById(userId).orElse(null);
+        if (vault != null) {
+            int fromVault = Math.min(remaining, vault.getStoredGp());
+            vault.withdrawGp(fromVault);
+            remaining -= fromVault;
+        }
+        if (remaining > 0) {
+            StoragePolicy.drainGp(storages, remaining);
+        }
+    }
+
     private void enforceSelectiveEviction(Long userId, int taxAmount) {
         List<Territory> territories =
                 territoryRepository.findAllOccupiedByOwnerId(
@@ -221,6 +256,7 @@ public class LandTaxService {
         int evictedCount = 0;
         for (Territory territory : territories) {
             if (remaining <= 0) break;
+            eventPublisher.publishEvent(new TerritoryLostEvent(territory.getId(), userId));
             territory.release(nextAuctionAt);
             int startPrice =
                     AuctionPolicy.GRADE_START_PRICES.getOrDefault(

@@ -2,7 +2,10 @@ package com.territorial.auction.domain.building.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 import com.territorial.auction.domain.building.dto.GlobalVaultResponse;
 import com.territorial.auction.domain.building.dto.VaultTransferRequest;
@@ -14,6 +17,7 @@ import com.territorial.auction.domain.building.repository.BuildingInstanceReposi
 import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.global.exception.CustomException;
@@ -339,6 +343,40 @@ class GlobalVaultServiceTest {
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.TRANSFER_COOLDOWN_ACTIVE);
+        }
+    }
+
+    // ─── handleTerritoryLost() ──────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("handleTerritoryLost()")
+    class HandleTerritoryLost {
+
+        @Test
+        @DisplayName("영토 상실 → 저장 GP 80% 원소유자 금고 환수, 나머지·식량 소멸")
+        void routesGpAndDestroysFood() {
+            ReflectionTestUtils.setField(storage, "storedFood", 3000);
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
+                    .willReturn(List.of(storage));
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+
+            globalVaultService.handleTerritoryLost(new TerritoryLostEvent(42L, 1L));
+
+            // GP 10,000 → 80%(8,000) 금고(기존 5,000 + 8,000 = 13,000), 저장소·식량 0
+            assertThat(vault.getStoredGp()).isEqualTo(13000);
+            assertThat(storage.getStoredGp()).isZero();
+            assertThat(storage.getStoredFood()).isZero();
+        }
+
+        @Test
+        @DisplayName("저장 공간 없음 → 금고 미접근")
+        void noStorage_skipsVault() {
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
+                    .willReturn(List.of());
+
+            globalVaultService.handleTerritoryLost(new TerritoryLostEvent(42L, 1L));
+
+            then(globalVaultRepository).should(never()).findById(any());
         }
     }
 }
