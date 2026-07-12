@@ -14,6 +14,7 @@ import com.territorial.auction.domain.map.entity.LandTaxLog.TaxStatus;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.LandTaxLogRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.notification.entity.NotificationLog.NotificationType;
 import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -54,6 +56,7 @@ public class LandTaxService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     public TaxStatusResponse getLandTaxStatus(Long userId) {
         String cacheKey = CACHE_KEY_PREFIX + userId;
@@ -253,6 +256,7 @@ public class LandTaxService {
         int evictedCount = 0;
         for (Territory territory : territories) {
             if (remaining <= 0) break;
+            eventPublisher.publishEvent(new TerritoryLostEvent(territory.getId(), userId));
             territory.release(nextAuctionAt);
             int startPrice =
                     AuctionPolicy.GRADE_START_PRICES.getOrDefault(

@@ -20,6 +20,7 @@ import com.territorial.auction.domain.building.repository.BuildingTypeRepository
 import com.territorial.auction.domain.map.dto.MapUpdateBroadcast;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.ranking.event.AuctionSettledEvent;
 import com.territorial.auction.domain.ranking.event.TerritoryHoldClosedEvent;
 import com.territorial.auction.domain.ranking.event.TerritoryHoldStartedEvent;
@@ -176,6 +177,10 @@ public class AuctionLifecycleService {
             final int finalRelCoordX = territory.getCoordX();
             final int finalRelCoordY = territory.getCoordY();
             publishHoldClosedEvent(territory, seasonOpt, now);
+            if (territory.getOwner() != null) {
+                eventPublisher.publishEvent(
+                        new TerritoryLostEvent(territory.getId(), territory.getOwner().getId()));
+            }
             // 점유 만료 즉시 재경매 예약
             territory.release(now);
             TransactionSynchronizationManager.registerSynchronization(
