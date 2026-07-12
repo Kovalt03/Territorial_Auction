@@ -245,10 +245,10 @@ ZONE_BOUNDARIES: [2, 4]
 ZONE_CLEAR_THRESHOLD: 0.5
 
 # 전투 / 보호
-PROTECTION_DURATION_HOURS: 12
+PROTECTION_DURATION_HOURS: 12        # 획득 후 공성 불가 기간(보호). ※현재 코드 미분리 — 공성전 정립 때 확정
 SIEGE_COUNTDOWN_MINUTES: 30
 ATTACK_COOLDOWN_HOURS: 2
-OCCUPATION_DURATION_HOURS: 24
+OCCUPATION_DURATION_HOURS: 24        # 보유 총 기간(만료 시 재경매). ※현재 코드는 3일 단일값으로 보호까지 겸함 — 공성전 정립 때 분리 예정
 
 # 경제
 BASE_GP_PRODUCTION_RATE: 1

@@ -521,3 +521,4 @@ DEF = Σ(방어 유닛 defense_power × 수량) + Σ(해당 Zone 방어 건물 d
 - 경매 낙찰 후 `PROTECTION_DURATION_HOURS`(config) 동안 공격 수신 불가
 - Castle 파괴 → 공격자 즉시 인계 시 인계받은 공격자에게 보호 기간 재시작
 - 보호 기간 중 공격 선언 시 → `TERRITORY_PROTECTED` 에러 반환
+- ⚠️ 현재 구현은 보호 기간을 점유 기간(`occupiedUntil`)과 분리하지 않아 보유 내내 보호로 판정된다. 보호<점유 분리는 공성전 상세 정립 때 반영 예정.
