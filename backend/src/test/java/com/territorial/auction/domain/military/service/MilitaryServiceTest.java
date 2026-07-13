@@ -163,7 +163,7 @@ class MilitaryServiceTest {
     private UnitInstance deployedFromTerritory(int qty, Territory home, Territory deployed) {
         UnitInstance inst = idleAtTerritory(qty, home);
         ReflectionTestUtils.setField(inst, "id", 101L);
-        inst.deployTo(deployed);
+        inst.deployTo(deployed, null);
         return inst;
     }
 
@@ -354,15 +354,37 @@ class MilitaryServiceTest {
     class DeployUnit {
 
         private DeployUnitRequest req(int quantity) {
-            return new DeployUnitRequest(TERR_ID, 1L, quantity, TERR_ID, LocationType.TERRITORY);
+            return new DeployUnitRequest(
+                    TERR_ID, 50L, 1L, quantity, TERR_ID, LocationType.TERRITORY);
+        }
+
+        // 주둔 대상 성(레벨1 → 수용량 5), 대상 영토 소속
+        private BuildingInstance garrisonCastle(Territory territory) {
+            BuildingType castleType =
+                    BuildingType.builder().name("CASTLE").width(1).height(1).maxHp(300).build();
+            BuildingInstance castle =
+                    BuildingInstance.builder()
+                            .territory(territory)
+                            .buildingType(castleType)
+                            .posX(0)
+                            .posY(0)
+                            .hp(300)
+                            .zone(1)
+                            .build();
+            ReflectionTestUtils.setField(castle, "id", 50L);
+            ReflectionTestUtils.setField(castle, "level", 1);
+            return castle;
         }
 
         @Test
-        @DisplayName("소유 영토 + 출발지 대기 유닛 충분 → subtract + 배치 스택 save")
+        @DisplayName("소유 영토 + 주둔 건물 + 대기 유닛 충분 → subtract + 배치 스택 save")
         void success() {
             Territory territory = ownedTerritory();
             UnitInstance idle = idleAtTerritory(10, territory);
             given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
+            given(buildingInstanceRepository.findById(50L))
+                    .willReturn(Optional.of(garrisonCastle(territory)));
+            given(unitInstanceRepository.sumQuantityByDeployedBuildingId(50L)).willReturn(0);
             given(
                             unitInstanceRepository
                                     .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
@@ -370,8 +392,8 @@ class MilitaryServiceTest {
                     .willReturn(Optional.of(idle));
             given(
                             unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryId(
-                                            1L, 1L, TERR_ID, TERR_ID))
+                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedBuildingId(
+                                            1L, 1L, TERR_ID, 50L))
                     .willReturn(Optional.empty());
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
 
@@ -400,6 +422,9 @@ class MilitaryServiceTest {
         void insufficient() {
             Territory territory = ownedTerritory();
             given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
+            given(buildingInstanceRepository.findById(50L))
+                    .willReturn(Optional.of(garrisonCastle(territory)));
+            given(unitInstanceRepository.sumQuantityByDeployedBuildingId(50L)).willReturn(0);
             given(
                             unitInstanceRepository
                                     .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
