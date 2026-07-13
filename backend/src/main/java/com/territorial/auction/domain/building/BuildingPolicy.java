@@ -9,6 +9,9 @@ public final class BuildingPolicy {
     /** 섬 GP 수확 최대 누적 시간 (분 단위) — 24시간 초과분은 소멸 */
     public static final long MAX_HARVEST_ACCUMULATION_MINUTES = 24 * 60L;
 
+    /** 건물 HP 1 회복당 GP 비용 — 위치 저장소에서 차감. 공성 중 방어 유지 비용. */
+    public static final int REPAIR_GP_PER_HP = 2;
+
     /** 레벨별 최대 HP = baseMaxHp × level */
     public static int scaledMaxHp(int baseMaxHp, int level) {
         return baseMaxHp * level;
