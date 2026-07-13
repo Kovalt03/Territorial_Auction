@@ -66,7 +66,9 @@ public class SiegeService {
         int totalDefenderUnits = sumQuantity(defenderUnits);
 
         applyUnitLoss(isAttackerWin, attackerUnits, defenderUnits);
-        SiegeResult.ResultType resultType = applyResultEffect(event, isAttackerWin);
+        // 손실 적용 후 살아남은 공격 유닛의 건물 피해력 — Zone 1 성 HP를 이만큼 깎는다.
+        int buildingDamage = calculateBuildingDamage(attackerUnits);
+        SiegeResult.ResultType resultType = applyResultEffect(event, isAttackerWin, buildingDamage);
         int lootedGp = resultType == SiegeResult.ResultType.LOOT ? applyLoot(event) : 0;
 
         if (isAttackerWin) {
@@ -211,7 +213,8 @@ public class SiegeService {
         }
     }
 
-    private SiegeResult.ResultType applyResultEffect(SiegeEvent event, boolean isAttackerWin) {
+    private SiegeResult.ResultType applyResultEffect(
+            SiegeEvent event, boolean isAttackerWin, int buildingDamage) {
         if (!isAttackerWin) return null;
         return switch (event.getAttackZone()) {
             case 3 -> SiegeResult.ResultType.LOOT;
@@ -220,11 +223,18 @@ public class SiegeService {
                 yield SiegeResult.ResultType.DEBUFF;
             }
             case 1 -> {
-                applyCastleDamage(event);
+                applyCastleDamage(event, buildingDamage);
                 yield SiegeResult.ResultType.AUCTION;
             }
             default -> null;
         };
+    }
+
+    // 살아남은 공격 유닛의 건물 피해 합. 공성 병기·투석기가 핵심, 순수 전투 유닛은 소량.
+    private int calculateBuildingDamage(List<UnitInstance> attackerUnits) {
+        return attackerUnits.stream()
+                .mapToInt(u -> u.getUnitType().getBuildingDamage() * u.getQuantity())
+                .sum();
     }
 
     private int applyLoot(SiegeEvent event) {
@@ -274,29 +284,30 @@ public class SiegeService {
                 });
     }
 
-    private void applyCastleDamage(SiegeEvent event) {
+    private void applyCastleDamage(SiegeEvent event, int buildingDamage) {
         List<BuildingInstance> zone1Buildings =
                 buildingInstanceRepository.findActiveByTerritoryIdAndZone(
                         event.getTargetTerritory().getId(), 1);
 
         boolean castleDestroyed =
                 event.getTargetBuilding() != null
-                        ? applyDamageToTarget(event.getTargetBuilding())
-                        : applyDamageEvenly(zone1Buildings);
+                        ? applyDamageToTarget(event.getTargetBuilding(), buildingDamage)
+                        : applyDamageEvenly(zone1Buildings, buildingDamage);
         if (castleDestroyed) {
             takeOverTerritory(event);
         }
     }
 
-    private boolean applyDamageToTarget(BuildingInstance target) {
-        int damage = target.getBuildingType().getMaxHp() / 2;
-        target.takeDamage(damage);
+    // 정밀 공격: 지정 건물에 건물 피해 전량 집중.
+    private boolean applyDamageToTarget(BuildingInstance target, int buildingDamage) {
+        target.takeDamage(buildingDamage);
         return target.isDestroyed() && "CASTLE".equals(target.getBuildingType().getName());
     }
 
-    private boolean applyDamageEvenly(List<BuildingInstance> buildings) {
+    // 일반 공격: Zone 내 건물에 건물 피해를 분산.
+    private boolean applyDamageEvenly(List<BuildingInstance> buildings, int buildingDamage) {
         if (buildings.isEmpty()) return false;
-        int damageEach = 100 / buildings.size();
+        int damageEach = buildingDamage / buildings.size();
         boolean castleDestroyed = false;
         for (BuildingInstance b : buildings) {
             b.takeDamage(damageEach);
