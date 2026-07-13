@@ -66,7 +66,7 @@
 
 | 건물 | Zone 규칙 | 기능 | 공격 효과 |
 |---|---|---|---|
-| **성 (Castle)** | Zone 1만 가능 | 영토의 핵심 | HP 0 → 경매 강제 전환 |
+| **성 (Castle)** | Zone 1만 가능 | 영토의 핵심 | HP 0 → 공격자 즉시 인계 |
 | **저장소 (Storage)** | 어디든 | 영토 내 자원 보관 | HP 0 → 저장 자원 N% 약탈 |
 | **생산소 (Workshop)** | 어디든 | GP 생산 | HP 0 → 생산량 감소 (T시간) |
 | **병영 (Barracks)** | 어디든 | 유닛 생산 | HP 0 → 생산 중단 (T시간) |
@@ -84,7 +84,7 @@ Zone 3 (외곽) → Zone 2 (중간) → Zone 1 (핵심·성)
 
 ### 4.6 이중 저장소 시스템
 - **영토 저장소**: 영토에 건설한 건물. 공격 시 약탈 대상.
-- **글로벌 금고**: 계정 귀속, 공격 불가. 기본 용량 + 업그레이드 가능
+- **글로벌 금고**: 계정 귀속, 공격 불가. 고정 용량(현재 업그레이드 미구현)
 - 저장소 ↔ 금고 이전: **이전 쿨다운(config)** 존재
 
 ### 4.7 영토 등급 시스템
@@ -111,6 +111,7 @@ Zone 3 (외곽) → Zone 2 (중간) → Zone 1 (핵심·성)
   2. 유예기간(config) 내 미납 시 → **최저 등급 영토부터 순차 강제 경매 전환**으로 자금 마련
   3. 강제 경매 낙찰 대금으로 세금이 충족되면 추가 처분 중단
   4. 강제 처분 대상 결정 시 **무적 상태·보호 기간 무시**
+  5. 처분되는 영토마다 상실 정산: 저장 GP의 **80%를 원소유자 금고로 환수**(20%·식량 소멸), 방어 유닛은 홈 아일랜드로 퇴각(섬 수용량 초과분 소멸)
 - Home Island는 세금 대상 아님
 
 ### 4.9 유닛 시스템
@@ -121,8 +122,8 @@ Zone 3 (외곽) → Zone 2 (중간) → Zone 1 (핵심·성)
 | 궁수 (Archer) | 방어 배치 시 보너스 |
 | 기사 (Knight) | 고비용, 고공격력 |
 
-- 모든 유닛은 **식량 소모**: `food_cost_per_hour × 보유 수량` 만큼 시간당 차감
-- 식량 부족 시 유닛 자연 감소: `UNIT_STARVATION_RATE`(기본 1마리/시간)
+- 식량은 **유닛 생산 예산**: 유닛 생산 시 그 위치 저장소에서 `foodCost × 수량` 1회 차감. 시간당 소모·아사는 없다.
+- 농경지가 위치 저장소에 식량을 생산 → 축적 식량이 그 위치에서 만들 수 있는 유닛 총량을 규정
 
 ### 4.10 랭킹 시스템
 
@@ -244,25 +245,30 @@ ZONE_BOUNDARIES: [2, 4]
 ZONE_CLEAR_THRESHOLD: 0.5
 
 # 전투 / 보호
-PROTECTION_DURATION_HOURS: 12
+PROTECTION_DURATION_HOURS: 12        # 획득 후 공성 불가 기간(보호). ※현재 코드 미분리 — 공성전 정립 때 확정
 SIEGE_COUNTDOWN_MINUTES: 30
 ATTACK_COOLDOWN_HOURS: 2
-OCCUPATION_DURATION_HOURS: 24
+OCCUPATION_DURATION_HOURS: 24        # 보유 총 기간(만료 시 재경매). ※현재 코드는 3일 단일값으로 보호까지 겸함 — 공성전 정립 때 분리 예정
 
 # 경제
 BASE_GP_PRODUCTION_RATE: 1
 HOME_ISLAND_PRODUCTION_RATE: 0.5
 ADJACENT_BONUS_RATE: 0.1
-GLOBAL_VAULT_BASE_CAPACITY: 500
+GLOBAL_VAULT_BASE_CAPACITY: 10000   # GlobalVault 엔티티 기본값(고정)
 VAULT_TRANSFER_COOLDOWN_MINUTES: 10
 ATTACK_TOKEN_GP_COST: 500
 ATTACK_TOKEN_AP_COST: 100
-UNIT_STARVATION_RATE: 1
 
 # 전투 계산
 ATTACKER_LOSS_RATE: 0.3
 ATTACKER_FAIL_LOSS_RATE: 0.5
 DEFENDER_LOSS_RATE: 0.3
+LOOT_RATE: 0.5                       # Zone3 저장소 GP 약탈률
+TERRITORY_LOSS_TRANSFER_RATE: 0.8    # 영토 상실 시 저장 GP 환수율(나머지 소멸)
+
+# 유닛 위치 간 이동
+UNIT_MOVE_COST_GP: 10                # 유닛 1기당 이동 비용(출발지 저장소 차감)
+UNIT_MOVE_MINUTES: 10               # 이동 소요 시간(도착 전 방어·배치 불가)
 
 # 리그 경계
 LEAGUE_SILVER_MIN: 500

@@ -65,7 +65,7 @@
 
 ### 징수 규칙 (F-14.1)
 
-- 매일 `LAND_TAX_COLLECTION_HOUR`(config) 스케줄러가 실제 점유 영토 수를 집계하여 `available_gp`에서 일괄 차감
+- 매일 `LAND_TAX_COLLECTION_HOUR`(config) 스케줄러가 실제 점유 영토 수를 집계하여 GP를 일괄 차감 — **금고(`global_vaults.stored_gp`) 우선 → 부족 시 영토 저장소(`building_instances.stored_gp`)** 순 (세금 회피 방지를 위한 위치별 GP 원칙의 유일한 예외)
 - **Home Island는 영토 수 집계에서 제외** (F-14.6)
 
 ### GP 부족 처리 (F-14.3)
@@ -77,6 +77,7 @@
 
 - 유예 기간 내 납세 실패 시: 보유 영토 중 **가장 낮은 등급(D → C → B → A → S 순)부터 순차 강제 경매 전환**
 - 강제 경매 전환된 영토는 즉시 `BIDDING` 상태로 변경
+- 처분되는 영토마다 상실 정산: 저장 GP의 **80%를 원소유자 금고로 환수**(나머지 20%·저장 식량 소멸), 방어 유닛은 홈 아일랜드로 퇴각(섬 수용량 초과분 소멸) — `TerritoryLostEvent`
 - 낙찰 대금 합산이 미납 세금 이상이 되면 **즉시 처분 중단** (세금 초과분은 다음 납부에 이월하지 않음)
 - **무적 상태(`invincible:{territoryId}`)·보호 기간(`occupied_until`)이 남아 있어도 강제 처분 대상에서 제외되지 않음** — 토지세 강제 처분이 유일한 예외
 

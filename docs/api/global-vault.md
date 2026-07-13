@@ -21,7 +21,7 @@
 | GET | `/api/v1/global-vault` | [글로벌 금고 조회](#글로벌-금고-조회) | ✅ | - |
 | POST | `/api/v1/global-vault/transfer` | [자원 이전](#자원-이전) | ✅ | - |
 
-> **구현 참고:** `territory_storages` 테이블 미존재 → 영토 창고는 `wallets.available_gp`로 매핑. `sourceTerritoryId`는 점유자 검증에만 사용.
+> **구현 참고:** 영토 창고는 `building_instances`(성+Storage)의 `stored_gp`에 실제 저장된다. `sourceTerritoryId`로 그 위치 저장소 ↔ 금고 간 GP를 이전한다.
 
 ---
 
@@ -39,8 +39,8 @@
 
 ```json
 {
-  "storedGP": 18500,
-  "capacity": 50000,
+  "storedGP": 8500,
+  "capacity": 10000,
   "lastTransferAt": "2026-04-08T12:00:00Z",
   "nextTransferAvailableAt": "2026-04-08T12:10:00Z",
   "isTransferAvailable": false
@@ -94,7 +94,7 @@
 
 ### 비즈니스 규칙
 - 본인 점유 영토(`territories.owner_id = userId`)에서만 이전 가능
-- `TO_VAULT`: 영토 창고 잔여 GP 이상 이전 불가 (`territory_storages.stored_gp >= amount`)
+- `TO_VAULT`: 영토 저장소 잔여 GP 이상 이전 불가 (그 영토 성+저장소 `building_instances.stored_gp` 합 >= amount)
 - `FROM_VAULT`: 금고 잔여 GP 이상 이전 불가 (`global_vaults.stored_gp >= amount`)
 - 금고 용량 초과 불가 (`global_vaults.stored_gp + amount <= global_vaults.capacity`)
 - 이전 성공 시 양쪽 GP 원자적 차감/증가 (DB 트랜잭션 보장)
@@ -108,8 +108,8 @@
   "transferredAmount": 5000,
   "sourceTerritoryId": 42,
   "territoryStorageAfter": 3200,
-  "vaultStoredAfter": 18500,
-  "vaultCapacity": 50000,
+  "vaultStoredAfter": 8500,
+  "vaultCapacity": 10000,
   "nextTransferAvailableAt": "2026-04-08T12:10:00Z"
 }
 ```
@@ -119,7 +119,7 @@
 | `direction` | String | 이전 방향 | 요청 `direction` |
 | `transferredAmount` | Long | 이번에 이전된 GP 수량 | 요청 `amount` |
 | `sourceTerritoryId` | Long | 대상 영토 ID | 요청 `sourceTerritoryId` |
-| `territoryStorageAfter` | Long | 이전 후 영토 창고 잔여 GP | `territory_storages.stored_gp` |
+| `territoryStorageAfter` | Long | 이전 후 영토 저장소 잔여 GP | 그 영토 `building_instances.stored_gp` 합 |
 | `vaultStoredAfter` | Long | 이전 후 글로벌 금고 잔액 | `global_vaults.stored_gp` |
 | `vaultCapacity` | Long | 글로벌 금고 최대 용량 | `global_vaults.capacity` |
 | `nextTransferAvailableAt` | DateTime | 다음 이전 가능 시각 | `global_vaults.last_transfer_at + 쿨다운` |

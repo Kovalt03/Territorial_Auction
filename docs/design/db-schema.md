@@ -28,9 +28,9 @@
 | `user_id` | `BIGINT` | PK, FK → users.id | |
 | `available_ap` | `INTEGER` | NOT NULL, DEFAULT 0 | 사용 가능 Auction Point |
 | `locked_ap` | `INTEGER` | NOT NULL, DEFAULT 0 | 입찰 중 잠금 AP |
-| `available_gp` | `INTEGER` | NOT NULL, DEFAULT 0 | 사용 가능 Grid Point |
-| `available_food` | `INTEGER` | NOT NULL, DEFAULT 100 | 유닛 유지 식량 |
 | `updated_at` | `TIMESTAMPTZ` | NOT NULL | |
+
+> 지갑은 **AP만** 보유한다. GP는 위치 저장소(`building_instances.stored_gp`) + 글로벌 금고(`global_vaults.stored_gp`), 식량은 위치 저장소(`building_instances.stored_food`)로 일원화됐다. 옛 `available_gp`/`available_food` 컬럼은 자원 스코프 전환에서 DROP.
 
 #### notification_settings
 
@@ -404,15 +404,20 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `level` | `INTEGER` | NOT NULL, DEFAULT 1 | |
 | `zone` | `INTEGER` | NOT NULL | 1/2/3 |
 | `is_destroyed` | `BOOLEAN` | DEFAULT false | |
-| `stored_gp` | `INTEGER` | NOT NULL, DEFAULT 0 | STORAGE 건물만 사용. 영토 내 적립 GP (약탈 대상) |
+| `owner_id` | `BIGINT` | FK, NULL 허용 | 보관함 상태(territory/island 모두 NULL)일 때 소유자 |
+| `stored_gp` | `INTEGER` | NOT NULL, DEFAULT 0 | 성·저장소가 사용. 그 위치 적립 GP (저장소는 약탈 대상) |
+| `stored_food` | `INTEGER` | NOT NULL, DEFAULT 0 | 성·저장소가 사용. 그 위치 적립 식량 (약탈·이전 불가) |
+| `workshop_debuff_until` | `TIMESTAMPTZ` | NULL 허용 | WORKSHOP 파괴 후 생산 중단 종료 시각 |
+| `build_complete_at` | `TIMESTAMPTZ` | NULL 허용 | 건설/업그레이드 완료 예정 시각(NULL=완성) |
+| `upgrade_to_level` | `INTEGER` | NULL 허용 | 업그레이드 대기 시 도달 레벨 |
 
 #### global_vaults
 
 | column | 자료형 | 조건 | 설명 |
 |---|---|---|---|
 | `user_id` | `BIGINT` | PK, FK | |
-| `stored_gp` | `INTEGER` | NOT NULL, DEFAULT 0 | |
-| `capacity` | `INTEGER` | NOT NULL, DEFAULT 500 | |
+| `stored_gp` | `INTEGER` | NOT NULL, DEFAULT 0 | 위치와 무관하게 이동·보관되는 GP |
+| `capacity` | `INTEGER` | NOT NULL, DEFAULT 10000 | 고정 용량(업그레이드 미구현) |
 | `last_transfer_at` | `TIMESTAMPTZ` | NULL | 쿨다운 계산용 |
 
 ---
@@ -454,7 +459,8 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `attack_power` | `INTEGER` | |
 | `defense_power` | `INTEGER` | |
 | `cost_gp` | `INTEGER` | |
-| `food_cost_per_hour` | `INTEGER` | |
+| `food_cost` | `INTEGER` | 유닛 생산 1회 소모 식량 (시간당 소모 아님) |
+| `level` | `INTEGER` | 필요 병영 레벨 |
 
 #### unit_instances
 
@@ -464,7 +470,12 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `user_id` | `BIGINT` | FK | |
 | `unit_type_id` | `BIGINT` | FK | |
 | `quantity` | `INTEGER` | NOT NULL | |
-| `deployed_territory_id` | `BIGINT` | FK, NULL | NULL이면 대기 중 |
+| `home_territory_id` | `BIGINT` | FK, NULL 허용 | 귀속 위치가 영토일 때 (섬과 배타) |
+| `home_island_id` | `BIGINT` | FK, NULL 허용 | 귀속 위치가 섬일 때 (영토와 배타) |
+| `deployed_territory_id` | `BIGINT` | FK, NULL | 방어 배치된 영토. NULL이면 대기 중 |
+| `move_complete_at` | `TIMESTAMPTZ` | NULL 허용 | 위치 간 이동 중이면 도착 예정 시각(도착 전까지 방어·배치·재이동 불가) |
+
+> 유닛은 위치(영토/섬)에 귀속되며, `home_*`(귀속) · `deployed_territory_id`(배치) 두 축으로 관리된다. 위치 간 이동은 `move_complete_at` 도래 시 도착 처리되며 출발지 저장소에서 `UNIT_MOVE_COST_GP` 차감.
 
 #### attack_tokens
 

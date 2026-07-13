@@ -116,7 +116,7 @@ AP를 소모하여 아이템을 구매합니다. 구매 즉시 인벤토리에 �
 
 ### 비즈니스 규칙
 - AP 차감 후 `item_purchases`에 이력 기록, `user_items`에 수량 적립
-- `GP_PURCHASE` 타입 구매 시 즉시 `wallets.available_gp` 증가
+- `GP_PURCHASE` 타입 구매 시 즉시 **글로벌 금고**(`global_vaults.stored_gp`) 증가
 - 일일 한도 초과 체크: `item_purchases` 당일 구매 이력 집계
 - 구매 후 Redis `user:item:{userId}` 무효화
 
