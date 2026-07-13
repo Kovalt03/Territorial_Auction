@@ -98,6 +98,11 @@ class SiegeServiceTest {
     }
 
     private UnitInstance makeUnit(int attackPower, int defensePower, int quantity) {
+        return makeUnit(attackPower, defensePower, quantity, 0);
+    }
+
+    private UnitInstance makeUnit(
+            int attackPower, int defensePower, int quantity, int buildingDamage) {
         UnitType unitType =
                 UnitType.builder()
                         .name("INFANTRY")
@@ -105,6 +110,7 @@ class SiegeServiceTest {
                         .defensePower(defensePower)
                         .costGp(100)
                         .foodCost(1)
+                        .buildingDamage(buildingDamage)
                         .level(1)
                         .build();
         return UnitInstance.builder().user(attacker).unitType(unitType).quantity(quantity).build();
@@ -263,19 +269,19 @@ class SiegeServiceTest {
         }
 
         @Test
-        @DisplayName("Zone 1 일반 공격 성공, Castle HP 잔존 → AUCTION 결과, 인계 없음")
+        @DisplayName("Zone 1 공격 성공하나 건물피해 0(공성 유닛 없음) → 성 무피해, 인계 없음")
         void resolveOneSiege_zone1_normalAttack_castleNotDestroyed_noTakeover() {
             // given
             given(event.getAttackZone()).willReturn(1);
             given(event.getTargetBuilding()).willReturn(null);
 
+            // buildingDamage=0 유닛 → 교전은 이겨도 성 HP를 못 깎는다
             UnitInstance attackerUnit = makeUnit(100, 0, 10);
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
                     .willReturn(List.of(attackerUnit));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
 
-            // Castle maxHp=200, HP=200, 건물 1개 → 데미지 100/1=100 → 잔여 HP=100
             BuildingInstance castle = makeBuilding("CASTLE", 200, 200, null, 0, 1);
             given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 1))
                     .willReturn(List.of(castle));
@@ -283,8 +289,8 @@ class SiegeServiceTest {
             // when
             siegeService.resolveOneSiege(event);
 
-            // then — 성이 살아있으면 인계 없음
-            assertThat(castle.getHp()).isEqualTo(100);
+            // then — 건물피해 0이라 성 HP 그대로, 인계 없음
+            assertThat(castle.getHp()).isEqualTo(200);
             assertThat(castle.isDestroyed()).isFalse();
             then(territory).should(never()).occupy(any(), any(), any());
             then(unitInstanceRepository)
@@ -303,13 +309,14 @@ class SiegeServiceTest {
             given(event.getAttackZone()).willReturn(1);
             given(event.getTargetBuilding()).willReturn(null);
 
-            UnitInstance attackerUnit = makeUnit(100, 0, 10);
+            // 공성 유닛(buildingDamage=10) 10기 → 손실 30% 후 생존 7기 × 10 = 70 건물피해
+            UnitInstance attackerUnit = makeUnit(100, 0, 10, 10);
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
                     .willReturn(List.of(attackerUnit));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
 
-            // Castle HP=50, 데미지 100 → HP 0 → isDestroyed=true
+            // Castle HP=50, 건물피해 70 → HP 0 → isDestroyed=true
             BuildingInstance castle = makeBuilding("CASTLE", 200, 50, null, 0, 1);
             given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 1))
                     .willReturn(List.of(castle));
@@ -347,16 +354,16 @@ class SiegeServiceTest {
         }
 
         @Test
-        @DisplayName("Zone 1 정밀 공격 (targetBuilding 지정) → 해당 건물만 maxHp/2 데미지, 이벤트 미발행")
+        @DisplayName("Zone 1 정밀 공격 → 지정 건물에 건물피해 전량 집중, 인계 없음")
         void resolveOneSiege_zone1_precisionAttack_onlyTargetBuildingDamaged() {
             // given
-            // Castle maxHp=200, HP=200 → 데미지 100 → 잔여 HP=100, 파괴 안 됨
+            // Castle HP=200, 건물피해 70(생존 7기×10) → 잔여 HP=130, 파괴 안 됨
             BuildingInstance targetCastle = makeBuilding("CASTLE", 200, 200, null, 0, 1);
 
             given(event.getAttackZone()).willReturn(1);
             given(event.getTargetBuilding()).willReturn(targetCastle);
 
-            UnitInstance attackerUnit = makeUnit(100, 0, 10);
+            UnitInstance attackerUnit = makeUnit(100, 0, 10, 10);
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
                     .willReturn(List.of(attackerUnit));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
@@ -368,7 +375,7 @@ class SiegeServiceTest {
             siegeService.resolveOneSiege(event);
 
             // then
-            assertThat(targetCastle.getHp()).isEqualTo(100);
+            assertThat(targetCastle.getHp()).isEqualTo(130);
             assertThat(targetCastle.isDestroyed()).isFalse();
             then(eventPublisher).should(never()).publishEvent(any());
         }
