@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record DeployUnitRequest(
         @NotNull Long territoryId,
+        @NotNull Long buildingId,
         @NotNull Long unitTypeId,
         @NotNull @Min(1) Integer quantity,
         @NotNull Long sourceLocationId,

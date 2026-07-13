@@ -86,6 +86,9 @@ public class MilitaryService {
     @Transactional
     public DeployUnitResponse deployUnit(Long userId, DeployUnitRequest request) {
         Territory territory = findOwnedTerritoryOrThrow(request.territoryId(), userId);
+        BuildingInstance building =
+                resolveGarrisonBuilding(request.buildingId(), territory.getId());
+        validateGarrisonCapacity(building, request.quantity());
         LocationRef source =
                 resolveOwnedLocation(
                         userId, request.sourceLocationId(), request.sourceLocationType());
@@ -94,8 +97,40 @@ public class MilitaryService {
                         userId, request.unitTypeId(), source, request.quantity());
 
         idle.subtractQuantity(request.quantity());
-        addDeployedUnits(userId, idle.getUnitType(), source, territory, request.quantity());
+        addDeployedUnits(
+                userId, idle.getUnitType(), source, territory, building, request.quantity());
         return new DeployUnitResponse(request.quantity(), request.territoryId());
+    }
+
+    // 주둔 대상 건물: 그 영토에 있고 파괴되지 않은 건물이어야 한다.
+    private BuildingInstance resolveGarrisonBuilding(Long buildingId, Long territoryId) {
+        BuildingInstance building =
+                buildingInstanceRepository
+                        .findById(buildingId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.BUILDING_NOT_FOUND));
+        if (building.getTerritory() == null
+                || !building.getTerritory().getId().equals(territoryId)
+                || building.isDestroyed()) {
+            throw new CustomException(ErrorCode.BUILDING_NOT_FOUND);
+        }
+        return building;
+    }
+
+    // 건물별 주둔 수용량(레벨당): 성 5 · 타워 3 · 방벽 2 · 숙소 5. 그 외 건물은 주둔 불가(0).
+    private void validateGarrisonCapacity(BuildingInstance building, int quantity) {
+        int perLevel =
+                switch (building.getBuildingType().getName()) {
+                    case "CASTLE", "RESIDENCE" -> 5;
+                    case "TOWER" -> 3;
+                    case "WALL" -> 2;
+                    default -> 0;
+                };
+        int capacity = perLevel * building.getLevel();
+        int current =
+                nullSafe(unitInstanceRepository.sumQuantityByDeployedBuildingId(building.getId()));
+        if (current + quantity > capacity) {
+            throw new CustomException(ErrorCode.UNIT_CAPACITY_EXCEEDED);
+        }
     }
 
     @Transactional
@@ -437,6 +472,7 @@ public class MilitaryService {
             LocationRef home,
             int quantity,
             Territory deployed,
+            BuildingInstance deployedBuilding,
             LocalDateTime moveCompleteAt) {
         User user = findUserOrThrow(userId);
         UnitInstance.UnitInstanceBuilder builder =
@@ -452,7 +488,7 @@ public class MilitaryService {
         }
         UnitInstance instance = builder.build();
         if (deployed != null) {
-            instance.deployTo(deployed);
+            instance.deployTo(deployed, deployedBuilding);
         }
         return instance;
     }
@@ -466,7 +502,8 @@ public class MilitaryService {
                         () ->
                                 unitInstanceRepository.save(
                                         newUnitAtLocation(
-                                                userId, unitType, loc, quantity, null, null)));
+                                                userId, unitType, loc, quantity, null, null,
+                                                null)));
     }
 
     private Optional<UnitInstance> findReadyIdleAtLocation(
@@ -493,21 +530,27 @@ public class MilitaryService {
 
     /** 배치(deployed) 스택에 병합한다 — (귀속지·배치영토)가 같은 스택으로. */
     private void addDeployedUnits(
-            Long userId, UnitType unitType, LocationRef source, Territory territory, int quantity) {
+            Long userId,
+            UnitType unitType,
+            LocationRef source,
+            Territory territory,
+            BuildingInstance building,
+            int quantity) {
         Optional<UnitInstance> existing =
                 source.type() == LocationType.TERRITORY
                         ? unitInstanceRepository
-                                .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryId(
-                                        userId, unitType.getId(), source.id(), territory.getId())
+                                .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedBuildingId(
+                                        userId, unitType.getId(), source.id(), building.getId())
                         : unitInstanceRepository
-                                .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryId(
-                                        userId, unitType.getId(), source.id(), territory.getId());
+                                .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedBuildingId(
+                                        userId, unitType.getId(), source.id(), building.getId());
         existing.ifPresentOrElse(
                 e -> e.addQuantity(quantity),
                 () ->
                         unitInstanceRepository.save(
                                 newUnitAtLocation(
-                                        userId, unitType, source, quantity, territory, null)));
+                                        userId, unitType, source, quantity, territory, building,
+                                        null)));
     }
 
     /** 배치 스택들에서 회수해 각자의 귀속지 대기 스택으로 되돌린다. */
@@ -570,7 +613,7 @@ public class MilitaryService {
             int quantity,
             LocalDateTime completeAt) {
         unitInstanceRepository.save(
-                newUnitAtLocation(userId, unitType, dest, quantity, null, completeAt));
+                newUnitAtLocation(userId, unitType, dest, quantity, null, null, completeAt));
     }
 
     private void validateReadyIdleAvailable(Long userId, Long unitTypeId, int quantity) {

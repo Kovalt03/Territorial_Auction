@@ -34,11 +34,27 @@ public interface UnitInstanceRepository extends JpaRepository<UnitInstance, Long
 
     // ─── 배치(deployed) 스택 — (유저·타입·귀속지·배치영토) 조합으로 병합 ────────────────────
 
-    Optional<UnitInstance> findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryId(
-            Long userId, Long unitTypeId, Long homeTerritoryId, Long deployedTerritoryId);
+    Optional<UnitInstance> findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedBuildingId(
+            Long userId, Long unitTypeId, Long homeTerritoryId, Long deployedBuildingId);
 
-    Optional<UnitInstance> findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryId(
-            Long userId, Long unitTypeId, Long homeIslandId, Long deployedTerritoryId);
+    Optional<UnitInstance> findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedBuildingId(
+            Long userId, Long unitTypeId, Long homeIslandId, Long deployedBuildingId);
+
+    // 특정 건물에 주둔한 총 수량 — 건물별 주둔 수용량 검증용
+    @Query(
+            "SELECT COALESCE(SUM(u.quantity), 0) FROM UnitInstance u"
+                    + " WHERE u.deployedBuilding.id = :buildingId")
+    Integer sumQuantityByDeployedBuildingId(@Param("buildingId") Long buildingId);
+
+    // 특정 영토의 공격받는 Zone에 주둔한 방어 병력 — 공성 판정용
+    @Query(
+            "SELECT u FROM UnitInstance u"
+                    + " WHERE u.user.id = :userId AND u.deployedTerritory.id = :territoryId"
+                    + " AND u.deployedBuilding.zone = :zone")
+    List<UnitInstance> findDefendersInZone(
+            @Param("userId") Long userId,
+            @Param("territoryId") Long territoryId,
+            @Param("zone") Integer zone);
 
     // 특정 영토에 배치된 (유저·타입) 스택 전부 — 귀속지가 달라 여럿일 수 있다(회수용)
     List<UnitInstance> findByUserIdAndUnitTypeIdAndDeployedTerritoryIdOrderByIdAsc(
