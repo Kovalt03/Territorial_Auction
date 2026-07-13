@@ -17,6 +17,7 @@ import com.territorial.auction.domain.military.entity.SiegeForce;
 import com.territorial.auction.domain.military.entity.SiegeResult;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
+import com.territorial.auction.domain.military.event.GarrisonBuildingDestroyedEvent;
 import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
 import com.territorial.auction.domain.military.repository.SiegeForceRepository;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
@@ -329,6 +330,7 @@ public class SiegeService {
                         b.applyWorkshopDebuff(debuffUntil);
                     }
                 });
+        retreatDestroyedGarrisons(buildings, event.getDefender().getId());
     }
 
     private void applyCastleDamage(SiegeEvent event, int buildingDamage) {
@@ -336,12 +338,30 @@ public class SiegeService {
                 buildingInstanceRepository.findActiveByTerritoryIdAndZone(
                         event.getTargetTerritory().getId(), 1);
 
-        boolean castleDestroyed =
-                event.getTargetBuilding() != null
-                        ? applyDamageToTarget(event.getTargetBuilding(), buildingDamage)
-                        : applyDamageEvenly(zone1Buildings, buildingDamage);
+        boolean castleDestroyed;
+        List<BuildingInstance> damaged;
+        if (event.getTargetBuilding() != null) {
+            castleDestroyed = applyDamageToTarget(event.getTargetBuilding(), buildingDamage);
+            damaged = List.of(event.getTargetBuilding());
+        } else {
+            castleDestroyed = applyDamageEvenly(zone1Buildings, buildingDamage);
+            damaged = zone1Buildings;
+        }
+
         if (castleDestroyed) {
-            takeOverTerritory(event);
+            takeOverTerritory(event); // 인계로 전 방어 유닛 전멸 — 별도 퇴각 없음
+        } else {
+            retreatDestroyedGarrisons(damaged, event.getDefender().getId());
+        }
+    }
+
+    // 파괴된 (성 아닌) 건물에 주둔한 방어 유닛을 홈 아일랜드로 퇴각시킨다.
+    private void retreatDestroyedGarrisons(List<BuildingInstance> buildings, Long defenderId) {
+        for (BuildingInstance b : buildings) {
+            if (b.isDestroyed() && !"CASTLE".equals(b.getBuildingType().getName())) {
+                eventPublisher.publishEvent(
+                        new GarrisonBuildingDestroyedEvent(defenderId, b.getId()));
+            }
         }
     }
 

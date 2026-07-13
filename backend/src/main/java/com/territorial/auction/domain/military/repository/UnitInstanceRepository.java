@@ -46,6 +46,9 @@ public interface UnitInstanceRepository extends JpaRepository<UnitInstance, Long
                     + " WHERE u.deployedBuilding.id = :buildingId")
     Integer sumQuantityByDeployedBuildingId(@Param("buildingId") Long buildingId);
 
+    // 특정 건물에 주둔한 스택 전부 — 건물 파괴 시 퇴각용
+    List<UnitInstance> findByDeployedBuildingId(Long deployedBuildingId);
+
     // 특정 영토의 공격받는 Zone에 주둔한 방어 병력 — 공성 판정용
     @Query(
             "SELECT u FROM UnitInstance u"
