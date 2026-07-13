@@ -59,7 +59,8 @@ class AdminUnitServiceTest {
                 adminUnitService.update(
                         10L,
                         1L,
-                        new AdminUpdateUnitTypeRequest("창병", "🗡", "#ffffff", 15, 12, 150, 2, 1));
+                        new AdminUpdateUnitTypeRequest(
+                                "창병", "🗡", "#ffffff", 15, 12, 150, 2, 3, 1));
 
         assertThat(res.name()).isEqualTo("INFANTRY");
         assertThat(res.displayName()).isEqualTo("창병");

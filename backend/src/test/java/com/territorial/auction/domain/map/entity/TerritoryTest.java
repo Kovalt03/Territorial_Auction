@@ -32,7 +32,7 @@ class TerritoryTest {
 
         // OCCUPIED 상태로 설정
         LocalDateTime until = LocalDateTime.of(2026, 6, 1, 0, 0);
-        territory.occupy(owner, until);
+        territory.occupy(owner, until, until.minusHours(12));
     }
 
     @Nested

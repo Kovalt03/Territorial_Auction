@@ -153,7 +153,9 @@ class AuctionLifecycleServiceTest {
 
             lifecycleService.settlePendingAuctions();
 
-            then(territory).should().occupy(eq(winner), any(LocalDateTime.class));
+            then(territory)
+                    .should()
+                    .occupy(eq(winner), any(LocalDateTime.class), any(LocalDateTime.class));
             then(wallet).should().consumeLockedAp(3000);
             then(auctionHistoryRepository).should().save(any(AuctionHistory.class));
             then(auction).should().settle();
@@ -172,7 +174,9 @@ class AuctionLifecycleServiceTest {
 
             lifecycleService.settlePendingAuctions();
 
-            then(territory).should().occupy(eq(winner), any(LocalDateTime.class));
+            then(territory)
+                    .should()
+                    .occupy(eq(winner), any(LocalDateTime.class), any(LocalDateTime.class));
             then(auctionHistoryRepository).should().save(any(AuctionHistory.class));
             then(auction).should().settle();
         }
@@ -426,7 +430,9 @@ class AuctionLifecycleServiceTest {
 
             lifecycleService.forceSettle(99L, 1L);
 
-            then(territory).should().occupy(eq(winner), any(LocalDateTime.class));
+            then(territory)
+                    .should()
+                    .occupy(eq(winner), any(LocalDateTime.class), any(LocalDateTime.class));
             then(auction).should().settle();
             then(adminAuditLogger)
                     .should()
