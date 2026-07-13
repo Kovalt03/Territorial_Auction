@@ -45,6 +45,7 @@ public class MilitaryService {
     private final UnitTypeRepository unitTypeRepository;
     private final HomeIslandRepository homeIslandRepository;
     private final SiegeEventRepository siegeEventRepository;
+    private final SiegeForceRepository siegeForceRepository;
     private final SiegeResultRepository siegeResultRepository;
     private final UserRepository userRepository;
     private final TerritoryRepository territoryRepository;
@@ -151,15 +152,16 @@ public class MilitaryService {
         validateAttackCooldown(request.targetTerritoryId(), userId);
         validateZoneCleared(request.targetTerritoryId(), userId, request.attackZone());
 
+        validateAttackerForces(userId, request.forces());
+
         AttackToken token = findAttackTokenOrThrow(userId);
         BuildingInstance targetBuilding = resolveTargetBuilding(request.targetBuildingId());
         consumeAttackToken(token, targetBuilding);
 
-        validateReadyIdleAvailable(userId, request.unitTypeId(), request.unitQuantity());
-
         User attacker = findUserOrThrow(userId);
         SiegeEvent siege = buildSiegeEvent(attacker, target, targetBuilding, request);
         siegeEventRepository.save(siege);
+        commitAttackerForces(siege, userId, request.forces());
 
         int remaining = targetBuilding == null ? token.getNormalCount() : token.getPrecisionCount();
 
@@ -574,6 +576,43 @@ public class MilitaryService {
     private void validateReadyIdleAvailable(Long userId, Long unitTypeId, int quantity) {
         if (nullSafe(unitInstanceRepository.sumReadyIdleQuantity(userId, unitTypeId)) < quantity) {
             throw new CustomException(ErrorCode.INSUFFICIENT_UNITS);
+        }
+    }
+
+    // 공격 병력 가용성 검증 — 각 유닛 타입의 대기 풀 수량이 충분한지. 토큰 소모·저장 전에 확인한다.
+    private void validateAttackerForces(Long userId, List<DeclareSiegeRequest.ForceEntry> forces) {
+        for (DeclareSiegeRequest.ForceEntry entry : forces) {
+            validateReadyIdleAvailable(userId, entry.unitTypeId(), entry.quantity());
+        }
+    }
+
+    // 공격 병력 커밋: 각 유닛 타입 수량을 대기 풀에서 차감(락)하고 SiegeForce로 기록한다.
+    // 판정 시점(30분 뒤)에 이 기록으로 전투를 계산한다.
+    private void commitAttackerForces(
+            SiegeEvent siege, Long userId, List<DeclareSiegeRequest.ForceEntry> forces) {
+        for (DeclareSiegeRequest.ForceEntry entry : forces) {
+            UnitType unitType = findUnitTypeOrThrow(entry.unitTypeId());
+            deductReadyIdle(userId, entry.unitTypeId(), entry.quantity());
+            siegeForceRepository.save(
+                    SiegeForce.builder()
+                            .siege(siege)
+                            .unitType(unitType)
+                            .quantity(entry.quantity())
+                            .build());
+        }
+    }
+
+    private void deductReadyIdle(Long userId, Long unitTypeId, int quantity) {
+        int remaining = quantity;
+        for (UnitInstance stack :
+                unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeId(userId, unitTypeId)) {
+            if (remaining <= 0) break;
+            int take = Math.min(stack.getQuantity(), remaining);
+            stack.subtractQuantity(take);
+            remaining -= take;
+            if (stack.getQuantity() <= 0) {
+                unitInstanceRepository.delete(stack);
+            }
         }
     }
 
