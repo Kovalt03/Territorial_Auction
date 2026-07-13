@@ -529,6 +529,7 @@ class BuildingServiceTest {
             BuildingType bt = storage();
             BuildingInstance bi = placedInstance(bt, territory, 0, 0);
             ReflectionTestUtils.setField(bi, "isDestroyed", true);
+            ReflectionTestUtils.setField(bi, "hp", 0);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
@@ -536,7 +537,28 @@ class BuildingServiceTest {
 
             RepairBuildingResponse response = buildingService.repair(1L, 100L);
 
+            // maxHp=60 → 손상 60 × 2 GP/HP = 120 GP 차감, 풀피 복구
             assertThat(response.hp()).isEqualTo(bt.getMaxHp());
+            assertThat(response.gpRemaining()).isEqualTo(2000 - 120);
+        }
+
+        @Test
+        @DisplayName("파괴되지 않은 손상 건물도 수리 → HP당 GP 차감 후 풀피")
+        void damaged_notDestroyed() {
+            User user = sampleUser(1L);
+            Territory territory = territoryOwnedBy(user, gradeA());
+            BuildingType bt = storage(); // maxHp=60
+            BuildingInstance bi = placedInstance(bt, territory, 0, 0);
+            ReflectionTestUtils.setField(bi, "hp", 40); // 손상 20
+
+            given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
+            given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
+                    .willReturn(List.of(storageWithGp(1000)));
+
+            RepairBuildingResponse response = buildingService.repair(1L, 100L);
+
+            assertThat(response.hp()).isEqualTo(60);
+            assertThat(response.gpRemaining()).isEqualTo(1000 - 40); // (60-40) × 2
         }
 
         @Test
@@ -548,6 +570,7 @@ class BuildingServiceTest {
             BuildingInstance bi = placedInstance(bt, territory, 0, 0);
             ReflectionTestUtils.setField(bi, "level", 2);
             ReflectionTestUtils.setField(bi, "isDestroyed", true);
+            ReflectionTestUtils.setField(bi, "hp", 0);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
@@ -555,16 +578,19 @@ class BuildingServiceTest {
 
             RepairBuildingResponse response = buildingService.repair(1L, 100L);
 
-            assertThat(response.hp()).isEqualTo(bt.getMaxHp() * 2); // 60 × 2 = 120
+            // fullHp = 60 × 2 = 120 → 손상 120 × 2 GP = 240 차감
+            assertThat(response.hp()).isEqualTo(bt.getMaxHp() * 2);
+            assertThat(response.gpRemaining()).isEqualTo(2000 - 240);
         }
 
         @Test
-        @DisplayName("파괴되지 않은 건물 수리 시도 → INVALID_INPUT")
-        void not_destroyed() {
+        @DisplayName("풀피 건물 수리 시도 → INVALID_INPUT")
+        void full_hp() {
             User user = sampleUser(1L);
             Territory territory = territoryOwnedBy(user, gradeA());
-            BuildingInstance bi = placedInstance(storage(), territory, 0, 0);
-            // isDestroyed = false by default
+            BuildingType bt = storage(); // maxHp=60
+            BuildingInstance bi = placedInstance(bt, territory, 0, 0);
+            ReflectionTestUtils.setField(bi, "hp", bt.getMaxHp()); // 풀피
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
 
