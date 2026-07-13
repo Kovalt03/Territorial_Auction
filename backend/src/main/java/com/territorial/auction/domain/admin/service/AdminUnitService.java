@@ -42,6 +42,7 @@ public class AdminUnitService {
                 request.defensePower(),
                 request.costGp(),
                 request.foodCost(),
+                request.buildingDamage(),
                 request.level());
 
         adminAuditLogger.record(

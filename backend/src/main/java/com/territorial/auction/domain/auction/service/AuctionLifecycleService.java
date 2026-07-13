@@ -269,7 +269,8 @@ public class AuctionLifecycleService {
 
         if (winner != null) {
             LocalDateTime occupiedUntil = now.plusDays(AuctionPolicy.OCCUPATION_DURATION_DAYS);
-            territory.occupy(winner, occupiedUntil);
+            LocalDateTime protectedUntil = now.plusHours(AuctionPolicy.PROTECTION_DURATION_HOURS);
+            territory.occupy(winner, occupiedUntil, protectedUntil);
 
             // 성이 기본 저장 기능을 가지므로, 낙찰 영토에는 항상 성이 있어야 첫 건물을 지을 수 있다.
             createInitialCastle(territory);

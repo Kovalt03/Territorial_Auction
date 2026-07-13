@@ -322,9 +322,11 @@ public class SiegeService {
         }
         annihilateDefenderUnits(event.getDefender().getId(), territory.getId());
 
+        LocalDateTime now = LocalDateTime.now();
         territory.occupy(
                 event.getAttacker(),
-                LocalDateTime.now().plusDays(AuctionPolicy.OCCUPATION_DURATION_DAYS));
+                now.plusDays(AuctionPolicy.OCCUPATION_DURATION_DAYS),
+                now.plusHours(AuctionPolicy.PROTECTION_DURATION_HOURS));
         broadcastTakeoverAfterCommit(territory, event.getAttacker());
         log.info(
                 "성 파괴로 영토 인계. territoryId={}, attackerId={}, recoveredGp={}",

@@ -604,8 +604,8 @@ public class MilitaryService {
     }
 
     private void validateNotProtected(Territory territory) {
-        if (territory.getOccupiedUntil() != null
-                && LocalDateTime.now().isBefore(territory.getOccupiedUntil())) {
+        if (territory.getProtectedUntil() != null
+                && LocalDateTime.now().isBefore(territory.getProtectedUntil())) {
             throw new CustomException(ErrorCode.TERRITORY_PROTECTED);
         }
     }
@@ -633,8 +633,10 @@ public class MilitaryService {
         }
     }
 
+    // 공략은 외곽(Zone 3) → 중심(Zone 1) 순. 안쪽 Zone은 바로 바깥 Zone(attackZone+1)을
+    // 먼저 클리어해야 진입 가능하다. 최외곽(Zone 3)은 전제 없음.
     private void validateZoneCleared(Long territoryId, Long attackerId, int attackZone) {
-        if (attackZone <= 1) {
+        if (attackZone >= MilitaryPolicy.OUTERMOST_ZONE) {
             return;
         }
         List<SiegeEvent> prevZoneEvents =
@@ -642,7 +644,7 @@ public class MilitaryService {
                         territoryId, attackerId, SiegeEvent.SiegeStatus.RESOLVED);
         boolean cleared =
                 prevZoneEvents.stream()
-                        .filter(e -> e.getAttackZone() == attackZone - 1)
+                        .filter(e -> e.getAttackZone() == attackZone + 1)
                         .anyMatch(
                                 e ->
                                         siegeResultRepository
@@ -813,6 +815,7 @@ public class MilitaryService {
                 ut.getDefensePower(),
                 ut.getCostGp(),
                 ut.getFoodCost(),
+                ut.getBuildingDamage(),
                 ut.getLevel());
     }
 

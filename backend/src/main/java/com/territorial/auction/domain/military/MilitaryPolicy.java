@@ -16,6 +16,9 @@ public final class MilitaryPolicy {
     /** 건물 HP가 이 비율 이하일 때 Zone 클리어 판정 */
     public static final double ZONE_CLEAR_THRESHOLD = 0.5;
 
+    /** 최외곽 Zone 번호. 공략은 이 Zone부터 중심(1)으로 진행한다. */
+    public static final int OUTERMOST_ZONE = 3;
+
     /** WORKSHOP 파괴 후 생산 중단 시간 (시간 단위) */
     public static final int WORKSHOP_DEBUFF_HOURS = 12;
 

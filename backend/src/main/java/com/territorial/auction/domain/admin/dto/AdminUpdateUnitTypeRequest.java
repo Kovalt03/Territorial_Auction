@@ -13,4 +13,5 @@ public record AdminUpdateUnitTypeRequest(
         @NotNull @PositiveOrZero Integer defensePower,
         @NotNull @PositiveOrZero Integer costGp,
         @NotNull @PositiveOrZero Integer foodCost,
+        @NotNull @PositiveOrZero Integer buildingDamage,
         @NotNull @Positive Integer level) {}
