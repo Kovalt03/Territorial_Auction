@@ -287,11 +287,16 @@ public class BuildingService {
         BuildingInstance building = findBuildingOrThrow(buildingId);
         validateBuildingOwner(building, userId);
 
-        if (!building.isDestroyed()) {
+        // 손상된 만큼 HP당 GP를 위치 저장소에서 즉시 차감해 풀피로 회복. 이미 풀피면 거부.
+        int fullHp =
+                BuildingPolicy.scaledMaxHp(
+                        building.getBuildingType().getMaxHp(), building.getLevel());
+        int missingHp = fullHp - building.getHp();
+        if (missingHp <= 0) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
-        int repairCost = building.getBuildingType().getBaseCostGp() / 2;
+        int repairCost = missingHp * BuildingPolicy.REPAIR_GP_PER_HP;
         int gpRemaining = chargeBuildingLocationGp(building, repairCost);
         building.repair();
 
