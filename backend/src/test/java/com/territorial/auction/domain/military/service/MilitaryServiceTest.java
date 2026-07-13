@@ -32,6 +32,7 @@ import com.territorial.auction.domain.military.entity.UnitType;
 import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.military.repository.AttackTokenRepository;
 import com.territorial.auction.domain.military.repository.SiegeEventRepository;
+import com.territorial.auction.domain.military.repository.SiegeForceRepository;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
 import com.territorial.auction.domain.military.repository.UnitTypeRepository;
@@ -66,6 +67,7 @@ class MilitaryServiceTest {
     @Mock private UnitTypeRepository unitTypeRepository;
     @Mock private HomeIslandRepository homeIslandRepository;
     @Mock private SiegeEventRepository siegeEventRepository;
+    @Mock private SiegeForceRepository siegeForceRepository;
     @Mock private SiegeResultRepository siegeResultRepository;
     @Mock private UserRepository userRepository;
     @Mock private TerritoryRepository territoryRepository;
@@ -586,13 +588,13 @@ class MilitaryServiceTest {
         }
 
         private DeclareSiegeRequest req() {
-            // (targetTerritoryId, targetBuildingId, attackZone, unitTypeId, unitQuantity)
-            // 최외곽 Zone 3 — 진입 전제 없음(공략은 외곽→중심)
-            return new DeclareSiegeRequest(20L, null, 3, 1L, 3);
+            // 최외곽 Zone 3 — 진입 전제 없음(공략은 외곽→중심). 병력: 유닛타입 1L × 3
+            return new DeclareSiegeRequest(
+                    20L, null, 3, List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)));
         }
 
         @Test
-        @DisplayName("모든 조건 통과 → SiegeEvent 저장 + 응답 반환")
+        @DisplayName("모든 조건 통과 → SiegeEvent 저장 + 병력 커밋 + 응답 반환")
         void success() {
             Territory target = targetTerritory();
             given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
@@ -600,8 +602,12 @@ class MilitaryServiceTest {
                     .willReturn(List.of());
             given(attackTokenRepository.findByUserIdWithLock(1L))
                     .willReturn(Optional.of(attackToken));
-            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
+            // 병력 커밋: 유닛 타입 조회 + 대기 풀 검증·차감
+            given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
+            given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeId(1L, 1L))
+                    .willReturn(List.of(idleAtTerritory(10, target)));
             given(siegeEventRepository.save(any(SiegeEvent.class)))
                     .willAnswer(
                             inv -> {
@@ -614,6 +620,7 @@ class MilitaryServiceTest {
 
             assertThat(response.siegeId()).isEqualTo(99L);
             then(siegeEventRepository).should().save(any(SiegeEvent.class));
+            then(siegeForceRepository).should().save(any());
         }
 
         @Test
@@ -625,8 +632,9 @@ class MilitaryServiceTest {
             given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
                     .willReturn(List.of());
 
-            // (targetTerritoryId, targetBuildingId, attackZone=1, unitTypeId, unitQuantity)
-            DeclareSiegeRequest zone1 = new DeclareSiegeRequest(20L, null, 1, 1L, 3);
+            DeclareSiegeRequest zone1 =
+                    new DeclareSiegeRequest(
+                            20L, null, 1, List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)));
             assertThatThrownBy(() -> militaryService.declareSiege(1L, zone1))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
@@ -654,8 +662,6 @@ class MilitaryServiceTest {
             given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
             given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
                     .willReturn(List.of());
-            given(attackTokenRepository.findByUserIdWithLock(1L))
-                    .willReturn(Optional.of(attackToken));
             given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(1);
 
             assertThatThrownBy(() -> militaryService.declareSiege(1L, req()))

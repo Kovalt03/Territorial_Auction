@@ -14,12 +14,15 @@ import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
+import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
+import com.territorial.auction.domain.military.entity.SiegeForce;
 import com.territorial.auction.domain.military.entity.SiegeResult;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
 import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
+import com.territorial.auction.domain.military.repository.SiegeForceRepository;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
 import com.territorial.auction.domain.season.entity.Season;
@@ -49,7 +52,9 @@ class SiegeServiceTest {
     @InjectMocks private SiegeService siegeService;
 
     @Mock private SiegeResultRepository siegeResultRepository;
+    @Mock private SiegeForceRepository siegeForceRepository;
     @Mock private UnitInstanceRepository unitInstanceRepository;
+    @Mock private HomeIslandRepository homeIslandRepository;
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private GlobalVaultRepository globalVaultRepository;
     @Mock private SeasonRepository seasonRepository;
@@ -116,6 +121,26 @@ class SiegeServiceTest {
         return UnitInstance.builder().user(attacker).unitType(unitType).quantity(quantity).build();
     }
 
+    // 공격자가 커밋한 병력(SiegeForce). makeUnit과 같은 시그니처(defensePower는 공격 병력엔 무의미).
+    private SiegeForce makeForce(int attackPower, int defensePower, int quantity) {
+        return makeForce(attackPower, defensePower, quantity, 0);
+    }
+
+    private SiegeForce makeForce(
+            int attackPower, int defensePower, int quantity, int buildingDamage) {
+        UnitType unitType =
+                UnitType.builder()
+                        .name("INFANTRY")
+                        .attackPower(attackPower)
+                        .defensePower(defensePower)
+                        .costGp(100)
+                        .foodCost(1)
+                        .buildingDamage(buildingDamage)
+                        .level(1)
+                        .build();
+        return SiegeForce.builder().unitType(unitType).quantity(quantity).build();
+    }
+
     private BuildingInstance makeBuilding(
             String typeName,
             int maxHp,
@@ -156,11 +181,10 @@ class SiegeServiceTest {
             // given
             given(event.getAttackZone()).willReturn(3);
 
-            UnitInstance attackerUnit = makeUnit(100, 0, 10); // ATK = 1000
+            SiegeForce attackerForce = makeForce(100, 0, 10); // ATK = 1000
             UnitInstance defenderUnit = makeUnit(0, 50, 5); // DEF = 250 → 공격자 승
 
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of(defenderUnit));
 
@@ -193,9 +217,8 @@ class SiegeServiceTest {
             // given
             given(event.getAttackZone()).willReturn(3);
 
-            UnitInstance attackerUnit = makeUnit(100, 0, 10);
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            SiegeForce attackerForce = makeForce(100, 0, 10);
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
             BuildingInstance emptyStorage = makeBuilding("STORAGE", 200, 200, null, 0, 3);
@@ -218,9 +241,8 @@ class SiegeServiceTest {
             // given
             given(event.getAttackZone()).willReturn(2);
 
-            UnitInstance attackerUnit = makeUnit(100, 0, 10); // ATK = 1000
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            SiegeForce attackerForce = makeForce(100, 0, 10); // ATK = 1000
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
 
@@ -248,9 +270,8 @@ class SiegeServiceTest {
             // given
             given(event.getAttackZone()).willReturn(2);
 
-            UnitInstance attackerUnit = makeUnit(100, 0, 10); // ATK = 1000
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            SiegeForce attackerForce = makeForce(100, 0, 10); // ATK = 1000
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
 
@@ -276,9 +297,8 @@ class SiegeServiceTest {
             given(event.getTargetBuilding()).willReturn(null);
 
             // buildingDamage=0 유닛 → 교전은 이겨도 성 HP를 못 깎는다
-            UnitInstance attackerUnit = makeUnit(100, 0, 10);
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            SiegeForce attackerForce = makeForce(100, 0, 10);
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
 
@@ -310,9 +330,8 @@ class SiegeServiceTest {
             given(event.getTargetBuilding()).willReturn(null);
 
             // 공성 유닛(buildingDamage=10) 10기 → 손실 30% 후 생존 7기 × 10 = 70 건물피해
-            UnitInstance attackerUnit = makeUnit(100, 0, 10, 10);
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            SiegeForce attackerForce = makeForce(100, 0, 10, 10);
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
 
@@ -363,9 +382,8 @@ class SiegeServiceTest {
             given(event.getAttackZone()).willReturn(1);
             given(event.getTargetBuilding()).willReturn(targetCastle);
 
-            UnitInstance attackerUnit = makeUnit(100, 0, 10, 10);
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            SiegeForce attackerForce = makeForce(100, 0, 10, 10);
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
             given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 1))
@@ -386,11 +404,10 @@ class SiegeServiceTest {
             // given
             given(event.getAttackZone()).willReturn(3);
 
-            UnitInstance attackerUnit = makeUnit(10, 0, 10); // ATK = 100
+            SiegeForce attackerForce = makeForce(10, 0, 10); // ATK = 100
             UnitInstance defenderUnit = makeUnit(0, 50, 5); // DEF = 250 → 방어자 승
 
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of(defenderUnit));
             given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 3))
@@ -418,11 +435,10 @@ class SiegeServiceTest {
 
             // ATK = 10*5 = 50, DEF = 50*5 = 250 → 패배
             // 공격자 손실: ceil(5 * 0.5) = 3
-            UnitInstance attackerUnit = makeUnit(10, 0, 5);
+            SiegeForce attackerForce = makeForce(10, 0, 5);
             UnitInstance defenderUnit = makeUnit(0, 50, 5);
 
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of(defenderUnit));
             given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 3))
@@ -432,7 +448,7 @@ class SiegeServiceTest {
             siegeService.resolveOneSiege(event);
 
             // then — 공격자 5-3=2, 방어자 변동 없음
-            assertThat(attackerUnit.getQuantity()).isEqualTo(2);
+            assertThat(attackerForce.getQuantity()).isEqualTo(2);
             assertThat(defenderUnit.getQuantity()).isEqualTo(5);
 
             ArgumentCaptor<SiegeResult> captor = ArgumentCaptor.forClass(SiegeResult.class);
@@ -448,11 +464,10 @@ class SiegeServiceTest {
 
             // ATK = 100*10 = 1000, DEF = 10*7 = 70 → 공격자 승
             // 공격자 손실: ceil(10 * 0.3) = 3, 방어자 손실: ceil(7 * 0.3) = 3
-            UnitInstance attackerUnit = makeUnit(100, 0, 10);
+            SiegeForce attackerForce = makeForce(100, 0, 10);
             UnitInstance defenderUnit = makeUnit(0, 10, 7);
 
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of(defenderUnit));
             // 빈 Storage → totalLooted=0 → wallet 미호출
@@ -463,7 +478,7 @@ class SiegeServiceTest {
             siegeService.resolveOneSiege(event);
 
             // then
-            assertThat(attackerUnit.getQuantity()).isEqualTo(7); // 10 - 3
+            assertThat(attackerForce.getQuantity()).isEqualTo(7); // 10 - 3
             assertThat(defenderUnit.getQuantity()).isEqualTo(4); // 7 - 3
 
             ArgumentCaptor<SiegeResult> captor = ArgumentCaptor.forClass(SiegeResult.class);
@@ -480,11 +495,10 @@ class SiegeServiceTest {
 
             // ATK = 100*10 = 1000, DEF = 10*1 = 10 → 공격자 승
             // 방어자 손실: ceil(1 * 0.3) = 1 → quantity 0 → 삭제
-            UnitInstance attackerUnit = makeUnit(100, 0, 10);
+            SiegeForce attackerForce = makeForce(100, 0, 10);
             UnitInstance defenderUnit = makeUnit(0, 10, 1);
 
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of(defenderUnit));
             // 빈 Storage → totalLooted=0 → wallet 미호출
@@ -506,11 +520,10 @@ class SiegeServiceTest {
             given(event.getAttackZone()).willReturn(1);
 
             // ATK = 10*5 = 50, 유닛 DEF = 0, WALL defensePower=100 → 총 DEF=100 → 공격자 패배
-            UnitInstance attackerUnit = makeUnit(10, 0, 5);
+            SiegeForce attackerForce = makeForce(10, 0, 5);
             BuildingInstance wall = makeBuilding("WALL", 200, 200, 100, 0, 1);
 
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
             given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 1))
@@ -533,12 +546,11 @@ class SiegeServiceTest {
             given(event.getAttackZone()).willReturn(1);
 
             // ATK = 10*5 = 50, WALL defensePower=100 이지만 건설 중이라 DEF=0 → 공격자 승
-            UnitInstance attackerUnit = makeUnit(10, 0, 5);
+            SiegeForce attackerForce = makeForce(10, 0, 5);
             BuildingInstance wall = makeBuilding("WALL", 200, 200, 100, 0, 1);
             wall.startConstruction(LocalDateTime.now().plusMinutes(5));
 
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
             given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 1))
@@ -560,11 +572,10 @@ class SiegeServiceTest {
             given(event.getAttackZone()).willReturn(3);
 
             // ATK = 10*5 = 50, STORAGE defensePower=null → DEF=0 → 공격자 승
-            UnitInstance attackerUnit = makeUnit(10, 0, 5);
+            SiegeForce attackerForce = makeForce(10, 0, 5);
             BuildingInstance storage = makeBuilding("STORAGE", 200, 200, null, 0, 3);
 
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
             given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 3))
@@ -591,9 +602,8 @@ class SiegeServiceTest {
             given(seasonRepository.findActiveSeason(any(LocalDateTime.class)))
                     .willReturn(Optional.of(season));
 
-            UnitInstance attackerUnit = makeUnit(100, 0, 10); // ATK=1000, DEF=0 → 공격자 승
-            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, 10L))
-                    .willReturn(List.of(attackerUnit));
+            SiegeForce attackerForce = makeForce(100, 0, 10); // ATK=1000, DEF=0 → 공격자 승
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 10L))
                     .willReturn(List.of());
             given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 3))
