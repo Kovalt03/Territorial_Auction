@@ -29,6 +29,7 @@ import com.territorial.auction.domain.military.entity.AttackToken;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
+import com.territorial.auction.domain.military.event.GarrisonBuildingDestroyedEvent;
 import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.military.repository.AttackTokenRepository;
 import com.territorial.auction.domain.military.repository.SiegeEventRepository;
@@ -834,6 +835,57 @@ class MilitaryServiceTest {
                     .willReturn(List.of());
 
             militaryService.handleTerritoryLost(new TerritoryLostEvent(TERR_ID, 1L));
+
+            then(homeIslandRepository).should(never()).findByUserId(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("handleGarrisonBuildingDestroyed()")
+    class HandleGarrisonBuildingDestroyed {
+
+        private static final long BUILDING_ID = 50L;
+
+        @Test
+        @DisplayName("주둔 유닛 있음 → 홈 아일랜드로 퇴각(원 스택 삭제)")
+        void retreatsGarrison() {
+            UnitInstance garrison = idleAtTerritory(3, ownedTerritory());
+            given(unitInstanceRepository.findByDeployedBuildingId(BUILDING_ID))
+                    .willReturn(new java.util.ArrayList<>(List.of(garrison)));
+            // 섬 수용량 5(성 Lv1)
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(ownedIsland()));
+            given(buildingInstanceRepository.findCastleLevelByIslandId(ISLAND_ID))
+                    .willReturn(Optional.of(1));
+            given(
+                            buildingInstanceRepository.sumResidenceCapacityByIslandId(
+                                    eq(ISLAND_ID), any(LocalDateTime.class)))
+                    .willReturn(0);
+            given(unitInstanceRepository.sumQuantityByHomeIslandId(ISLAND_ID)).willReturn(0);
+            given(
+                            unitInstanceRepository
+                                    .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                                            1L, 1L, ISLAND_ID))
+                    .willReturn(Optional.empty());
+            given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
+
+            militaryService.handleGarrisonBuildingDestroyed(
+                    new GarrisonBuildingDestroyedEvent(1L, BUILDING_ID));
+
+            ArgumentCaptor<UnitInstance> captor = ArgumentCaptor.forClass(UnitInstance.class);
+            then(unitInstanceRepository).should().save(captor.capture());
+            assertThat(captor.getValue().getQuantity()).isEqualTo(3);
+            assertThat(captor.getValue().getHomeIsland().getId()).isEqualTo(ISLAND_ID);
+            then(unitInstanceRepository).should().delete(garrison);
+        }
+
+        @Test
+        @DisplayName("주둔 유닛 없음 → 아무 동작 없음")
+        void noGarrison_noop() {
+            given(unitInstanceRepository.findByDeployedBuildingId(BUILDING_ID))
+                    .willReturn(List.of());
+
+            militaryService.handleGarrisonBuildingDestroyed(
+                    new GarrisonBuildingDestroyedEvent(1L, BUILDING_ID));
 
             then(homeIslandRepository).should(never()).findByUserId(any());
         }
