@@ -286,7 +286,7 @@ class SiegeServiceTest {
             // then — 성이 살아있으면 인계 없음
             assertThat(castle.getHp()).isEqualTo(100);
             assertThat(castle.isDestroyed()).isFalse();
-            then(territory).should(never()).occupy(any(), any());
+            then(territory).should(never()).occupy(any(), any(), any());
             then(unitInstanceRepository)
                     .should(never())
                     .findByOwnerAndTerritoryAssociation(any(), any());
@@ -336,7 +336,9 @@ class SiegeServiceTest {
             assertThat(storage.getStoredFood()).isZero();
             then(vault).should().receiveGp(800);
             then(unitInstanceRepository).should().deleteAll(defenderUnits);
-            then(territory).should().occupy(eq(attacker), any(LocalDateTime.class));
+            then(territory)
+                    .should()
+                    .occupy(eq(attacker), any(LocalDateTime.class), any(LocalDateTime.class));
             then(eventPublisher).should(never()).publishEvent(any());
 
             ArgumentCaptor<SiegeResult> captor = ArgumentCaptor.forClass(SiegeResult.class);

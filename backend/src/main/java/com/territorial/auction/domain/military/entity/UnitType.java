@@ -37,6 +37,10 @@ public class UnitType {
     @Column(nullable = false)
     private Integer foodCost;
 
+    /** 성공한 공성에서 건물 HP를 깎는 양. 교전(공격/방어)과 분리된 성벽 돌파력. */
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer buildingDamage = 0;
+
     /** 생산에 필요한 최소 병영 레벨 */
     @Column(nullable = false, columnDefinition = "INT DEFAULT 1")
     private Integer level = 1;
@@ -51,6 +55,7 @@ public class UnitType {
             Integer defensePower,
             Integer costGp,
             Integer foodCost,
+            Integer buildingDamage,
             Integer level) {
         this.name = name;
         this.displayName = displayName;
@@ -60,6 +65,7 @@ public class UnitType {
         this.defensePower = defensePower;
         this.costGp = costGp;
         this.foodCost = foodCost;
+        this.buildingDamage = buildingDamage != null ? buildingDamage : 0;
         this.level = level != null ? level : 1;
     }
 
@@ -72,6 +78,7 @@ public class UnitType {
             Integer defensePower,
             Integer costGp,
             Integer foodCost,
+            Integer buildingDamage,
             Integer level) {
         this.displayName = displayName;
         this.icon = icon;
@@ -80,6 +87,7 @@ public class UnitType {
         this.defensePower = defensePower;
         this.costGp = costGp;
         this.foodCost = foodCost;
+        this.buildingDamage = buildingDamage != null ? buildingDamage : 0;
         this.level = level;
     }
 }

@@ -34,6 +34,9 @@ public class Territory {
 
     private LocalDateTime occupiedUntil;
 
+    // 공성 보호 만료 시각. 이 시각 전까지는 공성전 불가. 점유(occupiedUntil)와 별개(보호 < 점유).
+    private LocalDateTime protectedUntil;
+
     private LocalDateTime nextAuctionAt;
 
     @Enumerated(EnumType.STRING)
@@ -84,10 +87,11 @@ public class Territory {
         this.nextAuctionAt = null;
     }
 
-    public void occupy(User winner, LocalDateTime until) {
+    public void occupy(User winner, LocalDateTime occupiedUntil, LocalDateTime protectedUntil) {
         this.owner = winner;
         this.status = TerritoryStatus.OCCUPIED;
-        this.occupiedUntil = until;
+        this.occupiedUntil = occupiedUntil;
+        this.protectedUntil = protectedUntil;
         this.nextAuctionAt = null;
         this.lastProducedAt = LocalDateTime.now();
     }
@@ -96,6 +100,7 @@ public class Territory {
         this.status = TerritoryStatus.IDLE;
         this.owner = null;
         this.occupiedUntil = null;
+        this.protectedUntil = null;
         this.nextAuctionAt = nextAuctionAt;
         this.lastProducedAt = null;
     }

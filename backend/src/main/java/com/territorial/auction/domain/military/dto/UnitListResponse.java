@@ -27,5 +27,6 @@ public record UnitListResponse(List<LocationUnits> locations) {
             Integer defensePower,
             Integer costGp,
             Integer foodCost,
+            Integer buildingDamage,
             Integer requiredBarracksLevel) {}
 }

@@ -50,6 +50,7 @@ public class UnitTypeSeeder implements ApplicationRunner {
                                 .defensePower((Integer) row.get("defensePower"))
                                 .costGp((Integer) row.get("costGp"))
                                 .foodCost((Integer) row.get("foodCost"))
+                                .buildingDamage((Integer) row.get("buildingDamage"))
                                 .level((Integer) row.get("level"))
                                 .build());
 

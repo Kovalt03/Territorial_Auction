@@ -587,7 +587,8 @@ class MilitaryServiceTest {
 
         private DeclareSiegeRequest req() {
             // (targetTerritoryId, targetBuildingId, attackZone, unitTypeId, unitQuantity)
-            return new DeclareSiegeRequest(20L, null, 1, 1L, 3);
+            // 최외곽 Zone 3 — 진입 전제 없음(공략은 외곽→중심)
+            return new DeclareSiegeRequest(20L, null, 3, 1L, 3);
         }
 
         @Test
@@ -613,6 +614,37 @@ class MilitaryServiceTest {
 
             assertThat(response.siegeId()).isEqualTo(99L);
             then(siegeEventRepository).should().save(any(SiegeEvent.class));
+        }
+
+        @Test
+        @DisplayName("Zone 1 공격은 바깥 Zone 2 클리어 전제 → 미클리어 시 ZONE_NOT_CLEARED")
+        void zone1RequiresOuterCleared() {
+            Territory target = targetTerritory();
+            given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
+            // 이전 클리어 이력 없음 → Zone 2가 클리어되지 않아 Zone 1 진입 불가
+            given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
+                    .willReturn(List.of());
+
+            // (targetTerritoryId, targetBuildingId, attackZone=1, unitTypeId, unitQuantity)
+            DeclareSiegeRequest zone1 = new DeclareSiegeRequest(20L, null, 1, 1L, 3);
+            assertThatThrownBy(() -> militaryService.declareSiege(1L, zone1))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.ZONE_NOT_CLEARED);
+        }
+
+        @Test
+        @DisplayName("보호 기간 중(protectedUntil 미래) → TERRITORY_PROTECTED")
+        void protectedPeriod() {
+            Territory target = targetTerritory();
+            ReflectionTestUtils.setField(
+                    target, "protectedUntil", LocalDateTime.now().plusHours(6));
+            given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
+
+            assertThatThrownBy(() -> militaryService.declareSiege(1L, req()))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.TERRITORY_PROTECTED);
         }
 
         @Test

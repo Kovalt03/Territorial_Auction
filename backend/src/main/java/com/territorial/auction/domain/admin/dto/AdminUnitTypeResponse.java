@@ -12,6 +12,7 @@ public record AdminUnitTypeResponse(
         int defensePower,
         int costGp,
         int foodCost,
+        int buildingDamage,
         int level) {
 
     public static AdminUnitTypeResponse from(UnitType t) {
@@ -25,6 +26,7 @@ public record AdminUnitTypeResponse(
                 t.getDefensePower(),
                 t.getCostGp(),
                 t.getFoodCost(),
+                t.getBuildingDamage(),
                 t.getLevel());
     }
 }

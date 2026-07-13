@@ -42,8 +42,11 @@ public final class AuctionPolicy {
 
     // ── 점유 / 재경매 ─────────────────────────────────────────────────────────
 
-    /** 낙찰 후 영토 점유 기간 (일) */
+    /** 낙찰 후 영토 점유 기간 (일) — 만료 시 자동 재경매 */
     public static final int OCCUPATION_DURATION_DAYS = 3;
+
+    /** 획득 후 공성 보호 기간 (시간) — 이 기간 동안 공성전 불가. 점유 기간보다 짧다. */
+    public static final int PROTECTION_DURATION_HOURS = 12;
 
     /** 무낙찰 경매 종료 후 재경매 생성 대기 시간 (시간) */
     public static final int IDLE_REAUCTION_DELAY_HOURS = 1;
