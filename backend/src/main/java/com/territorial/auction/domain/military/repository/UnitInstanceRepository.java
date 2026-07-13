@@ -64,6 +64,14 @@ public interface UnitInstanceRepository extends JpaRepository<UnitInstance, Long
     Integer sumReadyIdleQuantity(
             @Param("userId") Long userId, @Param("unitTypeId") Long unitTypeId);
 
+    // 대기(ready idle) 스택 전부 — 공성 병력 커밋 시 차감용 (귀속지 무관)
+    @Query(
+            "SELECT u FROM UnitInstance u"
+                    + " WHERE u.user.id = :userId AND u.unitType.id = :unitTypeId"
+                    + " AND u.deployedTerritory IS NULL AND u.moveCompleteAt IS NULL")
+    List<UnitInstance> findReadyIdleByUserIdAndUnitTypeId(
+            @Param("userId") Long userId, @Param("unitTypeId") Long unitTypeId);
+
     // 이동 완료 시각이 도래한 이동중 스택 — 스케줄러 정산용
     @Query(
             "SELECT u FROM UnitInstance u"

@@ -4,16 +4,21 @@ import com.territorial.auction.domain.auction.AuctionPolicy;
 import com.territorial.auction.domain.building.StoragePolicy;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.GlobalVault;
+import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
 import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
+import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.dto.MapUpdateBroadcast;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.military.MilitaryPolicy;
 import com.territorial.auction.domain.military.dto.SiegeAlert;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
+import com.territorial.auction.domain.military.entity.SiegeForce;
 import com.territorial.auction.domain.military.entity.SiegeResult;
 import com.territorial.auction.domain.military.entity.UnitInstance;
+import com.territorial.auction.domain.military.entity.UnitType;
 import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
+import com.territorial.auction.domain.military.repository.SiegeForceRepository;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
 import com.territorial.auction.domain.season.entity.Season;
@@ -37,7 +42,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class SiegeService {
 
     private final SiegeResultRepository siegeResultRepository;
+    private final SiegeForceRepository siegeForceRepository;
     private final UnitInstanceRepository unitInstanceRepository;
+    private final HomeIslandRepository homeIslandRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository
             buildingLevelSpecRepository;
@@ -56,20 +63,35 @@ public class SiegeService {
         int coordX = event.getTargetTerritory().getCoordX();
         int coordY = event.getTargetTerritory().getCoordY();
 
-        List<UnitInstance> attackerUnits =
-                unitInstanceRepository.findByUserIdAndDeployedTerritoryId(attackerId, territoryId);
+        // 공격 병력은 선언 시 커밋된 SiegeForce에서 온다(대기 풀에서 차감돼 기록됨).
+        List<SiegeForce> attackerForces = siegeForceRepository.findBySiegeId(event.getId());
         List<UnitInstance> defenderUnits =
                 unitInstanceRepository.findByUserIdAndDeployedTerritoryId(defenderId, territoryId);
 
-        boolean isAttackerWin = calculateAtk(attackerUnits) > calculateDef(defenderUnits, event);
-        int totalAttackerUnits = sumQuantity(attackerUnits);
+        boolean isAttackerWin =
+                calculateForceAtk(attackerForces) > calculateDef(defenderUnits, event);
+        int totalAttackerUnits = attackerForces.stream().mapToInt(SiegeForce::getQuantity).sum();
         int totalDefenderUnits = sumQuantity(defenderUnits);
 
-        applyUnitLoss(isAttackerWin, attackerUnits, defenderUnits);
-        // 손실 적용 후 살아남은 공격 유닛의 건물 피해력 — Zone 1 성 HP를 이만큼 깎는다.
-        int buildingDamage = calculateBuildingDamage(attackerUnits);
+        // 손실 적용 — 공격은 커밋 병력에서, 방어는 배치 유닛에서 차감.
+        applyAttackerForceLoss(
+                attackerForces, calculateAttackerLost(totalAttackerUnits, isAttackerWin));
+        if (isAttackerWin) {
+            deductUnits(
+                    defenderUnits,
+                    (int) Math.ceil(totalDefenderUnits * MilitaryPolicy.DEFENDER_LOSS_RATE));
+        }
+        // 손실 후 생존 공격 병력의 건물 피해력 — Zone 1 성 HP를 이만큼 깎는다.
+        int buildingDamage =
+                attackerForces.stream()
+                        .mapToInt(f -> f.getUnitType().getBuildingDamage() * f.getQuantity())
+                        .sum();
         SiegeResult.ResultType resultType = applyResultEffect(event, isAttackerWin, buildingDamage);
         int lootedGp = resultType == SiegeResult.ResultType.LOOT ? applyLoot(event) : 0;
+
+        // 생존 공격 병력은 공격자 홈 아일랜드 대기 풀로 환원, 커밋 기록은 정리.
+        returnAttackerSurvivors(event.getAttacker(), attackerForces);
+        siegeForceRepository.deleteAll(attackerForces);
 
         if (isAttackerWin) {
             publishSiegeVictoryIfSeasonActive(attackerId);
@@ -151,9 +173,9 @@ public class SiegeService {
                         .build());
     }
 
-    private int calculateAtk(List<UnitInstance> attackerUnits) {
-        return attackerUnits.stream()
-                .mapToInt(u -> u.getUnitType().getAttackPower() * u.getQuantity())
+    private int calculateForceAtk(List<SiegeForce> attackerForces) {
+        return attackerForces.stream()
+                .mapToInt(f -> f.getUnitType().getAttackPower() * f.getQuantity())
                 .sum();
     }
 
@@ -178,18 +200,48 @@ public class SiegeService {
         return unitDef + buildingDef;
     }
 
-    private void applyUnitLoss(
-            boolean isAttackerWin,
-            List<UnitInstance> attackerUnits,
-            List<UnitInstance> defenderUnits) {
-        int attackerLost = calculateAttackerLost(sumQuantity(attackerUnits), isAttackerWin);
-        deductUnits(attackerUnits, attackerLost);
-
-        if (isAttackerWin) {
-            int defenderLost =
-                    (int) Math.ceil(sumQuantity(defenderUnits) * MilitaryPolicy.DEFENDER_LOSS_RATE);
-            deductUnits(defenderUnits, defenderLost);
+    // 커밋 병력에서 손실을 순차 차감(SiegeForce 수량을 생존분으로 줄인다).
+    private void applyAttackerForceLoss(List<SiegeForce> forces, int totalLost) {
+        int remaining = totalLost;
+        for (SiegeForce force : forces) {
+            if (remaining <= 0) break;
+            int deduct = Math.min(force.getQuantity(), remaining);
+            force.subtractQuantity(deduct);
+            remaining -= deduct;
         }
+    }
+
+    // 생존 공격 병력을 공격자 홈 아일랜드 대기 풀로 되돌린다. 섬이 없으면 소멸.
+    private void returnAttackerSurvivors(User attacker, List<SiegeForce> forces) {
+        homeIslandRepository
+                .findByUserId(attacker.getId())
+                .ifPresent(
+                        island ->
+                                forces.stream()
+                                        .filter(f -> f.getQuantity() > 0)
+                                        .forEach(
+                                                f ->
+                                                        addIslandReadyIdle(
+                                                                attacker,
+                                                                f.getUnitType(),
+                                                                island,
+                                                                f.getQuantity())));
+    }
+
+    private void addIslandReadyIdle(User user, UnitType unitType, HomeIsland island, int quantity) {
+        unitInstanceRepository
+                .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
+                        user.getId(), unitType.getId(), island.getId())
+                .ifPresentOrElse(
+                        e -> e.addQuantity(quantity),
+                        () ->
+                                unitInstanceRepository.save(
+                                        UnitInstance.builder()
+                                                .user(user)
+                                                .unitType(unitType)
+                                                .quantity(quantity)
+                                                .homeIsland(island)
+                                                .build()));
     }
 
     private int calculateAttackerLost(int totalAttackerUnits, boolean isAttackerWin) {
@@ -228,13 +280,6 @@ public class SiegeService {
             }
             default -> null;
         };
-    }
-
-    // 살아남은 공격 유닛의 건물 피해 합. 공성 병기·투석기가 핵심, 순수 전투 유닛은 소량.
-    private int calculateBuildingDamage(List<UnitInstance> attackerUnits) {
-        return attackerUnits.stream()
-                .mapToInt(u -> u.getUnitType().getBuildingDamage() * u.getQuantity())
-                .sum();
     }
 
     private int applyLoot(SiegeEvent event) {
