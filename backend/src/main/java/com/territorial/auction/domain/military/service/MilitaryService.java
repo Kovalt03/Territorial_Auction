@@ -11,6 +11,7 @@ import com.territorial.auction.domain.military.LocationType;
 import com.territorial.auction.domain.military.MilitaryPolicy;
 import com.territorial.auction.domain.military.dto.*;
 import com.territorial.auction.domain.military.entity.*;
+import com.territorial.auction.domain.military.event.GarrisonBuildingDestroyedEvent;
 import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.military.repository.*;
 import com.territorial.auction.domain.user.entity.User;
@@ -289,6 +290,22 @@ public class MilitaryService {
                 .ifPresentOrElse(
                         island -> retreatUnitsToIsland(event.formerOwnerId(), island, units),
                         () -> unitInstanceRepository.deleteAll(units));
+    }
+
+    // 공성 중 주둔 건물(성 제외)이 파괴되면 그 건물 주둔 방어 유닛을 홈 아일랜드로 퇴각시킨다.
+    @EventListener
+    @Transactional
+    public void handleGarrisonBuildingDestroyed(GarrisonBuildingDestroyedEvent event) {
+        List<UnitInstance> garrison =
+                unitInstanceRepository.findByDeployedBuildingId(event.buildingId());
+        if (garrison.isEmpty()) {
+            return;
+        }
+        homeIslandRepository
+                .findByUserId(event.defenderId())
+                .ifPresentOrElse(
+                        island -> retreatUnitsToIsland(event.defenderId(), island, garrison),
+                        () -> unitInstanceRepository.deleteAll(garrison));
     }
 
     private void retreatUnitsToIsland(Long userId, HomeIsland island, List<UnitInstance> units) {
