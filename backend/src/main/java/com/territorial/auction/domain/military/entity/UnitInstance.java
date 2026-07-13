@@ -1,5 +1,6 @@
 package com.territorial.auction.domain.military.entity;
 
+import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.user.entity.User;
@@ -40,6 +41,11 @@ public class UnitInstance {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "deployed_territory_id")
     private Territory deployedTerritory; // NULL이면 대기 중
+
+    // 방어 배치 시 주둔한 건물. 배치된 유닛만 값이 있으며 그 건물이 속한 Zone에서 방어에 참여한다.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deployed_building_id")
+    private BuildingInstance deployedBuilding;
 
     // 위치 간 이동 중이면 도착 예정 시각. NULL이면 이동 중 아님(대기/배치 상태).
     // 이동 중 유닛은 귀속지가 이미 도착지로 설정돼 있으나 도착 전까지 방어·배치·재이동 불가.
@@ -89,11 +95,13 @@ public class UnitInstance {
         this.quantity -= amount;
     }
 
-    public void deployTo(Territory territory) {
+    public void deployTo(Territory territory, BuildingInstance building) {
         this.deployedTerritory = territory;
+        this.deployedBuilding = building;
     }
 
     public void recall() {
         this.deployedTerritory = null;
+        this.deployedBuilding = null;
     }
 }

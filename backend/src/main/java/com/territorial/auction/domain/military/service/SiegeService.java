@@ -65,8 +65,10 @@ public class SiegeService {
 
         // 공격 병력은 선언 시 커밋된 SiegeForce에서 온다(대기 풀에서 차감돼 기록됨).
         List<SiegeForce> attackerForces = siegeForceRepository.findBySiegeId(event.getId());
+        // 방어는 공격받는 Zone의 건물에 주둔한 병력만 참여한다(다른 Zone 주둔 병력은 무기여).
         List<UnitInstance> defenderUnits =
-                unitInstanceRepository.findByUserIdAndDeployedTerritoryId(defenderId, territoryId);
+                unitInstanceRepository.findDefendersInZone(
+                        defenderId, territoryId, event.getAttackZone());
 
         boolean isAttackerWin =
                 calculateForceAtk(attackerForces) > calculateDef(defenderUnits, event);
