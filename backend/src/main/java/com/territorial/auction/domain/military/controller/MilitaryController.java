@@ -63,4 +63,11 @@ public class MilitaryController {
             @AuthenticationPrincipal Long userId, @PathVariable Long siegeId) {
         return ResponseEntity.ok(ApiResponse.ok(militaryService.getSiegeResult(userId, siegeId)));
     }
+
+    @PostMapping("/scout/{territoryId}")
+    public ResponseEntity<ApiResponse<ScoutTerritoryResponse>> scoutTerritory(
+            @AuthenticationPrincipal Long userId, @PathVariable Long territoryId) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(militaryService.scoutTerritory(userId, territoryId)));
+    }
 }
