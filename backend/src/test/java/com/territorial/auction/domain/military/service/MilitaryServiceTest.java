@@ -24,6 +24,7 @@ import com.territorial.auction.domain.military.dto.MoveUnitResponse;
 import com.territorial.auction.domain.military.dto.ProduceUnitRequest;
 import com.territorial.auction.domain.military.dto.ProduceUnitResponse;
 import com.territorial.auction.domain.military.dto.RecallUnitRequest;
+import com.territorial.auction.domain.military.dto.ScoutTerritoryResponse;
 import com.territorial.auction.domain.military.dto.UnitListResponse;
 import com.territorial.auction.domain.military.entity.AttackToken;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
@@ -707,6 +708,87 @@ class MilitaryServiceTest {
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.CANNOT_ATTACK_OWN_TERRITORY);
+        }
+    }
+
+    @Nested
+    @DisplayName("ScoutTerritory")
+    class ScoutTerritory {
+
+        private UnitType scoutType() {
+            UnitType scout =
+                    UnitType.builder()
+                            .name("SCOUT")
+                            .attackPower(6)
+                            .defensePower(6)
+                            .costGp(80)
+                            .foodCost(1)
+                            .level(1)
+                            .build();
+            ReflectionTestUtils.setField(scout, "id", 9L);
+            return scout;
+        }
+
+        private Territory enemyTerritory() {
+            Territory t = Territory.builder().coordX(5).coordY(6).build();
+            ReflectionTestUtils.setField(t, "id", 30L);
+            ReflectionTestUtils.setField(t, "owner", defender);
+            ReflectionTestUtils.setField(t, "status", Territory.TerritoryStatus.OCCUPIED);
+            return t;
+        }
+
+        private UnitInstance stack(UnitType type, User owner, int qty) {
+            UnitInstance inst =
+                    UnitInstance.builder().user(owner).unitType(type).quantity(qty).build();
+            ReflectionTestUtils.setField(inst, "id", 200L + qty);
+            return inst;
+        }
+
+        @Test
+        @DisplayName("정찰 성공 → SCOUT 1기 소모 + 방어 총 병력 수만 반환")
+        void success() {
+            Territory target = enemyTerritory();
+            UnitType scout = scoutType();
+            given(territoryRepository.findById(30L)).willReturn(Optional.of(target));
+            given(unitTypeRepository.findByName("SCOUT")).willReturn(Optional.of(scout));
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 9L)).willReturn(3);
+            given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeId(1L, 9L))
+                    .willReturn(List.of(stack(scout, attacker, 3)));
+            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 30L))
+                    .willReturn(
+                            List.of(stack(unitType, defender, 4), stack(unitType, defender, 3)));
+
+            ScoutTerritoryResponse response = militaryService.scoutTerritory(1L, 30L);
+
+            assertThat(response.territoryId()).isEqualTo(30L);
+            assertThat(response.defenderTotalUnits()).isEqualTo(7);
+        }
+
+        @Test
+        @DisplayName("SCOUT 유닛 없음 → SCOUT_UNIT_REQUIRED")
+        void noScoutUnit() {
+            Territory target = enemyTerritory();
+            given(territoryRepository.findById(30L)).willReturn(Optional.of(target));
+            given(unitTypeRepository.findByName("SCOUT")).willReturn(Optional.of(scoutType()));
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 9L)).willReturn(0);
+
+            assertThatThrownBy(() -> militaryService.scoutTerritory(1L, 30L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SCOUT_UNIT_REQUIRED);
+        }
+
+        @Test
+        @DisplayName("자기 영토 정찰 → SCOUT_INVALID_TARGET")
+        void ownTerritory() {
+            Territory target = enemyTerritory();
+            ReflectionTestUtils.setField(target, "owner", attacker);
+            given(territoryRepository.findById(30L)).willReturn(Optional.of(target));
+
+            assertThatThrownBy(() -> militaryService.scoutTerritory(1L, 30L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SCOUT_INVALID_TARGET);
         }
     }
 
