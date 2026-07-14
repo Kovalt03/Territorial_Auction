@@ -134,6 +134,8 @@ public enum ErrorCode {
     INCOMPLETE_UNIT_LEVEL_SPEC(HttpStatus.BAD_REQUEST, "훈련 스펙은 모든 값을 함께 입력해야 합니다."),
     SIEGE_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "공성전 결과가 아직 처리되지 않았습니다."),
     CANNOT_ATTACK_OWN_TERRITORY(HttpStatus.FORBIDDEN, "자신의 영토는 공격할 수 없습니다."),
+    SCOUT_UNIT_REQUIRED(HttpStatus.BAD_REQUEST, "정찰 유닛이 없습니다."),
+    SCOUT_INVALID_TARGET(HttpStatus.BAD_REQUEST, "정찰할 수 없는 영토입니다."),
 
     // Island
     ISLAND_NOT_FOUND(HttpStatus.NOT_FOUND, "섬을 찾을 수 없습니다."),
