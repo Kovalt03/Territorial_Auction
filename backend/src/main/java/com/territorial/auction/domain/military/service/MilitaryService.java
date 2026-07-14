@@ -41,6 +41,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Transactional(readOnly = true)
 public class MilitaryService {
 
+    private static final String SCOUT_UNIT_NAME = "SCOUT";
+
     private final AttackTokenRepository attackTokenRepository;
     private final UnitInstanceRepository unitInstanceRepository;
     private final UnitTypeRepository unitTypeRepository;
@@ -251,6 +253,44 @@ public class MilitaryService {
                         .findBySiegeId(siegeId)
                         .orElseThrow(() -> new CustomException(ErrorCode.SIEGE_RESULT_NOT_FOUND));
         return SiegeResultResponse.of(siege, result);
+    }
+
+    // 정찰: SCOUT 유닛 1기를 소모해 대상 영토 방어 병력의 총 수만 알아낸다.
+    // 유닛 종류·Zone 분포는 공개하지 않는다(정보 비대칭).
+    @Transactional
+    public ScoutTerritoryResponse scoutTerritory(Long userId, Long territoryId) {
+        Territory target = findTerritoryOrThrow(territoryId);
+        validateScoutTarget(target, userId);
+        consumeScoutUnit(userId);
+
+        Long defenderId = target.getOwner().getId();
+        int defenderTotalUnits = countDeployedUnits(defenderId, territoryId);
+        return new ScoutTerritoryResponse(territoryId, defenderTotalUnits);
+    }
+
+    private void validateScoutTarget(Territory target, Long userId) {
+        if (target.getOwner() == null || target.getOwner().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.SCOUT_INVALID_TARGET);
+        }
+    }
+
+    private void consumeScoutUnit(Long userId) {
+        UnitType scout =
+                unitTypeRepository
+                        .findByName(SCOUT_UNIT_NAME)
+                        .orElseThrow(() -> new CustomException(ErrorCode.UNIT_TYPE_NOT_FOUND));
+        if (nullSafe(unitInstanceRepository.sumReadyIdleQuantity(userId, scout.getId())) < 1) {
+            throw new CustomException(ErrorCode.SCOUT_UNIT_REQUIRED);
+        }
+        deductReadyIdle(userId, scout.getId(), 1);
+    }
+
+    private int countDeployedUnits(Long defenderId, Long territoryId) {
+        return unitInstanceRepository
+                .findByUserIdAndDeployedTerritoryId(defenderId, territoryId)
+                .stream()
+                .mapToInt(UnitInstance::getQuantity)
+                .sum();
     }
 
     public UnitListResponse getUnitList(Long userId) {
