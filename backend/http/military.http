@@ -83,6 +83,10 @@ Authorization: Bearer {{accessToken}}
 GET {{baseUrl}}/api/v1/siege/my-history?page=0&size=20&result=WIN
 Authorization: Bearer {{accessToken}}
 
+### 영토 정찰 (SCOUT 1기 소모 → 방어 총 병력 수만 반환)
+POST {{baseUrl}}/api/v1/military/scout/10
+Authorization: Bearer {{accessToken}}
+
 ### 에러: 인증 없이 유닛 생산 시도 (401 UNAUTHORIZED)
 # POST {{baseUrl}}/api/v1/military/units
 # Content-Type: application/json
