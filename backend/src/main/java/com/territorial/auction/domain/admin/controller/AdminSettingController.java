@@ -1,10 +1,13 @@
 package com.territorial.auction.domain.admin.controller;
 
 import com.territorial.auction.domain.admin.dto.AdminAuctionSettingResponse;
+import com.territorial.auction.domain.admin.dto.AdminBalanceSettingResponse;
 import com.territorial.auction.domain.admin.dto.AdminToggleAuctionRequest;
+import com.territorial.auction.domain.admin.dto.AdminUpdateBalanceRequest;
 import com.territorial.auction.domain.admin.service.AdminSettingService;
 import com.territorial.auction.global.common.ApiResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,5 +35,20 @@ public class AdminSettingController {
             @RequestBody @Valid AdminToggleAuctionRequest request) {
         return ResponseEntity.ok(
                 ApiResponse.ok(adminSettingService.setAuctionEnabled(userId, request.enabled())));
+    }
+
+    @GetMapping("/balance")
+    public ResponseEntity<ApiResponse<List<AdminBalanceSettingResponse>>> getBalanceSettings() {
+        return ResponseEntity.ok(ApiResponse.ok(adminSettingService.getBalanceSettings()));
+    }
+
+    @PatchMapping("/balance")
+    public ResponseEntity<ApiResponse<AdminBalanceSettingResponse>> updateBalanceSetting(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody @Valid AdminUpdateBalanceRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(
+                        adminSettingService.updateBalanceSetting(
+                                userId, request.key(), request.value())));
     }
 }

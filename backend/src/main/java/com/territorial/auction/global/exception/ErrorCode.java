@@ -26,6 +26,7 @@ public enum ErrorCode {
     ADMIN_IP_NOT_ALLOWED(HttpStatus.FORBIDDEN, "허용되지 않은 접근 위치입니다."),
     INVALID_TOTP_CODE(HttpStatus.UNAUTHORIZED, "인증 코드가 올바르지 않습니다."),
     TOTP_NOT_ENROLLED(HttpStatus.FORBIDDEN, "2차 인증이 등록되지 않았습니다."),
+    BALANCE_KEY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 밸런스 설정 키입니다."),
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
