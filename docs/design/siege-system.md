@@ -209,7 +209,7 @@ DEF = Σ(공격받는 Zone 건물에 주둔한 방어 유닛 defensePower × 수
 | `UnitType` + `unit-types.yml` | **`buildingDamage` 스탯 추가** + 신규 유닛 5종(CAVALRY·SIEGE_ENGINE·GUARD·CATAPULT·SCOUT) |
 | `SiegeService` 데미지 로직 | 단판 → 교전(ATK/DEF) + 건물 피해(Σ buildingDamage) 분리, 성 HP 누적(3~4회 함락 튜닝) |
 | **유닛 주둔 모델** | `UnitInstance`에 주둔 건물 참조(`garrison_building_id`) 추가, 배치 API를 건물 대상으로, DEF 계산을 Zone별 주둔 병력으로. 건물 파괴 시 주둔 유닛 퇴각. 건물별 주둔 수용량(종류·레벨별) 검증 |
-| **공성 건물** | 신규 도메인/엔티티(공성 타워·주둔지·보급소 등), 공성 시작 시 건설. 주둔지 수용량 = 공격 병력 상한, 공성 타워 = 범위 공격 버프 |
+| **공성 건물** | **구현 완료(2026-07-15)**: `SiegeStructure`(siege_structures, 공성 종속·판정 후 삭제) 3종. 공성 선언 시 대상 영토 **인접 타일**에 건설, **공격자 금고(GlobalVault) GP** 결제. **주둔지 필수** — 공격 병력 상한 = 주둔지 수 × 수용량(10). 공성 타워 = 공격력 버프(+20%/개, 최대 3), 보급소 = 실패 후 쿨다운 완화(-1h/개, `siege_results.applied_cooldown_hours`에 기록). 수치는 관리자 밸런스(§13) 후속 배선 |
 | 정보 비대칭 | 방어 유닛 구성 노출 API 없음(영토 상세=건물만·유닛 목록=본인만·공성 결과=집계만) → ①은 이미 충족. 정찰로 부분 공개: `POST /api/v1/military/scout/{territoryId}` — SCOUT 1기 소모, 방어 총 병력 수만 반환 |
 | 성·건물 수리 | 위치 저장소 GP로 즉시 HP 회복 API |
 | `Territory` | `protectedUntil` 필드 + `occupy` 시그니처(보호 now+12h / 점유 now+3일) |
