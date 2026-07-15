@@ -79,6 +79,8 @@ class BuildingServiceTest {
     private com.territorial.auction.domain.building.repository.BuildingCastleLimitRepository
             buildingCastleLimitRepository;
 
+    @Mock private com.territorial.auction.global.config.BalanceConfig balanceConfig;
+
     @org.junit.jupiter.api.BeforeEach
     void stubLevelSpecsEmpty() {
         org.mockito.Mockito.lenient()
@@ -520,6 +522,18 @@ class BuildingServiceTest {
     @Nested
     @DisplayName("repair()")
     class Repair {
+
+        @org.junit.jupiter.api.BeforeEach
+        void stubRepairRate() {
+            org.mockito.Mockito.lenient()
+                    .when(
+                            balanceConfig.getInt(
+                                    com.territorial.auction.global.config.BalanceConfig
+                                            .KEY_REPAIR_GP_PER_HP,
+                                    com.territorial.auction.domain.building.BuildingPolicy
+                                            .REPAIR_GP_PER_HP))
+                    .thenReturn(2);
+        }
 
         @Test
         @DisplayName("파괴된 건물 수리 성공")

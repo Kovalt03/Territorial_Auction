@@ -75,6 +75,7 @@ class MilitaryServiceTest {
     @Mock private TerritoryRepository territoryRepository;
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private SimpMessagingTemplate messagingTemplate;
+    @Mock private com.territorial.auction.global.config.BalanceConfig balanceConfig;
 
     private static final long TERR_ID = 10L;
     private static final long ISLAND_ID = 1L;
@@ -354,6 +355,18 @@ class MilitaryServiceTest {
     @Nested
     @DisplayName("DeployUnit")
     class DeployUnit {
+
+        @org.junit.jupiter.api.BeforeEach
+        void stubCastleGarrisonCap() {
+            org.mockito.Mockito.lenient()
+                    .when(
+                            balanceConfig.getInt(
+                                    com.territorial.auction.global.config.BalanceConfig
+                                            .KEY_GARRISON_CAP_CASTLE,
+                                    com.territorial.auction.domain.military.MilitaryPolicy
+                                            .GARRISON_CAP_CASTLE))
+                    .thenReturn(5);
+        }
 
         private DeployUnitRequest req(int quantity) {
             return new DeployUnitRequest(
