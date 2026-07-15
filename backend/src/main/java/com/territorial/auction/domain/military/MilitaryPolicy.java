@@ -22,6 +22,12 @@ public final class MilitaryPolicy {
     /** WORKSHOP 파괴 후 생산 중단 시간 (시간 단위) */
     public static final int WORKSHOP_DEBUFF_HOURS = 12;
 
+    // ── 건물별 주둔 수용량(레벨당) — 위치 총 슬롯 = 방어 가능 건물들의 이 값 합 ──────────────
+    public static final int GARRISON_CAP_CASTLE = 5;
+    public static final int GARRISON_CAP_RESIDENCE = 5;
+    public static final int GARRISON_CAP_TOWER = 3;
+    public static final int GARRISON_CAP_WALL = 2;
+
     /** CASTLE이 없을 때 기본 유닛 슬롯 */
     public static final int DEFAULT_UNIT_SLOTS = 5;
 

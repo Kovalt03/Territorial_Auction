@@ -214,7 +214,7 @@ DEF = Σ(공격받는 Zone 건물에 주둔한 방어 유닛 defensePower × 수
 | 성·건물 수리 | 위치 저장소 GP로 즉시 HP 회복 API |
 | `Territory` | `protectedUntil` 필드 + `occupy` 시그니처(보호 now+12h / 점유 now+3일) |
 | `MilitaryService.validateNotProtected` | `protectedUntil` 기준 |
-| **관리자 밸런스 설정(§13)** | 밸런스 수치를 하드코딩 대신 DB 설정으로 — 관리자 조회/수정 API + 캐시 |
+| **관리자 밸런스 설정(§13)** | 밸런스 수치를 하드코딩 대신 DB 설정으로 — 관리자 조회/수정 API + 캐시. **1차 구현 완료**: `BalanceConfig`(global, `admin_settings` 키-값 폴백) + `GET/PATCH /api/v1/admin/settings/balance`. 배선: 수리 GP/HP · 건물별 주둔 수용량(성/숙소/타워/방벽). 나머지 상수(보호·점유 기간, 손실률, 쿨다운, LOOT_RATE 등)는 후속 배선 |
 | 마이그레이션 | `unit_types.building_damage`, `unit_instances.garrison_building_id`, `territories.protected_until`, 공성 건물 테이블, 밸런스 설정 등 |
 
 ---
