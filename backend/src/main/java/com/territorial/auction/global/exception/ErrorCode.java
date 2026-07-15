@@ -137,6 +137,10 @@ public enum ErrorCode {
     CANNOT_ATTACK_OWN_TERRITORY(HttpStatus.FORBIDDEN, "자신의 영토는 공격할 수 없습니다."),
     SCOUT_UNIT_REQUIRED(HttpStatus.BAD_REQUEST, "정찰 유닛이 없습니다."),
     SCOUT_INVALID_TARGET(HttpStatus.BAD_REQUEST, "정찰할 수 없는 영토입니다."),
+    SIEGE_STAGING_REQUIRED(HttpStatus.BAD_REQUEST, "공성에는 주둔지가 최소 1개 필요합니다."),
+    SIEGE_STRUCTURE_PLACEMENT_INVALID(HttpStatus.BAD_REQUEST, "공성 건물은 대상 영토 인접 타일에만 배치할 수 있습니다."),
+    SIEGE_STRUCTURE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "공성 건물 개수 상한을 초과했습니다."),
+    SIEGE_FORCE_EXCEEDS_CAPACITY(HttpStatus.BAD_REQUEST, "공격 병력이 주둔지 수용량을 초과합니다."),
 
     // Island
     ISLAND_NOT_FOUND(HttpStatus.NOT_FOUND, "섬을 찾을 수 없습니다."),
