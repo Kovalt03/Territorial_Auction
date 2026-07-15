@@ -16,6 +16,7 @@ import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.military.repository.*;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
+import com.territorial.auction.global.config.BalanceConfig;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
@@ -54,6 +55,7 @@ public class MilitaryService {
     private final TerritoryRepository territoryRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final BalanceConfig balanceConfig;
 
     public AttackTokenResponse getAttackTokens(Long userId) {
         return attackTokenRepository
@@ -120,12 +122,26 @@ public class MilitaryService {
     }
 
     // 건물별 주둔 수용량(레벨당): 성 5 · 타워 3 · 방벽 2 · 숙소 5. 그 외 건물은 주둔 불가(0).
+    // 값은 관리자 밸런스 설정으로 덮어쓸 수 있다(없으면 MilitaryPolicy 기본값).
     private void validateGarrisonCapacity(BuildingInstance building, int quantity) {
         int perLevel =
                 switch (building.getBuildingType().getName()) {
-                    case "CASTLE", "RESIDENCE" -> 5;
-                    case "TOWER" -> 3;
-                    case "WALL" -> 2;
+                    case "CASTLE" ->
+                            balanceConfig.getInt(
+                                    BalanceConfig.KEY_GARRISON_CAP_CASTLE,
+                                    MilitaryPolicy.GARRISON_CAP_CASTLE);
+                    case "RESIDENCE" ->
+                            balanceConfig.getInt(
+                                    BalanceConfig.KEY_GARRISON_CAP_RESIDENCE,
+                                    MilitaryPolicy.GARRISON_CAP_RESIDENCE);
+                    case "TOWER" ->
+                            balanceConfig.getInt(
+                                    BalanceConfig.KEY_GARRISON_CAP_TOWER,
+                                    MilitaryPolicy.GARRISON_CAP_TOWER);
+                    case "WALL" ->
+                            balanceConfig.getInt(
+                                    BalanceConfig.KEY_GARRISON_CAP_WALL,
+                                    MilitaryPolicy.GARRISON_CAP_WALL);
                     default -> 0;
                 };
         int capacity = perLevel * building.getLevel();

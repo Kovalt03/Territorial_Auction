@@ -37,6 +37,7 @@ import com.territorial.auction.domain.season.entity.UserSeasonPass;
 import com.territorial.auction.domain.season.repository.UserSeasonPassRepository;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
+import com.territorial.auction.global.config.BalanceConfig;
 import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
@@ -66,6 +67,7 @@ public class BuildingService {
     private final NotificationService notificationService;
     private final com.territorial.auction.domain.building.repository.BuildingCastleLimitRepository
             buildingCastleLimitRepository;
+    private final BalanceConfig balanceConfig;
 
     public BuildingTypeCatalogResponse getBuildingTypes() {
         return BuildingTypeCatalogResponse.of(buildingTypeRepository.findAll());
@@ -296,7 +298,10 @@ public class BuildingService {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
-        int repairCost = missingHp * BuildingPolicy.REPAIR_GP_PER_HP;
+        int repairGpPerHp =
+                balanceConfig.getInt(
+                        BalanceConfig.KEY_REPAIR_GP_PER_HP, BuildingPolicy.REPAIR_GP_PER_HP);
+        int repairCost = missingHp * repairGpPerHp;
         int gpRemaining = chargeBuildingLocationGp(building, repairCost);
         building.repair();
 
