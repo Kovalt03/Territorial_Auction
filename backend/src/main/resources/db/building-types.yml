@@ -9,7 +9,7 @@ buildingTypes:
     defensePower: ~
     foodProductionRate: ~
     unitCapacityPerLevel: ~
-    gpProductionRate: 10
+    gpProductionRate: 100
     buildTimeSeconds: 300
 
   - name: STORAGE
@@ -33,7 +33,7 @@ buildingTypes:
     defensePower: ~
     foodProductionRate: ~
     unitCapacityPerLevel: ~
-    gpProductionRate: 50
+    gpProductionRate: 500
     buildTimeSeconds: 180
 
   - name: BARRACKS
