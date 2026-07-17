@@ -1,6 +1,7 @@
 package com.territorial.auction.domain.building.dto;
 
 import com.territorial.auction.domain.building.BuildingPolicy;
+import com.territorial.auction.domain.building.StoragePolicy;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import java.time.LocalDateTime;
@@ -16,6 +17,9 @@ public record IslandResponse(
         int productionRatePerHour,
         LocalDateTime lastHarvestAt,
         int accumulatedGp,
+        int storedGp,
+        int storedFood,
+        int storageCapacity,
         int zone1Radius,
         int zone2Radius,
         int builderCount,
@@ -88,6 +92,22 @@ public record IslandResponse(
         // 분당으로 먼저 나누면 시간당 생산량이 60 미만인 건물은 0이 되어 버린다.
         int accumulatedGp = (int) (minutesElapsed * productionRatePerHour / 60);
 
+        // 섬 저장소(성·저장소)에 실제 보관된 GP·식량 — 건물 건설·유닛 생산에 차감되는 값.
+        List<BuildingInstance> storages =
+                buildings.stream()
+                        .filter(
+                                b ->
+                                        (b.getBuildingType().isCastle()
+                                                        || "STORAGE"
+                                                                .equals(
+                                                                        b.getBuildingType()
+                                                                                .getName()))
+                                                && b.getPosX() >= 0)
+                        .toList();
+        int storedGp = StoragePolicy.totalGp(storages);
+        int storedFood = StoragePolicy.totalFood(storages);
+        int storageCapacity = storages.stream().mapToInt(StoragePolicy::capacity).sum();
+
         return new IslandResponse(
                 island.getId(),
                 island.getGrade(),
@@ -96,6 +116,9 @@ public record IslandResponse(
                 productionRatePerHour,
                 lastHarvestAt,
                 accumulatedGp,
+                storedGp,
+                storedFood,
+                storageCapacity,
                 island.getZone1Radius(),
                 island.getZone2Radius(),
                 builderCount,
