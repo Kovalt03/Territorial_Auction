@@ -27,6 +27,10 @@ export function PersonalIslandPage() {
   const { ap, gp, username, syncGP, syncAP } = useApp();
   const { island, reload: reloadIsland } = useIsland();
   const { data: militaryData, isLoading: isMilitaryLoading, reload: reloadMilitary } = useMilitary();
+  // 유닛·식량은 위치별로 그룹핑돼 내려온다 — 이 페이지는 섬 위치만 본다.
+  const islandMilitary = militaryData?.locations.find(l => l.locationType === 'ISLAND');
+  const islandUnits = islandMilitary?.units ?? [];
+  const islandFood = islandMilitary?.storedFood ?? 0;
   const gridSize = island?.gridSize ?? 10;
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number } | null>(null);
   const [showBuild, setShowBuild] = useState(false);
@@ -404,19 +408,25 @@ export function PersonalIslandPage() {
           </div>
           <div
             className={`flex items-center gap-1 bg-elevated border rounded-lg px-2 py-1 ${isBuilderFull ? 'border-gold' : 'border-outline'}`}
-            title="건축 장인 — 동시에 지을 수 있는 건물 수"
+            title="건축 장인 — 지금 바로 건설에 투입 가능한 장인 수 / 전체"
           >
             <span className="text-[11px]">🔨</span>
             <span className={`text-[11px] font-bold ${isBuilderFull ? 'text-gold' : 'text-muted'}`}>
-              장인 {buildersInUse}/{builderCount}
+              장인 {builderCount - buildersInUse}/{builderCount}
             </span>
           </div>
         </div>
         <div className="flex items-center gap-4 ml-auto">
-          <div className="text-right">
-            <p className="text-muted text-[10px]">총 GP 보유</p>
+          <div className="text-right" title="계정 금고(vault)의 GP. 건물 건설·생산에는 이 섬 저장소의 GP가 쓰인다(금고와 별개).">
+            <p className="text-muted text-[10px]">금고 GP</p>
             <p className="text-gp font-bold text-base">💎 {gp.toLocaleString()}</p>
           </div>
+          {island && (
+            <div className="text-right" title="이 섬 저장소(성·저장소)의 GP. 건물 건설·유닛 생산에 실제로 차감되는 값.">
+              <p className="text-muted text-[10px]">섬 저장 GP</p>
+              <p className="text-gold font-bold text-base">🏝 {(island.storedGp ?? 0).toLocaleString()}</p>
+            </div>
+          )}
           <div className="text-right">
             <p className="text-muted text-[10px]">생산 속도</p>
             <p className="text-gold font-bold text-base">+{island?.productionRatePerHour ?? 0} GP/시간</p>
@@ -627,12 +637,12 @@ export function PersonalIslandPage() {
               <div className="p-3 space-y-2">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-muted font-semibold text-xs">주둔 유닛</p>
-                  {militaryData && (
-                    <span className="text-[10px] text-gold">🌾 식량 {militaryData.availableFood.toLocaleString()}</span>
+                  {islandMilitary && (
+                    <span className="text-[10px] text-gold">🌾 식량 {islandFood.toLocaleString()}</span>
                   )}
                 </div>
                 {isMilitaryLoading && <LoadingState className="py-4" />}
-                {!isMilitaryLoading && militaryData?.units.map(u => {
+                {!isMilitaryLoading && islandUnits.map(u => {
                   // 관리자 지정 값 우선, 없으면 기본 매핑
                   const fallback = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
                   const meta = {
@@ -660,12 +670,12 @@ export function PersonalIslandPage() {
                     </div>
                   );
                 })}
-                {!isMilitaryLoading && militaryData?.units.length === 0 && (
+                {!isMilitaryLoading && islandUnits.length === 0 && (
                   <p className="text-muted text-xs text-center py-4">보유한 유닛이 없습니다</p>
                 )}
                 <button
                   onClick={() => {
-                    if (militaryData?.units.length) setTrainUnitTypeId(militaryData.units[0].unitTypeId);
+                    if (islandUnits.length) setTrainUnitTypeId(islandUnits[0].unitTypeId);
                     setTrainQuantity(1);
                     setShowTrainModal(true);
                   }}
@@ -758,8 +768,9 @@ export function PersonalIslandPage() {
 
       {showTrainModal && militaryData && (
         <IslandTrainUnitModal
-          militaryData={militaryData}
-          gp={gp}
+          units={islandUnits}
+          islandGp={island?.storedGp ?? 0}
+          storedFood={islandFood}
           trainUnitTypeId={trainUnitTypeId}
           trainQuantity={trainQuantity}
           isTraining={isTraining}

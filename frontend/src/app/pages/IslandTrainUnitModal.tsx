@@ -1,10 +1,11 @@
-import type { UnitsResponse } from '../types/military';
+import type { UnitInfo } from '../types/military';
 
 import { UNIT_LABELS } from './islandGrid';
 
 interface Props {
-  militaryData: UnitsResponse;
-  gp: number;
+  units: UnitInfo[];
+  islandGp: number;
+  storedFood: number;
   trainUnitTypeId: number | null;
   trainQuantity: number;
   isTraining: boolean;
@@ -15,7 +16,7 @@ interface Props {
 }
 
 export function IslandTrainUnitModal({
-  militaryData, gp, trainUnitTypeId, trainQuantity, isTraining,
+  units, islandGp, storedFood, trainUnitTypeId, trainQuantity, isTraining,
   onSelectUnit, onChangeQuantity, onTrain, onClose,
 }: Props) {
   return (
@@ -25,7 +26,7 @@ export function IslandTrainUnitModal({
         <div className="modal-header-secondary bg-[#1a0a35]">
           <div>
             <h3 className="text-secondary font-bold text-xl">⚔ 유닛 훈련</h3>
-            <p className="text-muted text-xs">보유 GP: {gp.toLocaleString()} · 식량: {militaryData.availableFood.toLocaleString()}</p>
+            <p className="text-muted text-xs">섬 GP: {islandGp.toLocaleString()} · 식량: {storedFood.toLocaleString()}</p>
           </div>
           <button onClick={onClose} className="btn-close">✕</button>
         </div>
@@ -33,7 +34,7 @@ export function IslandTrainUnitModal({
           <div>
             <p className="text-muted text-xs mb-2">유닛 선택</p>
             <div className="grid grid-cols-3 gap-2">
-              {militaryData.units.map(u => {
+              {units.map(u => {
                 // 관리자 지정 값 우선, 없으면 기본 매핑
                 const fallback = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
                 const meta = {
