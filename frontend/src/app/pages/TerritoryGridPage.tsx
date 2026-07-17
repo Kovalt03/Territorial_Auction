@@ -438,6 +438,7 @@ export function TerritoryGridPage() {
           onStartMove={handleStartMove}
           onStoreBuilding={handleStoreBuilding}
           onUpgrade={handleUpgradeBuilding}
+          onVaultTransfer={() => navigate('/app/vault')}
           onClose={() => setShowBuildingAction(false)}
         />
       )}

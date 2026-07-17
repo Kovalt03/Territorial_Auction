@@ -9,6 +9,16 @@ export function fetchUnits(): Promise<UnitsResponse> {
   return apiClient.get<UnitsResponse>('/military/units');
 }
 
-export function produceUnit(unitTypeId: number, quantity: number): Promise<ProduceUnitResponse> {
-  return apiClient.post<ProduceUnitResponse>('/military/units', { unitTypeId, quantity });
+export function produceUnit(
+  unitTypeId: number,
+  quantity: number,
+  locationId: number,
+  locationType: 'ISLAND' | 'TERRITORY',
+): Promise<ProduceUnitResponse> {
+  return apiClient.post<ProduceUnitResponse>('/military/units', {
+    unitTypeId,
+    quantity,
+    locationId,
+    locationType,
+  });
 }

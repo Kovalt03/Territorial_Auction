@@ -133,10 +133,10 @@ export function PersonalIslandPage() {
   };
 
   const handleProduceUnit = async () => {
-    if (!trainUnitTypeId || trainQuantity < 1) return;
+    if (!trainUnitTypeId || trainQuantity < 1 || !island) return;
     setIsTraining(true);
     try {
-      await produceUnit(trainUnitTypeId, trainQuantity);
+      await produceUnit(trainUnitTypeId, trainQuantity, island.islandId, 'ISLAND');
       // 유닛 생산은 섬 저장소 GP·식량에서 차감 — 섬·유닛 현황을 다시 불러온다(금고 무관).
       void reloadIsland();
       void reloadMilitary();
@@ -763,6 +763,16 @@ export function PersonalIslandPage() {
           onStartMove={handleStartMove}
           onStoreBuilding={handleStoreBuilding}
           onUpgrade={handleUpgradeBuilding}
+          onTrain={() => {
+            if (islandUnits.length) setTrainUnitTypeId(islandUnits[0].unitTypeId);
+            setTrainQuantity(1);
+            setShowBuildingAction(false);
+            setShowTrainModal(true);
+          }}
+          onHarvest={() => {
+            setShowBuildingAction(false);
+            void handleHarvest();
+          }}
           onClose={() => setShowBuildingAction(false)}
         />
       )}

@@ -12,14 +12,16 @@ interface Props {
   onStartMove: () => void;
   onStoreBuilding: () => void;
   onUpgrade: () => void;
+  onVaultTransfer: () => void;
   onClose: () => void;
 }
 
 export function TerritoryGridBuildingActionPanel({
   selectedCell, cellData, isUnderConstruction, color, name, busy,
-  onStartMove, onStoreBuilding, onUpgrade, onClose,
+  onStartMove, onStoreBuilding, onUpgrade, onVaultTransfer, onClose,
 }: Props) {
   const isCastle = cellData.type === 'castle';
+  const isStorageBuilding = isCastle || cellData.type === 'storage';
   const canAct = !busy && !isUnderConstruction;
 
   return (
@@ -46,6 +48,17 @@ export function TerritoryGridBuildingActionPanel({
 
         {isUnderConstruction && (
           <p className="text-center text-gold pt-3 text-[11px]">🔨 건설 중에는 이동·보관·업그레이드를 할 수 없습니다</p>
+        )}
+
+        {isStorageBuilding && (
+          <div className="px-4 pt-4">
+            <button
+              onClick={onVaultTransfer}
+              className="w-full h-12 rounded-xl font-bold border-[1.5px] border-gold text-gold hover:bg-gold/10 transition-all text-[13px]"
+            >
+              🏦 금고 이전
+            </button>
+          </div>
         )}
 
         <div className="p-4 grid grid-cols-2 gap-3">
