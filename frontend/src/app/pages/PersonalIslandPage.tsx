@@ -24,7 +24,7 @@ import { IslandDecorationShopModal } from './IslandDecorationShopModal';
 
 export function PersonalIslandPage() {
   const navigate = useNavigate();
-  const { ap, gp, username, syncGP, syncAP } = useApp();
+  const { ap, gp, username, syncAP } = useApp();
   const { island, reload: reloadIsland } = useIsland();
   const { data: militaryData, isLoading: isMilitaryLoading, reload: reloadMilitary } = useMilitary();
   // 유닛·식량은 위치별로 그룹핑돼 내려온다 — 이 페이지는 섬 위치만 본다.
@@ -118,7 +118,7 @@ export function PersonalIslandPage() {
     if (!buildingId) return;
     try {
       const result = await upgradeBuildingApi(buildingId);
-      syncGP(result.gpRemaining);
+      // 업그레이드는 섬 저장소 GP에서 차감된다 — 금고(vault)와 무관. 섬만 다시 불러온다.
       void reloadIsland();
       setShowBuildingAction(false);
       showToast(
@@ -136,8 +136,9 @@ export function PersonalIslandPage() {
     if (!trainUnitTypeId || trainQuantity < 1) return;
     setIsTraining(true);
     try {
-      const result = await produceUnit(trainUnitTypeId, trainQuantity);
-      syncGP(result.gpRemaining);
+      await produceUnit(trainUnitTypeId, trainQuantity);
+      // 유닛 생산은 섬 저장소 GP·식량에서 차감 — 섬·유닛 현황을 다시 불러온다(금고 무관).
+      void reloadIsland();
       void reloadMilitary();
       setShowTrainModal(false);
       showToast(`유닛 ${trainQuantity}개 훈련 완료`, false);
@@ -274,8 +275,8 @@ export function PersonalIslandPage() {
     if (isHarvesting) return;
     setIsHarvesting(true);
     try {
-      const result = await harvestIslandGp();
-      syncGP(result.gpBalance);
+      await harvestIslandGp();
+      // 수확분은 섬 저장소에 적립된다 — 섬을 다시 불러오면 섬 저장 GP에 반영(금고 무관).
       void reloadIsland();
     } catch {
       // 수확 실패는 사용자에게 별도 안내 없이 무시 (GP 0인 경우 포함)
@@ -294,8 +295,8 @@ export function PersonalIslandPage() {
     isBuildingRef.current = true;
     setIsBuilding(true);
     try {
-      const result = await placeIslandBuilding(typeId, selectedCell.x, selectedCell.y);
-      syncGP(result.gpRemaining);
+      await placeIslandBuilding(typeId, selectedCell.x, selectedCell.y);
+      // 건설은 섬 저장소 GP에서 차감 — 금고(vault)와 무관. 섬만 다시 불러온다.
       setSelectedBuilding(null);
       setShowBuild(false);
       void reloadIsland();
