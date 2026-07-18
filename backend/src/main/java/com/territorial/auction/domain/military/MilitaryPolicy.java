@@ -46,4 +46,41 @@ public final class MilitaryPolicy {
 
     /** 유닛 위치 간 이동 소요 시간(분) — 도착 전까지 방어·배치·재이동 불가 */
     public static final int UNIT_MOVE_MINUTES = 10;
+
+    // ── 공성 건물 ─────────────────────────────────────────────────────────────
+    /** 공성당 지을 수 있는 공성 건물 총 개수 상한 */
+    public static final int SIEGE_STRUCTURE_MAX = 8;
+
+    /** 공성 건물은 대상 영토로부터 이 Chebyshev 거리 이내(=인접 타일)에만 배치 가능 */
+    public static final int SIEGE_STRUCTURE_RANGE = 1;
+
+    /** 맵 그리드 한 변 크기 — 좌표는 [0, 이 값) */
+    public static final int MAP_GRID_SIZE = 50;
+
+    /** 주둔지 1개당 제공하는 공격 병력 수용량. 공격 병력 상한 = 주둔지 수 × 이 값 */
+    public static final int STAGING_CAPACITY_PER = 10;
+
+    /** 공성 타워 1개당 공격력 버프(%) */
+    public static final int SIEGE_TOWER_ATK_BONUS_PERCENT = 20;
+
+    /** 공성 타워 버프가 누적 적용되는 최대 개수 */
+    public static final int SIEGE_TOWER_MAX_EFFECTIVE = 3;
+
+    /** 보급소 1개당 실패 후 공격 쿨다운 완화(시간) */
+    public static final int SUPPLY_COOLDOWN_REDUCTION_HOURS = 1;
+
+    /** 공성 건물 건설 비용(공격자 금고 GP) */
+    public static final int STAGING_COST_GP = 500;
+
+    public static final int SIEGE_TOWER_COST_GP = 800;
+    public static final int SUPPLY_COST_GP = 600;
+
+    public static int structureCostGp(
+            com.territorial.auction.domain.military.entity.SiegeStructureType type) {
+        return switch (type) {
+            case STAGING -> STAGING_COST_GP;
+            case TOWER -> SIEGE_TOWER_COST_GP;
+            case SUPPLY -> SUPPLY_COST_GP;
+        };
+    }
 }

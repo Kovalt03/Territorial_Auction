@@ -28,6 +28,7 @@ import com.territorial.auction.domain.military.dto.ScoutTerritoryResponse;
 import com.territorial.auction.domain.military.dto.UnitListResponse;
 import com.territorial.auction.domain.military.entity.AttackToken;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
+import com.territorial.auction.domain.military.entity.SiegeStructureType;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
 import com.territorial.auction.domain.military.event.GarrisonBuildingDestroyedEvent;
@@ -76,6 +77,14 @@ class MilitaryServiceTest {
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private com.territorial.auction.global.config.BalanceConfig balanceConfig;
+
+    @Mock
+    private com.territorial.auction.domain.military.repository.SiegeStructureRepository
+            siegeStructureRepository;
+
+    @Mock
+    private com.territorial.auction.domain.building.repository.GlobalVaultRepository
+            globalVaultRepository;
 
     private static final long TERR_ID = 10L;
     private static final long ISLAND_ID = 1L;
@@ -137,6 +146,15 @@ class MilitaryServiceTest {
         HomeIsland island = HomeIsland.builder().user(attacker).build();
         ReflectionTestUtils.setField(island, "id", ISLAND_ID);
         return island;
+    }
+
+    private com.territorial.auction.domain.building.entity.GlobalVault vault(int gp) {
+        var v =
+                com.territorial.auction.domain.building.entity.GlobalVault.builder()
+                        .user(attacker)
+                        .build();
+        ReflectionTestUtils.setField(v, "storedGp", gp);
+        return v;
     }
 
     // Lv2 STORAGE — 용량 10,000. GP·식량 저장 스텁으로 사용.
@@ -627,10 +645,16 @@ class MilitaryServiceTest {
             return t;
         }
 
+        // 대상 (5,6) 인접 타일에 주둔지 1개 → 수용량 10 ≥ 병력 3
+        private List<DeclareSiegeRequest.StructureEntry> structures() {
+            return List.of(
+                    new DeclareSiegeRequest.StructureEntry(SiegeStructureType.STAGING, 5, 7));
+        }
+
         private DeclareSiegeRequest req() {
             // 최외곽 Zone 3 — 진입 전제 없음(공략은 외곽→중심). 병력: 유닛타입 1L × 3
             return new DeclareSiegeRequest(
-                    20L, null, 3, List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)));
+                    20L, null, 3, List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)), structures());
         }
 
         @Test
@@ -648,6 +672,7 @@ class MilitaryServiceTest {
             given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
             given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeId(1L, 1L))
                     .willReturn(List.of(idleAtTerritory(10, target)));
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(1000)));
             given(siegeEventRepository.save(any(SiegeEvent.class)))
                     .willAnswer(
                             inv -> {
@@ -674,7 +699,11 @@ class MilitaryServiceTest {
 
             DeclareSiegeRequest zone1 =
                     new DeclareSiegeRequest(
-                            20L, null, 1, List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)));
+                            20L,
+                            null,
+                            1,
+                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)),
+                            structures());
             assertThatThrownBy(() -> militaryService.declareSiege(1L, zone1))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
@@ -721,6 +750,111 @@ class MilitaryServiceTest {
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.CANNOT_ATTACK_OWN_TERRITORY);
+        }
+
+        @Test
+        @DisplayName("주둔지 없는 공성 건물 편성 → SIEGE_STAGING_REQUIRED")
+        void stagingRequired() {
+            Territory target = targetTerritory();
+            given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
+            given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
+                    .willReturn(List.of());
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
+
+            DeclareSiegeRequest noStaging =
+                    new DeclareSiegeRequest(
+                            20L,
+                            null,
+                            3,
+                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)),
+                            List.of(
+                                    new DeclareSiegeRequest.StructureEntry(
+                                            SiegeStructureType.TOWER, 5, 7)));
+
+            assertThatThrownBy(() -> militaryService.declareSiege(1L, noStaging))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SIEGE_STAGING_REQUIRED);
+        }
+
+        @Test
+        @DisplayName("병력이 주둔지 수용량 초과 → SIEGE_FORCE_EXCEEDS_CAPACITY")
+        void forceExceedsCapacity() {
+            Territory target = targetTerritory();
+            given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
+            given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
+                    .willReturn(List.of());
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(20);
+
+            // 주둔지 1개 → 수용량 10, 병력 11 → 초과
+            DeclareSiegeRequest tooMany =
+                    new DeclareSiegeRequest(
+                            20L,
+                            null,
+                            3,
+                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 11)),
+                            structures());
+
+            assertThatThrownBy(() -> militaryService.declareSiege(1L, tooMany))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SIEGE_FORCE_EXCEEDS_CAPACITY);
+        }
+
+        @Test
+        @DisplayName("대상 영토에 인접하지 않은 좌표 → SIEGE_STRUCTURE_PLACEMENT_INVALID")
+        void placementInvalid() {
+            Territory target = targetTerritory();
+            given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
+            given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
+                    .willReturn(List.of());
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
+
+            // 대상 (5,6)에서 먼 (0,0)
+            DeclareSiegeRequest farAway =
+                    new DeclareSiegeRequest(
+                            20L,
+                            null,
+                            3,
+                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)),
+                            List.of(
+                                    new DeclareSiegeRequest.StructureEntry(
+                                            SiegeStructureType.STAGING, 0, 0)));
+
+            assertThatThrownBy(() -> militaryService.declareSiege(1L, farAway))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SIEGE_STRUCTURE_PLACEMENT_INVALID);
+        }
+
+        @Test
+        @DisplayName("금고 GP 부족 → INSUFFICIENT_GP")
+        void vaultInsufficient() {
+            Territory target = targetTerritory();
+            given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
+            given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
+                    .willReturn(List.of());
+            given(attackTokenRepository.findByUserIdWithLock(1L))
+                    .willReturn(Optional.of(attackToken));
+            given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
+            given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
+            given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeId(1L, 1L))
+                    .willReturn(List.of(idleAtTerritory(10, target)));
+            given(siegeEventRepository.save(any(SiegeEvent.class)))
+                    .willAnswer(
+                            inv -> {
+                                SiegeEvent s = inv.getArgument(0);
+                                ReflectionTestUtils.setField(s, "id", 99L);
+                                return s;
+                            });
+            // 주둔지 1개 비용 500 > 금고 100
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(100)));
+
+            assertThatThrownBy(() -> militaryService.declareSiege(1L, req()))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INSUFFICIENT_GP);
         }
     }
 

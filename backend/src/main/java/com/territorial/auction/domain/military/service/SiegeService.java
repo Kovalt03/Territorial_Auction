@@ -15,12 +15,15 @@ import com.territorial.auction.domain.military.dto.SiegeAlert;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
 import com.territorial.auction.domain.military.entity.SiegeForce;
 import com.territorial.auction.domain.military.entity.SiegeResult;
+import com.territorial.auction.domain.military.entity.SiegeStructure;
+import com.territorial.auction.domain.military.entity.SiegeStructureType;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
 import com.territorial.auction.domain.military.event.GarrisonBuildingDestroyedEvent;
 import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
 import com.territorial.auction.domain.military.repository.SiegeForceRepository;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
+import com.territorial.auction.domain.military.repository.SiegeStructureRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
 import com.territorial.auction.domain.season.entity.Season;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
@@ -44,6 +47,7 @@ public class SiegeService {
 
     private final SiegeResultRepository siegeResultRepository;
     private final SiegeForceRepository siegeForceRepository;
+    private final SiegeStructureRepository siegeStructureRepository;
     private final UnitInstanceRepository unitInstanceRepository;
     private final HomeIslandRepository homeIslandRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
@@ -66,13 +70,15 @@ public class SiegeService {
 
         // 공격 병력은 선언 시 커밋된 SiegeForce에서 온다(대기 풀에서 차감돼 기록됨).
         List<SiegeForce> attackerForces = siegeForceRepository.findBySiegeId(event.getId());
+        // 공성 건물 — 공성 타워(공격력 버프)·보급소(쿨다운 완화). 판정 후 전부 삭제.
+        List<SiegeStructure> structures = siegeStructureRepository.findBySiegeId(event.getId());
         // 방어는 공격받는 Zone의 건물에 주둔한 병력만 참여한다(다른 Zone 주둔 병력은 무기여).
         List<UnitInstance> defenderUnits =
                 unitInstanceRepository.findDefendersInZone(
                         defenderId, territoryId, event.getAttackZone());
 
-        boolean isAttackerWin =
-                calculateForceAtk(attackerForces) > calculateDef(defenderUnits, event);
+        int attackerAtk = applyTowerBonus(calculateForceAtk(attackerForces), structures);
+        boolean isAttackerWin = attackerAtk > calculateDef(defenderUnits, event);
         int totalAttackerUnits = attackerForces.stream().mapToInt(SiegeForce::getQuantity).sum();
         int totalDefenderUnits = sumQuantity(defenderUnits);
 
@@ -92,16 +98,24 @@ public class SiegeService {
         SiegeResult.ResultType resultType = applyResultEffect(event, isAttackerWin, buildingDamage);
         int lootedGp = resultType == SiegeResult.ResultType.LOOT ? applyLoot(event) : 0;
 
-        // 생존 공격 병력은 공격자 홈 아일랜드 대기 풀로 환원, 커밋 기록은 정리.
+        // 생존 공격 병력은 공격자 홈 아일랜드 대기 풀로 환원, 커밋 기록·공성 건물은 정리.
         returnAttackerSurvivors(event.getAttacker(), attackerForces);
         siegeForceRepository.deleteAll(attackerForces);
+        siegeStructureRepository.deleteAll(structures);
 
         if (isAttackerWin) {
             publishSiegeVictoryIfSeasonActive(attackerId);
         }
 
+        int appliedCooldownHours = supplyReducedCooldownHours(structures);
         saveSiegeResult(
-                event, isAttackerWin, totalAttackerUnits, totalDefenderUnits, lootedGp, resultType);
+                event,
+                isAttackerWin,
+                totalAttackerUnits,
+                totalDefenderUnits,
+                lootedGp,
+                resultType,
+                appliedCooldownHours);
 
         SiegeAlert alert =
                 new SiegeAlert(
@@ -158,7 +172,8 @@ public class SiegeService {
             int totalAttackerUnits,
             int totalDefenderUnits,
             int lootedGp,
-            SiegeResult.ResultType resultType) {
+            SiegeResult.ResultType resultType,
+            int appliedCooldownHours) {
         siegeResultRepository.save(
                 SiegeResult.builder()
                         .siege(event)
@@ -173,6 +188,7 @@ public class SiegeService {
                                         : 0)
                         .lootedGp(lootedGp)
                         .resultType(resultType)
+                        .appliedCooldownHours(appliedCooldownHours)
                         .build());
     }
 
@@ -180,6 +196,24 @@ public class SiegeService {
         return attackerForces.stream()
                 .mapToInt(f -> f.getUnitType().getAttackPower() * f.getQuantity())
                 .sum();
+    }
+
+    // 공성 타워 개수만큼 공격력 버프(개당 %, 최대 개수 캡). 교전 판정에만 적용(건물 피해는 별개).
+    private int applyTowerBonus(int baseAtk, List<SiegeStructure> structures) {
+        long towers =
+                structures.stream().filter(s -> s.getType() == SiegeStructureType.TOWER).count();
+        int effective = (int) Math.min(towers, MilitaryPolicy.SIEGE_TOWER_MAX_EFFECTIVE);
+        return baseAtk + baseAtk * effective * MilitaryPolicy.SIEGE_TOWER_ATK_BONUS_PERCENT / 100;
+    }
+
+    // 보급소 개수만큼 실패 후 공격 쿨다운을 완화(최소 0).
+    private int supplyReducedCooldownHours(List<SiegeStructure> structures) {
+        long supplies =
+                structures.stream().filter(s -> s.getType() == SiegeStructureType.SUPPLY).count();
+        int reduced =
+                MilitaryPolicy.ATTACK_COOLDOWN_HOURS
+                        - (int) supplies * MilitaryPolicy.SUPPLY_COOLDOWN_REDUCTION_HOURS;
+        return Math.max(0, reduced);
     }
 
     private int calculateDef(List<UnitInstance> defenderUnits, SiegeEvent event) {
