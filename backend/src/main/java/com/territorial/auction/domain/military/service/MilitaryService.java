@@ -2,8 +2,10 @@ package com.territorial.auction.domain.military.service;
 
 import com.territorial.auction.domain.building.StoragePolicy;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
+import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
@@ -21,10 +23,12 @@ import com.territorial.auction.global.exception.CustomException;
 import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -56,6 +60,8 @@ public class MilitaryService {
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final BalanceConfig balanceConfig;
+    private final SiegeStructureRepository siegeStructureRepository;
+    private final GlobalVaultRepository globalVaultRepository;
 
     public AttackTokenResponse getAttackTokens(Long userId) {
         return attackTokenRepository
@@ -207,6 +213,8 @@ public class MilitaryService {
         validateZoneCleared(request.targetTerritoryId(), userId, request.attackZone());
 
         validateAttackerForces(userId, request.forces());
+        validateSiegeStructures(request.structures(), target);
+        validateForcesWithinStagingCapacity(request.forces(), request.structures());
 
         AttackToken token = findAttackTokenOrThrow(userId);
         BuildingInstance targetBuilding = resolveTargetBuilding(request.targetBuildingId());
@@ -216,6 +224,8 @@ public class MilitaryService {
         SiegeEvent siege = buildSiegeEvent(attacker, target, targetBuilding, request);
         siegeEventRepository.save(siege);
         commitAttackerForces(siege, userId, request.forces());
+        chargeVaultForStructures(userId, request.structures());
+        saveSiegeStructures(siege, request.structures());
 
         int remaining = targetBuilding == null ? token.getNormalCount() : token.getPrecisionCount();
 
@@ -718,6 +728,83 @@ public class MilitaryService {
         }
     }
 
+    // 공성 건물 배치 검증: 주둔지 1개 이상 + 개수 상한 + 좌표가 대상 인접 타일 + 좌표 중복 금지.
+    private void validateSiegeStructures(
+            List<DeclareSiegeRequest.StructureEntry> structures, Territory target) {
+        if (structures.size() > MilitaryPolicy.SIEGE_STRUCTURE_MAX) {
+            throw new CustomException(ErrorCode.SIEGE_STRUCTURE_LIMIT_EXCEEDED);
+        }
+        boolean hasStaging =
+                structures.stream().anyMatch(s -> s.type() == SiegeStructureType.STAGING);
+        if (!hasStaging) {
+            throw new CustomException(ErrorCode.SIEGE_STAGING_REQUIRED);
+        }
+        Set<String> seen = new HashSet<>();
+        for (DeclareSiegeRequest.StructureEntry entry : structures) {
+            validateAdjacentTile(entry, target);
+            if (!seen.add(entry.coordX() + ":" + entry.coordY())) {
+                throw new CustomException(ErrorCode.SIEGE_STRUCTURE_PLACEMENT_INVALID);
+            }
+        }
+    }
+
+    private void validateAdjacentTile(DeclareSiegeRequest.StructureEntry entry, Territory target) {
+        int dx = Math.abs(entry.coordX() - target.getCoordX());
+        int dy = Math.abs(entry.coordY() - target.getCoordY());
+        boolean inGrid =
+                entry.coordX() >= 0
+                        && entry.coordX() < MilitaryPolicy.MAP_GRID_SIZE
+                        && entry.coordY() >= 0
+                        && entry.coordY() < MilitaryPolicy.MAP_GRID_SIZE;
+        boolean adjacent =
+                (dx != 0 || dy != 0)
+                        && dx <= MilitaryPolicy.SIEGE_STRUCTURE_RANGE
+                        && dy <= MilitaryPolicy.SIEGE_STRUCTURE_RANGE;
+        if (!inGrid || !adjacent) {
+            throw new CustomException(ErrorCode.SIEGE_STRUCTURE_PLACEMENT_INVALID);
+        }
+    }
+
+    // 공격 병력 상한 = 주둔지 수 × 수용량. 커밋 병력 합이 이를 넘으면 거부.
+    private void validateForcesWithinStagingCapacity(
+            List<DeclareSiegeRequest.ForceEntry> forces,
+            List<DeclareSiegeRequest.StructureEntry> structures) {
+        long stagingCount =
+                structures.stream().filter(s -> s.type() == SiegeStructureType.STAGING).count();
+        int capacity = (int) stagingCount * MilitaryPolicy.STAGING_CAPACITY_PER;
+        int totalForces = forces.stream().mapToInt(DeclareSiegeRequest.ForceEntry::quantity).sum();
+        if (totalForces > capacity) {
+            throw new CustomException(ErrorCode.SIEGE_FORCE_EXCEEDS_CAPACITY);
+        }
+    }
+
+    private void chargeVaultForStructures(
+            Long userId, List<DeclareSiegeRequest.StructureEntry> structures) {
+        int totalCost =
+                structures.stream().mapToInt(s -> MilitaryPolicy.structureCostGp(s.type())).sum();
+        GlobalVault vault =
+                globalVaultRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.INSUFFICIENT_GP));
+        if (vault.getStoredGp() < totalCost) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_GP);
+        }
+        vault.withdrawGp(totalCost);
+    }
+
+    private void saveSiegeStructures(
+            SiegeEvent siege, List<DeclareSiegeRequest.StructureEntry> structures) {
+        for (DeclareSiegeRequest.StructureEntry entry : structures) {
+            siegeStructureRepository.save(
+                    SiegeStructure.builder()
+                            .siege(siege)
+                            .type(entry.type())
+                            .coordX(entry.coordX())
+                            .coordY(entry.coordY())
+                            .build());
+        }
+    }
+
     private void deductReadyIdle(Long userId, Long unitTypeId, int quantity) {
         int remaining = quantity;
         for (UnitInstance stack :
@@ -780,12 +867,19 @@ public class MilitaryService {
                         .map(
                                 r ->
                                         last.getResolveAt()
-                                                .plusHours(MilitaryPolicy.ATTACK_COOLDOWN_HOURS)
+                                                .plusHours(cooldownHours(r))
                                                 .isAfter(LocalDateTime.now()))
                         .orElse(false);
         if (inCooldown) {
             throw new CustomException(ErrorCode.ATTACK_COOLDOWN);
         }
+    }
+
+    // 보급소로 완화된 쿨다운이 기록돼 있으면 그 값, 없으면(구 데이터) 기본 쿨다운.
+    private int cooldownHours(SiegeResult result) {
+        return result.getAppliedCooldownHours() != null
+                ? result.getAppliedCooldownHours()
+                : MilitaryPolicy.ATTACK_COOLDOWN_HOURS;
     }
 
     // 공략은 외곽(Zone 3) → 중심(Zone 1) 순. 안쪽 Zone은 바로 바깥 Zone(attackZone+1)을

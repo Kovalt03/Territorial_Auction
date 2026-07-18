@@ -20,6 +20,8 @@ import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
 import com.territorial.auction.domain.military.entity.SiegeForce;
 import com.territorial.auction.domain.military.entity.SiegeResult;
+import com.territorial.auction.domain.military.entity.SiegeStructure;
+import com.territorial.auction.domain.military.entity.SiegeStructureType;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
 import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
@@ -54,6 +56,11 @@ class SiegeServiceTest {
 
     @Mock private SiegeResultRepository siegeResultRepository;
     @Mock private SiegeForceRepository siegeForceRepository;
+
+    @Mock
+    private com.territorial.auction.domain.military.repository.SiegeStructureRepository
+            siegeStructureRepository;
+
     @Mock private UnitInstanceRepository unitInstanceRepository;
     @Mock private HomeIslandRepository homeIslandRepository;
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
@@ -140,6 +147,10 @@ class SiegeServiceTest {
                         .level(1)
                         .build();
         return SiegeForce.builder().unitType(unitType).quantity(quantity).build();
+    }
+
+    private SiegeStructure makeStructure(SiegeStructureType type) {
+        return SiegeStructure.builder().type(type).coordX(0).coordY(0).build();
     }
 
     private BuildingInstance makeBuilding(
@@ -234,6 +245,52 @@ class SiegeServiceTest {
             then(siegeResultRepository).should().save(captor.capture());
             assertThat(captor.getValue().getLootedGp()).isZero();
             then(globalVaultRepository).should(never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("공성 타워 버프로 교전 역전 → 공격자 승리 + 공성 건물 삭제")
+        void resolveOneSiege_towerBonus_flipsResult() {
+            given(event.getAttackZone()).willReturn(3);
+            // 기본 ATK 1000 < DEF 1100 → 타워 없으면 패배. 타워 1개(+20%) → 1200 > 1100 승리.
+            SiegeForce attackerForce = makeForce(100, 0, 10);
+            UnitInstance defenderUnit = makeUnit(0, 110, 10);
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
+            given(unitInstanceRepository.findDefendersInZone(eq(2L), eq(10L), anyInt()))
+                    .willReturn(List.of(defenderUnit));
+            given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 3))
+                    .willReturn(List.of());
+            List<SiegeStructure> structures = List.of(makeStructure(SiegeStructureType.TOWER));
+            given(siegeStructureRepository.findBySiegeId(100L)).willReturn(structures);
+
+            siegeService.resolveOneSiege(event);
+
+            ArgumentCaptor<SiegeResult> captor = ArgumentCaptor.forClass(SiegeResult.class);
+            then(siegeResultRepository).should().save(captor.capture());
+            assertThat(captor.getValue().getIsAttackerWin()).isTrue();
+            then(siegeStructureRepository).should().deleteAll(structures);
+        }
+
+        @Test
+        @DisplayName("공격 실패 + 보급소 1개 → 적용 쿨다운 2h→1h로 완화 기록")
+        void resolveOneSiege_supplyReducesCooldown() {
+            given(event.getAttackZone()).willReturn(1);
+            // ATK 1000 < DEF 2000 → 공격 실패.
+            SiegeForce attackerForce = makeForce(100, 0, 10);
+            UnitInstance defenderUnit = makeUnit(0, 200, 10);
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
+            given(unitInstanceRepository.findDefendersInZone(eq(2L), eq(10L), anyInt()))
+                    .willReturn(List.of(defenderUnit));
+            given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 1))
+                    .willReturn(List.of());
+            given(siegeStructureRepository.findBySiegeId(100L))
+                    .willReturn(List.of(makeStructure(SiegeStructureType.SUPPLY)));
+
+            siegeService.resolveOneSiege(event);
+
+            ArgumentCaptor<SiegeResult> captor = ArgumentCaptor.forClass(SiegeResult.class);
+            then(siegeResultRepository).should().save(captor.capture());
+            assertThat(captor.getValue().getIsAttackerWin()).isFalse();
+            assertThat(captor.getValue().getAppliedCooldownHours()).isEqualTo(1);
         }
 
         @Test

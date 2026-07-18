@@ -41,6 +41,7 @@ Content-Type: application/json
 }
 
 ### 공격 선언 (일반 공격권 - targetBuildingId 없음)
+### forces=커밋 병력, structures=공성 건물(주둔지 최소 1개, 대상 인접 타일, 금고 GP 결제)
 POST {{baseUrl}}/api/v1/military/siege
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
@@ -48,8 +49,12 @@ Content-Type: application/json
 {
   "targetTerritoryId": 10,
   "attackZone": 3,
-  "unitTypeId": 1,
-  "unitQuantity": 30
+  "forces": [ { "unitTypeId": 1, "quantity": 20 } ],
+  "structures": [
+    { "type": "STAGING", "coordX": 5, "coordY": 7 },
+    { "type": "TOWER", "coordX": 6, "coordY": 6 },
+    { "type": "SUPPLY", "coordX": 4, "coordY": 6 }
+  ]
 }
 
 ### 공격 선언 (정밀 공격권 - targetBuildingId 지정)
@@ -61,8 +66,8 @@ Content-Type: application/json
   "targetTerritoryId": 10,
   "targetBuildingId": 5,
   "attackZone": 3,
-  "unitTypeId": 1,
-  "unitQuantity": 30
+  "forces": [ { "unitTypeId": 1, "quantity": 10 } ],
+  "structures": [ { "type": "STAGING", "coordX": 5, "coordY": 7 } ]
 }
 
 ### 공성전 결과 조회
