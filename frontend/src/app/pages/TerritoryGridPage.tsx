@@ -29,8 +29,9 @@ import { TerritoryGridBuildModal } from './TerritoryGridBuildModal';
 import { TerritoryGridBuildingActionPanel } from './TerritoryGridBuildingActionPanel';
 import { TerritoryGridInventoryModal } from './TerritoryGridInventoryModal';
 import { TerritoryDeployModal } from './TerritoryDeployModal';
+import { IslandTrainUnitModal } from './IslandTrainUnitModal';
 import { useMilitary } from '../hooks/useMilitary';
-import { deployUnit, recallUnit } from '../api/military';
+import { deployUnit, recallUnit, produceUnit } from '../api/military';
 
 const GARRISON_CAP: Record<string, number> = { castle: 5, residence: 5, tower: 3, wall: 2 };
 
@@ -43,6 +44,10 @@ export function TerritoryGridPage() {
   const { data: militaryData, reload: reloadMilitary } = useMilitary();
   const [deployBuilding, setDeployBuilding] = useState<{ buildingId: number; name: string; capacityPerLevel: number } | null>(null);
   const [isGarrisonBusy, setIsGarrisonBusy] = useState(false);
+  const [showTrain, setShowTrain] = useState(false);
+  const [trainUnitTypeId, setTrainUnitTypeId] = useState<number | null>(null);
+  const [trainQuantity, setTrainQuantity] = useState(1);
+  const [isTraining, setIsTraining] = useState(false);
   const [detail, setDetail] = useState<TerritoryDetailResponse | null>(null);
   const [buildings, setBuildings] = useState<TerritoryGridBuilding[]>([]);
   const [catalog, setCatalog] = useState<BuildingTypeInfo[]>([]);
@@ -217,6 +222,34 @@ export function TerritoryGridPage() {
     const cap = GARRISON_CAP[selectedCellData.type] ?? 0;
     setDeployBuilding({ buildingId: selectedCellData.buildingId, name: nameFor(selectedCellData.type), capacityPerLevel: cap });
     setShowBuildingAction(false);
+  };
+
+  const territoryUnits = militaryData?.locations.find(
+    l => l.locationType === 'TERRITORY' && l.locationId === territoryId,
+  );
+
+  const handleOpenTrain = () => {
+    const units = territoryUnits?.units ?? [];
+    if (units.length) setTrainUnitTypeId(units[0].unitTypeId);
+    setTrainQuantity(1);
+    setShowBuildingAction(false);
+    setShowTrain(true);
+  };
+
+  const handleTrain = async () => {
+    if (!trainUnitTypeId || trainQuantity < 1) return;
+    setIsTraining(true);
+    try {
+      const res = await produceUnit(trainUnitTypeId, trainQuantity, territoryId, 'TERRITORY');
+      reloadMilitary();
+      reloadDetail();
+      showToast(`유닛 ${res.quantity}기 훈련 완료`, false);
+      setShowTrain(false);
+    } catch (e) {
+      showToast(e instanceof ApiError ? e.message : '훈련에 실패했습니다', true);
+    } finally {
+      setIsTraining(false);
+    }
   };
 
   const handleDeploy = async (p: { buildingId: number; unitTypeId: number; quantity: number; sourceLocationId: number; sourceLocationType: 'ISLAND' | 'TERRITORY' }) => {
@@ -483,7 +516,23 @@ export function TerritoryGridPage() {
           onUpgrade={handleUpgradeBuilding}
           onVaultTransfer={() => navigate('/app/vault')}
           onGarrison={handleOpenGarrison}
+          onTrain={handleOpenTrain}
           onClose={() => setShowBuildingAction(false)}
+        />
+      )}
+
+      {showTrain && (
+        <IslandTrainUnitModal
+          units={territoryUnits?.units ?? []}
+          islandGp={detail?.storedGp ?? 0}
+          storedFood={territoryUnits?.storedFood ?? 0}
+          trainUnitTypeId={trainUnitTypeId}
+          trainQuantity={trainQuantity}
+          isTraining={isTraining}
+          onSelectUnit={setTrainUnitTypeId}
+          onChangeQuantity={setTrainQuantity}
+          onTrain={handleTrain}
+          onClose={() => setShowTrain(false)}
         />
       )}
 

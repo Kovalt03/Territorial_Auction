@@ -14,6 +14,7 @@ interface Props {
   onUpgrade: () => void;
   onVaultTransfer: () => void;
   onGarrison: () => void;
+  onTrain: () => void;
   onClose: () => void;
 }
 
@@ -21,11 +22,12 @@ const GARRISONABLE = new Set(['castle', 'residence', 'tower', 'wall']);
 
 export function TerritoryGridBuildingActionPanel({
   selectedCell, cellData, isUnderConstruction, color, name, busy,
-  onStartMove, onStoreBuilding, onUpgrade, onVaultTransfer, onGarrison, onClose,
+  onStartMove, onStoreBuilding, onUpgrade, onVaultTransfer, onGarrison, onTrain, onClose,
 }: Props) {
   const isCastle = cellData.type === 'castle';
   const isStorageBuilding = isCastle || cellData.type === 'storage';
   const isGarrisonable = GARRISONABLE.has(cellData.type);
+  const isBarracks = cellData.type === 'barracks';
   const canAct = !busy && !isUnderConstruction;
 
   return (
@@ -54,8 +56,16 @@ export function TerritoryGridBuildingActionPanel({
           <p className="text-center text-gold pt-3 text-[11px]">🔨 건설 중에는 이동·보관·업그레이드를 할 수 없습니다</p>
         )}
 
-        {(isStorageBuilding || isGarrisonable) && (
+        {(isStorageBuilding || isGarrisonable || isBarracks) && (
           <div className="px-4 pt-4 space-y-2">
+            {isBarracks && (
+              <button
+                onClick={onTrain}
+                className="w-full h-12 rounded-xl font-bold border-[1.5px] border-secondary text-secondary hover:bg-secondary/10 transition-all text-[13px]"
+              >
+                ⚔ 유닛 훈련
+              </button>
+            )}
             {isStorageBuilding && (
               <button
                 onClick={onVaultTransfer}
