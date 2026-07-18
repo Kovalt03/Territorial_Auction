@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useVault } from '../hooks/useVault';
 import { transferGP } from '../api/vault';
+import { ApiError } from '../api/client';
 
 import { GNB } from '../components/GNB';
 import { HealthBar } from '../components/HealthBar';
@@ -49,8 +50,14 @@ export function VaultPage() {
       const delta = transferModal.direction === 'TO_VAULT' ? -amount : amount;
       syncGP(gp + delta);
       setTransferModal(null);
-    } catch {
-      setTransferError('이전에 실패했습니다. 다시 시도해주세요.');
+    } catch (e) {
+      // 4xx 비즈니스 예외(용량 초과·쿨다운·잔액 부족 등)는 백엔드 한글 메시지를 그대로 노출
+      setTransferError(
+        e instanceof ApiError && e.status >= 400 && e.status < 500
+          ? e.message
+          : '이전에 실패했습니다. 다시 시도해주세요.',
+      );
+      console.warn('[VaultPage] transfer failed', e);
     } finally {
       setIsTransferring(false);
     }
