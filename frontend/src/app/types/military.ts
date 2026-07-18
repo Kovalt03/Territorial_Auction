@@ -12,16 +12,28 @@ export interface UnitInfo {
   quantity: number;
   deployedCount: number;
   idleCount: number;
+  inTransitCount: number;
   attackPower: number;
   defensePower: number;
   costGp: number;
   foodCost: number;
+  buildingDamage: number;
   requiredBarracksLevel: number;
 }
 
-export interface UnitsResponse {
+// 자원 스코프 개편 후 유닛·식량은 위치(영토/섬)별로 그룹핑돼 내려온다.
+export interface LocationUnits {
+  locationType: 'TERRITORY' | 'ISLAND';
+  locationId: number;
+  coordX: number | null;
+  coordY: number | null;
+  unitCapacity: number;
+  storedFood: number;
   units: UnitInfo[];
-  availableFood: number;
+}
+
+export interface UnitsResponse {
+  locations: LocationUnits[];
 }
 
 export interface ProduceUnitResponse {
@@ -29,4 +41,14 @@ export interface ProduceUnitResponse {
   unitName: string;
   quantity: number;
   gpRemaining: number;
+}
+
+export interface DeployUnitResponse {
+  deployedCount: number;
+  territoryId: number;
+}
+
+export interface RecallUnitResponse {
+  recalledCount: number;
+  remainingDeployed: number;
 }

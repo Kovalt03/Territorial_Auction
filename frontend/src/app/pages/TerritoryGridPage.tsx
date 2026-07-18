@@ -28,13 +28,26 @@ import { IslandToast } from './IslandToast';
 import { TerritoryGridBuildModal } from './TerritoryGridBuildModal';
 import { TerritoryGridBuildingActionPanel } from './TerritoryGridBuildingActionPanel';
 import { TerritoryGridInventoryModal } from './TerritoryGridInventoryModal';
+import { TerritoryDeployModal } from './TerritoryDeployModal';
+import { IslandTrainUnitModal } from './IslandTrainUnitModal';
+import { useMilitary } from '../hooks/useMilitary';
+import { deployUnit, recallUnit, produceUnit } from '../api/military';
+
+const GARRISON_CAP: Record<string, number> = { castle: 5, residence: 5, tower: 3, wall: 2 };
 
 export function TerritoryGridPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { ap, gp, syncGP, userId } = useApp();
+  const { ap, gp, userId } = useApp();
   const territoryId = Number(id);
 
+  const { data: militaryData, reload: reloadMilitary } = useMilitary();
+  const [deployBuilding, setDeployBuilding] = useState<{ buildingId: number; name: string; capacityPerLevel: number } | null>(null);
+  const [isGarrisonBusy, setIsGarrisonBusy] = useState(false);
+  const [showTrain, setShowTrain] = useState(false);
+  const [trainUnitTypeId, setTrainUnitTypeId] = useState<number | null>(null);
+  const [trainQuantity, setTrainQuantity] = useState(1);
+  const [isTraining, setIsTraining] = useState(false);
   const [detail, setDetail] = useState<TerritoryDetailResponse | null>(null);
   const [buildings, setBuildings] = useState<TerritoryGridBuilding[]>([]);
   const [catalog, setCatalog] = useState<BuildingTypeInfo[]>([]);
@@ -184,11 +197,12 @@ export function TerritoryGridPage() {
     if (!type) { setBuildError('건물 정보를 찾을 수 없습니다.'); return; }
     void (async () => {
       try {
-        const res = await placeTerritoryBuilding(territoryId, type.buildingTypeId, selectedCell.x, selectedCell.y);
-        syncGP(res.gpRemaining);
+        await placeTerritoryBuilding(territoryId, type.buildingTypeId, selectedCell.x, selectedCell.y);
+        // 건설은 영토 저장소 GP에서 차감 — 금고(vault)와 무관. 영토 상세를 다시 불러온다.
         setShowBuild(false);
         setSelectedBuilding(null);
         reloadBuildings();
+        reloadDetail();
         showToast(`${nameFor(selectedBuilding)} 건설을 시작했습니다`, false);
       } catch (e) {
         setBuildError(e instanceof ApiError ? e.message : '건설에 실패했습니다.');
@@ -201,6 +215,69 @@ export function TerritoryGridPage() {
     setMoveSourceCell(selectedCell);
     setMoveMode(true);
     setShowBuildingAction(false);
+  };
+
+  const handleOpenGarrison = () => {
+    if (!selectedCellData?.buildingId) return;
+    const cap = GARRISON_CAP[selectedCellData.type] ?? 0;
+    setDeployBuilding({ buildingId: selectedCellData.buildingId, name: nameFor(selectedCellData.type), capacityPerLevel: cap });
+    setShowBuildingAction(false);
+  };
+
+  const territoryUnits = militaryData?.locations.find(
+    l => l.locationType === 'TERRITORY' && l.locationId === territoryId,
+  );
+
+  const handleOpenTrain = () => {
+    const units = territoryUnits?.units ?? [];
+    if (units.length) setTrainUnitTypeId(units[0].unitTypeId);
+    setTrainQuantity(1);
+    setShowBuildingAction(false);
+    setShowTrain(true);
+  };
+
+  const handleTrain = async () => {
+    if (!trainUnitTypeId || trainQuantity < 1) return;
+    setIsTraining(true);
+    try {
+      const res = await produceUnit(trainUnitTypeId, trainQuantity, territoryId, 'TERRITORY');
+      reloadMilitary();
+      reloadDetail();
+      showToast(`유닛 ${res.quantity}기 훈련 완료`, false);
+      setShowTrain(false);
+    } catch (e) {
+      showToast(e instanceof ApiError ? e.message : '훈련에 실패했습니다', true);
+    } finally {
+      setIsTraining(false);
+    }
+  };
+
+  const handleDeploy = async (p: { buildingId: number; unitTypeId: number; quantity: number; sourceLocationId: number; sourceLocationType: 'ISLAND' | 'TERRITORY' }) => {
+    setIsGarrisonBusy(true);
+    try {
+      const res = await deployUnit({ territoryId, ...p });
+      reloadMilitary();
+      reloadBuildings();
+      showToast(`유닛 ${res.deployedCount}기를 주둔시켰습니다`, false);
+      setDeployBuilding(null);
+    } catch (e) {
+      showToast(e instanceof ApiError ? e.message : '주둔에 실패했습니다', true);
+    } finally {
+      setIsGarrisonBusy(false);
+    }
+  };
+
+  const handleRecall = async (unitTypeId: number, quantity: number) => {
+    setIsGarrisonBusy(true);
+    try {
+      const res = await recallUnit(territoryId, unitTypeId, quantity);
+      reloadMilitary();
+      showToast(`유닛 ${res.recalledCount}기를 회수했습니다`, false);
+    } catch (e) {
+      showToast(e instanceof ApiError ? e.message : '회수에 실패했습니다', true);
+    } finally {
+      setIsGarrisonBusy(false);
+    }
   };
 
   const handleStoreBuilding = () => {
@@ -220,9 +297,10 @@ export function TerritoryGridPage() {
     if (!buildingId) return;
     void run(async () => {
       const res = await upgradeTerritoryBuilding(buildingId);
-      syncGP(res.gpRemaining);
+      // 업그레이드도 영토 저장소 GP에서 차감 — 금고와 무관.
       setShowBuildingAction(false);
       reloadBuildings();
+      reloadDetail();
       showToast(
         res.buildCompleteAt
           ? `Lv.${res.newLevel} 업그레이드 시작 — ${remainingLabel(res.buildCompleteAt, Date.now())} 후 완료`
@@ -361,7 +439,8 @@ export function TerritoryGridPage() {
             <p className="text-muted font-semibold text-xs">자원 현황</p>
             {[
               { label: 'AP', val: ap.toLocaleString(), color: '#ff0066' },
-              { label: 'GP', val: gp.toLocaleString(), color: '#00ff88' },
+              { label: '금고 GP', val: gp.toLocaleString(), color: '#00ff88' },
+              { label: '영토 저장 GP', val: (detail?.storedGp ?? 0).toLocaleString(), color: '#ffd700' },
             ].map(item => (
               <div key={item.label} className="bg-panel-deep rounded-lg p-3 flex items-center justify-between">
                 <span className="text-muted text-[11px]">{item.label}</span>
@@ -435,7 +514,37 @@ export function TerritoryGridPage() {
           onStartMove={handleStartMove}
           onStoreBuilding={handleStoreBuilding}
           onUpgrade={handleUpgradeBuilding}
+          onVaultTransfer={() => navigate('/app/vault')}
+          onGarrison={handleOpenGarrison}
+          onTrain={handleOpenTrain}
           onClose={() => setShowBuildingAction(false)}
+        />
+      )}
+
+      {showTrain && (
+        <IslandTrainUnitModal
+          units={territoryUnits?.units ?? []}
+          islandGp={detail?.storedGp ?? 0}
+          storedFood={territoryUnits?.storedFood ?? 0}
+          trainUnitTypeId={trainUnitTypeId}
+          trainQuantity={trainQuantity}
+          isTraining={isTraining}
+          onSelectUnit={setTrainUnitTypeId}
+          onChangeQuantity={setTrainQuantity}
+          onTrain={handleTrain}
+          onClose={() => setShowTrain(false)}
+        />
+      )}
+
+      {deployBuilding && (
+        <TerritoryDeployModal
+          territoryId={territoryId}
+          building={deployBuilding}
+          locations={militaryData?.locations ?? []}
+          isBusy={isGarrisonBusy}
+          onDeploy={handleDeploy}
+          onRecall={handleRecall}
+          onClose={() => setDeployBuilding(null)}
         />
       )}
 

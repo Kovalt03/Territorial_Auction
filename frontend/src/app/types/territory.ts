@@ -51,4 +51,8 @@ export interface TerritoryDetailResponse {
   isInvincible: boolean;
   buildings: TerritoryBuilding[];
   auction: TerritoryAuction | null;
+  productionRatePerMin: number | null;
+  lastProducedAt: string | null;
+  storedGp: number | null;
+  storageCapacity: number | null;
 }

@@ -7,6 +7,7 @@ import { AnnouncementBanner } from './AnnouncementBanner';
 
 const navItems = [
   { icon: '🏝', label: '나의섬', path: '/app/my-island' },
+  { icon: '🏦', label: '금고', path: '/app/vault' },
   { icon: '⚔️', label: '길드', path: '/app/guild' },
   { icon: '🛍', label: '아이템샵', path: '/app/item-shop' },
   { icon: '⭐', label: '시즌패스', path: '/app/season-pass' },
@@ -16,7 +17,7 @@ const navItems = [
 export function GNB() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { ap, gp, hasPass, passEndDate, isLoggedIn, userId, incrementNotification } = useApp();
+  const { ap, hasPass, passEndDate, isLoggedIn, userId, incrementNotification } = useApp();
 
   const handleWsNotification = useCallback(() => {
     incrementNotification();
@@ -63,12 +64,6 @@ export function GNB() {
             <span className="text-ap font-bold text-xs">⚡</span>
             <span className="text-ap font-semibold text-xs">{ap.toLocaleString()} AP</span>
           </button>
-
-          {/* GP Chip */}
-          <div className="flex items-center gap-1.5 px-3 h-8 bg-gp/10 border border-gp/30 rounded-lg">
-            <span className="text-gp font-bold text-xs">💎</span>
-            <span className="text-gp font-semibold text-xs">{gp.toLocaleString()} GP</span>
-          </div>
 
           {/* Pass chip */}
           {hasPass && (

@@ -9,6 +9,8 @@ interface Props {
   onStartMove: () => void;
   onStoreBuilding: () => void;
   onUpgrade: () => void;
+  onTrain: () => void;
+  onHarvest: () => void;
   onClose: () => void;
 }
 
@@ -24,12 +26,14 @@ function statLine(b: BuildingTypeInfo, level: number): string {
 }
 
 export function IslandBuildingActionPanel({
-  selectedCell, cellData, info, onStartMove, onStoreBuilding, onUpgrade, onClose,
+  selectedCell, cellData, info, onStartMove, onStoreBuilding, onUpgrade, onTrain, onHarvest, onClose,
 }: Props) {
   const color = buildingColors[cellData.type];
   const curLevel = cellData.level ?? 1;
   const isMaxLevel = curLevel >= MAX_BUILDING_LEVEL;
   const isCastle = cellData.type === 'castle';
+  const isBarracks = cellData.type === 'barracks';
+  const isStorageBuilding = isCastle || cellData.type === 'storage';
   const stats = info ? statLine(info, curLevel) : '';
 
   return (
@@ -67,6 +71,27 @@ export function IslandBuildingActionPanel({
           </div>
           {stats && <p className="text-muted text-[11px] mt-2">⚙ {stats}</p>}
         </div>
+
+        {(isBarracks || isStorageBuilding) && (
+          <div className="px-4 pt-4">
+            {isBarracks && (
+              <button
+                onClick={onTrain}
+                className="w-full h-12 rounded-xl font-bold border-[1.5px] border-secondary text-secondary hover:bg-secondary/10 transition-all text-[13px]"
+              >
+                ⚔ 유닛 훈련
+              </button>
+            )}
+            {isStorageBuilding && (
+              <button
+                onClick={onHarvest}
+                className="w-full h-12 rounded-xl font-bold border-[1.5px] border-gold text-gold hover:bg-gold/10 transition-all text-[13px]"
+              >
+                🌾 GP 수확
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="p-4 flex gap-3">
           <button

@@ -20,6 +20,9 @@ export interface IslandData {
   productionRatePerHour: number;
   lastHarvestAt: string;
   accumulatedGp: number;
+  storedGp: number;
+  storedFood: number;
+  storageCapacity: number;
   zone1Radius: number;
   zone2Radius: number;
   builderCount: number;
