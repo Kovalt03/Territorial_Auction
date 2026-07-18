@@ -42,3 +42,13 @@ export interface ProduceUnitResponse {
   quantity: number;
   gpRemaining: number;
 }
+
+export interface DeployUnitResponse {
+  deployedCount: number;
+  territoryId: number;
+}
+
+export interface RecallUnitResponse {
+  recalledCount: number;
+  remainingDeployed: number;
+}

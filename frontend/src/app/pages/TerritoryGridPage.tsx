@@ -28,6 +28,11 @@ import { IslandToast } from './IslandToast';
 import { TerritoryGridBuildModal } from './TerritoryGridBuildModal';
 import { TerritoryGridBuildingActionPanel } from './TerritoryGridBuildingActionPanel';
 import { TerritoryGridInventoryModal } from './TerritoryGridInventoryModal';
+import { TerritoryDeployModal } from './TerritoryDeployModal';
+import { useMilitary } from '../hooks/useMilitary';
+import { deployUnit, recallUnit } from '../api/military';
+
+const GARRISON_CAP: Record<string, number> = { castle: 5, residence: 5, tower: 3, wall: 2 };
 
 export function TerritoryGridPage() {
   const { id } = useParams();
@@ -35,6 +40,9 @@ export function TerritoryGridPage() {
   const { ap, gp, userId } = useApp();
   const territoryId = Number(id);
 
+  const { data: militaryData, reload: reloadMilitary } = useMilitary();
+  const [deployBuilding, setDeployBuilding] = useState<{ buildingId: number; name: string; capacityPerLevel: number } | null>(null);
+  const [isGarrisonBusy, setIsGarrisonBusy] = useState(false);
   const [detail, setDetail] = useState<TerritoryDetailResponse | null>(null);
   const [buildings, setBuildings] = useState<TerritoryGridBuilding[]>([]);
   const [catalog, setCatalog] = useState<BuildingTypeInfo[]>([]);
@@ -202,6 +210,41 @@ export function TerritoryGridPage() {
     setMoveSourceCell(selectedCell);
     setMoveMode(true);
     setShowBuildingAction(false);
+  };
+
+  const handleOpenGarrison = () => {
+    if (!selectedCellData?.buildingId) return;
+    const cap = GARRISON_CAP[selectedCellData.type] ?? 0;
+    setDeployBuilding({ buildingId: selectedCellData.buildingId, name: nameFor(selectedCellData.type), capacityPerLevel: cap });
+    setShowBuildingAction(false);
+  };
+
+  const handleDeploy = async (p: { buildingId: number; unitTypeId: number; quantity: number; sourceLocationId: number; sourceLocationType: 'ISLAND' | 'TERRITORY' }) => {
+    setIsGarrisonBusy(true);
+    try {
+      const res = await deployUnit({ territoryId, ...p });
+      reloadMilitary();
+      reloadBuildings();
+      showToast(`유닛 ${res.deployedCount}기를 주둔시켰습니다`, false);
+      setDeployBuilding(null);
+    } catch (e) {
+      showToast(e instanceof ApiError ? e.message : '주둔에 실패했습니다', true);
+    } finally {
+      setIsGarrisonBusy(false);
+    }
+  };
+
+  const handleRecall = async (unitTypeId: number, quantity: number) => {
+    setIsGarrisonBusy(true);
+    try {
+      const res = await recallUnit(territoryId, unitTypeId, quantity);
+      reloadMilitary();
+      showToast(`유닛 ${res.recalledCount}기를 회수했습니다`, false);
+    } catch (e) {
+      showToast(e instanceof ApiError ? e.message : '회수에 실패했습니다', true);
+    } finally {
+      setIsGarrisonBusy(false);
+    }
   };
 
   const handleStoreBuilding = () => {
@@ -439,7 +482,20 @@ export function TerritoryGridPage() {
           onStoreBuilding={handleStoreBuilding}
           onUpgrade={handleUpgradeBuilding}
           onVaultTransfer={() => navigate('/app/vault')}
+          onGarrison={handleOpenGarrison}
           onClose={() => setShowBuildingAction(false)}
+        />
+      )}
+
+      {deployBuilding && (
+        <TerritoryDeployModal
+          territoryId={territoryId}
+          building={deployBuilding}
+          locations={militaryData?.locations ?? []}
+          isBusy={isGarrisonBusy}
+          onDeploy={handleDeploy}
+          onRecall={handleRecall}
+          onClose={() => setDeployBuilding(null)}
         />
       )}
 

@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { AttackTokens, ProduceUnitResponse, UnitsResponse } from '../types/military';
+import type { AttackTokens, DeployUnitResponse, ProduceUnitResponse, RecallUnitResponse, UnitsResponse } from '../types/military';
 
 export function fetchAttackTokens(): Promise<AttackTokens> {
   return apiClient.get<AttackTokens>('/military/attack-tokens');
@@ -20,5 +20,30 @@ export function produceUnit(
     quantity,
     locationId,
     locationType,
+  });
+}
+
+// 대기 유닛을 영토의 방어 건물에 주둔시킨다(출발 위치의 대기 스택에서 차감).
+export function deployUnit(params: {
+  territoryId: number;
+  buildingId: number;
+  unitTypeId: number;
+  quantity: number;
+  sourceLocationId: number;
+  sourceLocationType: 'ISLAND' | 'TERRITORY';
+}): Promise<DeployUnitResponse> {
+  return apiClient.post<DeployUnitResponse>('/military/units/deploy', params);
+}
+
+// 영토에 배치된 유닛을 귀속지 대기 스택으로 회수한다.
+export function recallUnit(
+  territoryId: number,
+  unitTypeId: number,
+  quantity: number,
+): Promise<RecallUnitResponse> {
+  return apiClient.post<RecallUnitResponse>('/military/units/recall', {
+    territoryId,
+    unitTypeId,
+    quantity,
   });
 }
