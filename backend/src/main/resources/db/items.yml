@@ -28,9 +28,9 @@ items:
 
   - name: "GP 구매권"
     itemType: "GP_PURCHASE"
-    description: "GP 1,000 즉시 획득"
+    description: "GP 10,000 즉시 획득"
     costAp: 50
     costGp: ~
     dailyLimit: 5
-    gpReward: 1000
+    gpReward: 10000
     iconUrl: "/images/items/gp_purchase.svg"

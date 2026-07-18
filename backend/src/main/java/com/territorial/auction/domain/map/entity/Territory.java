@@ -44,7 +44,7 @@ public class Territory {
     private TerritoryStatus status = TerritoryStatus.IDLE;
 
     @Column(nullable = false)
-    private Integer baseProductionRate = 1;
+    private Integer baseProductionRate = 10;
 
     // 관리자가 경매 대상에서 제외한 영토는 IDLE이어도 신규 경매가 생성되지 않는다.
     @Column(nullable = false)

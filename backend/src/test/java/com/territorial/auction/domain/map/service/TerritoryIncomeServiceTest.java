@@ -74,6 +74,8 @@ class TerritoryIncomeServiceTest {
 
         territory = Territory.builder().coordX(5).coordY(5).grade(grade).build();
         ReflectionTestUtils.setField(territory, "id", 10L);
+        // 이 테스트는 생산 공식을 검증한다 — 엔티티 기본값과 무관하게 base=1로 고정.
+        ReflectionTestUtils.setField(territory, "baseProductionRate", 1);
         ReflectionTestUtils.setField(territory, "owner", owner);
         ReflectionTestUtils.setField(territory, "status", Territory.TerritoryStatus.OCCUPIED);
         ReflectionTestUtils.setField(territory, "occupiedUntil", LocalDateTime.now().plusDays(1));
