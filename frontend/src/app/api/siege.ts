@@ -1,35 +1,47 @@
 import { apiClient } from './client';
 
+export type SiegeStructureType = 'STAGING' | 'TOWER' | 'SUPPLY';
+
+export interface ForceEntry {
+  unitTypeId: number;
+  quantity: number;
+}
+
+export interface StructureEntry {
+  type: SiegeStructureType;
+  coordX: number;
+  coordY: number;
+}
+
+// 백엔드 DeclareSiegeRequest 계약. forces=커밋 병력, structures=공성 건물(주둔지 최소 1개).
 export interface DeclareSiegeRequest {
   targetTerritoryId: number;
+  targetBuildingId?: number | null;
   attackZone: number;
-  attackType: 'NORMAL' | 'PRECISION';
-  units: { unitTypeId: number; quantity: number }[];
+  forces: ForceEntry[];
+  structures: StructureEntry[];
 }
 
-export interface SiegeSummary {
+export interface DeclareSiegeResponse {
   siegeId: number;
-  attackerId: number;
-  attackerNickname: string;
-  defenderId: number;
-  defenderNickname: string;
-  targetTerritoryId: number;
-  status: string;
-  startedAt: string;
+  resolveAt: string;
+  attackTokenRemaining: number;
 }
 
-export interface SiegeListResponse {
-  sieges: SiegeSummary[];
+export function declareSiege(req: DeclareSiegeRequest): Promise<DeclareSiegeResponse> {
+  return apiClient.post<DeclareSiegeResponse>('/military/siege', req);
 }
 
-export function declareSiege(req: DeclareSiegeRequest) {
-  return apiClient.post<{ siegeId: number }>('/military/sieges', req);
+export interface SiegeResult {
+  siegeId: number;
+  isAttackerWin: boolean;
+  attackerUnitsLost: number;
+  defenderUnitsLost: number;
+  lootedGp: number;
+  resultType: string | null;
+  resolvedAt: string;
 }
 
-export function fetchSiegeList() {
-  return apiClient.get<SiegeListResponse>('/military/sieges');
-}
-
-export function fetchSiegeDetail(siegeId: number) {
-  return apiClient.get<SiegeSummary>(`/military/sieges/${siegeId}`);
+export function fetchSiegeResult(siegeId: number): Promise<SiegeResult> {
+  return apiClient.get<SiegeResult>(`/military/siege/${siegeId}/result`);
 }
