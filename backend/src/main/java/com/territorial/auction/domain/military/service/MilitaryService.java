@@ -324,6 +324,26 @@ public class MilitaryService {
         return buildUnitListResponse(userId, instances);
     }
 
+    // 특정 영토에 배치된 '내' 유닛을 타입별 합계로 반환한다(회수 UI용). 호출자 소유분만 → 정보 비대칭 유지.
+    public List<GarrisonUnitResponse> getTerritoryGarrison(Long userId, Long territoryId) {
+        Map<UnitType, Integer> byType = new LinkedHashMap<>();
+        for (UnitInstance unit :
+                unitInstanceRepository.findByUserIdAndDeployedTerritoryId(userId, territoryId)) {
+            byType.merge(unit.getUnitType(), unit.getQuantity(), Integer::sum);
+        }
+        return byType.entrySet().stream()
+                .map(
+                        e ->
+                                new GarrisonUnitResponse(
+                                        e.getKey().getId(),
+                                        e.getKey().getName(),
+                                        e.getKey().getDisplayName(),
+                                        e.getKey().getIcon(),
+                                        e.getKey().getColorHex(),
+                                        e.getValue()))
+                .toList();
+    }
+
     public SiegeEventListResponse getSiegeEvents(String statusParam, Pageable pageable) {
         SiegeEvent.SiegeStatus status = parseSiegeStatus(statusParam);
         Page<SiegeEvent> page = siegeEventRepository.findByStatus(status, pageable);

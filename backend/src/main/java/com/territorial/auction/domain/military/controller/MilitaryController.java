@@ -4,6 +4,7 @@ import com.territorial.auction.domain.military.dto.*;
 import com.territorial.auction.domain.military.service.MilitaryService;
 import com.territorial.auction.global.common.ApiResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -69,5 +70,12 @@ public class MilitaryController {
             @AuthenticationPrincipal Long userId, @PathVariable Long territoryId) {
         return ResponseEntity.ok(
                 ApiResponse.ok(militaryService.scoutTerritory(userId, territoryId)));
+    }
+
+    @GetMapping("/territory/{territoryId}/garrison")
+    public ResponseEntity<ApiResponse<List<GarrisonUnitResponse>>> getTerritoryGarrison(
+            @AuthenticationPrincipal Long userId, @PathVariable Long territoryId) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(militaryService.getTerritoryGarrison(userId, territoryId)));
     }
 }
