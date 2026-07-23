@@ -52,3 +52,13 @@ export interface RecallUnitResponse {
   recalledCount: number;
   remainingDeployed: number;
 }
+
+// 특정 영토에 배치된 유닛(타입별 합계) — 회수 목록용
+export interface GarrisonUnit {
+  unitTypeId: number;
+  name: string;
+  displayName: string | null;
+  icon: string | null;
+  colorHex: string | null;
+  deployedCount: number;
+}

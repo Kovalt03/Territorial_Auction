@@ -31,7 +31,8 @@ import { TerritoryGridInventoryModal } from './TerritoryGridInventoryModal';
 import { TerritoryDeployModal } from './TerritoryDeployModal';
 import { IslandTrainUnitModal } from './IslandTrainUnitModal';
 import { useMilitary } from '../hooks/useMilitary';
-import { deployUnit, recallUnit, produceUnit } from '../api/military';
+import { deployUnit, recallUnit, produceUnit, fetchTerritoryGarrison } from '../api/military';
+import type { GarrisonUnit } from '../types/military';
 
 const GARRISON_CAP: Record<string, number> = { castle: 5, residence: 5, tower: 3, wall: 2 };
 
@@ -43,6 +44,7 @@ export function TerritoryGridPage() {
 
   const { data: militaryData, reload: reloadMilitary } = useMilitary();
   const [deployBuilding, setDeployBuilding] = useState<{ buildingId: number; name: string; capacityPerLevel: number } | null>(null);
+  const [garrison, setGarrison] = useState<GarrisonUnit[]>([]);
   const [isGarrisonBusy, setIsGarrisonBusy] = useState(false);
   const [showTrain, setShowTrain] = useState(false);
   const [trainUnitTypeId, setTrainUnitTypeId] = useState<number | null>(null);
@@ -217,11 +219,18 @@ export function TerritoryGridPage() {
     setShowBuildingAction(false);
   };
 
+  const reloadGarrison = useCallback(() => {
+    fetchTerritoryGarrison(territoryId)
+      .then(setGarrison)
+      .catch(e => console.warn('[TerritoryGridPage] garrison load failed', e));
+  }, [territoryId]);
+
   const handleOpenGarrison = () => {
     if (!selectedCellData?.buildingId) return;
     const cap = GARRISON_CAP[selectedCellData.type] ?? 0;
     setDeployBuilding({ buildingId: selectedCellData.buildingId, name: nameFor(selectedCellData.type), capacityPerLevel: cap });
     setShowBuildingAction(false);
+    reloadGarrison();
   };
 
   const territoryUnits = militaryData?.locations.find(
@@ -272,6 +281,7 @@ export function TerritoryGridPage() {
     try {
       const res = await recallUnit(territoryId, unitTypeId, quantity);
       reloadMilitary();
+      reloadGarrison();
       showToast(`유닛 ${res.recalledCount}기를 회수했습니다`, false);
     } catch (e) {
       showToast(e instanceof ApiError ? e.message : '회수에 실패했습니다', true);
@@ -538,9 +548,9 @@ export function TerritoryGridPage() {
 
       {deployBuilding && (
         <TerritoryDeployModal
-          territoryId={territoryId}
           building={deployBuilding}
           locations={militaryData?.locations ?? []}
+          garrison={garrison}
           isBusy={isGarrisonBusy}
           onDeploy={handleDeploy}
           onRecall={handleRecall}
