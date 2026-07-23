@@ -1,9 +1,14 @@
 # 구현 체크리스트
 
-> 마지막 갱신: 2026-06-24 (fe-75 영토 정보 패널 + 토지세 FE 기획 반영)  
+> 마지막 갱신: 2026-07-24 (자원 스코프 개편 + 공성전 시스템 전면 구현·실행 검증 반영)  
 > 기준 브랜치: `dev`
 
 범례: ✅ 완료 · 🔄 일부 완료 · ⬜ 미구현
+
+> **2026-06-24 이후 대규모 변경(반영됨):**
+> - **자원 스코프 개편**: GP·식량이 **위치(영토/섬) 저장소**로 이동. `wallets.available_gp/food` DROP, 계정 단위는 **금고(GlobalVault)** 만. GP 보유 상한 = 저장소 용량(성·저장소 레벨당 5,000).
+> - **공성전 시스템 전면 구현**: 보호/점유 분리, Zone 외곽→중심, 공격 병력 커밋(`SiegeForce`), 유닛 건물 주둔, 성 HP 누적·다회 공성, 정찰(SCOUT)·정보 비대칭, **공성 건물(`SiegeStructure`: 주둔지·타워·보급소)**, 관리자 밸런스(`BalanceConfig`), 판정 스케줄러까지 **선언→판정→약탈 실행 검증 완료**.
+> - **관리자 페이지·랭킹**: 실제 구현됨(아래 섹션 갱신).
 
 ---
 
@@ -154,25 +159,33 @@
 
 ---
 
-### Military (공성전)
+### Military (공성전) — 전면 구현·실행 검증 완료 (Stage 1~9 + UI)
 | 상태 | 기능 | 엔드포인트 | 비고 |
 |---|---|---|---|
-| ✅ | 공성전 선언 | `POST /api/v1/siege` | |
-| ✅ | 공성전 목록 조회 | `GET /api/v1/siege` | |
-| ✅ | 공성전 상세 조회 | `GET /api/v1/siege/{siegeId}` | |
-| ✅ | 유닛 생산 | `POST /api/v1/military/units` | 병영 레벨 게이팅 + 유닛 상한 + 식량 소모 (be-29) |
-| ✅ | 유닛 목록 조회 | `GET /api/v1/military/units` | availableFood 포함 (be-29) |
-| ✅ | 유닛 배치 | `POST /api/v1/military/units/{unitId}/deploy` | |
-| ✅ | 공격권 조회 | `GET /api/v1/military/attack-tokens` | |
-| ✅ | 전투 결과 처리 스케줄러 | — | 1분 주기, SiegeScheduler |
-| ✅ | 공성전 알림 WebSocket | — | `/sub/user/{userId}/siege-alert` (선언·결과 양측 발송) |
+| ✅ | 공성전 선언 | `POST /api/v1/military/siege` | **혼합 병력 `forces` + 공성 건물 `structures`(주둔지 필수)**. 보호/점유·Zone 클리어·쿨다운·공격권 검증 |
+| ✅ | 공성 결과 조회 | `GET /api/v1/military/siege/{siegeId}/result` | |
+| ✅ | 공성 이벤트 목록·내 이력 | `GET /api/v1/siege/events`, `/siege/my-history` | 상태 필터·페이지네이션 |
+| ✅ | 유닛 생산 | `POST /api/v1/military/units` | **위치(`locationId`/`locationType`) 지정** — 병영 레벨·수용 상한·위치 저장소 GP/식량 차감 |
+| ✅ | 유닛 목록 조회 | `GET /api/v1/military/units` | **위치별 그룹(`locations[].units/storedFood`)** — 자원 스코프 개편 반영 |
+| ✅ | 유닛 주둔/회수 | `POST /military/units/deploy`·`/recall` | 건물 대상 주둔(`buildingId`)·건물별 수용량, Zone별 방어 집계 |
+| ✅ | 영토 주둔 유닛 조회 | `GET /military/territory/{id}/garrison` | 회수 목록용(호출자 소유분만→정보 비대칭 유지) |
+| ✅ | 정찰 | `POST /military/scout/{territoryId}` | SCOUT 1기 소모, 방어 총 병력 수만 공개 |
+| ✅ | 유닛 이동 | `POST /military/units/move` | 위치 간 이동(비용·시간) |
+| ✅ | 공격권 조회 | `GET /military/attack-tokens` | |
+| ✅ | 공성 건물(`SiegeStructure`) | — | 주둔지(공격 병력 상한)·공성타워(공격력 버프)·보급소(쿨다운 완화), 인접 타일·금고 결제·판정 후 삭제 |
+| ✅ | 성 HP 누적·다회 공성 / 성벽 돌파(buildingDamage) | — | 교전(ATK/DEF)과 건물 피해 분리, 성 함락 시 영토 인계 |
+| ✅ | 건물 GP 즉시 수리 | `PATCH .../repair` | HP 기반, 위치 저장소 GP |
+| ✅ | 판정 스케줄러 | — | 1분 주기 `SiegeScheduler` → `resolveOneSiege`(실행 검증 완료) |
+| ✅ | 공성 알림 WebSocket | — | `/sub/user/{userId}/siege-alert` (선언·결과 양측) |
+| ✅ | 공성 선언 UI(프론트) | `SiegePage` | `forces`+`structures` 계약 정합, 보유 대기 유닛 선택·주둔지 배치 |
+| ⬜ | 정밀 공격(건물 지정) UI | `SiegePage` | 백엔드는 `targetBuildingId` 지원, 프론트 건물 선택 UI 후속 |
 
 ---
 
 ### Building — 식량·유닛 수용 (be-29)
 | 상태 | 기능 | 비고 |
 |---|---|---|
-| ✅ | Wallet.availableFood 추가 | DEFAULT 100 |
+| ✅ | 식량 저장을 위치 저장소로 | 자원 스코프 개편: `wallets.available_food` DROP → `building_instances.stored_food`(성·저장소) |
 | ✅ | UnitType.foodCost (1회 소모) | 기존 foodCostPerHour 대체 |
 | ✅ | UnitType.level (병영 레벨 요구치) | DEFAULT 1 |
 | ✅ | BuildingType.foodProductionRate | FARMLAND 전용 |
@@ -197,8 +210,8 @@
 | ✅ | 성 레벨별 섬 등급 시스템 (D→10×10, B→15×15, S→20×20) | IslandGrade 엔티티, castle 레벨 업그레이드 시 등급 갱신 |
 | ✅ | 섬 GP 수확 엔드포인트 | `POST /api/v1/island/harvest` |
 | ✅ | 보관함 → 섬 배치 | `POST /api/v1/inventory/{inventoryId}/place-on-island` |
-| ⬜ | island_grades DB 테이블 관리 (zone1Radius, zone2Radius) | 시드 데이터 및 마이그레이션 스크립트 미작성 |
-| ⬜ | IslandGrade FK로 HomeIsland 리팩터링 | home_islands.grid_size 컬럼 제거, island_grade_id FK 적용 |
+| ✅ | island_grades DB 테이블 (zone1Radius, zone2Radius) | `IslandGrade` 엔티티 + `IslandGradeSeeder` |
+| 🔄 | IslandGrade FK로 HomeIsland 리팩터링 | `island_grade_id` FK 적용됨. `grid_size` 컬럼 제거는 미완(현재 병존) |
 
 ---
 
@@ -219,26 +232,27 @@
 
 ---
 
-### Admin (관리자 페이지) — ⬜ 미구현
+### Admin (관리자 페이지) — ✅ 구현됨 (컨트롤러 16종)
 
 > 설계: [admin-dashboard](./design/admin-dashboard.md) · API: [admin.md](./api/admin.md)
 
 | 상태 | 기능 | 엔드포인트 | 비고 |
 |---|---|---|---|
-| ⬜ | 인프라: role·JWT·SecurityConfig·AdminAuditLogger | — | Phase 1 선행 |
-| ⬜ | ⭐ 대륙 영토 구성 현황·등급 분포 일괄 조정 | `GET /admin/continents`, `PATCH /{id}/grade-distribution` | **Phase 1 핵심** |
-| ⬜ | 영토 개별 등급 변경·경매 활성/비활성 | `PATCH /territories/{id}/grade`, `/auction-enabled` | Phase 1 |
-| ⬜ | 유저 목록·상세 | `GET /api/v1/admin/users`, `/{id}` | Phase 1 |
-| ⬜ | 계정 정지/해제 | `PATCH /api/v1/admin/users/{id}/status` | Phase 1 |
-| ⬜ | 재화·트로피 조정 | `POST /wallet/adjust`, `PATCH /trophy` | Phase 2 |
-| ⬜ | 아이템 지급 | `POST /admin/users/{id}/items/grant` | Phase 3 |
-| ⬜ | 경매 목록·강제 종료 | `GET /admin/auctions`, `POST /{id}/force-end` | Phase 2 · SETTLE/CANCEL 정책 |
-| ⬜ | 경매 강제 시작 | `POST /territories/{id}/start-auction` | Phase 2 |
-| ⬜ | 시즌 생성·시작/종료 | `GET/POST/PATCH /admin/seasons` | Phase 2 |
-| ⬜ | 아이템 가격·한도·구매이력 | `PATCH /admin/items/{id}`, `GET /item-purchases` | Phase 3 |
-| ⬜ | 지표 대시보드 | `GET /admin/dashboard/summary` | Phase 3 |
-| ⬜ | 감사 로그 열람 | `GET /admin/audit-logs` | Phase 1 |
-| ⬜ | 채팅 로그 열람/삭제 | `GET /admin/chat/...`, `DELETE /chat/messages/{id}` | Phase 3 |
+| ✅ | 인프라: role·JWT·SecurityConfig·AdminAuditLogger·TOTP | — | AdminAuthService |
+| ✅ | 대륙 영토 구성·등급 분포 일괄 조정 | `/admin/continents` | AdminContinentController |
+| ✅ | 영토 개별 등급·경매 활성/비활성 | `/admin/territories/...` | AdminTerritoryController |
+| ✅ | 유저 목록·상세·정지/해제 | `/admin/users/...` | AdminUserController |
+| ✅ | 재화·트로피 조정 | `/admin/users/.../wallet` 등 | AdminUserController |
+| ✅ | 아이템 지급·가격/한도 | `/admin/items/...` | AdminItemController |
+| ✅ | 경매 목록·강제 종료/시작 | `/admin/auctions/...` | AdminTerritoryController |
+| ✅ | 시즌·시즌패스 관리 | `/admin/seasons`, `/admin/season-passes` | AdminSeasonController / AdminSeasonPassController |
+| ✅ | 지표 대시보드 | `/admin/dashboard/...` | AdminDashboardController |
+| ✅ | 감사 로그 열람 | `/admin/audit-logs` | AdminAuditLogController |
+| ✅ | 채팅 로그 열람/삭제 | `/admin/chat/...` | AdminChatController |
+| ✅ | 유닛·건물 스탯 편집 | `/admin/units`, `/admin/buildings` | AdminUnitController / AdminBuildingController |
+| ✅ | 밸런스 설정(공성 등) | `GET/PATCH /admin/settings/balance` | AdminSettingController + BalanceConfig |
+| ✅ | 공지·설정 | `/admin/announcements`, `/admin/settings` | AdminAnnouncementController / AdminSettingController |
+| 🔄 | 나머지 밸런스 상수 배선 | — | 수리·주둔 수용량만 BalanceConfig 연동, 그 외 Policy 상수는 후속 |
 
 ---
 
@@ -310,11 +324,20 @@
 
 ---
 
-## TODO — 구현 보류 항목
+## TODO — 남은 미구현 (2026-07-24 기준, 코드 대조 확정)
 
-| 항목 | 이유 |
-|---|---|
-| ~~**식량 생산 수단**~~ | ✅ 구현 완료 — 농경지(FARMLAND)가 위치 저장소에 식량 생산(`FarmlandScheduler`), 유닛 생산 시 `foodCost` 차감. 식량은 유닛 생산 예산(시간당 소모·아사 없음). `wallets.available_food`는 DROP. |
+핵심 게임 루프(경매·영토·건물·자원·**공성전**·길드·랭킹·알림·관리자)는 구현 완료. 남은 것:
+
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| **연구(Research) 시스템** | ⬜ 완전 미구현 | BE 0파일 + FE "준비 중" 플레이스홀더. 기획부터 필요 |
+| **섬 확장(island expansion)** | ⬜ FE 미구현 | `IslandGrade`는 있으나 등급 업글 흐름·FE 탭 미연동 |
+| **AP 충전 실 결제(PG) 연동** | 🔄 더미 | **외부 결제대행사(토스·포트원 등) API·가맹점 계약·키·웹훅 필요** → 외부 의존, 골격만 가능 |
+| 대륙 / 생산 랭킹 | ⬜ | BE 미구현(FE 탭 제거됨). 트로피·영토보유·경매지출 랭킹은 구현됨 |
+| Redis 캐시·Pub-Sub (성능) | ⬜ 선택 | 단일 인스턴스라 현재 불필요, 스케일아웃 시 |
+| 일 정산 배치 | ⬜ 선택 | Lazy 정산으로 대체 가능, 구현 여부 미확정 |
+
+공성 후속 개선(선택): 정밀 공격 UI · 관리자 밸런스 나머지 상수 배선 · 공성 현황 패널 실데이터 · 저장소 꽉참 UI 경고.
 
 ---
 
@@ -377,7 +400,8 @@
 ### 공성전 / 아이템 / 시즌패스 / 금고
 | 상태 | 항목 | 페이지 | 비고 |
 |---|---|---|---|
-| ✅ | 공성전 선언·목록·상세 | `SiegePage` | |
+| ✅ | 공성전 선언 | `SiegePage` | 백엔드 계약 정합(#132): 보유 대기 유닛에서 `forces` 선택 + 주둔지(공성 건물) 배치, 수용량·금고 비용 |
+| ✅ | 유닛 주둔/회수 UI | `TerritoryDeployModal` | 건물 클릭 → 출발 위치·유닛 선택 주둔, 영토 배치 유닛 회수 |
 | ✅ | 아이템샵 (구매·사용·보유) | `ItemShopPage` | |
 | ✅ | 시즌패스 현황·구매 | `SeasonPassPage` | |
 | ✅ | 글로벌 금고 자원 이전 | `VaultPage` | |
