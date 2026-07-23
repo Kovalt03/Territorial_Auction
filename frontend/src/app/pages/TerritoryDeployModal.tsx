@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { UNIT_LABELS } from './islandGrid';
 
-import type { LocationUnits } from '../types/military';
+import type { GarrisonUnit, LocationUnits } from '../types/military';
 
 interface DeployParams {
   buildingId: number;
@@ -13,9 +13,9 @@ interface DeployParams {
 }
 
 interface Props {
-  territoryId: number;
   building: { buildingId: number; name: string; capacityPerLevel: number };
   locations: LocationUnits[];
+  garrison: GarrisonUnit[];
   isBusy: boolean;
   onDeploy: (p: DeployParams) => void;
   onRecall: (unitTypeId: number, quantity: number) => void;
@@ -29,7 +29,7 @@ function locationLabel(loc: LocationUnits): string {
 }
 
 export function TerritoryDeployModal({
-  territoryId, building, locations, isBusy, onDeploy, onRecall, onClose,
+  building, locations, garrison, isBusy, onDeploy, onRecall, onClose,
 }: Props) {
   // 출발 후보: 대기 유닛(idleCount>0)이 있는 위치
   const sources = useMemo(
@@ -45,10 +45,8 @@ export function TerritoryDeployModal({
   const selected = idleUnits.find(u => u.unitTypeId === unitTypeId) ?? idleUnits[0];
   const maxQty = selected?.idleCount ?? 0;
 
-  // 회수 후보: 이 영토에 배치된 유닛
-  const deployed = locations
-    .find(l => l.locationType === 'TERRITORY' && l.locationId === territoryId)
-    ?.units.filter(u => u.deployedCount > 0) ?? [];
+  // 회수 후보: 이 영토에 배치된 유닛(백엔드 garrison 조회 — 배치 유닛은 귀속지에 잡혀 위치 응답으론 안 보임)
+  const deployed = garrison;
 
   const meta = (name: string, u: { displayName: string | null; icon: string | null; colorHex: string | null }) => {
     const fb = UNIT_LABELS[name] ?? { label: name, icon: '⚔', color: '#e0e8ff' };

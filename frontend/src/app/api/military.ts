@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { AttackTokens, DeployUnitResponse, ProduceUnitResponse, RecallUnitResponse, UnitsResponse } from '../types/military';
+import type { AttackTokens, DeployUnitResponse, GarrisonUnit, ProduceUnitResponse, RecallUnitResponse, UnitsResponse } from '../types/military';
 
 export function fetchAttackTokens(): Promise<AttackTokens> {
   return apiClient.get<AttackTokens>('/military/attack-tokens');
@@ -33,6 +33,11 @@ export function deployUnit(params: {
   sourceLocationType: 'ISLAND' | 'TERRITORY';
 }): Promise<DeployUnitResponse> {
   return apiClient.post<DeployUnitResponse>('/military/units/deploy', params);
+}
+
+// 특정 영토에 배치(주둔)된 내 유닛을 타입별로 조회한다(회수 목록용).
+export function fetchTerritoryGarrison(territoryId: number): Promise<GarrisonUnit[]> {
+  return apiClient.get<GarrisonUnit[]>(`/military/territory/${territoryId}/garrison`);
 }
 
 // 영토에 배치된 유닛을 귀속지 대기 스택으로 회수한다.

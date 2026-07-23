@@ -944,6 +944,34 @@ class MilitaryServiceTest {
     // ==========================================================
 
     @Nested
+    @DisplayName("GetTerritoryGarrison")
+    class GetTerritoryGarrison {
+
+        @Test
+        @DisplayName("영토 배치 유닛을 타입별 합계로 반환")
+        void groupsByType() {
+            Territory territory = ownedTerritory();
+            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, TERR_ID))
+                    .willReturn(
+                            List.of(idleAtTerritory(3, territory), idleAtTerritory(2, territory)));
+
+            var res = militaryService.getTerritoryGarrison(1L, TERR_ID);
+
+            assertThat(res).hasSize(1);
+            assertThat(res.get(0).unitTypeId()).isEqualTo(1L);
+            assertThat(res.get(0).deployedCount()).isEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("배치 유닛 없으면 빈 목록")
+        void empty() {
+            given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(1L, TERR_ID))
+                    .willReturn(List.of());
+            assertThat(militaryService.getTerritoryGarrison(1L, TERR_ID)).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("GetUnitList")
     class GetUnitList {
 

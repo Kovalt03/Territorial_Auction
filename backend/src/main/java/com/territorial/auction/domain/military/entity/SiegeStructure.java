@@ -22,10 +22,10 @@ public class SiegeStructure {
     @Column(nullable = false, length = 10)
     private SiegeStructureType type;
 
-    @Column(nullable = false)
+    @Column(name = "coord_x", nullable = false)
     private Integer coordX;
 
-    @Column(nullable = false)
+    @Column(name = "coord_y", nullable = false)
     private Integer coordY;
 
     @Builder
