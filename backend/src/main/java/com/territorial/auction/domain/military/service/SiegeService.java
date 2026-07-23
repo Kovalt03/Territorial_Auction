@@ -21,6 +21,7 @@ import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
 import com.territorial.auction.domain.military.event.GarrisonBuildingDestroyedEvent;
 import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
+import com.territorial.auction.domain.military.repository.SiegeEventRepository;
 import com.territorial.auction.domain.military.repository.SiegeForceRepository;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.SiegeStructureRepository;
@@ -28,6 +29,8 @@ import com.territorial.auction.domain.military.repository.UnitInstanceRepository
 import com.territorial.auction.domain.season.entity.Season;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.user.entity.User;
+import com.territorial.auction.global.exception.CustomException;
+import com.territorial.auction.global.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +48,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Transactional(readOnly = true)
 public class SiegeService {
 
+    private final SiegeEventRepository siegeEventRepository;
     private final SiegeResultRepository siegeResultRepository;
     private final SiegeForceRepository siegeForceRepository;
     private final SiegeStructureRepository siegeStructureRepository;
@@ -59,7 +63,13 @@ public class SiegeService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public void resolveOneSiege(SiegeEvent event) {
+    public void resolveOneSiege(SiegeEvent pending) {
+        // 스케줄러가 넘긴 event는 트랜잭션 밖에서 로드돼 연관(attacker/defender/territory)이 지연 프록시다.
+        // 이 트랜잭션에서 다시 로드해 관리 상태로 만들어야 지연 로딩이 동작한다.
+        SiegeEvent event =
+                siegeEventRepository
+                        .findById(pending.getId())
+                        .orElseThrow(() -> new CustomException(ErrorCode.SIEGE_NOT_FOUND));
         Long attackerId = event.getAttacker().getId();
         Long defenderId = event.getDefender().getId();
         Long territoryId = event.getTargetTerritory().getId();
