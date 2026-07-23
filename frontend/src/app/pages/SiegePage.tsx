@@ -2,16 +2,34 @@ import { useState, useEffect } from 'react';
 
 import { declareSiege } from '../api/siege';
 import { fetchTerritoryDetail } from '../api/map';
+import { useMilitary } from '../hooks/useMilitary';
+import { ApiError } from '../api/client';
 
 import { GNB } from '../components/GNB';
 import { Button } from '../components/Button';
+import { UNIT_LABELS } from './islandGrid';
 
 import type { TerritoryDetailResponse } from '../types/territory';
-
-type AttackType = 'normal' | 'precision';
+import type { StructureEntry } from '../api/siege';
 
 const SIEGE_TIME_LIMIT_SEC = 7200;
-const UNIT_ATK = { infantry: 25, archer: 30, knight: 80 } as const;
+const STAGING_CAP_PER = 10; // 주둔지 1개당 공격 병력 상한
+const STAGING_COST_GP = 500; // 주둔지 1개 건설비(공격자 금고 GP)
+
+// 대상 영토 인접 타일(체비쇼프 1) — 주둔지 자동 배치용
+const ADJACENT_OFFSETS = [
+  [0, -1], [-1, 0], [1, 0], [0, 1], [-1, -1], [1, 1], [-1, 1], [1, -1],
+] as const;
+const GRID_MAX = 49;
+
+function buildStagingStructures(t: TerritoryDetailResponse, count: number): StructureEntry[] {
+  const clamp = (v: number) => Math.max(0, Math.min(GRID_MAX, v));
+  return ADJACENT_OFFSETS.slice(0, count).map(([dx, dy]) => ({
+    type: 'STAGING' as const,
+    coordX: clamp(t.coordX + dx),
+    coordY: clamp(t.coordY + dy),
+  }));
+}
 
 const zones = [
   { id: 1, name: 'Zone 1 — 핵심 (성)', hp: 420, maxHp: 600, color: '#ff3333' },
@@ -37,9 +55,11 @@ function Countdown({ seconds }: { seconds: number }) {
 }
 
 export function SiegePage() {
+  const { data: militaryData } = useMilitary();
   const [selectedZone, setSelectedZone] = useState(3);
-  const [attackType, setAttackType] = useState<AttackType>('normal');
-  const [units, setUnits] = useState({ infantry: 10, archer: 5, knight: 2 });
+  // unitTypeId → 커밋 수량
+  const [forces, setForces] = useState<Record<number, number>>({});
+  const [stagingCount, setStagingCount] = useState(1);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSiegeStarted, setIsSiegeStarted] = useState(false);
   const [siegeError, setSiegeError] = useState<string | null>(null);
@@ -71,28 +91,53 @@ export function SiegePage() {
   };
 
   const zone = zones.find(z => z.id === selectedZone)!;
-  const totalUnits = units.infantry + units.archer + units.knight;
-  const attackPower = units.infantry * UNIT_ATK.infantry + units.archer * UNIT_ATK.archer + units.knight * UNIT_ATK.knight;
+
+  // 대기 유닛을 타입별로 합산(위치 무관) — 공격 병력 후보
+  const idleUnits = (() => {
+    const map = new Map<number, { unitTypeId: number; name: string; displayName: string | null; icon: string | null; colorHex: string | null; attackPower: number; idle: number }>();
+    militaryData?.locations.forEach(l => l.units.forEach(u => {
+      if (u.idleCount <= 0) return;
+      const ex = map.get(u.unitTypeId);
+      if (ex) ex.idle += u.idleCount;
+      else map.set(u.unitTypeId, { unitTypeId: u.unitTypeId, name: u.name, displayName: u.displayName, icon: u.icon, colorHex: u.colorHex, attackPower: u.attackPower, idle: u.idleCount });
+    }));
+    return [...map.values()];
+  })();
+
+  const totalUnits = Object.values(forces).reduce((a, b) => a + b, 0);
+  const attackPower = idleUnits.reduce((sum, u) => sum + u.attackPower * (forces[u.unitTypeId] ?? 0), 0);
+  const capacity = stagingCount * STAGING_CAP_PER;
+  const overCapacity = totalUnits > capacity;
+  const structureCost = stagingCount * STAGING_COST_GP;
 
   const handleStart = async () => {
     if (!targetTerritory) { setSiegeError('대상 영토를 먼저 검색해주세요.'); return; }
+    if (totalUnits === 0) { setSiegeError('공격 병력을 1기 이상 선택해주세요.'); return; }
+    if (overCapacity) { setSiegeError(`병력이 주둔지 수용량(${capacity})을 초과합니다.`); return; }
     setShowConfirm(false);
     setSiegeError(null);
     try {
       await declareSiege({
         targetTerritoryId: targetTerritory.territoryId,
         attackZone: selectedZone,
-        attackType: attackType === 'normal' ? 'NORMAL' : 'PRECISION',
-        units: [
-          { unitTypeId: 1, quantity: units.infantry },
-          { unitTypeId: 2, quantity: units.archer },
-          { unitTypeId: 3, quantity: units.knight },
-        ],
+        forces: idleUnits
+          .filter(u => (forces[u.unitTypeId] ?? 0) > 0)
+          .map(u => ({ unitTypeId: u.unitTypeId, quantity: forces[u.unitTypeId] })),
+        structures: buildStagingStructures(targetTerritory, stagingCount),
       });
       setIsSiegeStarted(true);
-    } catch {
-      setSiegeError('공성전 선언에 실패했습니다. 조건을 확인하고 다시 시도해주세요.');
+    } catch (e) {
+      setSiegeError(
+        e instanceof ApiError && e.status >= 400 && e.status < 500
+          ? e.message
+          : '공성전 선언에 실패했습니다. 조건을 확인하고 다시 시도해주세요.',
+      );
     }
+  };
+
+  const unitMeta = (u: { name: string; displayName: string | null; icon: string | null; colorHex: string | null }) => {
+    const fb = UNIT_LABELS[u.name] ?? { label: u.name, icon: '⚔', color: '#e0e8ff' };
+    return { label: u.displayName ?? fb.label, icon: u.icon ?? fb.icon, color: u.colorHex ?? fb.color };
   };
 
   return (
@@ -160,66 +205,71 @@ export function SiegePage() {
             ))}
           </div>
 
-          {/* Attack Type */}
+          {/* 공성 건물 — 주둔지 (공격 병력 상한 제공, 금고 GP 결제) */}
           <div className="p-4 border-b border-outline">
-            <p className="text-muted font-semibold mb-3 text-xs">공격 토큰</p>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'normal' as AttackType, icon: '⚔', label: '일반 공격권', desc: 'GP 500 또는 AP 100', color: '#ff8c00' },
-                { id: 'precision' as AttackType, icon: '🎯', label: '정밀 공격권', desc: 'AP 300 · 건물 지정', color: '#ff3333' },
-              ].map(t => (
+            <p className="text-muted font-semibold mb-2 text-xs">주둔지 (공격 병력 상한)</p>
+            <div className="flex items-center gap-2">
+              {[1, 2, 3].map(n => (
                 <button
-                  key={t.id}
-                  onClick={() => setAttackType(t.id)}
-                  className="rounded-xl p-3 text-left transition-all"
+                  key={n}
+                  onClick={() => setStagingCount(n)}
+                  className="flex-1 rounded-xl py-2 text-center transition-all"
                   style={{
-                    background: attackType === t.id ? t.color + '20' : 'var(--color-panel-deep)',
-                    border: `1px solid ${attackType === t.id ? t.color : '#354064'}`,
+                    background: stagingCount === n ? '#ff333320' : 'var(--color-panel-deep)',
+                    border: `1px solid ${stagingCount === n ? '#ff3333' : '#354064'}`,
+                    color: stagingCount === n ? '#ff3333' : '#8892b0',
                   }}
                 >
-                  <span className="text-xl">{t.icon}</span>
-                  <p className="mt-1 text-xs font-semibold" style={{ color: t.color }}>{t.label}</p>
-                  <p className="text-muted text-[10px]">{t.desc}</p>
+                  <span className="text-[13px] font-bold">×{n}</span>
                 </button>
               ))}
             </div>
+            <p className="text-muted text-[10px] mt-2">
+              수용량 {capacity}기 · 금고 {structureCost.toLocaleString()} GP · 대상 인접 타일 자동 배치
+            </p>
           </div>
 
-          {/* Unit Deployment */}
-          <div className="p-4 border-b border-outline flex-1">
-            <p className="text-muted font-semibold mb-3 text-xs">유닛 배치</p>
-            {[
-              { key: 'infantry' as keyof typeof units, label: '보병', icon: '🗡', max: 30, atk: UNIT_ATK.infantry, color: '#e0e8ff' },
-              { key: 'archer' as keyof typeof units, label: '궁수', icon: '🏹', max: 20, atk: UNIT_ATK.archer, color: '#00ff88' },
-              { key: 'knight' as keyof typeof units, label: '기사', icon: '⚔', max: 10, atk: UNIT_ATK.knight, color: '#ffd700' },
-            ].map(u => (
-              <div key={u.key} className="flex items-center gap-3 mb-3">
-                <span className="text-lg">{u.icon}</span>
-                <div className="flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs" style={{ color: u.color }}>{u.label}</span>
-                    <span className="text-muted text-[10px]">공격력 {u.atk} · 최대 {u.max}</span>
+          {/* 공격 병력 — 보유 대기 유닛에서 선택 */}
+          <div className="p-4 border-b border-outline flex-1 overflow-y-auto">
+            <p className="text-muted font-semibold mb-3 text-xs">공격 병력 (대기 유닛)</p>
+            {idleUnits.length === 0 && (
+              <p className="text-muted text-[11px] py-3 text-center">대기 유닛이 없습니다. 병영에서 먼저 훈련하세요.</p>
+            )}
+            {idleUnits.map(u => {
+              const m = unitMeta(u);
+              const qty = forces[u.unitTypeId] ?? 0;
+              return (
+                <div key={u.unitTypeId} className="flex items-center gap-3 mb-3">
+                  <span className="text-lg">{m.icon}</span>
+                  <div className="flex-1">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs" style={{ color: m.color }}>{m.label}</span>
+                      <span className="text-muted text-[10px]">공격력 {u.attackPower} · 대기 {u.idle}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={u.idle}
+                      value={qty}
+                      onChange={e => setForces(prev => ({ ...prev, [u.unitTypeId]: Number(e.target.value) }))}
+                      className="w-full"
+                      style={{ accentColor: m.color }}
+                    />
                   </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={u.max}
-                    value={units[u.key]}
-                    onChange={e => setUnits(prev => ({ ...prev, [u.key]: Number(e.target.value) }))}
-                    className="w-full"
-                    style={{ accentColor: u.color }}
-                  />
+                  <div className="w-10 h-8 bg-panel-deep border border-outline rounded-lg flex items-center justify-center">
+                    <span className="text-[13px]" style={{ color: m.color }}>{qty}</span>
+                  </div>
                 </div>
-                <div className="w-10 h-8 bg-panel-deep border border-outline rounded-lg flex items-center justify-center">
-                  <span className="text-[13px]" style={{ color: u.color }}>{units[u.key]}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             <div className="bg-panel-deep rounded-xl p-3 mt-2">
               <div className="flex justify-between">
-                <span className="text-muted text-xs">총 유닛: {totalUnits}명</span>
+                <span className={overCapacity ? 'text-danger text-xs' : 'text-muted text-xs'}>
+                  병력 {totalUnits} / 수용 {capacity}
+                </span>
                 <span className="text-danger font-bold text-xs">총 공격력: {attackPower}</span>
               </div>
+              {overCapacity && <p className="text-danger text-[10px] mt-1">주둔지 수용량 초과 — 주둔지를 늘리거나 병력을 줄이세요</p>}
             </div>
           </div>
 
