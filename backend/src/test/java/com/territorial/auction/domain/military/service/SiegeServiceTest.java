@@ -54,6 +54,10 @@ class SiegeServiceTest {
 
     @InjectMocks private SiegeService siegeService;
 
+    @Mock
+    private com.territorial.auction.domain.military.repository.SiegeEventRepository
+            siegeEventRepository;
+
     @Mock private SiegeResultRepository siegeResultRepository;
     @Mock private SiegeForceRepository siegeForceRepository;
 
@@ -100,6 +104,8 @@ class SiegeServiceTest {
 
         event = mock(SiegeEvent.class);
         given(event.getId()).willReturn(100L);
+        // resolveOneSiege가 트랜잭션 내에서 event를 다시 로드한다 → 같은 mock을 돌려준다.
+        lenient().when(siegeEventRepository.findById(100L)).thenReturn(Optional.of(event));
         given(event.getAttacker()).willReturn(attacker);
         given(event.getDefender()).willReturn(defender);
         given(event.getTargetTerritory()).willReturn(territory);
