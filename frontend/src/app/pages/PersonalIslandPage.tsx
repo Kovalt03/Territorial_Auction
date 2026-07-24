@@ -6,7 +6,8 @@ import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
 import { useMilitary } from '../hooks/useMilitary';
 import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi, fetchBuildingTypes } from '../api/island';
-import { produceUnit } from '../api/military';
+import { produceUnit, fetchResearch, startResearch } from '../api/military';
+import type { ResearchStatus } from '../types/military';
 import { ApiError } from '../api/client';
 import type { InventoryItem, BuildingTypeInfo } from '../types/island';
 import {
@@ -19,6 +20,7 @@ import { IslandToast } from './IslandToast';
 import { IslandBuildModal } from './IslandBuildModal';
 import { IslandBuildingActionPanel } from './IslandBuildingActionPanel';
 import { IslandTrainUnitModal } from './IslandTrainUnitModal';
+import { IslandResearchPanel } from './IslandResearchPanel';
 import { IslandInventoryModal } from './IslandInventoryModal';
 import { IslandDecorationShopModal } from './IslandDecorationShopModal';
 
@@ -92,11 +94,41 @@ export function PersonalIslandPage() {
   const [showShop, setShowShop] = useState(false);
   const [deployFromInventoryIdx, setDeployFromInventoryIdx] = useState<number | null>(null);
 
+  // 연구
+  const [research, setResearch] = useState<ResearchStatus | null>(null);
+  const [isResearching, setIsResearching] = useState(false);
+  const [researchError, setResearchError] = useState<string | null>(null);
+  const reloadResearch = useCallback(() => {
+    fetchResearch()
+      .then(setResearch)
+      .catch(e => console.warn('[PersonalIslandPage] research load failed', e));
+  }, []);
+  useEffect(() => { reloadResearch(); }, [reloadResearch]);
+
+  const handleResearch = async (unitTypeId: number) => {
+    setIsResearching(true);
+    setResearchError(null);
+    try {
+      await startResearch(unitTypeId);
+      reloadResearch();
+      showToast('연구를 시작했습니다', false);
+    } catch (e) {
+      setResearchError(e instanceof ApiError ? e.message : '연구 시작에 실패했습니다');
+    } finally {
+      setIsResearching(false);
+    }
+  };
+
   // 유닛 훈련 모달
   const [showTrainModal, setShowTrainModal] = useState(false);
   const [trainUnitTypeId, setTrainUnitTypeId] = useState<number | null>(null);
   const [trainQuantity, setTrainQuantity] = useState(1);
+  const [trainLevel, setTrainLevel] = useState(1);
   const [isTraining, setIsTraining] = useState(false);
+  // unitTypeId → 연구 해금 레벨
+  const researchedLevels = Object.fromEntries(
+    (research?.units ?? []).map(u => [u.unitTypeId, u.researchedLevel]),
+  ) as Record<number, number>;
 
   // 건설 위치 선택 모드 (사이드바 버튼 → 셀 클릭)
   const [buildPending, setBuildPending] = useState(false);
@@ -136,7 +168,7 @@ export function PersonalIslandPage() {
     if (!trainUnitTypeId || trainQuantity < 1 || !island) return;
     setIsTraining(true);
     try {
-      await produceUnit(trainUnitTypeId, trainQuantity, island.islandId, 'ISLAND');
+      await produceUnit(trainUnitTypeId, trainQuantity, island.islandId, 'ISLAND', trainLevel);
       // 유닛 생산은 섬 저장소 GP·식량에서 차감 — 섬·유닛 현황을 다시 불러온다(금고 무관).
       void reloadIsland();
       void reloadMilitary();
@@ -628,10 +660,12 @@ export function PersonalIslandPage() {
                     }
                   </div>
                 </div>
-                <div className="bg-panel-deep rounded-xl p-3">
-                  <p className="text-[#ff44cc] font-semibold mb-2 text-xs">🔬 연구 현황</p>
-                  <p className="text-muted text-[10px]">준비 중</p>
-                </div>
+                <IslandResearchPanel
+                  research={research}
+                  isBusy={isResearching}
+                  error={researchError}
+                  onResearch={handleResearch}
+                />
               </div>
             )}
             {activeTab === 'units' && (
@@ -784,9 +818,12 @@ export function PersonalIslandPage() {
           storedFood={islandFood}
           trainUnitTypeId={trainUnitTypeId}
           trainQuantity={trainQuantity}
+          trainLevel={trainLevel}
+          researchedLevels={researchedLevels}
           isTraining={isTraining}
-          onSelectUnit={setTrainUnitTypeId}
+          onSelectUnit={id => { setTrainUnitTypeId(id); setTrainLevel(1); }}
           onChangeQuantity={setTrainQuantity}
+          onChangeLevel={setTrainLevel}
           onTrain={handleProduceUnit}
           onClose={() => setShowTrainModal(false)}
         />
