@@ -19,6 +19,7 @@ import com.territorial.auction.domain.military.entity.SiegeStructure;
 import com.territorial.auction.domain.military.entity.SiegeStructureType;
 import com.territorial.auction.domain.military.entity.UnitInstance;
 import com.territorial.auction.domain.military.entity.UnitType;
+import com.territorial.auction.domain.military.entity.UnitTypeLevelSpec;
 import com.territorial.auction.domain.military.event.GarrisonBuildingDestroyedEvent;
 import com.territorial.auction.domain.military.event.SiegeVictoryEvent;
 import com.territorial.auction.domain.military.repository.SiegeEventRepository;
@@ -26,6 +27,7 @@ import com.territorial.auction.domain.military.repository.SiegeForceRepository;
 import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.SiegeStructureRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
+import com.territorial.auction.domain.military.repository.UnitTypeLevelSpecRepository;
 import com.territorial.auction.domain.season.entity.Season;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.user.entity.User;
@@ -53,6 +55,7 @@ public class SiegeService {
     private final SiegeForceRepository siegeForceRepository;
     private final SiegeStructureRepository siegeStructureRepository;
     private final UnitInstanceRepository unitInstanceRepository;
+    private final UnitTypeLevelSpecRepository unitTypeLevelSpecRepository;
     private final HomeIslandRepository homeIslandRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository
@@ -204,8 +207,27 @@ public class SiegeService {
 
     private int calculateForceAtk(List<SiegeForce> attackerForces) {
         return attackerForces.stream()
-                .mapToInt(f -> f.getUnitType().getAttackPower() * f.getQuantity())
+                .mapToInt(f -> resolveAtk(f.getUnitType(), f.getLevel()) * f.getQuantity())
                 .sum();
+    }
+
+    // 유닛 스탯은 레벨에 따라 달라진다 — 레벨 1은 UnitType 기본값, 2+는 UnitTypeLevelSpec.
+    private int resolveAtk(UnitType type, Integer level) {
+        int lv = level != null ? level : 1;
+        if (lv <= 1) return type.getAttackPower();
+        return unitTypeLevelSpecRepository
+                .findByUnitType_IdAndLevel(type.getId(), lv)
+                .map(UnitTypeLevelSpec::getAttackPower)
+                .orElse(type.getAttackPower());
+    }
+
+    private int resolveDef(UnitType type, Integer level) {
+        int lv = level != null ? level : 1;
+        if (lv <= 1) return type.getDefensePower();
+        return unitTypeLevelSpecRepository
+                .findByUnitType_IdAndLevel(type.getId(), lv)
+                .map(UnitTypeLevelSpec::getDefensePower)
+                .orElse(type.getDefensePower());
     }
 
     // 공성 타워 개수만큼 공격력 버프(개당 %, 최대 개수 캡). 교전 판정에만 적용(건물 피해는 별개).
@@ -229,7 +251,7 @@ public class SiegeService {
     private int calculateDef(List<UnitInstance> defenderUnits, SiegeEvent event) {
         int unitDef =
                 defenderUnits.stream()
-                        .mapToInt(u -> u.getUnitType().getDefensePower() * u.getQuantity())
+                        .mapToInt(u -> resolveDef(u.getUnitType(), u.getLevel()) * u.getQuantity())
                         .sum();
         List<com.territorial.auction.domain.building.entity.BuildingInstance> defenseBuildings =
                 buildingInstanceRepository.findActiveByTerritoryIdAndZone(
@@ -271,14 +293,15 @@ public class SiegeService {
                                                         addIslandReadyIdle(
                                                                 attacker,
                                                                 f.getUnitType(),
+                                                                f.getLevel(),
                                                                 island,
                                                                 f.getQuantity())));
     }
 
-    private void addIslandReadyIdle(User user, UnitType unitType, HomeIsland island, int quantity) {
+    private void addIslandReadyIdle(
+            User user, UnitType unitType, int level, HomeIsland island, int quantity) {
         unitInstanceRepository
-                .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                        user.getId(), unitType.getId(), island.getId())
+                .findReadyIdleAtIsland(user.getId(), unitType.getId(), level, island.getId())
                 .ifPresentOrElse(
                         e -> e.addQuantity(quantity),
                         () ->
@@ -287,6 +310,7 @@ public class SiegeService {
                                                 .user(user)
                                                 .unitType(unitType)
                                                 .quantity(quantity)
+                                                .level(level)
                                                 .homeIsland(island)
                                                 .build()));
     }

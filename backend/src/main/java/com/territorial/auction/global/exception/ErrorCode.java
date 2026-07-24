@@ -145,6 +145,7 @@ public enum ErrorCode {
     RESEARCH_IN_PROGRESS(HttpStatus.CONFLICT, "이미 연구가 진행 중입니다."),
     RESEARCH_MAX_REACHED(HttpStatus.BAD_REQUEST, "더 연구할 레벨이 없습니다."),
     RESEARCH_SPEC_NOT_FOUND(HttpStatus.BAD_REQUEST, "해당 레벨의 유닛 스펙이 없습니다."),
+    UNIT_LEVEL_NOT_RESEARCHED(HttpStatus.BAD_REQUEST, "아직 연구하지 않은 유닛 레벨입니다."),
 
     // Island
     ISLAND_NOT_FOUND(HttpStatus.NOT_FOUND, "섬을 찾을 수 없습니다."),

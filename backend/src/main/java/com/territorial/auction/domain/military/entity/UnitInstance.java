@@ -51,17 +51,23 @@ public class UnitInstance {
     // 이동 중 유닛은 귀속지가 이미 도착지로 설정돼 있으나 도착 전까지 방어·배치·재이동 불가.
     @Column private LocalDateTime moveCompleteAt;
 
+    /** 유닛 레벨(연구로 해금해 생산 시 선택). 레벨별 스탯은 UnitTypeLevelSpec, 레벨 1은 UnitType 기본 스탯. */
+    @Column(nullable = false)
+    private Integer level = 1;
+
     @Builder
     public UnitInstance(
             User user,
             UnitType unitType,
             Integer quantity,
+            Integer level,
             Territory homeTerritory,
             HomeIsland homeIsland,
             LocalDateTime moveCompleteAt) {
         this.user = user;
         this.unitType = unitType;
         this.quantity = quantity;
+        this.level = level != null ? level : 1;
         this.homeTerritory = homeTerritory;
         this.homeIsland = homeIsland;
         this.moveCompleteAt = moveCompleteAt;

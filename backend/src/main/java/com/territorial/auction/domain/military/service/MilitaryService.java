@@ -62,6 +62,8 @@ public class MilitaryService {
     private final BalanceConfig balanceConfig;
     private final SiegeStructureRepository siegeStructureRepository;
     private final GlobalVaultRepository globalVaultRepository;
+    private final UnitResearchRepository unitResearchRepository;
+    private final UnitTypeLevelSpecRepository unitTypeLevelSpecRepository;
 
     public AttackTokenResponse getAttackTokens(Long userId) {
         return attackTokenRepository
@@ -73,21 +75,29 @@ public class MilitaryService {
     @Transactional
     public ProduceUnitResponse produceUnit(Long userId, ProduceUnitRequest request) {
         UnitType unitType = findUnitTypeOrThrow(request.unitTypeId());
+        int level = levelOf(request.level());
+        validateLevelResearched(userId, unitType.getId(), level);
+
         LocationRef loc =
                 resolveOwnedLocation(userId, request.locationId(), request.locationType());
-        validateBarracksAtLocation(loc, unitType.getLevel());
+        // 레벨 2+는 레벨 스펙의 요구 병영 레벨·훈련 식량을 따른다. 레벨 1은 UnitType 기본값.
+        UnitTypeLevelSpec spec = level > 1 ? findLevelSpecOrThrow(unitType.getId(), level) : null;
+        validateBarracksAtLocation(
+                loc, spec != null ? spec.getRequiredBarracksLevel() : unitType.getLevel());
         validateUnitCapacityAtLocation(loc, request.quantity());
 
         int gpCost = unitType.getCostGp() * request.quantity();
-        int foodCost = unitType.getFoodCost() * request.quantity();
+        int foodPerUnit = spec != null ? spec.getTrainCostFood() : unitType.getFoodCost();
+        int foodCost = foodPerUnit * request.quantity();
         List<BuildingInstance> storages = findLocationStoragesWithLock(loc);
         int gpRemaining = chargeLocationGpAndFood(storages, gpCost, foodCost);
 
-        addReadyIdleAtLocation(userId, unitType, loc, request.quantity());
+        addReadyIdleAtLocation(userId, unitType, level, loc, request.quantity());
         log.info(
-                "유닛 생산 완료. userId={}, unitTypeId={}, quantity={}, {}={}",
+                "유닛 생산 완료. userId={}, unitTypeId={}, level={}, quantity={}, {}={}",
                 userId,
                 unitType.getId(),
+                level,
                 request.quantity(),
                 loc.type(),
                 loc.id());
@@ -103,13 +113,14 @@ public class MilitaryService {
         LocationRef source =
                 resolveOwnedLocation(
                         userId, request.sourceLocationId(), request.sourceLocationType());
+        int level = levelOf(request.level());
         UnitInstance idle =
                 findReadyIdleAtLocationOrThrow(
-                        userId, request.unitTypeId(), source, request.quantity());
+                        userId, request.unitTypeId(), level, source, request.quantity());
 
         idle.subtractQuantity(request.quantity());
         addDeployedUnits(
-                userId, idle.getUnitType(), source, territory, building, request.quantity());
+                userId, idle.getUnitType(), level, source, territory, building, request.quantity());
         return new DeployUnitResponse(request.quantity(), request.territoryId());
     }
 
@@ -162,8 +173,11 @@ public class MilitaryService {
     public RecallUnitResponse recallUnit(Long userId, RecallUnitRequest request) {
         findOwnedTerritoryOrThrow(request.territoryId(), userId);
         List<UnitInstance> deployedStacks =
-                unitInstanceRepository.findByUserIdAndUnitTypeIdAndDeployedTerritoryIdOrderByIdAsc(
-                        userId, request.unitTypeId(), request.territoryId());
+                unitInstanceRepository.findDeployedAtTerritory(
+                        userId,
+                        request.unitTypeId(),
+                        levelOf(request.level()),
+                        request.territoryId());
         int recalled = recallFromDeployed(deployedStacks, request.quantity());
         int remaining = deployedStacks.stream().mapToInt(UnitInstance::getQuantity).sum();
         return new RecallUnitResponse(recalled, remaining);
@@ -178,9 +192,10 @@ public class MilitaryService {
                 resolveOwnedLocation(userId, request.destLocationId(), request.destLocationType());
         validateDifferentLocation(source, dest);
 
+        int level = levelOf(request.level());
         UnitInstance idle =
                 findReadyIdleAtLocationOrThrow(
-                        userId, request.unitTypeId(), source, request.quantity());
+                        userId, request.unitTypeId(), level, source, request.quantity());
         validateUnitCapacityAtLocation(dest, request.quantity());
 
         int gpCost = MilitaryPolicy.UNIT_MOVE_COST_GP * request.quantity();
@@ -190,7 +205,7 @@ public class MilitaryService {
         idle.subtractQuantity(request.quantity());
         LocalDateTime completeAt =
                 LocalDateTime.now().plusMinutes(MilitaryPolicy.UNIT_MOVE_MINUTES);
-        saveInTransitUnit(userId, idle.getUnitType(), dest, request.quantity(), completeAt);
+        saveInTransitUnit(userId, idle.getUnitType(), level, dest, request.quantity(), completeAt);
         log.info(
                 "유닛 이동 시작. userId={}, unitTypeId={}, quantity={}, {}={} -> {}={}",
                 userId,
@@ -305,10 +320,10 @@ public class MilitaryService {
                 unitTypeRepository
                         .findByName(SCOUT_UNIT_NAME)
                         .orElseThrow(() -> new CustomException(ErrorCode.UNIT_TYPE_NOT_FOUND));
-        if (nullSafe(unitInstanceRepository.sumReadyIdleQuantity(userId, scout.getId())) < 1) {
+        if (nullSafe(unitInstanceRepository.sumReadyIdleQuantity(userId, scout.getId(), 1)) < 1) {
             throw new CustomException(ErrorCode.SCOUT_UNIT_REQUIRED);
         }
-        deductReadyIdle(userId, scout.getId(), 1);
+        deductReadyIdle(userId, scout.getId(), 1, 1);
     }
 
     private int countDeployedUnits(Long defenderId, Long territoryId) {
@@ -413,7 +428,7 @@ public class MilitaryService {
                 free -= accepted;
             }
             if (accepted > 0) {
-                addIslandIdle(userId, unit.getUnitType(), island, accepted);
+                addIslandIdle(userId, unit.getUnitType(), unit.getLevel(), island, accepted);
             }
             unitInstanceRepository.delete(unit);
         }
@@ -424,10 +439,10 @@ public class MilitaryService {
                 units.size());
     }
 
-    private void addIslandIdle(Long userId, UnitType unitType, HomeIsland island, int quantity) {
+    private void addIslandIdle(
+            Long userId, UnitType unitType, int level, HomeIsland island, int quantity) {
         unitInstanceRepository
-                .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                        userId, unitType.getId(), island.getId())
+                .findReadyIdleAtIsland(userId, unitType.getId(), level, island.getId())
                 .ifPresentOrElse(
                         e -> e.addQuantity(quantity),
                         () ->
@@ -569,9 +584,38 @@ public class MilitaryService {
         return value != null ? value : 0;
     }
 
+    /** 요청의 레벨 — null이면 기본 레벨 1. */
+    private int levelOf(Integer level) {
+        return level != null ? level : 1;
+    }
+
+    /** 계정에 해금된 레벨(연구 완료분)을 넘는 레벨은 생산할 수 없다. */
+    private void validateLevelResearched(Long userId, Long unitTypeId, int level) {
+        if (level <= 1) return;
+        int researched =
+                unitResearchRepository
+                        .findByUserIdAndUnitTypeId(userId, unitTypeId)
+                        .map(
+                                r -> {
+                                    r.applyCompletionIfDue(LocalDateTime.now());
+                                    return r.getResearchedLevel();
+                                })
+                        .orElse(1);
+        if (level > researched) {
+            throw new CustomException(ErrorCode.UNIT_LEVEL_NOT_RESEARCHED);
+        }
+    }
+
+    private UnitTypeLevelSpec findLevelSpecOrThrow(Long unitTypeId, int level) {
+        return unitTypeLevelSpecRepository
+                .findByUnitType_IdAndLevel(unitTypeId, level)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESEARCH_SPEC_NOT_FOUND));
+    }
+
     private UnitInstance newUnitAtLocation(
             Long userId,
             UnitType unitType,
+            int level,
             LocationRef home,
             int quantity,
             Territory deployed,
@@ -583,6 +627,7 @@ public class MilitaryService {
                         .user(user)
                         .unitType(unitType)
                         .quantity(quantity)
+                        .level(level)
                         .moveCompleteAt(moveCompleteAt);
         if (home.type() == LocationType.TERRITORY) {
             builder.homeTerritory(home.territory());
@@ -596,34 +641,31 @@ public class MilitaryService {
         return instance;
     }
 
-    /** 대기(ready idle) 스택에 병합한다. 없으면 그 위치 귀속으로 새로 만든다. */
+    /** 대기(ready idle) 스택에 병합한다 — (귀속지·레벨)이 같은 스택으로. 없으면 새로 만든다. */
     private void addReadyIdleAtLocation(
-            Long userId, UnitType unitType, LocationRef loc, int quantity) {
-        findReadyIdleAtLocation(userId, unitType.getId(), loc)
+            Long userId, UnitType unitType, int level, LocationRef loc, int quantity) {
+        findReadyIdleAtLocation(userId, unitType.getId(), level, loc)
                 .ifPresentOrElse(
                         e -> e.addQuantity(quantity),
                         () ->
                                 unitInstanceRepository.save(
                                         newUnitAtLocation(
-                                                userId, unitType, loc, quantity, null, null,
+                                                userId, unitType, level, loc, quantity, null, null,
                                                 null)));
     }
 
     private Optional<UnitInstance> findReadyIdleAtLocation(
-            Long userId, Long unitTypeId, LocationRef loc) {
+            Long userId, Long unitTypeId, int level, LocationRef loc) {
         return loc.type() == LocationType.TERRITORY
-                ? unitInstanceRepository
-                        .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                userId, unitTypeId, loc.id())
-                : unitInstanceRepository
-                        .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                userId, unitTypeId, loc.id());
+                ? unitInstanceRepository.findReadyIdleAtTerritory(
+                        userId, unitTypeId, level, loc.id())
+                : unitInstanceRepository.findReadyIdleAtIsland(userId, unitTypeId, level, loc.id());
     }
 
     private UnitInstance findReadyIdleAtLocationOrThrow(
-            Long userId, Long unitTypeId, LocationRef loc, int required) {
+            Long userId, Long unitTypeId, int level, LocationRef loc, int required) {
         UnitInstance idle =
-                findReadyIdleAtLocation(userId, unitTypeId, loc)
+                findReadyIdleAtLocation(userId, unitTypeId, level, loc)
                         .orElseThrow(() -> new CustomException(ErrorCode.INSUFFICIENT_UNITS));
         if (idle.getQuantity() < required) {
             throw new CustomException(ErrorCode.INSUFFICIENT_UNITS);
@@ -631,29 +673,28 @@ public class MilitaryService {
         return idle;
     }
 
-    /** 배치(deployed) 스택에 병합한다 — (귀속지·배치영토)가 같은 스택으로. */
+    /** 배치(deployed) 스택에 병합한다 — (귀속지·레벨·배치건물)이 같은 스택으로. */
     private void addDeployedUnits(
             Long userId,
             UnitType unitType,
+            int level,
             LocationRef source,
             Territory territory,
             BuildingInstance building,
             int quantity) {
         Optional<UnitInstance> existing =
                 source.type() == LocationType.TERRITORY
-                        ? unitInstanceRepository
-                                .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedBuildingId(
-                                        userId, unitType.getId(), source.id(), building.getId())
-                        : unitInstanceRepository
-                                .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedBuildingId(
-                                        userId, unitType.getId(), source.id(), building.getId());
+                        ? unitInstanceRepository.findDeployedFromTerritory(
+                                userId, unitType.getId(), level, source.id(), building.getId())
+                        : unitInstanceRepository.findDeployedFromIsland(
+                                userId, unitType.getId(), level, source.id(), building.getId());
         existing.ifPresentOrElse(
                 e -> e.addQuantity(quantity),
                 () ->
                         unitInstanceRepository.save(
                                 newUnitAtLocation(
-                                        userId, unitType, source, quantity, territory, building,
-                                        null)));
+                                        userId, unitType, level, source, quantity, territory,
+                                        building, null)));
     }
 
     /** 배치 스택들에서 회수해 각자의 귀속지 대기 스택으로 되돌린다. */
@@ -676,11 +717,11 @@ public class MilitaryService {
     private void returnToHomeIdle(UnitInstance deployed, int quantity) {
         Long userId = deployed.getUser().getId();
         UnitType unitType = deployed.getUnitType();
+        int level = deployed.getLevel();
         if (deployed.getHomeTerritory() != null) {
             Territory home = deployed.getHomeTerritory();
             unitInstanceRepository
-                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                            userId, unitType.getId(), home.getId())
+                    .findReadyIdleAtTerritory(userId, unitType.getId(), level, home.getId())
                     .ifPresentOrElse(
                             e -> e.addQuantity(quantity),
                             () ->
@@ -689,13 +730,13 @@ public class MilitaryService {
                                                     .user(deployed.getUser())
                                                     .unitType(unitType)
                                                     .quantity(quantity)
+                                                    .level(level)
                                                     .homeTerritory(home)
                                                     .build()));
         } else {
             HomeIsland home = deployed.getHomeIsland();
             unitInstanceRepository
-                    .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                            userId, unitType.getId(), home.getId())
+                    .findReadyIdleAtIsland(userId, unitType.getId(), level, home.getId())
                     .ifPresentOrElse(
                             e -> e.addQuantity(quantity),
                             () ->
@@ -704,6 +745,7 @@ public class MilitaryService {
                                                     .user(deployed.getUser())
                                                     .unitType(unitType)
                                                     .quantity(quantity)
+                                                    .level(level)
                                                     .homeIsland(home)
                                                     .build()));
         }
@@ -712,15 +754,17 @@ public class MilitaryService {
     private void saveInTransitUnit(
             Long userId,
             UnitType unitType,
+            int level,
             LocationRef dest,
             int quantity,
             LocalDateTime completeAt) {
         unitInstanceRepository.save(
-                newUnitAtLocation(userId, unitType, dest, quantity, null, null, completeAt));
+                newUnitAtLocation(userId, unitType, level, dest, quantity, null, null, completeAt));
     }
 
-    private void validateReadyIdleAvailable(Long userId, Long unitTypeId, int quantity) {
-        if (nullSafe(unitInstanceRepository.sumReadyIdleQuantity(userId, unitTypeId)) < quantity) {
+    private void validateReadyIdleAvailable(Long userId, Long unitTypeId, int level, int quantity) {
+        if (nullSafe(unitInstanceRepository.sumReadyIdleQuantity(userId, unitTypeId, level))
+                < quantity) {
             throw new CustomException(ErrorCode.INSUFFICIENT_UNITS);
         }
     }
@@ -728,7 +772,8 @@ public class MilitaryService {
     // 공격 병력 가용성 검증 — 각 유닛 타입의 대기 풀 수량이 충분한지. 토큰 소모·저장 전에 확인한다.
     private void validateAttackerForces(Long userId, List<DeclareSiegeRequest.ForceEntry> forces) {
         for (DeclareSiegeRequest.ForceEntry entry : forces) {
-            validateReadyIdleAvailable(userId, entry.unitTypeId(), entry.quantity());
+            validateReadyIdleAvailable(
+                    userId, entry.unitTypeId(), levelOf(entry.level()), entry.quantity());
         }
     }
 
@@ -738,12 +783,14 @@ public class MilitaryService {
             SiegeEvent siege, Long userId, List<DeclareSiegeRequest.ForceEntry> forces) {
         for (DeclareSiegeRequest.ForceEntry entry : forces) {
             UnitType unitType = findUnitTypeOrThrow(entry.unitTypeId());
-            deductReadyIdle(userId, entry.unitTypeId(), entry.quantity());
+            int level = levelOf(entry.level());
+            deductReadyIdle(userId, entry.unitTypeId(), level, entry.quantity());
             siegeForceRepository.save(
                     SiegeForce.builder()
                             .siege(siege)
                             .unitType(unitType)
                             .quantity(entry.quantity())
+                            .level(level)
                             .build());
         }
     }
@@ -825,10 +872,11 @@ public class MilitaryService {
         }
     }
 
-    private void deductReadyIdle(Long userId, Long unitTypeId, int quantity) {
+    private void deductReadyIdle(Long userId, Long unitTypeId, int level, int quantity) {
         int remaining = quantity;
         for (UnitInstance stack :
-                unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeId(userId, unitTypeId)) {
+                unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeIdAndLevel(
+                        userId, unitTypeId, level)) {
             if (remaining <= 0) break;
             int take = Math.min(stack.getQuantity(), remaining);
             stack.subtractQuantity(take);
