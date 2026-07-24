@@ -104,7 +104,7 @@ public class ResearchService {
     private GlobalVault chargeVault(Long userId, int cost) {
         GlobalVault vault =
                 globalVaultRepository
-                        .findById(userId)
+                        .findByIdWithLock(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.INSUFFICIENT_GP));
         if (vault.getStoredGp() < cost) {
             throw new CustomException(ErrorCode.INSUFFICIENT_GP);

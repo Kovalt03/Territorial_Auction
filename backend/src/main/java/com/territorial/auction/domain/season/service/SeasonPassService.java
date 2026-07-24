@@ -366,7 +366,7 @@ public class SeasonPassService {
     private void grantGp(Long userId, int amount) {
         if (amount <= 0) return;
         globalVaultRepository
-                .findById(userId)
+                .findByIdWithLock(userId)
                 .orElseGet(
                         () ->
                                 globalVaultRepository.save(

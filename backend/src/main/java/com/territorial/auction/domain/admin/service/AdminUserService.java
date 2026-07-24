@@ -176,7 +176,7 @@ public class AdminUserService {
     private void adjustVaultGp(User user, int gpDelta) {
         GlobalVault vault =
                 globalVaultRepository
-                        .findById(user.getId())
+                        .findByIdWithLock(user.getId())
                         .orElseGet(
                                 () ->
                                         globalVaultRepository.save(
@@ -197,7 +197,7 @@ public class AdminUserService {
                 wallet.getAvailableAp(),
                 wallet.getLockedAp(),
                 globalVaultRepository
-                        .findById(user.getId())
+                        .findByIdWithLock(user.getId())
                         .map(GlobalVault::getStoredGp)
                         .orElse(0),
                 buildingInstanceRepository.sumStoredFoodByOwnerId(user.getId()),

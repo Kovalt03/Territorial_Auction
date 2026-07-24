@@ -96,7 +96,7 @@ public class SeasonEndBatchService {
     private void creditVault(Long userId, RewardSpec spec) {
         if (spec.gp() <= 0) return;
         globalVaultRepository
-                .findById(userId)
+                .findByIdWithLock(userId)
                 .orElseGet(
                         () ->
                                 globalVaultRepository.save(

@@ -851,7 +851,7 @@ public class MilitaryService {
                 structures.stream().mapToInt(s -> MilitaryPolicy.structureCostGp(s.type())).sum();
         GlobalVault vault =
                 globalVaultRepository
-                        .findById(userId)
+                        .findByIdWithLock(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.INSUFFICIENT_GP));
         if (vault.getStoredGp() < totalCost) {
             throw new CustomException(ErrorCode.INSUFFICIENT_GP);

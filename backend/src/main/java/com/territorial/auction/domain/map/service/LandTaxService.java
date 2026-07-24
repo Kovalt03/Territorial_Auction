@@ -232,7 +232,7 @@ public class LandTaxService {
 
     private void chargeTax(Long userId, int taxAmount, List<BuildingInstance> storages) {
         int remaining = taxAmount;
-        GlobalVault vault = globalVaultRepository.findById(userId).orElse(null);
+        GlobalVault vault = globalVaultRepository.findByIdWithLock(userId).orElse(null);
         if (vault != null) {
             int fromVault = Math.min(remaining, vault.getStoredGp());
             vault.withdrawGp(fromVault);
