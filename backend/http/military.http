@@ -108,3 +108,11 @@ Authorization: Bearer {{accessToken}}
 ### 에러: 존재하지 않는 공성전 결과 조회 (404 SIEGE_NOT_FOUND)
 # GET {{baseUrl}}/api/v1/military/siege/99999/result
 # Authorization: Bearer {{accessToken}}
+
+### 연구 현황 조회 (연구소 레벨 + 유닛별 연구 상태)
+GET {{baseUrl}}/api/v1/military/research
+Authorization: Bearer {{accessToken}}
+
+### 유닛 연구 시작 (다음 레벨 — 금고 GP + 시간)
+POST {{baseUrl}}/api/v1/military/research/2
+Authorization: Bearer {{accessToken}}

@@ -124,6 +124,13 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " AND b.isDestroyed = false")
     Optional<Integer> findMaxBarracksLevelByIslandId(@Param("islandId") Long islandId);
 
+    // 연구는 계정 단위 — 유저 소유 모든 위치(영토·섬)의 RESEARCH_LAB 중 최고 레벨. 이것이 연구 가능 상한.
+    @Query(
+            "SELECT MAX(b.level) FROM BuildingInstance b"
+                    + " WHERE b.buildingType.name = 'RESEARCH_LAB' AND b.isDestroyed = false"
+                    + " AND (b.island.user.id = :userId OR b.territory.owner.id = :userId)")
+    Optional<Integer> findMaxResearchLabLevelByUserId(@Param("userId") Long userId);
+
     @Query(
             "SELECT b.level FROM BuildingInstance b"
                     + " WHERE b.territory.id = :territoryId AND b.buildingType.name = 'CASTLE'"
