@@ -98,7 +98,7 @@ class GlobalVaultServiceTest {
         @Test
         @DisplayName("최초 조회 (lastTransferAt=null) → isTransferAvailable=true")
         void noLastTransfer_isAvailable() {
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
 
             GlobalVaultResponse response = globalVaultService.getVault(1L);
 
@@ -114,7 +114,7 @@ class GlobalVaultServiceTest {
         void cooldownActive_isNotAvailable() {
             LocalDateTime recent = LocalDateTime.now().minusMinutes(5);
             ReflectionTestUtils.setField(vault, "lastTransferAt", recent);
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
 
             GlobalVaultResponse response = globalVaultService.getVault(1L);
 
@@ -127,7 +127,7 @@ class GlobalVaultServiceTest {
         void cooldownExpired_isAvailable() {
             LocalDateTime past = LocalDateTime.now().minusMinutes(15);
             ReflectionTestUtils.setField(vault, "lastTransferAt", past);
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
 
             GlobalVaultResponse response = globalVaultService.getVault(1L);
 
@@ -138,7 +138,7 @@ class GlobalVaultServiceTest {
         @DisplayName("금고 없음 + 유저 존재 → 기본 금고 신규 생성하여 반환")
         void vaultMissing_createsDefault() {
             GlobalVault created = GlobalVault.builder().user(user).build();
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.empty());
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.empty());
             given(userRepository.findById(1L)).willReturn(Optional.of(user));
             given(globalVaultRepository.save(org.mockito.ArgumentMatchers.any(GlobalVault.class)))
                     .willReturn(created);
@@ -153,7 +153,7 @@ class GlobalVaultServiceTest {
         @Test
         @DisplayName("금고·유저 모두 없음 → USER_NOT_FOUND")
         void vaultAndUserMissing() {
-            given(globalVaultRepository.findById(99L)).willReturn(Optional.empty());
+            given(globalVaultRepository.findByIdWithLock(99L)).willReturn(Optional.empty());
             given(userRepository.findById(99L)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> globalVaultService.getVault(99L))
@@ -173,7 +173,7 @@ class GlobalVaultServiceTest {
         @DisplayName("저장소→금고 이전 성공 — 저장소 GP 감소, 금고 GP 증가")
         void toVault_success() {
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
                     .willReturn(List.of(storage));
 
@@ -192,7 +192,7 @@ class GlobalVaultServiceTest {
         @DisplayName("저장 공간 GP 부족 → INSUFFICIENT_GP")
         void toVault_insufficientStorageGp() {
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
                     .willReturn(List.of(storage));
 
@@ -207,7 +207,7 @@ class GlobalVaultServiceTest {
         @DisplayName("저장 건물 없음 → STORAGE_NOT_FOUND")
         void toVault_noStorage() {
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
                     .willReturn(List.of());
 
@@ -223,7 +223,7 @@ class GlobalVaultServiceTest {
         void toVault_capacityExceeded() {
             ReflectionTestUtils.setField(vault, "storedGp", 49000);
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
                     .willReturn(List.of(storage));
 
@@ -245,7 +245,7 @@ class GlobalVaultServiceTest {
             // 저장소 용량 10,000 에 이미 3,000 → 여유 7,000
             ReflectionTestUtils.setField(storage, "storedGp", 3000);
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
                     .willReturn(List.of(storage));
 
@@ -262,7 +262,7 @@ class GlobalVaultServiceTest {
         @DisplayName("금고 GP 부족 → INSUFFICIENT_GP")
         void fromVault_insufficientVaultGp() {
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
                     .willReturn(List.of(storage));
 
@@ -279,7 +279,7 @@ class GlobalVaultServiceTest {
             // 저장소 이미 만재(10,000) → 받을 여유 없음
             ReflectionTestUtils.setField(storage, "storedGp", 10000);
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
                     .willReturn(List.of(storage));
 
@@ -336,7 +336,7 @@ class GlobalVaultServiceTest {
             ReflectionTestUtils.setField(vault, "lastTransferAt", recent);
 
             given(territoryRepository.findById(42L)).willReturn(Optional.of(territory));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
 
             VaultTransferRequest request = new VaultTransferRequest("TO_VAULT", 42L, 1000L);
             assertThatThrownBy(() -> globalVaultService.transfer(1L, request))
@@ -358,7 +358,7 @@ class GlobalVaultServiceTest {
             ReflectionTestUtils.setField(storage, "storedFood", 3000);
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(42L))
                     .willReturn(List.of(storage));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
 
             globalVaultService.handleTerritoryLost(new TerritoryLostEvent(42L, 1L));
 

@@ -427,7 +427,9 @@ class LandTaxServiceTest {
             // taxableCount = 4-3 = 1 → taxAmount = 50
             given(territoryRepository.countByOwnerId(1L)).willReturn(4L);
             GlobalVault vault = vaultWith(100);
+            // 잔액 조회는 findById(읽기), 차감은 findByIdWithLock(쓰기 — 갱신 유실 방지 락)
             given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
             given(territoryRepository.findAllOccupiedByOwnerId(eq(1L), any()))
                     .willReturn(new ArrayList<>());
 

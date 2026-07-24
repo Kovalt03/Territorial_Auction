@@ -90,7 +90,7 @@ class ResearchServiceTest {
                 .willReturn(Optional.of(spec(2)));
         given(buildingInstanceRepository.findMaxResearchLabLevelByUserId(1L))
                 .willReturn(Optional.of(1)); // 연구소 Lv1 → L2 연구 가능
-        given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(5000)));
+        given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(5000)));
 
         var res = researchService.startResearch(1L, 2L);
 

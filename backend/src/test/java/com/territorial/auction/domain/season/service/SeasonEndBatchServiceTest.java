@@ -106,7 +106,7 @@ class SeasonEndBatchServiceTest {
                     .willReturn(Optional.of(season));
             given(userTrophyRepository.findAllBySeasonId(1L)).willReturn(List.of(trophy));
             given(seasonRewardRepository.existsBySeasonIdAndUserId(1L, 10L)).willReturn(false);
-            given(globalVaultRepository.findById(10L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(10L)).willReturn(Optional.of(vault));
             given(attackTokenRepository.findByUserIdWithLock(10L))
                     .willReturn(Optional.of(attackToken));
 
@@ -141,7 +141,7 @@ class SeasonEndBatchServiceTest {
                     .willReturn(Optional.of(season));
             given(userTrophyRepository.findAllBySeasonId(1L)).willReturn(List.of(trophy));
             given(seasonRewardRepository.existsBySeasonIdAndUserId(1L, 10L)).willReturn(false);
-            given(globalVaultRepository.findById(10L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(10L)).willReturn(Optional.of(vault));
             given(attackTokenRepository.findByUserIdWithLock(10L))
                     .willReturn(Optional.of(attackToken));
 
@@ -158,7 +158,7 @@ class SeasonEndBatchServiceTest {
                     .willReturn(Optional.of(season));
             given(userTrophyRepository.findAllBySeasonId(1L)).willReturn(List.of(trophy));
             given(seasonRewardRepository.existsBySeasonIdAndUserId(1L, 10L)).willReturn(false);
-            given(globalVaultRepository.findById(10L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(10L)).willReturn(Optional.of(vault));
             given(attackTokenRepository.findByUserIdWithLock(10L))
                     .willReturn(Optional.of(attackToken));
 
@@ -180,7 +180,7 @@ class SeasonEndBatchServiceTest {
                     .willReturn(Optional.of(season));
             given(userTrophyRepository.findAllBySeasonId(1L)).willReturn(List.of(trophy));
             given(seasonRewardRepository.existsBySeasonIdAndUserId(1L, 10L)).willReturn(false);
-            given(globalVaultRepository.findById(10L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(10L)).willReturn(Optional.of(vault));
 
             seasonEndBatchService.runIfSeasonEnded();
 
@@ -199,7 +199,7 @@ class SeasonEndBatchServiceTest {
                     .willReturn(Optional.of(season));
             given(userTrophyRepository.findAllBySeasonId(1L)).willReturn(List.of(trophy));
             given(seasonRewardRepository.existsBySeasonIdAndUserId(1L, 10L)).willReturn(false);
-            given(globalVaultRepository.findById(10L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(10L)).willReturn(Optional.of(vault));
             given(attackTokenRepository.findByUserIdWithLock(10L))
                     .willReturn(Optional.of(attackToken));
 
@@ -219,7 +219,7 @@ class SeasonEndBatchServiceTest {
                     .willReturn(Optional.of(season));
             given(userTrophyRepository.findAllBySeasonId(1L)).willReturn(List.of(trophy));
             given(seasonRewardRepository.existsBySeasonIdAndUserId(1L, 10L)).willReturn(false);
-            given(globalVaultRepository.findById(10L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(10L)).willReturn(Optional.of(vault));
 
             seasonEndBatchService.runIfSeasonEnded();
 
@@ -236,7 +236,7 @@ class SeasonEndBatchServiceTest {
                     .willReturn(Optional.of(season));
             given(userTrophyRepository.findAllBySeasonId(1L)).willReturn(List.of(trophy));
             given(seasonRewardRepository.existsBySeasonIdAndUserId(1L, 10L)).willReturn(false);
-            given(globalVaultRepository.findById(10L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(10L)).willReturn(Optional.of(vault));
             given(attackTokenRepository.findByUserIdWithLock(10L))
                     .willReturn(Optional.of(attackToken));
 

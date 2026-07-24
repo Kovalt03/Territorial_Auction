@@ -116,7 +116,7 @@ class AdminUserServiceTest {
             User u = user(1L, UserStatus.ACTIVE, UserRole.USER);
             given(userRepository.findById(1L)).willReturn(Optional.of(u));
             given(walletRepository.findById(1L)).willReturn(Optional.of(wallet(u, 500, 0)));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(u, 30)));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(u, 30)));
             given(territoryRepository.countByOwnerId(1L)).willReturn(3L);
 
             AdminUserDetailResponse res = adminUserService.getUser(1L);
@@ -208,7 +208,7 @@ class AdminUserServiceTest {
             Wallet w = wallet(u, 1000, 0);
             given(userRepository.findById(1L)).willReturn(Optional.of(u));
             given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(w));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(u, 50)));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(u, 50)));
             given(territoryRepository.countByOwnerId(1L)).willReturn(0L);
 
             AdminUserDetailResponse res =
@@ -270,8 +270,8 @@ class AdminUserServiceTest {
                     .willReturn(Optional.of(wallet(u2, 1000, 0)));
             given(userRepository.findById(1L)).willReturn(Optional.of(u1));
             given(userRepository.findById(2L)).willReturn(Optional.of(u2));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(u1, 0)));
-            given(globalVaultRepository.findById(2L)).willReturn(Optional.of(vault(u2, 0)));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(u1, 0)));
+            given(globalVaultRepository.findByIdWithLock(2L)).willReturn(Optional.of(vault(u2, 0)));
 
             AdminBulkResultResponse res =
                     adminUserService.bulkAdjustWallet(
