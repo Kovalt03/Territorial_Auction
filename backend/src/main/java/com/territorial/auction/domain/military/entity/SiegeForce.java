@@ -25,11 +25,16 @@ public class SiegeForce {
     @Column(nullable = false)
     private Integer quantity;
 
+    /** 커밋된 병력의 유닛 레벨 — 판정 시 이 레벨의 스탯으로 계산한다. */
+    @Column(nullable = false)
+    private Integer level = 1;
+
     @Builder
-    public SiegeForce(SiegeEvent siege, UnitType unitType, Integer quantity) {
+    public SiegeForce(SiegeEvent siege, UnitType unitType, Integer quantity, Integer level) {
         this.siege = siege;
         this.unitType = unitType;
         this.quantity = quantity;
+        this.level = level != null ? level : 1;
     }
 
     // 전투 손실 반영 — 생존 수량으로 줄인다.
