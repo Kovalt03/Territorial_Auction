@@ -95,3 +95,15 @@ buildingTypes:
     unitCapacityPerLevel: 5
     gpProductionRate: ~
     buildTimeSeconds: 120
+
+  - name: RESEARCH_LAB
+    width: 2
+    height: 2
+    maxHp: 120
+    baseCostGp: 3500
+    zoneRestriction: ~
+    defensePower: ~
+    foodProductionRate: ~
+    unitCapacityPerLevel: ~
+    gpProductionRate: ~
+    buildTimeSeconds: 240
