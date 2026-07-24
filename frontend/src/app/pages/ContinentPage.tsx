@@ -118,6 +118,7 @@ export function ContinentPage() {
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
   const [bidInput, setBidInput] = useState('');
   const [bidSuccess, setBidSuccess] = useState(false);
+  const [bidError, setBidError] = useState<string | null>(null);
   const [selectedAuctionId, setSelectedAuctionId] = useState<number | null>(null);
   const [auctionCurrentPrice, setAuctionCurrentPrice] = useState(0);
   const [auctionEndAt, setAuctionEndAt] = useState<string | null>(null);
@@ -171,7 +172,7 @@ export function ContinentPage() {
   }, [getFitView, cols]);
 
   useEffect(() => {
-    setSelected(null); setBidInput(''); setBidSuccess(false);
+    setSelected(null); setBidInput(''); setBidSuccess(false); setBidError(null);
     setSelectedAuctionId(null); setAuctionCurrentPrice(0);
     setAuctionEndAt(null); setTimeLeft(''); setBidHistory([]);
     setIsAuctionLoading(false); setAuctionError(null);
@@ -267,6 +268,7 @@ export function ContinentPage() {
       return;
     }
     setIsBidding(true);
+    setBidError(null);
     try {
       const result = await placeBidApi(selectedAuctionId, amt);
       const wallet = await fetchMyWallet();
@@ -278,8 +280,15 @@ export function ContinentPage() {
       setAuctionEndAt(result.endAt);
       setBidInput(String(Math.max(Math.ceil(result.newPrice * 1.05), result.newPrice + 10)));
       fetchAuctionBids(selectedAuctionId).then(res => setBidHistory(res.bids)).catch((e) => console.warn('[ContinentPage] bid history refresh after bid failed', e));
-    } catch {
+    } catch (e) {
+      // 입찰 실패 사유(금액 부족·AP 부족·이미 최고 입찰자·경매 종료 등)를 반드시 노출한다.
       setShowConfirm(false);
+      setBidError(
+        e instanceof ApiError && e.status >= 400 && e.status < 500
+          ? e.message
+          : '입찰에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      );
+      console.warn('[ContinentPage] bid failed', e);
     } finally {
       setIsBidding(false);
     }
@@ -451,6 +460,7 @@ export function ContinentPage() {
               bidHistory={bidHistory}
               bidInput={bidInput}
               bidSuccess={bidSuccess}
+              bidError={bidError}
               isBidding={isBidding}
               isHighestBidder={isHighestBidder}
               onChangeBidInput={setBidInput}

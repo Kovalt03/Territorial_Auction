@@ -36,6 +36,7 @@ interface Props {
 
   bidInput: string;
   bidSuccess: boolean;
+  bidError: string | null;
   isBidding: boolean;
   isHighestBidder: boolean;
   onChangeBidInput: (v: string) => void;
@@ -51,7 +52,7 @@ interface Props {
 export function ContinentSelectedPanel({
   selected, continentName, continentColor, username, ap,
   auctionCurrentPrice, selectedAuctionId, isAuctionLoading, auctionError, timeLeft, bidHistory,
-  bidInput, bidSuccess, isBidding, isHighestBidder,
+  bidInput, bidSuccess, bidError, isBidding, isHighestBidder,
   onChangeBidInput, onSubmitBid,
   wishlistIds, onToggleWishlist, onDeselect,
   fmtBidTime,
@@ -190,6 +191,9 @@ export function ContinentSelectedPanel({
                 </div>
               ) : (
                 <>
+                  {bidError && (
+                    <p className="text-danger text-[10px] mb-2">⚠ {bidError}</p>
+                  )}
                   <div className="flex gap-1 mb-2">
                     {QUICK_ADD.map(inc => (
                       <button

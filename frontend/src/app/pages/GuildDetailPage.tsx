@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ApiError } from '../api/client';
 import { useParams, useNavigate } from 'react-router';
 
 import { GNB } from '../components/GNB';
@@ -77,8 +78,12 @@ export function GuildDetailPage() {
       }
       await load();
       refreshMyGuild();
-    } catch {
-      setActionError('작업에 실패했습니다. 다시 시도해주세요.');
+    } catch (e) {
+      setActionError(
+        e instanceof ApiError && e.status >= 400 && e.status < 500
+          ? e.message
+          : '작업에 실패했습니다. 다시 시도해주세요.',
+      );
     } finally {
       setIsActing(false);
     }
