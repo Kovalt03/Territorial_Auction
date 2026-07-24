@@ -9,5 +9,7 @@ public record DeployUnitRequest(
         @NotNull Long buildingId,
         @NotNull Long unitTypeId,
         @NotNull @Min(1) Integer quantity,
+        /** 주둔시킬 유닛 레벨. null이면 1. */
+        @Min(1) Integer level,
         @NotNull Long sourceLocationId,
         @NotNull LocationType sourceLocationType) {}

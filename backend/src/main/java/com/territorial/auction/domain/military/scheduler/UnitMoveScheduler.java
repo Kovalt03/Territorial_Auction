@@ -37,12 +37,16 @@ public class UnitMoveScheduler {
         Long typeId = transit.getUnitType().getId();
         Optional<UnitInstance> readyIdle =
                 transit.getHomeTerritory() != null
-                        ? unitInstanceRepository
-                                .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                        userId, typeId, transit.getHomeTerritory().getId())
-                        : unitInstanceRepository
-                                .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                        userId, typeId, transit.getHomeIsland().getId());
+                        ? unitInstanceRepository.findReadyIdleAtTerritory(
+                                userId,
+                                typeId,
+                                transit.getLevel(),
+                                transit.getHomeTerritory().getId())
+                        : unitInstanceRepository.findReadyIdleAtIsland(
+                                userId,
+                                typeId,
+                                transit.getLevel(),
+                                transit.getHomeIsland().getId());
         if (readyIdle.isPresent()) {
             readyIdle.get().addQuantity(transit.getQuantity());
             unitInstanceRepository.delete(transit);
