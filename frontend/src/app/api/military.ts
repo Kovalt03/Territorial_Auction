@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { AttackTokens, DeployUnitResponse, GarrisonUnit, ProduceUnitResponse, RecallUnitResponse, UnitsResponse } from '../types/military';
+import type { AttackTokens, DeployUnitResponse, GarrisonUnit, ProduceUnitResponse, RecallUnitResponse, ResearchStatus, StartResearchResponse, UnitsResponse } from '../types/military';
 
 export function fetchAttackTokens(): Promise<AttackTokens> {
   return apiClient.get<AttackTokens>('/military/attack-tokens');
@@ -14,10 +14,12 @@ export function produceUnit(
   quantity: number,
   locationId: number,
   locationType: 'ISLAND' | 'TERRITORY',
+  level = 1,
 ): Promise<ProduceUnitResponse> {
   return apiClient.post<ProduceUnitResponse>('/military/units', {
     unitTypeId,
     quantity,
+    level,
     locationId,
     locationType,
   });
@@ -51,4 +53,14 @@ export function recallUnit(
     unitTypeId,
     quantity,
   });
+}
+
+// 계정 연구 현황(연구소 레벨 + 유닛별 해금 레벨)
+export function fetchResearch(): Promise<ResearchStatus> {
+  return apiClient.get<ResearchStatus>('/military/research');
+}
+
+// 다음 레벨 연구 시작 — 금고 GP 차감 + 시간 소요
+export function startResearch(unitTypeId: number): Promise<StartResearchResponse> {
+  return apiClient.post<StartResearchResponse>(`/military/research/${unitTypeId}`, {});
 }
