@@ -470,6 +470,7 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `user_id` | `BIGINT` | FK | |
 | `unit_type_id` | `BIGINT` | FK | |
 | `quantity` | `INTEGER` | NOT NULL | |
+| `level` | `INTEGER` | NOT NULL, DEFAULT 1 | 유닛 레벨. 스택 식별자에 포함 (유저×유닛종류×레벨×귀속위치×배치) |
 | `home_territory_id` | `BIGINT` | FK, NULL 허용 | 귀속 위치가 영토일 때 (섬과 배타) |
 | `home_island_id` | `BIGINT` | FK, NULL 허용 | 귀속 위치가 섬일 때 (영토와 배타) |
 | `deployed_territory_id` | `BIGINT` | FK, NULL | 방어 배치된 영토. NULL이면 대기 중 |
@@ -493,7 +494,7 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `attacker_id` | `BIGINT` | FK | |
 | `defender_id` | `BIGINT` | FK | |
 | `target_territory_id` | `BIGINT` | FK | |
-| `target_building_id` | `BIGINT` | FK | |
+| `target_building_id` | `BIGINT` | FK, NULL 허용 | Zone 공략형 공성에서는 NULL |
 | `attack_zone` | `INTEGER` | NOT NULL | 1/2/3 |
 | `status` | `VARCHAR(10)` | NOT NULL | PENDING / RESOLVED |
 | `siege_start_at` | `TIMESTAMPTZ` | NOT NULL | |
@@ -510,6 +511,61 @@ INDEX: `(auction_id, bid_at ASC)` — 그래프 조회 최적화
 | `defender_units_lost` | `INTEGER` | | |
 | `looted_gp` | `INTEGER` | DEFAULT 0 | 약탈량 |
 | `result_type` | `VARCHAR(15)` | | LOOT / DEBUFF / AUCTION |
+
+#### siege_forces
+
+공성 선언 시 투입을 확정한 병력 스냅샷. 선언 시점의 유닛을 잠그고, 정산 후 생존분만 복귀한다.
+
+| column | 자료형 | 조건 | 설명 |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | PK | |
+| `siege_id` | `BIGINT` | NOT NULL, FK → siege_events.id | |
+| `unit_type_id` | `BIGINT` | NOT NULL, FK | |
+| `quantity` | `INTEGER` | NOT NULL | 투입 수량 |
+| `level` | `INTEGER` | NOT NULL, DEFAULT 1 | 투입 유닛 레벨 (레벨별 스펙으로 전력 계산) |
+
+#### siege_structures
+
+공성 선언 시 함께 건설하는 공성 건물. 해당 공성에만 유효하며 정산 후 삭제된다.
+
+| column | 자료형 | 조건 | 설명 |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | PK | |
+| `siege_id` | `BIGINT` | NOT NULL, FK → siege_events.id | |
+| `type` | `VARCHAR(10)` | NOT NULL | STAGING(주둔지) / TOWER(공성탑) / SUPPLY(보급소) |
+| `coord_x` | `INTEGER` | NOT NULL | 대상 영토 그리드 좌표 |
+| `coord_y` | `INTEGER` | NOT NULL | |
+
+> 규칙: STAGING 1개 필수, 나머지는 STAGING 기준 체비셰프 거리 1 인접, 좌표 중복 불가, 총 8개 이하. 투입 병력은 STAGING 수용량(레벨당 10)을 넘을 수 없다. 건설비는 금고(GlobalVault) GP에서 차감.
+
+#### unit_type_level_specs
+
+유닛 레벨별 스펙. 관리자 페이지에서 편집한다.
+
+| column | 자료형 | 조건 | 설명 |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | PK | |
+| `unit_type_id` | `BIGINT` | NOT NULL, FK | UNIQUE(`unit_type_id`, `level`) |
+| `level` | `INTEGER` | NOT NULL | 도달 레벨 (2 이상) |
+| `attack_power` | `INTEGER` | NOT NULL | |
+| `defense_power` | `INTEGER` | NOT NULL | |
+| `train_cost_food` | `INTEGER` | NOT NULL | 해당 레벨 생산 시 식량 소모 |
+| `required_barracks_level` | `INTEGER` | NOT NULL | 생산에 필요한 병영 레벨 |
+
+#### unit_research
+
+계정 단위 유닛 연구 진행 상태. 연구소(RESEARCH_LAB) 건물이 있어야 진행 가능.
+
+| column | 자료형 | 조건 | 설명 |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | PK | |
+| `user_id` | `BIGINT` | NOT NULL, FK | UNIQUE(`user_id`, `unit_type_id`) |
+| `unit_type_id` | `BIGINT` | NOT NULL, FK | |
+| `researched_level` | `INTEGER` | NOT NULL, DEFAULT 1 | 현재 해금된 최고 레벨 |
+| `pending_level` | `INTEGER` | NULL 허용 | 연구 진행 중인 목표 레벨 |
+| `research_complete_at` | `TIMESTAMPTZ` | NULL 허용 | 완료 예정 시각. 도래 시 조회 시점에 지연 반영 |
+
+> 비용 `2000 × 목표레벨` GP(금고 차감), 소요 `30분 × 목표레벨`, 필요 연구소 레벨 = `목표레벨 − 1`. 생산 시 `researched_level` 이하의 레벨만 선택 가능.
 
 ---
 
