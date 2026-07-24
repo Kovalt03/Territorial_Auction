@@ -17,3 +17,8 @@ INSERT INTO building_types
      food_production_rate, unit_capacity_per_level, gp_production_rate, build_time_seconds)
 SELECT 'RESEARCH_LAB', 2, 2, 120, 3500, NULL, NULL, NULL, NULL, NULL, 240
 WHERE NOT EXISTS (SELECT 1 FROM building_types WHERE name = 'RESEARCH_LAB');
+
+-- 유닛 레벨 생산(A안): 유닛 인스턴스·공성 커밋 병력이 레벨을 보유한다.
+-- 스택은 (유저·타입·레벨·귀속지·배치) 단위로 분리 병합된다.
+ALTER TABLE unit_instances ADD COLUMN IF NOT EXISTS level INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE siege_forces   ADD COLUMN IF NOT EXISTS level INTEGER NOT NULL DEFAULT 1;
