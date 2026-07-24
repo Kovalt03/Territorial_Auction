@@ -483,7 +483,7 @@ class SeasonPassServiceTest {
                     .willReturn(false);
             given(user.getId()).willReturn(1L);
             given(userRepository.findById(1L)).willReturn(Optional.of(user));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
 
             seasonPassService.claimReward(1L, 1L);
 

@@ -126,9 +126,13 @@
 | 객체명 | 타입 | 설명 | 핵심 속성 |
 |---|---|---|---|
 | **UnitType** | Entity | 유닛 종류 정의 | `id`, `name`, `attack_power`, `defense_power`, `cost_gp`, `food_cost`(1회 소모), `level`(필요 병영 레벨) |
-| **UnitInstance** | Entity | 유저 보유 유닛 | `id`, `user_id`, `unit_type_id`, `quantity`, `deployed_territory_id` |
+| **UnitInstance** | Entity | 유저 보유 유닛 스택 | `id`, `user_id`, `unit_type_id`, `level`, `quantity`, `home_territory_id`/`home_island_id`, `deployed_territory_id` |
+| **UnitTypeLevelSpec** | Entity | 유닛 레벨별 스펙 (관리자 편집) | `unit_type_id`, `level`, `attack_power`, `defense_power`, `train_cost_food`, `required_barracks_level` |
+| **UnitResearch** | Entity | 계정 단위 유닛 연구 진행 | `user_id`, `unit_type_id`, `researched_level`, `pending_level`, `research_complete_at` |
 | **AttackToken** | Entity | 공격권 보유 현황 | `user_id`(PK), `normal_count`, `precision_count` |
 | **SiegeEvent** | Entity | 공성 이벤트 | `id`, `attacker_id`, `defender_id`, `target_territory_id`, `attack_zone`, `status`, `resolve_at` |
+| **SiegeForce** | Entity | 공성 투입 병력 스냅샷 | `siege_id`, `unit_type_id`, `level`, `quantity` |
+| **SiegeStructure** | Entity | 공성 전용 건물 (정산 후 삭제) | `siege_id`, `type`(STAGING/TOWER/SUPPLY), `coord_x`, `coord_y` |
 | **SiegeResult** | Entity | 전투 결과 로그 | `id`, `siege_id`, `winner`, `attacker_units_lost`, `defender_units_lost`, `looted_amount`, `result_type` |
 
 ---
@@ -172,8 +176,9 @@
 
 ### 3.5 전투 계산
 
-- ATK = Σ(파견 유닛 `attack_power` × 수량)
-- DEF = Σ(방어 유닛 `defense_power` × 수량) + Σ(해당 Zone 방어 건물 `defense_power`)
+- ATK = Σ(파견 유닛 `attack_power` × 수량) — 레벨 2 이상은 `unit_type_level_specs`의 레벨별 스펙 사용
+- DEF = Σ(방어 유닛 `defense_power` × 수량) + Σ(해당 Zone 방어 건물 `defense_power`) — 방어 유닛도 레벨별 스펙 적용
+- 공성 건물: TOWER는 ATK 보너스, SUPPLY는 공격 쿨다운 단축. STAGING 수용량이 투입 병력 상한
 - 성공 판정: ATK > DEF
 - Zone 클리어: `Σ(Zone 방어 건물 hp) / Σ(Zone 방어 건물 max_hp) < (1 − ZONE_CLEAR_THRESHOLD)`
 
@@ -190,6 +195,14 @@
 - 공격 실패: 공격자 `ATTACKER_FAIL_LOSS_RATE(50%)`
 
 **스케줄러**: `SiegeScheduler` 1분 주기 polling. `resolveAt <= now`인 PENDING 이벤트를 일괄 처리한다.
+
+### 3.6 유닛 연구 (계정 단위)
+
+1. 연구소(`RESEARCH_LAB`) 건물 레벨이 연구 상한을 결정 — 목표 레벨 = 현재 + 1, 필요 연구소 레벨 = 목표 − 1
+2. 비용 `2000 × 목표레벨` GP를 **금고(GlobalVault)**에서 차감, 소요 `30분 × 목표레벨`
+3. 완료 처리는 스케줄러가 아닌 **조회 시점 지연 반영**(`applyCompletionIfDue`) — 배치 부하 없이 정합성 유지
+4. 연구 상태는 계정 단위(`user_id` × `unit_type_id`)라 모든 위치의 생산에 공통 적용
+5. 생산 시 해금된 레벨 이하를 선택하며, 레벨은 유닛 스택 식별자에 포함된다
 
 ### 3.5 토지세 미납 처리
 

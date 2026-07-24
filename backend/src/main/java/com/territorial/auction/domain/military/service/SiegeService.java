@@ -377,7 +377,7 @@ public class SiegeService {
     private void creditAttackerVault(User attacker, int amount) {
         GlobalVault vault =
                 globalVaultRepository
-                        .findById(attacker.getId())
+                        .findByIdWithLock(attacker.getId())
                         .orElseGet(
                                 () ->
                                         globalVaultRepository.save(

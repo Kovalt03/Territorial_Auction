@@ -76,8 +76,12 @@ export function GuildListPage() {
     try {
       await joinGuild(guildId);
       setPendingId(guildId);
-    } catch {
-      setActionError('가입 신청에 실패했습니다.');
+    } catch (e) {
+      setActionError(
+        e instanceof ApiError && e.status >= 400 && e.status < 500
+          ? e.message
+          : '가입 신청에 실패했습니다.',
+      );
     } finally {
       setJoiningId(null);
     }

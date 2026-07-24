@@ -212,7 +212,7 @@ class SiegeServiceTest {
                     .willReturn(List.of(storage));
 
             GlobalVault vault = mock(GlobalVault.class);
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
 
             // when
             siegeService.resolveOneSiege(event);
@@ -415,7 +415,7 @@ class SiegeServiceTest {
                     .willReturn(defenderUnits);
 
             GlobalVault vault = mock(GlobalVault.class);
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
 
             // when
             siegeService.resolveOneSiege(event);

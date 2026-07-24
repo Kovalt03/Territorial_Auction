@@ -143,7 +143,7 @@ public class GlobalVaultService {
     }
 
     private GlobalVault findOrCreateVault(Long userId) {
-        return globalVaultRepository.findById(userId).orElseGet(() -> createVault(userId));
+        return globalVaultRepository.findByIdWithLock(userId).orElseGet(() -> createVault(userId));
     }
 
     private GlobalVault createVault(Long userId) {

@@ -44,13 +44,26 @@
 ```json
 {
   "unitTypeId": 1,
-  "quantity": 10
+  "quantity": 10,
+  "level": 2,
+  "locationId": 10,
+  "locationType": "TERRITORY"
 }
 ```
 
+| field | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `unitTypeId` | Long | Y | |
+| `quantity` | Integer | Y | |
+| `level` | Integer | N | 생산할 유닛 레벨. 생략 시 1. 연구로 해금된 레벨 이하만 가능 |
+| `locationId` | Long | Y | 생산 위치(영토 또는 섬) ID |
+| `locationType` | Enum | Y | `TERRITORY` / `ISLAND` |
+
 ### 비즈니스 규칙
-- 병영(Barracks)이 있는 영토에서만 생산 가능
-- GP `unit_types.cost_gp × quantity` 차감
+- 해당 위치에 병영(BARRACKS)이 있어야 하며, 레벨별 `required_barracks_level` 이상이어야 한다
+- GP `unit_types.cost_gp × quantity` 를 **해당 위치 저장소**에서 차감 (금고 아님)
+- 식량은 레벨별 `train_cost_food × quantity` 를 해당 위치 저장소에서 차감
+- 생산 결과는 (유저 × 유닛종류 × 레벨 × 귀속위치 × 배치) 스택으로 합산
 
 ### Response (200 OK)
 
@@ -199,10 +212,16 @@
 ```json
 {
   "targetTerritoryId": 10,
-  "targetBuildingId": 5,
+  "targetBuildingId": null,
   "attackZone": 3,
-  "unitTypeId": 1,
-  "unitQuantity": 30
+  "forces": [
+    { "unitTypeId": 1, "quantity": 30, "level": 1 },
+    { "unitTypeId": 4, "quantity": 2, "level": 2 }
+  ],
+  "structures": [
+    { "type": "STAGING", "coordX": 12, "coordY": 8 },
+    { "type": "TOWER", "coordX": 13, "coordY": 8 }
+  ]
 }
 ```
 
@@ -211,12 +230,16 @@
 | `targetTerritoryId` | Long | Y | 공격 대상 영토 |
 | `targetBuildingId` | Long | N | 정밀 공격권 사용 시 목표 건물 |
 | `attackZone` | Integer | Y | 1/2/3 |
-| `unitTypeId` | Long | Y | 파견 유닛 종류 |
-| `unitQuantity` | Integer | Y | 파견 유닛 수 |
+| `forces` | Array | Y | 투입 병력. `unitTypeId`, `quantity`, `level`(생략 시 1) |
+| `structures` | Array | Y | 공성 건물. `type`(STAGING/TOWER/SUPPLY), `coordX`, `coordY` |
 
 ### 비즈니스 규칙
 - 공격권 1개 자동 소모
 - Zone 순서 제약: 이전 Zone 미클리어 시 다음 Zone 공격 불가
+- **공성 건물**: STAGING 1개 필수, 나머지는 STAGING 기준 체비셰프 거리 1 인접, 좌표 중복 불가, 총 8개 이하. 건설비는 금고 GP에서 차감
+- **투입 상한**: 총 병력 ≤ STAGING 레벨당 수용량(10)
+- TOWER는 공격 전력 보너스, SUPPLY는 공격 쿨다운 단축. 정산 후 공성 건물은 삭제
+- 투입 병력은 선언 시점에 `siege_forces`로 커밋되어 잠기고, 정산 후 생존분만 복귀
 - `SIEGE_COUNTDOWN_MINUTES`(30분) 후 자동 전투 계산
 - 방어자에게 즉시 WebSocket 알림 발송
 
@@ -460,6 +483,147 @@
 
 ---
 
+## 영토 정찰
+
+**POST** `/api/v1/military/scout/{territoryId}`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+정찰로 얻는 정보는 **방어 총 병력 수뿐**이다. 유닛 종류·Zone 분포·건물 배치는 공개하지 않는다(정보 비대칭).
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "territoryId": 10,
+    "defenderTotalUnits": 42
+  }
+}
+```
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 404 | `TERRITORY_NOT_FOUND` | 영토 없음 |
+| 400 | `SCOUT_INVALID_TARGET` | 정찰할 수 없는 영토 (자기 영토·미점유 등) |
+| 400 | `SCOUT_UNIT_REQUIRED` | 정찰 유닛 없음 — 정찰 1회당 1기 소모 |
+
+---
+
+## 영토 주둔 병력 조회
+
+**GET** `/api/v1/military/territory/{territoryId}/garrison`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+해당 영토에 배치된 **내 유닛**의 타입별 합계. 회수 UI가 이 목록으로 회수 대상을 표시한다.
+소유권 검증은 하지 않는다 — 조회자 본인의 배치 유닛만 집계하므로 타인 병력은 노출되지 않는다.
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": [
+    {
+      "unitTypeId": 1,
+      "name": "INFANTRY",
+      "displayName": "보병",
+      "icon": "🗡",
+      "colorHex": "#00f5ff",
+      "deployedCount": 30
+    }
+  ]
+}
+```
+
+결과가 없으면 빈 배열 `[]`.
+
+---
+
+## 연구 현황 조회
+
+**GET** `/api/v1/military/research`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+계정 단위 유닛 연구 현황. `researchLabLevel`이 연구 가능 상한(`researchLabLevel + 1`)을 결정한다.
+완료 시각이 지난 연구는 이 조회 시점에 지연 반영(lazy completion)된다.
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "researchLabLevel": 1,
+    "units": [
+      {
+        "unitTypeId": 1,
+        "name": "INFANTRY",
+        "displayName": "보병",
+        "icon": "🗡",
+        "colorHex": "#00f5ff",
+        "researchedLevel": 1,
+        "maxLevel": 3,
+        "pendingLevel": 2,
+        "researchCompleteAt": "2026-07-24T15:30:00",
+        "nextCostGp": 4000
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 연구 시작
+
+**POST** `/api/v1/military/research/{unitTypeId}`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+### 비즈니스 규칙
+- 목표 레벨 = 현재 `researchedLevel + 1`
+- 필요 연구소(RESEARCH_LAB) 레벨 = `목표 레벨 − 1`
+- 비용 `2000 × 목표 레벨` GP — **금고(GlobalVault)**에서 차감
+- 소요 시간 `30분 × 목표 레벨`
+- 유닛당 동시 1건만 진행 가능
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "unitTypeId": 1,
+    "pendingLevel": 2,
+    "researchCompleteAt": "2026-07-24T15:30:00",
+    "vaultGpRemaining": 1000
+  }
+}
+```
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 400 | `RESEARCH_MAX_REACHED` | 이미 최대 레벨 |
+| 409 | `RESEARCH_IN_PROGRESS` | 해당 유닛 연구 진행 중 |
+| 400 | `RESEARCH_LAB_LEVEL_INSUFFICIENT` | 연구소 레벨 부족 |
+| 400 | `RESEARCH_SPEC_NOT_FOUND` | 목표 레벨의 유닛 스펙 미등록 (관리자 설정 필요) |
+| 400 | `INSUFFICIENT_GP` | 금고 GP 부족 |
+| 404 | `UNIT_TYPE_NOT_FOUND` | 유닛 종류 없음 |
+
+---
+
 ## 전투 계산 공식 (참고)
 
 > Notion F-11.4 — 구현 시 참고용
@@ -521,4 +685,4 @@ DEF = Σ(방어 유닛 defense_power × 수량) + Σ(해당 Zone 방어 건물 d
 - 경매 낙찰 후 `PROTECTION_DURATION_HOURS`(config) 동안 공격 수신 불가
 - Castle 파괴 → 공격자 즉시 인계 시 인계받은 공격자에게 보호 기간 재시작
 - 보호 기간 중 공격 선언 시 → `TERRITORY_PROTECTED` 에러 반환
-- ⚠️ 현재 구현은 보호 기간을 점유 기간(`occupiedUntil`)과 분리하지 않아 보유 내내 보호로 판정된다. 보호<점유 분리는 공성전 상세 정립 때 반영 예정.
+- 보호 기간(`territories.protected_until`)은 점유 기간(`occupied_until`)과 분리된 별도 컬럼이다 — 보호 만료 후에도 점유는 유지되며, 그 구간에서만 공성이 성립한다.

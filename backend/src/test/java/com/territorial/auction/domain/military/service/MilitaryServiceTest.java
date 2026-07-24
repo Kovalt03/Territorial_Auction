@@ -653,7 +653,7 @@ class MilitaryServiceTest {
             given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L, 1)).willReturn(10);
             given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeIdAndLevel(1L, 1L, 1))
                     .willReturn(List.of(idleAtTerritory(10, target)));
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(1000)));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(1000)));
             given(siegeEventRepository.save(any(SiegeEvent.class)))
                     .willAnswer(
                             inv -> {
@@ -830,7 +830,7 @@ class MilitaryServiceTest {
                                 return s;
                             });
             // 주둔지 1개 비용 500 > 금고 100
-            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(100)));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(100)));
 
             assertThatThrownBy(() -> militaryService.declareSiege(1L, req()))
                     .isInstanceOf(CustomException.class)
