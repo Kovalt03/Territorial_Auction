@@ -239,7 +239,7 @@ class MilitaryServiceTest {
     class ProduceUnit {
 
         private ProduceUnitRequest req(int quantity) {
-            return new ProduceUnitRequest(1L, quantity, TERR_ID, LocationType.TERRITORY);
+            return new ProduceUnitRequest(1L, quantity, 1, TERR_ID, LocationType.TERRITORY);
         }
 
         @Test
@@ -251,10 +251,7 @@ class MilitaryServiceTest {
             BuildingInstance storage = storage(5000, 500);
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(TERR_ID))
                     .willReturn(List.of(storage));
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                            1L, 1L, TERR_ID))
+            given(unitInstanceRepository.findReadyIdleAtTerritory(1L, 1L, 1, TERR_ID))
                     .willReturn(Optional.empty());
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
 
@@ -276,10 +273,7 @@ class MilitaryServiceTest {
             stubTerritoryLocation(territory, 5000, 500, 3); // 성 Lv1 슬롯 5, 현재 3 + 2 = 5 OK
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(TERR_ID))
                     .willReturn(List.of(storage(5000, 500)));
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                            1L, 1L, TERR_ID))
+            given(unitInstanceRepository.findReadyIdleAtTerritory(1L, 1L, 1, TERR_ID))
                     .willReturn(Optional.of(idle));
 
             militaryService.produceUnit(1L, req(2));
@@ -388,7 +382,7 @@ class MilitaryServiceTest {
 
         private DeployUnitRequest req(int quantity) {
             return new DeployUnitRequest(
-                    TERR_ID, 50L, 1L, quantity, TERR_ID, LocationType.TERRITORY);
+                    TERR_ID, 50L, 1L, quantity, 1, TERR_ID, LocationType.TERRITORY);
         }
 
         // 주둔 대상 성(레벨1 → 수용량 5), 대상 영토 소속
@@ -418,15 +412,9 @@ class MilitaryServiceTest {
             given(buildingInstanceRepository.findById(50L))
                     .willReturn(Optional.of(garrisonCastle(territory)));
             given(unitInstanceRepository.sumQuantityByDeployedBuildingId(50L)).willReturn(0);
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                            1L, 1L, TERR_ID))
+            given(unitInstanceRepository.findReadyIdleAtTerritory(1L, 1L, 1, TERR_ID))
                     .willReturn(Optional.of(idle));
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedBuildingId(
-                                            1L, 1L, TERR_ID, 50L))
+            given(unitInstanceRepository.findDeployedFromTerritory(1L, 1L, 1, TERR_ID, 50L))
                     .willReturn(Optional.empty());
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
 
@@ -458,10 +446,7 @@ class MilitaryServiceTest {
             given(buildingInstanceRepository.findById(50L))
                     .willReturn(Optional.of(garrisonCastle(territory)));
             given(unitInstanceRepository.sumQuantityByDeployedBuildingId(50L)).willReturn(0);
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                            1L, 1L, TERR_ID))
+            given(unitInstanceRepository.findReadyIdleAtTerritory(1L, 1L, 1, TERR_ID))
                     .willReturn(Optional.of(idleAtTerritory(2, territory)));
 
             assertThatThrownBy(() -> militaryService.deployUnit(1L, req(5)))
@@ -480,7 +465,7 @@ class MilitaryServiceTest {
     class RecallUnit {
 
         private RecallUnitRequest req(int quantity) {
-            return new RecallUnitRequest(TERR_ID, 1L, quantity);
+            return new RecallUnitRequest(TERR_ID, 1L, quantity, 1);
         }
 
         @Test
@@ -490,15 +475,9 @@ class MilitaryServiceTest {
             UnitInstance deployed = deployedFromTerritory(10, territory, territory);
             UnitInstance homeIdle = idleAtTerritory(1, territory);
             given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndDeployedTerritoryIdOrderByIdAsc(
-                                            1L, 1L, TERR_ID))
+            given(unitInstanceRepository.findDeployedAtTerritory(1L, 1L, 1, TERR_ID))
                     .willReturn(List.of(deployed));
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                            1L, 1L, TERR_ID))
+            given(unitInstanceRepository.findReadyIdleAtTerritory(1L, 1L, 1, TERR_ID))
                     .willReturn(Optional.of(homeIdle));
 
             militaryService.recallUnit(1L, req(4));
@@ -526,10 +505,7 @@ class MilitaryServiceTest {
         void insufficient() {
             Territory territory = ownedTerritory();
             given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndDeployedTerritoryIdOrderByIdAsc(
-                                            1L, 1L, TERR_ID))
+            given(unitInstanceRepository.findDeployedAtTerritory(1L, 1L, 1, TERR_ID))
                     .willReturn(List.of(deployedFromTerritory(2, territory, territory)));
 
             assertThatThrownBy(() -> militaryService.recallUnit(1L, req(5)))
@@ -550,7 +526,13 @@ class MilitaryServiceTest {
         // MoveUnitRequest 시그니처: (unitTypeId, quantity, sourceId, sourceType, destId, destType)
         private MoveUnitRequest moveReq(int quantity) {
             return new MoveUnitRequest(
-                    1L, quantity, TERR_ID, LocationType.TERRITORY, ISLAND_ID, LocationType.ISLAND);
+                    1L,
+                    quantity,
+                    1,
+                    TERR_ID,
+                    LocationType.TERRITORY,
+                    ISLAND_ID,
+                    LocationType.ISLAND);
         }
 
         @Test
@@ -561,10 +543,7 @@ class MilitaryServiceTest {
             UnitInstance idle = idleAtTerritory(10, source);
             given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(source));
             given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(dest));
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                            1L, 1L, TERR_ID))
+            given(unitInstanceRepository.findReadyIdleAtTerritory(1L, 1L, 1, TERR_ID))
                     .willReturn(Optional.of(idle));
             // 도착지(섬) 슬롯 확인
             given(unitInstanceRepository.sumQuantityByHomeIslandId(ISLAND_ID)).willReturn(0);
@@ -598,6 +577,7 @@ class MilitaryServiceTest {
                     new MoveUnitRequest(
                             1L,
                             2,
+                            1,
                             TERR_ID,
                             LocationType.TERRITORY,
                             TERR_ID,
@@ -615,10 +595,7 @@ class MilitaryServiceTest {
             HomeIsland dest = ownedIsland();
             given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(source));
             given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(dest));
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeTerritoryIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                            1L, 1L, TERR_ID))
+            given(unitInstanceRepository.findReadyIdleAtTerritory(1L, 1L, 1, TERR_ID))
                     .willReturn(Optional.of(idleAtTerritory(2, source)));
 
             assertThatThrownBy(() -> militaryService.moveUnit(1L, moveReq(5)))
@@ -654,7 +631,11 @@ class MilitaryServiceTest {
         private DeclareSiegeRequest req() {
             // 최외곽 Zone 3 — 진입 전제 없음(공략은 외곽→중심). 병력: 유닛타입 1L × 3
             return new DeclareSiegeRequest(
-                    20L, null, 3, List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)), structures());
+                    20L,
+                    null,
+                    3,
+                    List.of(new DeclareSiegeRequest.ForceEntry(1L, 3, 1)),
+                    structures());
         }
 
         @Test
@@ -669,8 +650,8 @@ class MilitaryServiceTest {
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
             // 병력 커밋: 유닛 타입 조회 + 대기 풀 검증·차감
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
-            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
-            given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeId(1L, 1L))
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L, 1)).willReturn(10);
+            given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeIdAndLevel(1L, 1L, 1))
                     .willReturn(List.of(idleAtTerritory(10, target)));
             given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(1000)));
             given(siegeEventRepository.save(any(SiegeEvent.class)))
@@ -702,7 +683,7 @@ class MilitaryServiceTest {
                             20L,
                             null,
                             1,
-                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)),
+                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 3, 1)),
                             structures());
             assertThatThrownBy(() -> militaryService.declareSiege(1L, zone1))
                     .isInstanceOf(CustomException.class)
@@ -731,7 +712,7 @@ class MilitaryServiceTest {
             given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
             given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
                     .willReturn(List.of());
-            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(1);
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L, 1)).willReturn(1);
 
             assertThatThrownBy(() -> militaryService.declareSiege(1L, req()))
                     .isInstanceOf(CustomException.class)
@@ -759,14 +740,14 @@ class MilitaryServiceTest {
             given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
             given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
                     .willReturn(List.of());
-            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L, 1)).willReturn(10);
 
             DeclareSiegeRequest noStaging =
                     new DeclareSiegeRequest(
                             20L,
                             null,
                             3,
-                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)),
+                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 3, 1)),
                             List.of(
                                     new DeclareSiegeRequest.StructureEntry(
                                             SiegeStructureType.TOWER, 5, 7)));
@@ -784,7 +765,7 @@ class MilitaryServiceTest {
             given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
             given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
                     .willReturn(List.of());
-            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(20);
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L, 1)).willReturn(20);
 
             // 주둔지 1개 → 수용량 10, 병력 11 → 초과
             DeclareSiegeRequest tooMany =
@@ -792,7 +773,7 @@ class MilitaryServiceTest {
                             20L,
                             null,
                             3,
-                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 11)),
+                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 11, 1)),
                             structures());
 
             assertThatThrownBy(() -> militaryService.declareSiege(1L, tooMany))
@@ -808,7 +789,7 @@ class MilitaryServiceTest {
             given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
             given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
                     .willReturn(List.of());
-            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L, 1)).willReturn(10);
 
             // 대상 (5,6)에서 먼 (0,0)
             DeclareSiegeRequest farAway =
@@ -816,7 +797,7 @@ class MilitaryServiceTest {
                             20L,
                             null,
                             3,
-                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 3)),
+                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 3, 1)),
                             List.of(
                                     new DeclareSiegeRequest.StructureEntry(
                                             SiegeStructureType.STAGING, 0, 0)));
@@ -838,8 +819,8 @@ class MilitaryServiceTest {
                     .willReturn(Optional.of(attackToken));
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
-            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L)).willReturn(10);
-            given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeId(1L, 1L))
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L, 1)).willReturn(10);
+            given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeIdAndLevel(1L, 1L, 1))
                     .willReturn(List.of(idleAtTerritory(10, target)));
             given(siegeEventRepository.save(any(SiegeEvent.class)))
                     .willAnswer(
@@ -898,8 +879,8 @@ class MilitaryServiceTest {
             UnitType scout = scoutType();
             given(territoryRepository.findById(30L)).willReturn(Optional.of(target));
             given(unitTypeRepository.findByName("SCOUT")).willReturn(Optional.of(scout));
-            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 9L)).willReturn(3);
-            given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeId(1L, 9L))
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 9L, 1)).willReturn(3);
+            given(unitInstanceRepository.findReadyIdleByUserIdAndUnitTypeIdAndLevel(1L, 9L, 1))
                     .willReturn(List.of(stack(scout, attacker, 3)));
             given(unitInstanceRepository.findByUserIdAndDeployedTerritoryId(2L, 30L))
                     .willReturn(
@@ -917,7 +898,7 @@ class MilitaryServiceTest {
             Territory target = enemyTerritory();
             given(territoryRepository.findById(30L)).willReturn(Optional.of(target));
             given(unitTypeRepository.findByName("SCOUT")).willReturn(Optional.of(scoutType()));
-            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 9L)).willReturn(0);
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 9L, 1)).willReturn(0);
 
             assertThatThrownBy(() -> militaryService.scoutTerritory(1L, 30L))
                     .isInstanceOf(CustomException.class)
@@ -1027,10 +1008,7 @@ class MilitaryServiceTest {
                                     eq(ISLAND_ID), any(LocalDateTime.class)))
                     .willReturn(0);
             given(unitInstanceRepository.sumQuantityByHomeIslandId(ISLAND_ID)).willReturn(0);
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                            1L, 1L, ISLAND_ID))
+            given(unitInstanceRepository.findReadyIdleAtIsland(1L, 1L, 1, ISLAND_ID))
                     .willReturn(Optional.empty());
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
         }
@@ -1118,10 +1096,7 @@ class MilitaryServiceTest {
                                     eq(ISLAND_ID), any(LocalDateTime.class)))
                     .willReturn(0);
             given(unitInstanceRepository.sumQuantityByHomeIslandId(ISLAND_ID)).willReturn(0);
-            given(
-                            unitInstanceRepository
-                                    .findByUserIdAndUnitTypeIdAndHomeIslandIdAndDeployedTerritoryIsNullAndMoveCompleteAtIsNull(
-                                            1L, 1L, ISLAND_ID))
+            given(unitInstanceRepository.findReadyIdleAtIsland(1L, 1L, 1, ISLAND_ID))
                     .willReturn(Optional.empty());
             given(userRepository.findById(1L)).willReturn(Optional.of(attacker));
 
