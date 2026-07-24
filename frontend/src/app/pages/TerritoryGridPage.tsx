@@ -31,8 +31,8 @@ import { TerritoryGridInventoryModal } from './TerritoryGridInventoryModal';
 import { TerritoryDeployModal } from './TerritoryDeployModal';
 import { IslandTrainUnitModal } from './IslandTrainUnitModal';
 import { useMilitary } from '../hooks/useMilitary';
-import { deployUnit, recallUnit, produceUnit, fetchTerritoryGarrison } from '../api/military';
-import type { GarrisonUnit } from '../types/military';
+import { deployUnit, recallUnit, produceUnit, fetchTerritoryGarrison, fetchResearch } from '../api/military';
+import type { GarrisonUnit, ResearchStatus } from '../types/military';
 
 const GARRISON_CAP: Record<string, number> = { castle: 5, residence: 5, tower: 3, wall: 2 };
 
@@ -49,7 +49,12 @@ export function TerritoryGridPage() {
   const [showTrain, setShowTrain] = useState(false);
   const [trainUnitTypeId, setTrainUnitTypeId] = useState<number | null>(null);
   const [trainQuantity, setTrainQuantity] = useState(1);
+  const [trainLevel, setTrainLevel] = useState(1);
   const [isTraining, setIsTraining] = useState(false);
+  const [research, setResearch] = useState<ResearchStatus | null>(null);
+  const researchedLevels = Object.fromEntries(
+    (research?.units ?? []).map(u => [u.unitTypeId, u.researchedLevel]),
+  ) as Record<number, number>;
   const [detail, setDetail] = useState<TerritoryDetailResponse | null>(null);
   const [buildings, setBuildings] = useState<TerritoryGridBuilding[]>([]);
   const [catalog, setCatalog] = useState<BuildingTypeInfo[]>([]);
@@ -238,6 +243,7 @@ export function TerritoryGridPage() {
   );
 
   const handleOpenTrain = () => {
+    fetchResearch().then(setResearch).catch(e => console.warn('[TerritoryGridPage] research load failed', e));
     const units = territoryUnits?.units ?? [];
     if (units.length) setTrainUnitTypeId(units[0].unitTypeId);
     setTrainQuantity(1);
@@ -249,7 +255,7 @@ export function TerritoryGridPage() {
     if (!trainUnitTypeId || trainQuantity < 1) return;
     setIsTraining(true);
     try {
-      const res = await produceUnit(trainUnitTypeId, trainQuantity, territoryId, 'TERRITORY');
+      const res = await produceUnit(trainUnitTypeId, trainQuantity, territoryId, 'TERRITORY', trainLevel);
       reloadMilitary();
       reloadDetail();
       showToast(`유닛 ${res.quantity}기 훈련 완료`, false);
@@ -538,9 +544,12 @@ export function TerritoryGridPage() {
           storedFood={territoryUnits?.storedFood ?? 0}
           trainUnitTypeId={trainUnitTypeId}
           trainQuantity={trainQuantity}
+          trainLevel={trainLevel}
+          researchedLevels={researchedLevels}
           isTraining={isTraining}
-          onSelectUnit={setTrainUnitTypeId}
+          onSelectUnit={id => { setTrainUnitTypeId(id); setTrainLevel(1); }}
           onChangeQuantity={setTrainQuantity}
+          onChangeLevel={setTrainLevel}
           onTrain={handleTrain}
           onClose={() => setShowTrain(false)}
         />
