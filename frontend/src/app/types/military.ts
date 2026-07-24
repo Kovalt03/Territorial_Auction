@@ -62,3 +62,29 @@ export interface GarrisonUnit {
   colorHex: string | null;
   deployedCount: number;
 }
+
+// 계정 연구 현황 — 연구소 레벨이 연구 가능 상한(목표 = 연구소 레벨 + 1)을 정한다.
+export interface UnitResearchInfo {
+  unitTypeId: number;
+  name: string;
+  displayName: string | null;
+  icon: string | null;
+  colorHex: string | null;
+  researchedLevel: number;
+  maxLevel: number;
+  pendingLevel: number | null;
+  researchCompleteAt: string | null;
+  nextCostGp: number | null;
+}
+
+export interface ResearchStatus {
+  researchLabLevel: number;
+  units: UnitResearchInfo[];
+}
+
+export interface StartResearchResponse {
+  unitTypeId: number;
+  pendingLevel: number;
+  researchCompleteAt: string;
+  vaultGpRemaining: number;
+}

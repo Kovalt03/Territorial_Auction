@@ -8,17 +8,22 @@ interface Props {
   storedFood: number;
   trainUnitTypeId: number | null;
   trainQuantity: number;
+  trainLevel: number;
+  /** unitTypeId → 연구로 해금된 최대 레벨 */
+  researchedLevels: Record<number, number>;
   isTraining: boolean;
   onSelectUnit: (id: number) => void;
   onChangeQuantity: (q: number) => void;
+  onChangeLevel: (lv: number) => void;
   onTrain: () => void;
   onClose: () => void;
 }
 
 export function IslandTrainUnitModal({
-  units, islandGp, storedFood, trainUnitTypeId, trainQuantity, isTraining,
-  onSelectUnit, onChangeQuantity, onTrain, onClose,
+  units, islandGp, storedFood, trainUnitTypeId, trainQuantity, trainLevel, researchedLevels,
+  isTraining, onSelectUnit, onChangeQuantity, onChangeLevel, onTrain, onClose,
 }: Props) {
+  const maxLevel = trainUnitTypeId ? (researchedLevels[trainUnitTypeId] ?? 1) : 1;
   return (
     <div className="modal-center-overlay">
       <div className="modal-backdrop" onClick={onClose} />
@@ -62,6 +67,29 @@ export function IslandTrainUnitModal({
               })}
             </div>
           </div>
+          <div>
+            <p className="text-muted text-xs mb-2">레벨 (연구 해금 Lv.{maxLevel}까지)</p>
+            <div className="flex gap-2">
+              {Array.from({ length: maxLevel }, (_, i) => i + 1).map(lv => (
+                <button
+                  key={lv}
+                  onClick={() => onChangeLevel(lv)}
+                  className="flex-1 rounded-xl py-2 text-[12px] font-bold transition-all"
+                  style={{
+                    background: trainLevel === lv ? '#ff44cc20' : 'var(--color-panel-deep)',
+                    border: `1.5px solid ${trainLevel === lv ? '#ff44cc' : '#354064'}`,
+                    color: trainLevel === lv ? '#ff44cc' : '#8892b0',
+                  }}
+                >
+                  Lv.{lv}
+                </button>
+              ))}
+            </div>
+            {maxLevel === 1 && (
+              <p className="text-muted text-[10px] mt-1">연구소에서 상위 레벨을 연구하면 선택할 수 있습니다.</p>
+            )}
+          </div>
+
           <div>
             <p className="text-muted text-xs mb-1">수량</p>
             <input
