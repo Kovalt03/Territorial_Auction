@@ -51,7 +51,7 @@
 | [map.md](./api/map.md) | 맵·영토·대륙 | 6 | ✅ 완료 |
 | [auction.md](./api/auction.md) | 경매·입찰·경매 이력 | 6 | ✅ 완료 |
 | [building.md](./api/building.md) | 건물·섬·보관함·상점 | 11 | ✅ 완료 |
-| [military.md](./api/military.md) | 군사·공성전·연구 | 14 | ✅ 완료 |
+| [military.md](./api/military.md) | 군사·공성전·연구 | 15 | ✅ 완료 |
 | [notification.md](./api/notification.md) | 알림 | 3 | ✅ 완료 |
 | [ranking.md](./api/ranking.md) | 랭킹 | 3 | ✅ 구현 5 — 대륙·내 순위 문서 누락 |
 | [global-vault.md](./api/global-vault.md) | 글로벌 금고 | 2 | ✅ 완료 |
