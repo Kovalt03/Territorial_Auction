@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { BuildingTypeInfo, HarvestIslandGpResponse, InventoryItem, IslandData, PlaceFromInventoryResponse, PlaceIslandBuildingResponse, RushConstructionResponse, UpgradeBuildingResponse } from '../types/island';
+import type { BuildingTypeInfo, HarvestIslandGpResponse, InventoryItem, IslandData, PlaceFromInventoryResponse, PlaceIslandBuildingResponse, ProductionBoostResponse, RushConstructionResponse, UpgradeBuildingResponse } from '../types/island';
 
 export function fetchIsland() {
   return apiClient.get<IslandData>('/island');
@@ -48,4 +48,9 @@ export function upgradeBuilding(buildingId: number): Promise<UpgradeBuildingResp
 // AP로 건설/업그레이드를 즉시 완료. 비용은 남은 시간 비례(서버 계산).
 export function rushBuilding(buildingId: number): Promise<RushConstructionResponse> {
   return apiClient.post<RushConstructionResponse>(`/buildings/${buildingId}/rush`, {});
+}
+
+// AP로 섬 생산 부스터 발동 (일시 배율).
+export function activateProductionBoost(): Promise<ProductionBoostResponse> {
+  return apiClient.post<ProductionBoostResponse>('/island/production-boost', {});
 }
