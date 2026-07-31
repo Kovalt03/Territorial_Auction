@@ -26,7 +26,8 @@ public class SiegeForce {
     private Integer quantity;
 
     /** 커밋된 병력의 유닛 레벨 — 판정 시 이 레벨의 스탯으로 계산한다. */
-    @Column(nullable = false)
+    // 기존 행이 있는 테이블에 ddl-auto가 NOT NULL 컬럼을 추가할 수 있도록 DB 기본값 명시.
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 1")
     private Integer level = 1;
 
     @Builder

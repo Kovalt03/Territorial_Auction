@@ -1,9 +1,18 @@
-import type { UnitInfo } from '../types/military';
-
 import { UNIT_LABELS } from './islandGrid';
 
+// 훈련 모달이 실제로 읽는 필드만 요구한다 — 카탈로그(UnitTypeCatalog)와 보유 유닛(UnitInfo) 양쪽이 만족.
+interface TrainableUnit {
+  unitTypeId: number;
+  name: string;
+  displayName: string | null;
+  icon: string | null;
+  colorHex: string | null;
+  costGp: number;
+  foodCost: number;
+}
+
 interface Props {
-  units: UnitInfo[];
+  units: TrainableUnit[];
   islandGp: number;
   storedFood: number;
   trainUnitTypeId: number | null;

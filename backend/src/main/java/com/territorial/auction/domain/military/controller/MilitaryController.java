@@ -29,6 +29,11 @@ public class MilitaryController {
         return ResponseEntity.ok(ApiResponse.ok(militaryService.getUnitList(userId)));
     }
 
+    @GetMapping("/unit-types")
+    public ResponseEntity<ApiResponse<List<UnitTypeCatalogResponse>>> getUnitTypeCatalog() {
+        return ResponseEntity.ok(ApiResponse.ok(militaryService.getUnitTypeCatalog()));
+    }
+
     @PostMapping("/units")
     public ResponseEntity<ApiResponse<ProduceUnitResponse>> produceUnit(
             @AuthenticationPrincipal Long userId, @RequestBody @Valid ProduceUnitRequest request) {

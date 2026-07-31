@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { AttackTokens, DeployUnitResponse, GarrisonUnit, ProduceUnitResponse, RecallUnitResponse, ResearchStatus, StartResearchResponse, UnitsResponse } from '../types/military';
+import type { AttackTokens, DeployUnitResponse, GarrisonUnit, ProduceUnitResponse, RecallUnitResponse, ResearchStatus, StartResearchResponse, UnitsResponse, UnitTypeCatalog } from '../types/military';
 
 export function fetchAttackTokens(): Promise<AttackTokens> {
   return apiClient.get<AttackTokens>('/military/attack-tokens');
@@ -7,6 +7,11 @@ export function fetchAttackTokens(): Promise<AttackTokens> {
 
 export function fetchUnits(): Promise<UnitsResponse> {
   return apiClient.get<UnitsResponse>('/military/units');
+}
+
+// 훈련 가능한 유닛 종류 전체(보유 무관) — 훈련 모달 선택 목록의 소스.
+export function fetchUnitTypes(): Promise<UnitTypeCatalog[]> {
+  return apiClient.get<UnitTypeCatalog[]>('/military/unit-types');
 }
 
 export function produceUnit(

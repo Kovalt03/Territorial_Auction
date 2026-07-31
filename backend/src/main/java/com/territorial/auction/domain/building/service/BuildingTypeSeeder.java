@@ -10,6 +10,7 @@ import com.territorial.auction.domain.building.repository.IslandGradeRepository;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -34,7 +35,8 @@ public class BuildingTypeSeeder implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         if (buildingTypeRepository.count() > 0) {
-            log.info("building_types 이미 존재 — 건너뜀");
+            log.info("building_types 이미 존재 — 누락 타입만 보강");
+            insertMissingTypes();
             patchCastleGpProductionRate();
             backfillCategoryAndDisplayName();
             backfillBuildTime();
@@ -59,7 +61,8 @@ public class BuildingTypeSeeder implements ApplicationRunner {
                     "WALL", "방벽",
                     "TOWER", "방어탑",
                     "FARMLAND", "농지",
-                    "RESIDENCE", "주거지");
+                    "RESIDENCE", "주거지",
+                    "RESEARCH_LAB", "연구소");
 
     // 프론트 기본 매핑(islandGrid.ts)과 동일 — 관리자/사용자 표기 일치를 위해 DB에 채운다.
     private static final Map<String, String> ICONS =
@@ -71,7 +74,8 @@ public class BuildingTypeSeeder implements ApplicationRunner {
                     "WALL", "🧱",
                     "TOWER", "🗼",
                     "FARMLAND", "🌾",
-                    "RESIDENCE", "🏠");
+                    "RESIDENCE", "🏠",
+                    "RESEARCH_LAB", "🔬");
 
     private static final Map<String, String> COLORS =
             Map.of(
@@ -82,7 +86,8 @@ public class BuildingTypeSeeder implements ApplicationRunner {
                     "WALL", "#e0e8ff",
                     "TOWER", "#ff8c00",
                     "FARMLAND", "#a3e635",
-                    "RESIDENCE", "#44aaff");
+                    "RESIDENCE", "#44aaff",
+                    "RESEARCH_LAB", "#ff44cc");
 
     // building-types.yml 과 동일 — 기존 DB 백필용
     private static final Map<String, Integer> BUILD_TIME_SECONDS =
@@ -180,6 +185,27 @@ public class BuildingTypeSeeder implements ApplicationRunner {
         }
         if (placed > 0) {
             log.info("기존 섬 기본 성 배치 완료. 대상 섬 수={}", placed);
+        }
+    }
+
+    // yaml에 있으나 DB에 없는 건물 타입을 삽입한다. 시더가 1회성(count>0 시 스킵)이라
+    // 나중에 추가된 타입(예: RESEARCH_LAB)이 기존 DB에 반영되지 않던 문제를 자가 치유한다.
+    private void insertMissingTypes() {
+        Set<String> existing =
+                buildingTypeRepository.findAll().stream()
+                        .map(BuildingType::getName)
+                        .collect(java.util.stream.Collectors.toSet());
+        List<BuildingType> missing =
+                loadRows().stream()
+                        .filter(row -> !existing.contains((String) row.get("name")))
+                        .map(this::toEntity)
+                        .toList();
+        if (!missing.isEmpty()) {
+            buildingTypeRepository.saveAll(missing);
+            log.info(
+                    "building_types 누락 타입 삽입. 건수={}, names={}",
+                    missing.size(),
+                    missing.stream().map(BuildingType::getName).toList());
         }
     }
 

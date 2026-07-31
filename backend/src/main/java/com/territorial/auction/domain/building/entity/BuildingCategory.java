@@ -10,7 +10,14 @@ public enum BuildingCategory {
 
     // 이름(코드)에 하드코딩된 기능이 있는 건물 집합. 이 집합만 FUNCTIONAL로 취급한다.
     public static final Set<String> FUNCTIONAL_CODES =
-            Set.of("CASTLE", "WORKSHOP", "FARMLAND", "RESIDENCE", "STORAGE", "BARRACKS");
+            Set.of(
+                    "CASTLE",
+                    "WORKSHOP",
+                    "FARMLAND",
+                    "RESIDENCE",
+                    "STORAGE",
+                    "BARRACKS",
+                    "RESEARCH_LAB");
 
     public static BuildingCategory of(String code) {
         return FUNCTIONAL_CODES.contains(code) ? FUNCTIONAL : DECORATIVE;
