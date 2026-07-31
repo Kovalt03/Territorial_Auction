@@ -98,7 +98,7 @@ export function PersonalIslandPage() {
   };
   const [buildError, setBuildError] = useState('');
   const [showZones, setShowZones] = useState(true);
-  const [activeTab, setActiveTab] = useState<'buildings' | 'resources' | 'units' | 'expand'>('buildings');
+  const [activeTab, setActiveTab] = useState<'buildings' | 'decoration' | 'resources' | 'units' | 'expand'>('buildings');
 
   // Building action panel (for occupied cells)
   const [showBuildingAction, setShowBuildingAction] = useState(false);
@@ -479,6 +479,29 @@ export function PersonalIslandPage() {
 
   const countBuildings = (type: BuildingType) => grid.flat().filter(c => c.type === type).length;
 
+  // 건물/장식 탭이 공유하는 목록 카드.
+  const buildingCard = (c: BuildingTypeInfo) => {
+    const type = c.name.toLowerCase() as BuildingType;
+    const color = colorFor(type);
+    const count = countBuildings(type);
+    return (
+      <div key={c.buildingTypeId} className="bg-panel-deep rounded-xl p-2.5 flex items-center gap-2">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: color + '25', border: `1px solid ${color}50` }}>
+          <span className="text-base">{iconFor(type)}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color }}>{nameFor(type)}</span>
+            <span className="text-muted text-[10px]">×{count}</span>
+          </div>
+          <p className="text-muted text-[10px]">{statDesc(c)}</p>
+        </div>
+      </div>
+    );
+  };
+  const functionalCatalog = catalog.filter(c => c.category !== 'DECORATIVE');
+  const decorativeCatalog = catalog.filter(c => c.category === 'DECORATIVE');
+
   // 총 방어력 = 파괴되지 않은 배치 건물들의 방어력 합(카탈로그 기준 실데이터).
   const totalDefense = (island?.buildings ?? [])
     .filter(b => !b.isDestroyed)
@@ -700,9 +723,9 @@ export function PersonalIslandPage() {
 
         <div className="w-[260px] bg-surface border-l border-outline flex flex-col flex-shrink-0">
           <div className="flex border-b border-outline">
-            {(['buildings', 'resources', 'units', 'expand'] as const).map(tabId => (
+            {(['buildings', 'decoration', 'resources', 'units', 'expand'] as const).map(tabId => (
               <button key={tabId} onClick={() => setActiveTab(tabId)} className={`flex-1 py-2.5 text-[11px] transition-colors border-b-2 ${activeTab === tabId ? 'text-gp border-gp bg-[#00ff8810]' : 'text-muted border-transparent bg-transparent'}`}>
-                {{ buildings: '건물', resources: '자원', units: '유닛', expand: '확장' }[tabId]}
+                {{ buildings: '건물', decoration: '장식', resources: '자원', units: '유닛', expand: '확장' }[tabId]}
               </button>
             ))}
           </div>
@@ -710,25 +733,18 @@ export function PersonalIslandPage() {
           <div className="flex-1 overflow-y-auto">
             {activeTab === 'buildings' && (
               <div className="p-3 space-y-2">
-                {catalog.map(c => {
-                  const type = c.name.toLowerCase() as BuildingType;
-                  const color = colorFor(type);
-                  const count = countBuildings(type);
-                  return (
-                    <div key={c.buildingTypeId} className="bg-panel-deep rounded-xl p-2.5 flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: color + '25', border: `1px solid ${color}50` }}>
-                        <span className="text-base">{iconFor(type)}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs" style={{ color }}>{nameFor(type)}</span>
-                          <span className="text-muted text-[10px]">×{count}</span>
-                        </div>
-                        <p className="text-muted text-[10px]">{statDesc(c)}</p>
-                      </div>
-                    </div>
-                  );
-                })}
+                {functionalCatalog.map(buildingCard)}
+              </div>
+            )}
+            {activeTab === 'decoration' && (
+              <div className="p-3 space-y-2">
+                {decorativeCatalog.length > 0
+                  ? decorativeCatalog.map(buildingCard)
+                  : <p className="text-muted text-[11px] text-center py-6">장식 건물이 없습니다</p>}
+                <button
+                  onClick={() => setShowShop(true)}
+                  className="w-full h-9 mt-1 border border-gold text-gold rounded-xl text-xs transition-colors hover:bg-gold/10"
+                >🛒 장식 상점에서 구매</button>
               </div>
             )}
             {activeTab === 'resources' && (
