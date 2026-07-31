@@ -367,12 +367,22 @@ export function PersonalIslandPage() {
   const handleHarvest = async () => {
     if (isHarvesting) return;
     setIsHarvesting(true);
+    // 수확 전 누적량 — 0 수확이 '누적 없음'인지 '저장소 가득'인지 구분에 쓴다.
+    const pendingGp = island?.accumulatedGp ?? 0;
     try {
-      await harvestIslandGp();
+      const res = await harvestIslandGp();
       // 수확분은 섬 저장소에 적립된다 — 섬을 다시 불러오면 섬 저장 GP에 반영(금고 무관).
       void reloadIsland();
-    } catch {
-      // 수확 실패는 사용자에게 별도 안내 없이 무시 (GP 0인 경우 포함)
+      if (res.harvestedGp > 0) {
+        showToast(`GP ${res.harvestedGp.toLocaleString()} 수확 완료`, false);
+      } else if (pendingGp > 0) {
+        showToast('저장소가 가득 차 수확할 수 없습니다', false);
+      } else {
+        showToast('수확할 GP가 없습니다', false);
+      }
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : 'GP 수확에 실패했습니다');
+      console.warn('[PersonalIslandPage] harvest failed', err);
     } finally {
       setIsHarvesting(false);
     }
