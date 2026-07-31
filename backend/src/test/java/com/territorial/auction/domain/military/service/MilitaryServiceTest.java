@@ -26,6 +26,7 @@ import com.territorial.auction.domain.military.dto.ProduceUnitResponse;
 import com.territorial.auction.domain.military.dto.RecallUnitRequest;
 import com.territorial.auction.domain.military.dto.ScoutTerritoryResponse;
 import com.territorial.auction.domain.military.dto.UnitListResponse;
+import com.territorial.auction.domain.military.dto.UnitTypeCatalogResponse;
 import com.territorial.auction.domain.military.entity.AttackToken;
 import com.territorial.auction.domain.military.entity.SiegeEvent;
 import com.territorial.auction.domain.military.entity.SiegeStructureType;
@@ -1120,6 +1121,33 @@ class MilitaryServiceTest {
                     new GarrisonBuildingDestroyedEvent(1L, BUILDING_ID));
 
             then(homeIslandRepository).should(never()).findByUserId(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("getUnitTypeCatalog")
+    class GetUnitTypeCatalog {
+
+        @Test
+        @DisplayName("보유 여부와 무관하게 전체 유닛 종류를 카탈로그로 반환")
+        void getUnitTypeCatalog_returnsAllTypes() {
+            given(unitTypeRepository.findAll()).willReturn(List.of(unitType));
+
+            List<UnitTypeCatalogResponse> catalog = militaryService.getUnitTypeCatalog();
+
+            assertThat(catalog).hasSize(1);
+            assertThat(catalog.get(0).unitTypeId()).isEqualTo(1L);
+            assertThat(catalog.get(0).name()).isEqualTo("INFANTRY");
+            assertThat(catalog.get(0).costGp()).isEqualTo(100);
+            assertThat(catalog.get(0).requiredBarracksLevel()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("등록된 유닛 종류가 없으면 빈 리스트 반환")
+        void getUnitTypeCatalog_empty() {
+            given(unitTypeRepository.findAll()).willReturn(List.of());
+
+            assertThat(militaryService.getUnitTypeCatalog()).isEmpty();
         }
     }
 }
