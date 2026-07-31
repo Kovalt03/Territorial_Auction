@@ -42,7 +42,8 @@ export function IslandBuildingActionPanel({
   const isMaxLevel = curLevel >= MAX_BUILDING_LEVEL;
   const isCastle = cellData.type === 'castle';
   const isBarracks = cellData.type === 'barracks';
-  const isStorageBuilding = isCastle || cellData.type === 'storage';
+  // 수확은 생산 건물(생산소)의 기능 — 저장소는 저장만 담당한다.
+  const isWorkshop = cellData.type === 'workshop';
   const stats = info ? statLine(info, curLevel) : '';
 
   return (
@@ -92,7 +93,7 @@ export function IslandBuildingActionPanel({
           </div>
         )}
 
-        {(isBarracks || isStorageBuilding) && (
+        {(isBarracks || isWorkshop) && (
           <div className="px-4 pt-4">
             {isBarracks && (
               <button
@@ -102,7 +103,7 @@ export function IslandBuildingActionPanel({
                 ⚔ 유닛 훈련
               </button>
             )}
-            {isStorageBuilding && (
+            {isWorkshop && (
               <button
                 onClick={onHarvest}
                 className="w-full h-12 rounded-xl font-bold border-[1.5px] border-gold text-gold hover:bg-gold/10 transition-all text-[13px]"
