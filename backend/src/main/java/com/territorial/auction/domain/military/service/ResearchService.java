@@ -63,6 +63,9 @@ public class ResearchService {
         UnitType unitType = findUnitTypeOrThrow(unitTypeId);
         LocalDateTime now = LocalDateTime.now();
 
+        // 연구는 계정당 한 번에 하나만 — 다른 유닛이 연구 중이면 새 연구를 시작할 수 없다.
+        validateNoResearchInProgress(userId, now);
+
         UnitResearch research = findOrCreate(userId, unitType);
         research.applyCompletionIfDue(now);
         if (research.isResearching(now)) {
@@ -111,6 +114,17 @@ public class ResearchService {
         }
         vault.withdrawGp(cost);
         return vault;
+    }
+
+    // 계정 전체에서 진행 중인 연구가 하나라도 있으면 거부한다(한 번에 하나).
+    private void validateNoResearchInProgress(Long userId, LocalDateTime now) {
+        boolean anyInProgress =
+                unitResearchRepository.findByUserId(userId).stream()
+                        .peek(r -> r.applyCompletionIfDue(now))
+                        .anyMatch(r -> r.isResearching(now));
+        if (anyInProgress) {
+            throw new CustomException(ErrorCode.RESEARCH_IN_PROGRESS);
+        }
     }
 
     private UnitResearch findOrCreate(Long userId, UnitType unitType) {

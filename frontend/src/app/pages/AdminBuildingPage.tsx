@@ -257,7 +257,7 @@ function Row({ item, onDone, onError }: { item: BuildingTypeInfo; onDone: (m: st
             {!isCastle && (
               <div className="mt-3 pt-3 border-t border-outline-soft">
                 <p className="text-[11px] text-dim mb-2">
-                  성 레벨별 최대 개수 <span className="text-muted">— 섬에 몇 개까지 지을 수 있는지. 비우면 무제한</span>
+                  성 레벨별 최대 개수 <span className="text-muted">— 섬·영토에 몇 개까지 지을 수 있는지. 비우면 무제한</span>
                 </p>
                 <div className="flex items-end gap-3">
                   {CASTLE_LEVELS.map(lv => (

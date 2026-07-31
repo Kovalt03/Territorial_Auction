@@ -106,6 +106,8 @@ public class BuildingService {
                 request.posX(),
                 request.posY(),
                 (x, y) -> calculateTerritoryZone(x, y, territory.getGrade()));
+        validateSingleCastleOnTerritory(buildingType, territory);
+        validateBuildingLimitOnTerritory(buildingType, territory);
         validateBuilderAvailable(userId);
 
         int gpRemaining = chargeTerritoryGp(territory.getId(), buildingType.getBaseCostGp());
@@ -455,6 +457,7 @@ public class BuildingService {
                 request.posX(),
                 request.posY(),
                 (x, y) -> calculateTerritoryZone(x, y, territory.getGrade()));
+        validateBuildingLimitOnTerritory(stored.getBuildingType(), territory);
 
         stored.placeOnTerritory(territory, request.posX(), request.posY(), zone);
 
@@ -816,6 +819,33 @@ public class BuildingService {
     private void validateSingleCastleOnIsland(BuildingType buildingType, HomeIsland island) {
         if (!buildingType.isCastle()) return;
         if (buildingInstanceRepository.existsCastleOnIsland(island.getId())) {
+            throw new CustomException(ErrorCode.CASTLE_ALREADY_EXISTS);
+        }
+    }
+
+    // 영토도 섬과 동일하게 성 레벨별 건물 개수 상한(BuildingCastleLimit)과 성 1개 제한을 적용한다.
+    private void validateBuildingLimitOnTerritory(BuildingType buildingType, Territory territory) {
+        if (buildingType.isCastle()) return;
+        int castleLevel =
+                buildingInstanceRepository
+                        .findCastleLevelByTerritoryId(territory.getId())
+                        .orElse(1);
+        buildingCastleLimitRepository
+                .findByBuildingType_IdAndCastleLevel(buildingType.getId(), castleLevel)
+                .ifPresent(
+                        limit -> {
+                            long placed =
+                                    buildingInstanceRepository.countByTerritoryIdAndBuildingTypeId(
+                                            territory.getId(), buildingType.getId());
+                            if (placed >= limit.getMaxCount()) {
+                                throw new CustomException(ErrorCode.BUILDING_LIMIT_EXCEEDED);
+                            }
+                        });
+    }
+
+    private void validateSingleCastleOnTerritory(BuildingType buildingType, Territory territory) {
+        if (!buildingType.isCastle()) return;
+        if (buildingInstanceRepository.existsCastleOnTerritory(territory.getId())) {
             throw new CustomException(ErrorCode.CASTLE_ALREADY_EXISTS);
         }
     }

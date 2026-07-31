@@ -100,6 +100,20 @@ class ResearchServiceTest {
     }
 
     @Test
+    @DisplayName("다른 유닛이 연구 중이면 → RESEARCH_IN_PROGRESS (한 번에 하나)")
+    void startResearch_anotherInProgress() {
+        given(unitTypeRepository.findById(2L)).willReturn(Optional.of(unitType));
+        UnitResearch other = research(1);
+        other.startResearch(2, java.time.LocalDateTime.now().plusHours(1)); // 진행 중
+        given(unitResearchRepository.findByUserId(1L)).willReturn(java.util.List.of(other));
+
+        assertThatThrownBy(() -> researchService.startResearch(1L, 2L))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.RESEARCH_IN_PROGRESS);
+    }
+
+    @Test
     @DisplayName("연구소 레벨 부족 → RESEARCH_LAB_LEVEL_INSUFFICIENT")
     void startResearch_labInsufficient() {
         given(unitTypeRepository.findById(2L)).willReturn(Optional.of(unitType));

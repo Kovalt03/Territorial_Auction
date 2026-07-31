@@ -23,6 +23,8 @@ function meta(u: UnitResearchInfo) {
 
 export function IslandResearchPanel({ research, isBusy, error, onResearch }: Props) {
   const labLevel = research?.researchLabLevel ?? 0;
+  // 연구는 계정당 한 번에 하나 — 진행 중인 연구가 있으면 다른 연구를 시작할 수 없다.
+  const anyResearching = (research?.units ?? []).some(u => !!u.pendingLevel && !!u.researchCompleteAt);
 
   return (
     <div className="bg-panel-deep rounded-xl p-3">
@@ -46,7 +48,7 @@ export function IslandResearchPanel({ research, isBusy, error, onResearch }: Pro
           const isResearching = !!u.pendingLevel && !!u.researchCompleteAt;
           const atMax = u.researchedLevel >= u.maxLevel;
           const canResearch =
-            !isResearching && !atMax && labLevel >= u.researchedLevel; // 목표=현재+1, 필요 연구소=목표-1
+            !isResearching && !atMax && !anyResearching && labLevel >= u.researchedLevel; // 목표=현재+1, 필요 연구소=목표-1
           return (
             <div key={u.unitTypeId} className="flex items-center gap-2">
               <span className="text-base">{m.icon}</span>
@@ -73,7 +75,7 @@ export function IslandResearchPanel({ research, isBusy, error, onResearch }: Pro
                 <button
                   onClick={() => onResearch(u.unitTypeId)}
                   disabled={isBusy || !canResearch}
-                  title={!canResearch ? '연구소 레벨이 부족합니다' : ''}
+                  title={anyResearching ? '다른 연구가 진행 중입니다 (한 번에 하나)' : !canResearch ? '연구소 레벨이 부족합니다' : ''}
                   className="text-[10px] px-2 py-1 rounded-lg border border-[#ff44cc]/50 text-[#ff44cc] hover:bg-[#ff44cc]/10 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   연구
