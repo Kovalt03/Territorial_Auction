@@ -21,6 +21,21 @@ export interface UnitInfo {
   requiredBarracksLevel: number;
 }
 
+// 훈련 가능한 유닛 종류 카탈로그 — 보유 여부와 무관한 전체 목록(생산 UI 소스).
+export interface UnitTypeCatalog {
+  unitTypeId: number;
+  name: string;
+  displayName: string | null;
+  icon: string | null;
+  colorHex: string | null;
+  attackPower: number;
+  defensePower: number;
+  costGp: number;
+  foodCost: number;
+  buildingDamage: number;
+  requiredBarracksLevel: number;
+}
+
 // 자원 스코프 개편 후 유닛·식량은 위치(영토/섬)별로 그룹핑돼 내려온다.
 export interface LocationUnits {
   locationType: 'TERRITORY' | 'ISLAND';

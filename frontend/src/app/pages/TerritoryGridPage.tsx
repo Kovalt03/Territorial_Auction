@@ -31,8 +31,8 @@ import { TerritoryGridInventoryModal } from './TerritoryGridInventoryModal';
 import { TerritoryDeployModal } from './TerritoryDeployModal';
 import { IslandTrainUnitModal } from './IslandTrainUnitModal';
 import { useMilitary } from '../hooks/useMilitary';
-import { deployUnit, recallUnit, produceUnit, fetchTerritoryGarrison, fetchResearch } from '../api/military';
-import type { GarrisonUnit, ResearchStatus } from '../types/military';
+import { deployUnit, recallUnit, produceUnit, fetchTerritoryGarrison, fetchResearch, fetchUnitTypes } from '../api/military';
+import type { GarrisonUnit, ResearchStatus, UnitTypeCatalog } from '../types/military';
 
 const GARRISON_CAP: Record<string, number> = { castle: 5, residence: 5, tower: 3, wall: 2 };
 
@@ -52,6 +52,11 @@ export function TerritoryGridPage() {
   const [trainLevel, setTrainLevel] = useState(1);
   const [isTraining, setIsTraining] = useState(false);
   const [research, setResearch] = useState<ResearchStatus | null>(null);
+  // 훈련 모달 선택 목록은 보유 유닛이 아니라 전체 종류 카탈로그를 소스로 한다.
+  const [unitCatalog, setUnitCatalog] = useState<UnitTypeCatalog[]>([]);
+  useEffect(() => {
+    fetchUnitTypes().then(setUnitCatalog).catch(e => console.warn('[TerritoryGridPage] unit types load failed', e));
+  }, []);
   const researchedLevels = Object.fromEntries(
     (research?.units ?? []).map(u => [u.unitTypeId, u.researchedLevel]),
   ) as Record<number, number>;
@@ -244,8 +249,8 @@ export function TerritoryGridPage() {
 
   const handleOpenTrain = () => {
     fetchResearch().then(setResearch).catch(e => console.warn('[TerritoryGridPage] research load failed', e));
-    const units = territoryUnits?.units ?? [];
-    if (units.length) setTrainUnitTypeId(units[0].unitTypeId);
+    setTrainUnitTypeId(unitCatalog[0]?.unitTypeId ?? null);
+    setTrainLevel(1);
     setTrainQuantity(1);
     setShowBuildingAction(false);
     setShowTrain(true);
@@ -539,7 +544,7 @@ export function TerritoryGridPage() {
 
       {showTrain && (
         <IslandTrainUnitModal
-          units={territoryUnits?.units ?? []}
+          units={unitCatalog}
           islandGp={detail?.storedGp ?? 0}
           storedFood={territoryUnits?.storedFood ?? 0}
           trainUnitTypeId={trainUnitTypeId}

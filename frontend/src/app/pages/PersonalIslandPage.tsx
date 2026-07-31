@@ -6,8 +6,8 @@ import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
 import { useMilitary } from '../hooks/useMilitary';
 import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi, fetchBuildingTypes } from '../api/island';
-import { produceUnit, fetchResearch, startResearch } from '../api/military';
-import type { ResearchStatus } from '../types/military';
+import { produceUnit, fetchResearch, startResearch, fetchUnitTypes } from '../api/military';
+import type { ResearchStatus, UnitTypeCatalog } from '../types/military';
 import { ApiError } from '../api/client';
 import type { InventoryItem, BuildingTypeInfo } from '../types/island';
 import {
@@ -119,7 +119,11 @@ export function PersonalIslandPage() {
     }
   };
 
-  // 유닛 훈련 모달
+  // 유닛 훈련 모달 — 선택 목록은 보유 유닛이 아니라 전체 종류 카탈로그를 소스로 한다.
+  const [unitCatalog, setUnitCatalog] = useState<UnitTypeCatalog[]>([]);
+  useEffect(() => {
+    fetchUnitTypes().then(setUnitCatalog).catch(e => console.warn('[PersonalIslandPage] unit types load failed', e));
+  }, []);
   const [showTrainModal, setShowTrainModal] = useState(false);
   const [trainUnitTypeId, setTrainUnitTypeId] = useState<number | null>(null);
   const [trainQuantity, setTrainQuantity] = useState(1);
@@ -408,6 +412,11 @@ export function PersonalIslandPage() {
 
   const countBuildings = (type: BuildingType) => grid.flat().filter(c => c.type === type).length;
 
+  // 총 방어력 = 파괴되지 않은 배치 건물들의 방어력 합(카탈로그 기준 실데이터).
+  const totalDefense = (island?.buildings ?? [])
+    .filter(b => !b.isDestroyed)
+    .reduce((sum, b) => sum + (catalogByType.get(b.type.toLowerCase())?.defensePower ?? 0), 0);
+
   const CELL_SIZE = 36;
 
   return (
@@ -466,7 +475,7 @@ export function PersonalIslandPage() {
           </div>
           <div className="text-right">
             <p className="text-muted text-[10px]">총 방어력</p>
-            <p className="text-danger font-bold text-base">4,820</p>
+            <p className="text-danger font-bold text-base">{totalDefense.toLocaleString()}</p>
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <div
@@ -710,7 +719,8 @@ export function PersonalIslandPage() {
                 )}
                 <button
                   onClick={() => {
-                    if (islandUnits.length) setTrainUnitTypeId(islandUnits[0].unitTypeId);
+                    setTrainUnitTypeId(unitCatalog[0]?.unitTypeId ?? null);
+                    setTrainLevel(1);
                     setTrainQuantity(1);
                     setShowTrainModal(true);
                   }}
@@ -798,7 +808,8 @@ export function PersonalIslandPage() {
           onStoreBuilding={handleStoreBuilding}
           onUpgrade={handleUpgradeBuilding}
           onTrain={() => {
-            if (islandUnits.length) setTrainUnitTypeId(islandUnits[0].unitTypeId);
+            setTrainUnitTypeId(unitCatalog[0]?.unitTypeId ?? null);
+            setTrainLevel(1);
             setTrainQuantity(1);
             setShowBuildingAction(false);
             setShowTrainModal(true);
@@ -811,9 +822,9 @@ export function PersonalIslandPage() {
         />
       )}
 
-      {showTrainModal && militaryData && (
+      {showTrainModal && (
         <IslandTrainUnitModal
-          units={islandUnits}
+          units={unitCatalog}
           islandGp={island?.storedGp ?? 0}
           storedFood={islandFood}
           trainUnitTypeId={trainUnitTypeId}
