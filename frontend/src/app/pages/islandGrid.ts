@@ -1,7 +1,7 @@
 import type { IslandData } from '../types/island';
 
 // 백엔드 building_types 시드와 1:1 대응 (name.toLowerCase()). empty는 빈 셀.
-export type BuildingType = 'castle' | 'storage' | 'workshop' | 'barracks' | 'wall' | 'tower' | 'farmland' | 'residence' | 'empty';
+export type BuildingType = 'castle' | 'storage' | 'workshop' | 'barracks' | 'wall' | 'tower' | 'farmland' | 'residence' | 'research_lab' | 'empty';
 
 export interface Cell {
   type: BuildingType;
@@ -19,19 +19,19 @@ export interface Cell {
 export const buildingColors: Record<BuildingType, string> = {
   castle: '#ffd700', storage: '#00f5ff', workshop: '#00ff88', barracks: '#8b50ff',
   wall: '#e0e8ff', tower: '#ff8c00', farmland: '#a3e635', residence: '#44aaff',
-  empty: '#1a1f35',
+  research_lab: '#ff44cc', empty: '#1a1f35',
 };
 
 export const buildingLabels: Record<BuildingType, string> = {
   castle: '🏰', storage: '📦', workshop: '⚙', barracks: '⚔',
   wall: '🧱', tower: '🗼', farmland: '🌾', residence: '🏠',
-  empty: '',
+  research_lab: '🔬', empty: '',
 };
 
 export const buildingNames: Record<BuildingType, string> = {
   castle: '성', storage: '저장소', workshop: '생산소', barracks: '병영',
   wall: '방벽', tower: '방어탑', farmland: '농지', residence: '주거지',
-  empty: '빈 공간',
+  research_lab: '연구소', empty: '빈 공간',
 };
 
 export const UNIT_LABELS: Record<string, { label: string; icon: string; color: string }> = {
