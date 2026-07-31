@@ -33,6 +33,42 @@
 
 ---
 
+## 유닛 종류 카탈로그 조회
+
+**GET** `/api/v1/military/unit-types`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+훈련 가능한 **전체 유닛 종류**를 보유 여부와 무관하게 반환한다. 생산 UI가 첫 유닛도 선택할 수 있게 하는 소스 — 보유 유닛(`GET /units`)만으로는 미보유 종류를 훈련할 수 없다.
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": [
+    {
+      "unitTypeId": 1,
+      "name": "INFANTRY",
+      "displayName": "보병",
+      "icon": "🗡",
+      "colorHex": "#00f5ff",
+      "attackPower": 10,
+      "defensePower": 8,
+      "costGp": 100,
+      "foodCost": 2,
+      "buildingDamage": 0,
+      "requiredBarracksLevel": 1
+    }
+  ]
+}
+```
+
+결과가 없으면 빈 배열 `[]`.
+
+---
+
 ## 유닛 생산
 
 **POST** `/api/v1/military/units`
