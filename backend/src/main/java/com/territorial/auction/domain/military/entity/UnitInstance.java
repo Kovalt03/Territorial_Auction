@@ -52,7 +52,8 @@ public class UnitInstance {
     @Column private LocalDateTime moveCompleteAt;
 
     /** 유닛 레벨(연구로 해금해 생산 시 선택). 레벨별 스탯은 UnitTypeLevelSpec, 레벨 1은 UnitType 기본 스탯. */
-    @Column(nullable = false)
+    // 기존 행이 있는 테이블에 ddl-auto가 NOT NULL 컬럼을 추가할 수 있도록 DB 기본값 명시.
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 1")
     private Integer level = 1;
 
     @Builder
