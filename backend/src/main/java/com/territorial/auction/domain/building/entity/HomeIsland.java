@@ -43,6 +43,9 @@ public class HomeIsland {
 
     @Column private LocalDateTime lastHarvestAt;
 
+    // 생산 부스터(AP) 종료 시각. 이 시각 전까지 GP·식량 생산이 배율 적용된다. null이면 미적용.
+    @Column private LocalDateTime productionBoostUntil;
+
     @Builder
     public HomeIsland(User user, Integer level, IslandGrade islandGrade) {
         this.user = user;
@@ -71,6 +74,15 @@ public class HomeIsland {
 
     public void recordHarvest() {
         this.lastHarvestAt = LocalDateTime.now();
+    }
+
+    public boolean isProductionBoostActive(LocalDateTime now) {
+        return productionBoostUntil != null && productionBoostUntil.isAfter(now);
+    }
+
+    // 생산 부스터를 발동한다. 이미 활성 중이면 예외 — 발동 지점(Service)에서 검증 후 호출.
+    public void activateProductionBoost(LocalDateTime until) {
+        this.productionBoostUntil = until;
     }
 
     public void upgradeIsland(IslandGrade newGrade) {
