@@ -76,6 +76,8 @@ public enum ErrorCode {
 
     // Building
     BUILDING_NOT_FOUND(HttpStatus.NOT_FOUND, "건물을 찾을 수 없습니다."),
+    BUILDING_NOT_UNDER_CONSTRUCTION(HttpStatus.BAD_REQUEST, "건설/업그레이드 중인 건물이 아닙니다."),
+    PRODUCTION_BOOST_ALREADY_ACTIVE(HttpStatus.CONFLICT, "이미 생산 부스터가 적용 중입니다."),
     STORAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "저장 공간이 없습니다."),
     BUILDING_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "건물 타입을 찾을 수 없습니다."),
     DUPLICATE_BUILDING_TYPE_NAME(HttpStatus.CONFLICT, "이미 존재하는 건물 이름입니다."),
