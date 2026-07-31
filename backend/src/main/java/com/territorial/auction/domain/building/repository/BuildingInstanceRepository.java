@@ -125,10 +125,14 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
     Optional<Integer> findMaxBarracksLevelByIslandId(@Param("islandId") Long islandId);
 
     // 연구는 계정 단위 — 유저 소유 모든 위치(영토·섬)의 RESEARCH_LAB 중 최고 레벨. 이것이 연구 가능 상한.
+    // 섬·영토를 OR로 섞을 땐 반드시 LEFT JOIN — 암묵적 조인이면 둘 다 INNER JOIN이 걸려
+    // 한쪽이 null인(섬 건물은 territory null) 행이 전부 제외돼 항상 0이 된다.
     @Query(
             "SELECT MAX(b.level) FROM BuildingInstance b"
+                    + " LEFT JOIN b.island isl LEFT JOIN isl.user islUser"
+                    + " LEFT JOIN b.territory terr LEFT JOIN terr.owner terrOwner"
                     + " WHERE b.buildingType.name = 'RESEARCH_LAB' AND b.isDestroyed = false"
-                    + " AND (b.island.user.id = :userId OR b.territory.owner.id = :userId)")
+                    + " AND (islUser.id = :userId OR terrOwner.id = :userId)")
     Optional<Integer> findMaxResearchLabLevelByUserId(@Param("userId") Long userId);
 
     @Query(
@@ -207,11 +211,13 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " WHERE b.buildingType.name IN ('STORAGE', 'CASTLE') AND b.posX >= 0")
     long sumAllStoredGp();
 
-    /** 특정 소유자의 저장 공간(소유 영토 + 홈 아일랜드) 식량 총합 */
+    /** 특정 소유자의 저장 공간(소유 영토 + 홈 아일랜드) 식량 총합. 섬·영토 OR은 LEFT JOIN 필수(위 주석 참고). */
     @Query(
             "SELECT COALESCE(SUM(b.storedFood), 0) FROM BuildingInstance b"
+                    + " LEFT JOIN b.island isl LEFT JOIN isl.user islUser"
+                    + " LEFT JOIN b.territory terr LEFT JOIN terr.owner terrOwner"
                     + " WHERE b.buildingType.name IN ('STORAGE', 'CASTLE') AND b.posX >= 0"
-                    + " AND (b.territory.owner.id = :userId OR b.island.user.id = :userId)")
+                    + " AND (islUser.id = :userId OR terrOwner.id = :userId)")
     int sumStoredFoodByOwnerId(@Param("userId") Long userId);
 
     @Query(
