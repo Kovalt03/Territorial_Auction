@@ -15,6 +15,7 @@ import com.territorial.auction.domain.building.dto.PlaceBuildingResponse;
 import com.territorial.auction.domain.building.dto.PlaceFromInventoryRequest;
 import com.territorial.auction.domain.building.dto.PlaceFromInventoryResponse;
 import com.territorial.auction.domain.building.dto.PlaceOnIslandFromInventoryRequest;
+import com.territorial.auction.domain.building.dto.ProductionBoostResponse;
 import com.territorial.auction.domain.building.dto.RepairBuildingResponse;
 import com.territorial.auction.domain.building.dto.RushConstructionResponse;
 import com.territorial.auction.domain.building.dto.StoreBuildingResponse;
@@ -577,13 +578,16 @@ public class BuildingService {
                 buildingInstanceRepository.findByIslandId(island.getId());
         int productionPerHour = calculateIslandProductionPerHour(buildings);
 
-        LocalDateTime lastHarvest = resolveLastHarvest(island);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime rawLast = resolveLastHarvest(island);
+        // 24시간 초과분은 버린다 — 누적 시작점을 최대 24시간 전으로 제한.
+        LocalDateTime from =
+                rawLast.isAfter(now.minusMinutes(BuildingPolicy.MAX_HARVEST_ACCUMULATION_MINUTES))
+                        ? rawLast
+                        : now.minusMinutes(BuildingPolicy.MAX_HARVEST_ACCUMULATION_MINUTES);
+        // 부스터 구간과 겹친 만큼 배율 가중.
         long minutesElapsed =
-                Math.max(
-                        0,
-                        Math.min(
-                                ChronoUnit.MINUTES.between(lastHarvest, LocalDateTime.now()),
-                                BuildingPolicy.MAX_HARVEST_ACCUMULATION_MINUTES));
+                BuildingPolicy.boostWeightedMinutes(from, now, island.getProductionBoostUntil());
         // 분당으로 먼저 나누면 시간당 생산량이 60 미만인 건물은 0이 되어 버린다.
         int gpAmount = (int) (minutesElapsed * productionPerHour / 60);
 
@@ -598,6 +602,35 @@ public class BuildingService {
 
         return new HarvestIslandGpResponse(
                 credited, StoragePolicy.totalGp(storages), island.getLastHarvestAt());
+    }
+
+    // AP로 섬 생산 부스터를 발동한다. 지속 시간 동안 GP·식량 생산이 배율 적용된다(정액 비용).
+    @Transactional
+    public ProductionBoostResponse activateProductionBoost(Long userId) {
+        HomeIsland island =
+                homeIslandRepository
+                        .findByUserId(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.ISLAND_NOT_FOUND));
+        LocalDateTime now = LocalDateTime.now();
+        if (island.isProductionBoostActive(now)) {
+            throw new CustomException(ErrorCode.PRODUCTION_BOOST_ALREADY_ACTIVE);
+        }
+        com.territorial.auction.domain.user.entity.Wallet wallet =
+                walletRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
+        if (wallet.getAvailableAp() < BuildingPolicy.PRODUCTION_BOOST_AP_COST) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_AP);
+        }
+        wallet.spendAp(BuildingPolicy.PRODUCTION_BOOST_AP_COST);
+        LocalDateTime until = now.plusHours(BuildingPolicy.PRODUCTION_BOOST_DURATION_HOURS);
+        island.activateProductionBoost(until);
+        log.info("생산 부스터 발동. userId={}, until={}", userId, until);
+        return new ProductionBoostResponse(
+                until,
+                BuildingPolicy.PRODUCTION_BOOST_MULTIPLIER,
+                BuildingPolicy.PRODUCTION_BOOST_AP_COST,
+                wallet.getAvailableAp());
     }
 
     private LocalDateTime resolveLastHarvest(HomeIsland island) {
