@@ -6,6 +6,7 @@ import com.territorial.auction.domain.building.dto.MoveBuildingResponse;
 import com.territorial.auction.domain.building.dto.PlaceBuildingRequest;
 import com.territorial.auction.domain.building.dto.PlaceBuildingResponse;
 import com.territorial.auction.domain.building.dto.RepairBuildingResponse;
+import com.territorial.auction.domain.building.dto.RushConstructionResponse;
 import com.territorial.auction.domain.building.dto.StoreBuildingResponse;
 import com.territorial.auction.domain.building.dto.TerritoryBuildingResponse;
 import com.territorial.auction.domain.building.dto.UpgradeBuildingResponse;
@@ -54,6 +55,13 @@ public class BuildingController {
     public ResponseEntity<ApiResponse<RepairBuildingResponse>> repair(
             @AuthenticationPrincipal Long userId, @PathVariable Long buildingId) {
         return ResponseEntity.ok(ApiResponse.ok(buildingService.repair(userId, buildingId)));
+    }
+
+    @PostMapping("/api/v1/buildings/{buildingId}/rush")
+    public ResponseEntity<ApiResponse<RushConstructionResponse>> rush(
+            @AuthenticationPrincipal Long userId, @PathVariable Long buildingId) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(buildingService.rushConstruction(userId, buildingId)));
     }
 
     @PatchMapping("/api/v1/buildings/{buildingId}/move")
