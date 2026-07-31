@@ -28,6 +28,10 @@ class WorkshopSchedulerTest {
 
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
 
+    @Mock
+    private com.territorial.auction.domain.building.repository.HomeIslandRepository
+            homeIslandRepository;
+
     // Lv2 STORAGE — 용량 10,000
     private BuildingInstance storage(int gp) {
         BuildingType bt =

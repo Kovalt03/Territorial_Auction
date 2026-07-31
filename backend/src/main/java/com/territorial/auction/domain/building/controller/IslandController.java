@@ -4,6 +4,7 @@ import com.territorial.auction.domain.building.dto.HarvestIslandGpResponse;
 import com.territorial.auction.domain.building.dto.IslandResponse;
 import com.territorial.auction.domain.building.dto.PlaceBuildingRequest;
 import com.territorial.auction.domain.building.dto.PlaceBuildingResponse;
+import com.territorial.auction.domain.building.dto.ProductionBoostResponse;
 import com.territorial.auction.domain.building.service.BuildingService;
 import com.territorial.auction.global.common.ApiResponse;
 import jakarta.validation.Valid;
@@ -43,5 +44,11 @@ public class IslandController {
     public ResponseEntity<ApiResponse<HarvestIslandGpResponse>> harvestGp(
             @AuthenticationPrincipal Long userId) {
         return ResponseEntity.ok(ApiResponse.ok(buildingService.harvestIslandGp(userId)));
+    }
+
+    @PostMapping("/production-boost")
+    public ResponseEntity<ApiResponse<ProductionBoostResponse>> activateProductionBoost(
+            @AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(ApiResponse.ok(buildingService.activateProductionBoost(userId)));
     }
 }

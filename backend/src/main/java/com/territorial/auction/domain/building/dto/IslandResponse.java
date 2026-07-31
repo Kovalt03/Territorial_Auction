@@ -5,7 +5,6 @@ import com.territorial.auction.domain.building.StoragePolicy;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
@@ -24,6 +23,7 @@ public record IslandResponse(
         int zone2Radius,
         int builderCount,
         int buildersInUse,
+        LocalDateTime productionBoostUntil,
         List<IslandBuildingInfo> buildings) {
 
     public record IslandBuildingInfo(
@@ -82,12 +82,14 @@ public record IslandResponse(
                                 ? island.getCreatedAt()
                                 : LocalDateTime.now();
 
+        // 24시간 초과분은 버리고, 부스터 구간과 겹친 만큼 배율 가중.
+        LocalDateTime from =
+                lastHarvestAt.isAfter(
+                                now.minusMinutes(BuildingPolicy.MAX_HARVEST_ACCUMULATION_MINUTES))
+                        ? lastHarvestAt
+                        : now.minusMinutes(BuildingPolicy.MAX_HARVEST_ACCUMULATION_MINUTES);
         long minutesElapsed =
-                Math.max(
-                        0,
-                        Math.min(
-                                ChronoUnit.MINUTES.between(lastHarvestAt, LocalDateTime.now()),
-                                BuildingPolicy.MAX_HARVEST_ACCUMULATION_MINUTES));
+                BuildingPolicy.boostWeightedMinutes(from, now, island.getProductionBoostUntil());
 
         // 분당으로 먼저 나누면 시간당 생산량이 60 미만인 건물은 0이 되어 버린다.
         int accumulatedGp = (int) (minutesElapsed * productionRatePerHour / 60);
@@ -123,6 +125,7 @@ public record IslandResponse(
                 island.getZone2Radius(),
                 builderCount,
                 buildersInUse,
+                island.getProductionBoostUntil(),
                 buildingInfos);
     }
 }

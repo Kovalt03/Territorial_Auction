@@ -193,6 +193,34 @@
 
 ---
 
+## 건물 즉시 완료 (AP)
+
+**POST** `/api/v1/buildings/{buildingId}/rush`
+
+**Authorization**: Bearer `{{accessToken}}` (필수, 건물 소유자)
+
+건설/업그레이드 대기를 AP로 즉시 완료한다. 비용은 **남은 시간 비례** — `올림(남은초 ÷ 60) × 10 AP`.
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": { "buildingId": 115, "apSpent": 100, "apRemaining": 900 }
+}
+```
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 400 | `BUILDING_NOT_UNDER_CONSTRUCTION` | 건설/업그레이드 중이 아님 |
+| 400 | `INSUFFICIENT_AP` | AP 잔액 부족 |
+| 404 | `BUILDING_NOT_FOUND` / `WALLET_NOT_FOUND` | 건물/지갑 없음 |
+
+---
+
 ## 섬 정보 조회
 
 **GET** `/api/v1/island`
@@ -226,6 +254,41 @@
 ```
 
 출처: `home_islands`, `building_instances`, `building_types`
+
+---
+
+## 섬 생산 부스터 (AP)
+
+**POST** `/api/v1/island/production-boost`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+AP로 섬의 GP·식량 생산을 일정 시간 배율 적용한다. **정액 500 AP · 6시간 · ×2**. 스케줄러(시간당 생산)와 수동 GP 수확 양쪽에 배율이 반영된다. 이미 활성 중이면 발동 불가.
+
+> 응답 `IslandResponse`(GET /island)에 `productionBoostUntil`(종료 시각, null이면 미적용)이 포함된다.
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "boostUntil": "2026-07-31T20:36:00",
+    "multiplier": 2,
+    "apSpent": 500,
+    "apRemaining": 500
+  }
+}
+```
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 409 | `PRODUCTION_BOOST_ALREADY_ACTIVE` | 이미 부스터 적용 중 |
+| 400 | `INSUFFICIENT_AP` | AP 잔액 부족 |
+| 404 | `ISLAND_NOT_FOUND` / `WALLET_NOT_FOUND` | 섬/지갑 없음 |
 
 ---
 

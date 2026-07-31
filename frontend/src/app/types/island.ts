@@ -27,7 +27,15 @@ export interface IslandData {
   zone2Radius: number;
   builderCount: number;
   buildersInUse: number;
+  productionBoostUntil: string | null;
   buildings: IslandBuilding[];
+}
+
+export interface ProductionBoostResponse {
+  boostUntil: string;
+  multiplier: number;
+  apSpent: number;
+  apRemaining: number;
 }
 
 export interface HarvestIslandGpResponse {

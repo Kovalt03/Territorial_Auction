@@ -1498,4 +1498,62 @@ class BuildingServiceTest {
                     .isEqualTo(ErrorCode.INSUFFICIENT_AP);
         }
     }
+
+    @Nested
+    @DisplayName("activateProductionBoost()")
+    class ActivateProductionBoost {
+
+        private com.territorial.auction.domain.user.entity.Wallet walletWithAp(User user, int ap) {
+            var wallet =
+                    com.territorial.auction.domain.user.entity.Wallet.builder().user(user).build();
+            ReflectionTestUtils.setField(wallet, "availableAp", ap);
+            return wallet;
+        }
+
+        @Test
+        @DisplayName("부스터 발동 → 500 AP 차감 + 종료 시각 설정")
+        void boost_success() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            var wallet = walletWithAp(user, 1000);
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            var res = buildingService.activateProductionBoost(1L);
+
+            assertThat(res.apSpent()).isEqualTo(500);
+            assertThat(res.apRemaining()).isEqualTo(500);
+            assertThat(res.multiplier()).isEqualTo(2);
+            assertThat(island.getProductionBoostUntil()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("이미 활성 중 → PRODUCTION_BOOST_ALREADY_ACTIVE")
+        void boost_alreadyActive() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            island.activateProductionBoost(java.time.LocalDateTime.now().plusHours(1));
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+
+            assertThatThrownBy(() -> buildingService.activateProductionBoost(1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.PRODUCTION_BOOST_ALREADY_ACTIVE);
+        }
+
+        @Test
+        @DisplayName("AP 부족 → INSUFFICIENT_AP")
+        void boost_insufficientAp() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            var wallet = walletWithAp(user, 100);
+            given(homeIslandRepository.findByUserId(1L)).willReturn(Optional.of(island));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            assertThatThrownBy(() -> buildingService.activateProductionBoost(1L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INSUFFICIENT_AP);
+        }
+    }
 }

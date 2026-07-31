@@ -28,6 +28,28 @@ public final class BuildingPolicy {
         return (int) minutes * RUSH_AP_PER_MINUTE;
     }
 
+    /**
+     * 부스터 배율이 반영된 유효 생산 분(minute). [from, to] 구간 중 부스터 구간과 겹치는 만큼 (배율-1)배 가중한다. 수확형(누적) 생산의 배율 적용에
+     * 사용. 스케줄러형(정기 적립)은 발동 여부만 보고 amount 에 배율을 곱한다.
+     */
+    public static long boostWeightedMinutes(
+            java.time.LocalDateTime from,
+            java.time.LocalDateTime to,
+            java.time.LocalDateTime boostUntil) {
+        long base = java.time.temporal.ChronoUnit.MINUTES.between(from, to);
+        if (base <= 0) {
+            return 0;
+        }
+        if (boostUntil == null) {
+            return base;
+        }
+        java.time.LocalDateTime boostStart = boostUntil.minusHours(PRODUCTION_BOOST_DURATION_HOURS);
+        java.time.LocalDateTime lo = from.isAfter(boostStart) ? from : boostStart;
+        java.time.LocalDateTime hi = to.isBefore(boostUntil) ? to : boostUntil;
+        long overlap = lo.isBefore(hi) ? java.time.temporal.ChronoUnit.MINUTES.between(lo, hi) : 0;
+        return base + (long) (PRODUCTION_BOOST_MULTIPLIER - 1) * overlap;
+    }
+
     /** 레벨별 최대 HP = baseMaxHp × level */
     public static int scaledMaxHp(int baseMaxHp, int level) {
         return baseMaxHp * level;

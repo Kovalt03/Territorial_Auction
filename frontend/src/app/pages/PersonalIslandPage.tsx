@@ -5,7 +5,7 @@ import { LoadingState } from '../components/LoadingState';
 import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
 import { useMilitary } from '../hooks/useMilitary';
-import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi, rushBuilding as rushBuildingApi, fetchBuildingTypes } from '../api/island';
+import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi, rushBuilding as rushBuildingApi, activateProductionBoost, fetchBuildingTypes } from '../api/island';
 import { produceUnit, fetchResearch, startResearch, fetchUnitTypes } from '../api/military';
 import type { ResearchStatus, UnitTypeCatalog } from '../types/military';
 import { ApiError } from '../api/client';
@@ -56,16 +56,19 @@ export function PersonalIslandPage() {
     .filter(b => b.type.toLowerCase() === 'barracks' && !b.isDestroyed && !isUnderConstruction(b.buildCompleteAt, now))
     .reduce((max, b) => Math.max(max, b.level), 0);
   const hasConstruction = buildersInUse > 0;
+  // 건설 중이거나 생산 부스터가 남아있는 동안 매초 시간을 갱신한다(카운트다운·완료 반영).
+  const boostEndMs = island?.productionBoostUntil ? new Date(island.productionBoostUntil).getTime() : 0;
+  const isTicking = hasConstruction || boostEndMs > now;
   useEffect(() => {
-    if (!hasConstruction) return;
+    if (!isTicking) return;
     const timer = setInterval(() => {
       const next = Date.now();
       setNow(next);
       const stillBuilding = island?.buildings.some(b => isUnderConstruction(b.buildCompleteAt, next));
-      if (!stillBuilding) void reloadIsland();
+      if (hasConstruction && !stillBuilding) void reloadIsland();
     }, 1000);
     return () => clearInterval(timer);
-  }, [hasConstruction, island, reloadIsland]);
+  }, [isTicking, hasConstruction, island, reloadIsland]);
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingType | null>(null);
   const [catalog, setCatalog] = useState<BuildingTypeInfo[]>([]);
   useEffect(() => {
@@ -336,6 +339,30 @@ export function PersonalIslandPage() {
   const [isBuilding, setIsBuilding] = useState(false);
   const isBuildingRef = useRef(false);
   const [isHarvesting, setIsHarvesting] = useState(false);
+  const [isBoosting, setIsBoosting] = useState(false);
+  // 생산 부스터 활성 여부 — 종료 시각이 미래면 활성 (boostEndMs 는 상단에서 계산).
+  const isBoostActive = boostEndMs > now;
+  const boostRemainingLabel = (() => {
+    const secs = Math.max(0, Math.floor((boostEndMs - now) / 1000));
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
+  })();
+
+  const handleBoost = async () => {
+    if (isBoosting || isBoostActive) return;
+    setIsBoosting(true);
+    try {
+      const result = await activateProductionBoost();
+      syncAP(result.apRemaining);
+      void reloadIsland();
+      showToast(`생산 부스터 ×${result.multiplier} 발동 (AP ${result.apSpent.toLocaleString()} 소모)`, false);
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : '부스터 발동에 실패했습니다');
+    } finally {
+      setIsBoosting(false);
+    }
+  };
 
   const handleHarvest = async () => {
     if (isHarvesting) return;
@@ -507,7 +534,10 @@ export function PersonalIslandPage() {
           )}
           <div className="text-right">
             <p className="text-muted text-[10px]">생산 속도</p>
-            <p className="text-gold font-bold text-base">+{island?.productionRatePerHour ?? 0} GP/시간</p>
+            <p className="font-bold text-base">
+              <span className="text-gold">+{(island?.productionRatePerHour ?? 0) * (isBoostActive ? 2 : 1)} GP/시간</span>
+              {isBoostActive && <span className="text-[#00f5ff] text-[11px] ml-1">⚡×2 {boostRemainingLabel}</span>}
+            </p>
           </div>
           <div className="text-right">
             <p className="text-muted text-[10px]">총 방어력</p>
@@ -814,6 +844,23 @@ export function PersonalIslandPage() {
               {isHarvesting
                 ? '수확 중...'
                 : `🌾 GP 수확하기${island && island.accumulatedGp > 0 ? ` (+${island.accumulatedGp.toLocaleString()})` : ''}`}
+            </button>
+            <button
+              onClick={() => void handleBoost()}
+              disabled={isBoosting || isBoostActive}
+              title={isBoostActive ? '이미 부스터가 적용 중입니다' : 'AP 500 소모 · GP·식량 생산 6시간 ×2'}
+              className="w-full h-9 rounded-xl font-bold text-xs transition-all border disabled:cursor-not-allowed"
+              style={{
+                borderColor: '#00f5ff',
+                color: isBoostActive ? '#7788a5' : '#00f5ff',
+                background: isBoostActive ? '#00f5ff10' : 'transparent',
+              }}
+            >
+              {isBoosting
+                ? '발동 중...'
+                : isBoostActive
+                  ? `⚡ 부스터 ×2 활성 (${boostRemainingLabel} 남음)`
+                  : '⚡ 생산 부스터 (500 AP · 6시간 ×2)'}
             </button>
             <button onClick={() => navigate('/app/map')} className="w-full h-9 bg-elevated border border-outline rounded-xl text-muted text-xs">🗺 월드맵으로</button>
           </div>
