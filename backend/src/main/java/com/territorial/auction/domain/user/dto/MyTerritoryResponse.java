@@ -11,8 +11,8 @@ public record MyTerritoryResponse(int totalCount, List<TerritoryInfo> territorie
             String grade,
             PositionPair position,
             String continentName,
-            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'") LocalDateTime occupiedAt,
-            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'") LocalDateTime occupiedUntil,
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss+09:00") LocalDateTime occupiedAt,
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss+09:00") LocalDateTime occupiedUntil,
             int militaryCount,
             boolean isInvincible) {}
 }
