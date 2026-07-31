@@ -243,6 +243,12 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
             @Param("islandId") Long islandId, @Param("buildingTypeId") Long buildingTypeId);
 
     @Query(
+            "SELECT COUNT(b) FROM BuildingInstance b"
+                    + " WHERE b.territory.id = :territoryId AND b.buildingType.id = :buildingTypeId")
+    long countByTerritoryIdAndBuildingTypeId(
+            @Param("territoryId") Long territoryId, @Param("buildingTypeId") Long buildingTypeId);
+
+    @Query(
             "SELECT b FROM BuildingInstance b JOIN FETCH b.buildingType"
                     + " WHERE b.island IS NOT NULL AND b.buildingType.name = 'CASTLE'"
                     + " AND b.posX = :posX AND b.posY = :posY")
