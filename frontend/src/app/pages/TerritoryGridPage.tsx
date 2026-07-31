@@ -106,6 +106,10 @@ export function TerritoryGridPage() {
   // 건설 중인 건물이 있는 동안만 1초마다 갱신하고, 완료 시점에 다시 불러온다.
   const [now, setNow] = useState(() => Date.now());
   const hasConstruction = buildings.some(b => isUnderConstruction(b.buildCompleteAt, now));
+  // 완공된 병영의 최고 레벨 — 훈련 모달 상위 유닛 잠금 판정.
+  const territoryBarracksLevel = buildings
+    .filter(b => b.type.toLowerCase() === 'barracks' && !b.isDestroyed && !isUnderConstruction(b.buildCompleteAt, now))
+    .reduce((max, b) => Math.max(max, b.level), 0);
   useEffect(() => {
     if (!hasConstruction) return;
     const timer = setInterval(() => {
@@ -249,7 +253,7 @@ export function TerritoryGridPage() {
 
   const handleOpenTrain = () => {
     fetchResearch().then(setResearch).catch(e => console.warn('[TerritoryGridPage] research load failed', e));
-    setTrainUnitTypeId(unitCatalog[0]?.unitTypeId ?? null);
+    setTrainUnitTypeId((unitCatalog.find(u => u.requiredBarracksLevel <= territoryBarracksLevel) ?? unitCatalog[0])?.unitTypeId ?? null);
     setTrainLevel(1);
     setTrainQuantity(1);
     setShowBuildingAction(false);
@@ -547,6 +551,7 @@ export function TerritoryGridPage() {
           units={unitCatalog}
           islandGp={detail?.storedGp ?? 0}
           storedFood={territoryUnits?.storedFood ?? 0}
+          maxBarracksLevel={territoryBarracksLevel}
           trainUnitTypeId={trainUnitTypeId}
           trainQuantity={trainQuantity}
           trainLevel={trainLevel}

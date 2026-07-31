@@ -5,7 +5,7 @@ import { LoadingState } from '../components/LoadingState';
 import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
 import { useMilitary } from '../hooks/useMilitary';
-import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi, fetchBuildingTypes } from '../api/island';
+import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi, rushBuilding as rushBuildingApi, fetchBuildingTypes } from '../api/island';
 import { produceUnit, fetchResearch, startResearch, fetchUnitTypes } from '../api/military';
 import type { ResearchStatus, UnitTypeCatalog } from '../types/military';
 import { ApiError } from '../api/client';
@@ -23,6 +23,9 @@ import { IslandTrainUnitModal } from './IslandTrainUnitModal';
 import { IslandResearchPanel } from './IslandResearchPanel';
 import { IslandInventoryModal } from './IslandInventoryModal';
 import { IslandDecorationShopModal } from './IslandDecorationShopModal';
+
+// 백엔드 StoragePolicy.*_CAPACITY_PER_LEVEL 과 일치 — 성·저장소 레벨당 GP·식량 저장 용량.
+const STORAGE_CAP_PER_LEVEL = 5000;
 
 export function PersonalIslandPage() {
   const navigate = useNavigate();
@@ -48,6 +51,10 @@ export function PersonalIslandPage() {
   const buildersInUse = island?.buildings.filter(b => isUnderConstruction(b.buildCompleteAt, now)).length ?? 0;
   const builderCount = island?.builderCount ?? 1;
   const isBuilderFull = buildersInUse >= builderCount;
+  // 완공된 병영의 최고 레벨 — 훈련 모달에서 상위 유닛 잠금 판정에 쓴다.
+  const islandBarracksLevel = (island?.buildings ?? [])
+    .filter(b => b.type.toLowerCase() === 'barracks' && !b.isDestroyed && !isUnderConstruction(b.buildCompleteAt, now))
+    .reduce((max, b) => Math.max(max, b.level), 0);
   const hasConstruction = buildersInUse > 0;
   useEffect(() => {
     if (!hasConstruction) return;
@@ -75,7 +82,16 @@ export function PersonalIslandPage() {
     if (c.foodProductionRate) parts.push(`식량 +${c.foodProductionRate}/시간`);
     if (c.unitCapacityPerLevel) parts.push(`유닛 +${c.unitCapacityPerLevel}/레벨`);
     if (c.defensePower) parts.push(`방어력 +${c.defensePower}`);
-    return parts.join(' · ') || '장식';
+    // 병영·저장소·연구소는 기능이 숫자 속성이 아니라 코드 규칙에 있어 별도 설명한다.
+    if (parts.length === 0) {
+      const byName: Record<string, string> = {
+        BARRACKS: '유닛 생산 · 레벨↑ 상위 유닛 해금',
+        STORAGE: `GP·식량 저장 +${STORAGE_CAP_PER_LEVEL.toLocaleString()}/레벨 (약탈 대상)`,
+        RESEARCH_LAB: '유닛 레벨 연구 · 레벨↑ 연구 상한↑',
+      };
+      return byName[c.name] ?? '장식';
+    }
+    return parts.join(' · ');
   };
   const [buildError, setBuildError] = useState('');
   const [showZones, setShowZones] = useState(true);
@@ -165,6 +181,20 @@ export function PersonalIslandPage() {
       );
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : '업그레이드에 실패했습니다');
+    }
+  };
+
+  const handleRush = async () => {
+    const buildingId = selectedCellData?.buildingId;
+    if (!buildingId) return;
+    try {
+      const result = await rushBuildingApi(buildingId);
+      syncAP(result.apRemaining);
+      void reloadIsland();
+      setShowBuildingAction(false);
+      showToast(`AP ${result.apSpent.toLocaleString()} 소모 — 즉시 완료`, false);
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : '즉시 완료에 실패했습니다');
     }
   };
 
@@ -464,9 +494,15 @@ export function PersonalIslandPage() {
             <p className="text-gp font-bold text-base">💎 {gp.toLocaleString()}</p>
           </div>
           {island && (
-            <div className="text-right" title="이 섬 저장소(성·저장소)의 GP. 건물 건설·유닛 생산에 실제로 차감되는 값.">
-              <p className="text-muted text-[10px]">섬 저장 GP</p>
-              <p className="text-gold font-bold text-base">🏝 {(island.storedGp ?? 0).toLocaleString()}</p>
+            <div
+              className="text-right"
+              title={`이 섬 저장소(성·저장소)의 GP. 건물 건설·유닛 생산에 차감되는 값.\n최대치는 저장소가 관리 — 성·저장소 레벨당 +${STORAGE_CAP_PER_LEVEL.toLocaleString()}.`}
+            >
+              <p className="text-muted text-[10px]">섬 저장 GP <span className="text-[9px]">(📦 저장소 관리)</span></p>
+              <p className="font-bold text-base">
+                <span className="text-gold">🏝 {(island.storedGp ?? 0).toLocaleString()}</span>
+                <span className="text-muted text-[11px]"> / {(island.storageCapacity ?? 0).toLocaleString()}</span>
+              </p>
             </div>
           )}
           <div className="text-right">
@@ -719,7 +755,7 @@ export function PersonalIslandPage() {
                 )}
                 <button
                   onClick={() => {
-                    setTrainUnitTypeId(unitCatalog[0]?.unitTypeId ?? null);
+                    setTrainUnitTypeId((unitCatalog.find(u => u.requiredBarracksLevel <= islandBarracksLevel) ?? unitCatalog[0])?.unitTypeId ?? null);
                     setTrainLevel(1);
                     setTrainQuantity(1);
                     setShowTrainModal(true);
@@ -818,6 +854,7 @@ export function PersonalIslandPage() {
             setShowBuildingAction(false);
             void handleHarvest();
           }}
+          onRush={() => void handleRush()}
           onClose={() => setShowBuildingAction(false)}
         />
       )}
@@ -827,6 +864,7 @@ export function PersonalIslandPage() {
           units={unitCatalog}
           islandGp={island?.storedGp ?? 0}
           storedFood={islandFood}
+          maxBarracksLevel={islandBarracksLevel}
           trainUnitTypeId={trainUnitTypeId}
           trainQuantity={trainQuantity}
           trainLevel={trainLevel}

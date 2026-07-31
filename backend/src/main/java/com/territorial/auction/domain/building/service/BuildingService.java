@@ -16,6 +16,7 @@ import com.territorial.auction.domain.building.dto.PlaceFromInventoryRequest;
 import com.territorial.auction.domain.building.dto.PlaceFromInventoryResponse;
 import com.territorial.auction.domain.building.dto.PlaceOnIslandFromInventoryRequest;
 import com.territorial.auction.domain.building.dto.RepairBuildingResponse;
+import com.territorial.auction.domain.building.dto.RushConstructionResponse;
 import com.territorial.auction.domain.building.dto.StoreBuildingResponse;
 import com.territorial.auction.domain.building.dto.TerritoryBuildingResponse;
 import com.territorial.auction.domain.building.dto.TerritoryBuildingResponse.BuildingInfo;
@@ -63,6 +64,7 @@ public class BuildingService {
     private final IslandGradeRepository islandGradeRepository;
     private final TerritoryRepository territoryRepository;
     private final UserRepository userRepository;
+    private final com.territorial.auction.domain.user.repository.WalletRepository walletRepository;
     private final UserSeasonPassRepository userSeasonPassRepository;
     private final NotificationService notificationService;
     private final com.territorial.auction.domain.building.repository.BuildingCastleLimitRepository
@@ -156,6 +158,30 @@ public class BuildingService {
                 cost,
                 gpRemaining,
                 building.getBuildCompleteAt());
+    }
+
+    // AP로 건설/업그레이드를 즉시 완료한다. 비용은 남은 시간에 비례(1분당 RUSH_AP_PER_MINUTE).
+    @Transactional
+    public RushConstructionResponse rushConstruction(Long userId, Long buildingId) {
+        BuildingInstance building = findBuildingOrThrow(buildingId);
+        validateBuildingOwner(building, userId);
+        LocalDateTime now = LocalDateTime.now();
+        if (!building.isUnderConstruction(now)) {
+            throw new CustomException(ErrorCode.BUILDING_NOT_UNDER_CONSTRUCTION);
+        }
+        long remainingSeconds = ChronoUnit.SECONDS.between(now, building.getBuildCompleteAt());
+        int apCost = BuildingPolicy.rushApCost(remainingSeconds);
+        com.territorial.auction.domain.user.entity.Wallet wallet =
+                walletRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
+        if (wallet.getAvailableAp() < apCost) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_AP);
+        }
+        wallet.spendAp(apCost);
+        finishConstruction(building);
+        log.info("건축 AP 즉시 완료. userId={}, buildingId={}, apCost={}", userId, buildingId, apCost);
+        return new RushConstructionResponse(building.getId(), apCost, wallet.getAvailableAp());
     }
 
     // 대기가 끝난 건물을 정리한다 — 업그레이드였다면 레벨·HP를 올리고, 성이면 섬을 확장한다.

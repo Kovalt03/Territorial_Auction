@@ -69,6 +69,7 @@ class BuildingServiceTest {
     @Mock private IslandGradeRepository islandGradeRepository;
     @Mock private TerritoryRepository territoryRepository;
     @Mock private UserRepository userRepository;
+    @Mock private com.territorial.auction.domain.user.repository.WalletRepository walletRepository;
     @Mock private UserSeasonPassRepository userSeasonPassRepository;
 
     @Mock
@@ -1434,6 +1435,67 @@ class BuildingServiceTest {
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.ZONE_RESTRICTION_VIOLATED);
+        }
+    }
+
+    @Nested
+    @DisplayName("rushConstruction()")
+    class RushConstruction {
+
+        private com.territorial.auction.domain.user.entity.Wallet walletWithAp(User user, int ap) {
+            var wallet =
+                    com.territorial.auction.domain.user.entity.Wallet.builder().user(user).build();
+            ReflectionTestUtils.setField(wallet, "availableAp", ap);
+            return wallet;
+        }
+
+        @Test
+        @DisplayName("건설 중 건물 즉시 완료 → 남은 시간 비례 AP 차감 + 건설 완료")
+        void rush_success() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            BuildingInstance building = underConstruction(storage(), island, 50L); // 남은 ~10분
+            var wallet = walletWithAp(user, 500);
+            given(buildingInstanceRepository.findById(50L)).willReturn(Optional.of(building));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            var res = buildingService.rushConstruction(1L, 50L);
+
+            // 10분 남음 → 올림(600/60)=10분 × 10 AP = 100
+            assertThat(res.apSpent()).isEqualTo(100);
+            assertThat(res.apRemaining()).isEqualTo(400);
+            assertThat(building.getBuildCompleteAt()).isNull();
+        }
+
+        @Test
+        @DisplayName("건설 중이 아니면 → BUILDING_NOT_UNDER_CONSTRUCTION")
+        void rush_notUnderConstruction() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            BuildingInstance building =
+                    islandBuilding(storage(), island, 51L); // buildCompleteAt 없음
+            given(buildingInstanceRepository.findById(51L)).willReturn(Optional.of(building));
+
+            assertThatThrownBy(() -> buildingService.rushConstruction(1L, 51L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.BUILDING_NOT_UNDER_CONSTRUCTION);
+        }
+
+        @Test
+        @DisplayName("AP 부족 → INSUFFICIENT_AP")
+        void rush_insufficientAp() {
+            User user = sampleUser(1L);
+            HomeIsland island = sampleIsland(user);
+            BuildingInstance building = underConstruction(storage(), island, 52L);
+            var wallet = walletWithAp(user, 10); // 100 필요한데 10뿐
+            given(buildingInstanceRepository.findById(52L)).willReturn(Optional.of(building));
+            given(walletRepository.findById(1L)).willReturn(Optional.of(wallet));
+
+            assertThatThrownBy(() -> buildingService.rushConstruction(1L, 52L))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.INSUFFICIENT_AP);
         }
     }
 }

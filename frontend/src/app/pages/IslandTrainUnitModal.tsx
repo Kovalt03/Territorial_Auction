@@ -9,12 +9,16 @@ interface TrainableUnit {
   colorHex: string | null;
   costGp: number;
   foodCost: number;
+  /** 이 유닛(레벨 1)을 생산하는 데 필요한 병영 레벨. 보유 유닛(UnitInfo)에도 있음. */
+  requiredBarracksLevel: number;
 }
 
 interface Props {
   units: TrainableUnit[];
   islandGp: number;
   storedFood: number;
+  /** 이 위치의 병영 최고 레벨(0=병영 없음). 요구 레벨 초과 유닛은 잠긴다. */
+  maxBarracksLevel: number;
   trainUnitTypeId: number | null;
   trainQuantity: number;
   trainLevel: number;
@@ -29,10 +33,13 @@ interface Props {
 }
 
 export function IslandTrainUnitModal({
-  units, islandGp, storedFood, trainUnitTypeId, trainQuantity, trainLevel, researchedLevels,
+  units, islandGp, storedFood, maxBarracksLevel, trainUnitTypeId, trainQuantity, trainLevel, researchedLevels,
   isTraining, onSelectUnit, onChangeQuantity, onChangeLevel, onTrain, onClose,
 }: Props) {
   const maxLevel = trainUnitTypeId ? (researchedLevels[trainUnitTypeId] ?? 1) : 1;
+  const selectedLocked =
+    trainUnitTypeId != null &&
+    (units.find(u => u.unitTypeId === trainUnitTypeId)?.requiredBarracksLevel ?? 1) > maxBarracksLevel;
   return (
     <div className="modal-center-overlay">
       <div className="modal-backdrop" onClick={onClose} />
@@ -57,20 +64,26 @@ export function IslandTrainUnitModal({
                   color: u.colorHex ?? fallback.color,
                 };
                 const isSelected = trainUnitTypeId === u.unitTypeId;
+                const isLocked = u.requiredBarracksLevel > maxBarracksLevel;
                 return (
                   <button
                     key={u.unitTypeId}
                     onClick={() => onSelectUnit(u.unitTypeId)}
-                    className="rounded-xl p-2 flex flex-col items-center gap-1 transition-all"
+                    disabled={isLocked}
+                    title={isLocked ? `병영 Lv.${u.requiredBarracksLevel} 필요` : ''}
+                    className="rounded-xl p-2 flex flex-col items-center gap-1 transition-all disabled:cursor-not-allowed"
                     style={{
                       background: isSelected ? meta.color + '20' : 'var(--color-panel-deep)',
                       border: `1.5px solid ${isSelected ? meta.color : '#354064'}`,
                       color: meta.color,
+                      opacity: isLocked ? 0.4 : 1,
                     }}
                   >
-                    <span className="text-lg">{meta.icon}</span>
+                    <span className="text-lg">{isLocked ? '🔒' : meta.icon}</span>
                     <span className="text-[11px] font-semibold">{meta.label}</span>
-                    <span className="text-[10px] text-muted">{u.costGp} GP · 식량 {u.foodCost}</span>
+                    <span className="text-[10px] text-muted">
+                      {isLocked ? `병영 Lv.${u.requiredBarracksLevel}` : `${u.costGp} GP · 식량 ${u.foodCost}`}
+                    </span>
                   </button>
                 );
               })}
@@ -109,9 +122,12 @@ export function IslandTrainUnitModal({
               className="w-full h-9 rounded-xl px-3 text-sm bg-elevated border border-outline text-foreground"
             />
           </div>
+          {selectedLocked && (
+            <p className="text-danger text-[11px]">⚠ 병영 레벨이 부족해 이 유닛을 생산할 수 없습니다.</p>
+          )}
           <button
             onClick={onTrain}
-            disabled={isTraining || !trainUnitTypeId}
+            disabled={isTraining || !trainUnitTypeId || selectedLocked}
             className="w-full h-10 rounded-xl font-semibold text-sm transition-all hover:brightness-110 disabled:opacity-50 bg-secondary/20 text-secondary border-[1.5px] border-secondary"
           >
             {isTraining ? '훈련 중...' : '훈련하기'}
