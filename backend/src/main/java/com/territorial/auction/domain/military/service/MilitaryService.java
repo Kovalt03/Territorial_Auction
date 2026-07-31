@@ -339,6 +339,11 @@ public class MilitaryService {
         return buildUnitListResponse(userId, instances);
     }
 
+    // 훈련 가능한 유닛 종류 전체. 보유 여부와 무관 — 생산 UI가 첫 유닛도 고를 수 있게 한다.
+    public List<UnitTypeCatalogResponse> getUnitTypeCatalog() {
+        return unitTypeRepository.findAll().stream().map(UnitTypeCatalogResponse::from).toList();
+    }
+
     // 특정 영토에 배치된 '내' 유닛을 타입별 합계로 반환한다(회수 UI용). 호출자 소유분만 → 정보 비대칭 유지.
     public List<GarrisonUnitResponse> getTerritoryGarrison(Long userId, Long territoryId) {
         Map<UnitType, Integer> byType = new LinkedHashMap<>();
