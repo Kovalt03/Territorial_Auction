@@ -5,7 +5,7 @@ import { LoadingState } from '../components/LoadingState';
 import { useApp } from '../context/AppContext';
 import { useIsland } from '../hooks/useIsland';
 import { useMilitary } from '../hooks/useMilitary';
-import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi, fetchBuildingTypes } from '../api/island';
+import { storeBuilding as storeBuildingApi, moveBuilding as moveBuildingApi, placeIslandBuilding, fetchBuildingInventory, placeFromInventoryOnIsland, harvestIslandGp, upgradeBuilding as upgradeBuildingApi, rushBuilding as rushBuildingApi, fetchBuildingTypes } from '../api/island';
 import { produceUnit, fetchResearch, startResearch, fetchUnitTypes } from '../api/military';
 import type { ResearchStatus, UnitTypeCatalog } from '../types/military';
 import { ApiError } from '../api/client';
@@ -181,6 +181,20 @@ export function PersonalIslandPage() {
       );
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : '업그레이드에 실패했습니다');
+    }
+  };
+
+  const handleRush = async () => {
+    const buildingId = selectedCellData?.buildingId;
+    if (!buildingId) return;
+    try {
+      const result = await rushBuildingApi(buildingId);
+      syncAP(result.apRemaining);
+      void reloadIsland();
+      setShowBuildingAction(false);
+      showToast(`AP ${result.apSpent.toLocaleString()} 소모 — 즉시 완료`, false);
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : '즉시 완료에 실패했습니다');
     }
   };
 
@@ -840,6 +854,7 @@ export function PersonalIslandPage() {
             setShowBuildingAction(false);
             void handleHarvest();
           }}
+          onRush={() => void handleRush()}
           onClose={() => setShowBuildingAction(false)}
         />
       )}

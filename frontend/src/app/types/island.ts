@@ -63,6 +63,12 @@ export interface UpgradeBuildingResponse {
   buildCompleteAt: string | null;
 }
 
+export interface RushConstructionResponse {
+  buildingId: number;
+  apSpent: number;
+  apRemaining: number;
+}
+
 export interface PlaceFromInventoryResponse {
   buildingId: number;
   buildingType: string;

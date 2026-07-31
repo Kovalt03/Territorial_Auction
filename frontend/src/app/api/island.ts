@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { BuildingTypeInfo, HarvestIslandGpResponse, InventoryItem, IslandData, PlaceFromInventoryResponse, PlaceIslandBuildingResponse, UpgradeBuildingResponse } from '../types/island';
+import type { BuildingTypeInfo, HarvestIslandGpResponse, InventoryItem, IslandData, PlaceFromInventoryResponse, PlaceIslandBuildingResponse, RushConstructionResponse, UpgradeBuildingResponse } from '../types/island';
 
 export function fetchIsland() {
   return apiClient.get<IslandData>('/island');
@@ -43,4 +43,9 @@ export function harvestIslandGp(): Promise<HarvestIslandGpResponse> {
 
 export function upgradeBuilding(buildingId: number): Promise<UpgradeBuildingResponse> {
   return apiClient.post<UpgradeBuildingResponse>(`/buildings/${buildingId}/upgrade`, {});
+}
+
+// AP로 건설/업그레이드를 즉시 완료. 비용은 남은 시간 비례(서버 계산).
+export function rushBuilding(buildingId: number): Promise<RushConstructionResponse> {
+  return apiClient.post<RushConstructionResponse>(`/buildings/${buildingId}/rush`, {});
 }

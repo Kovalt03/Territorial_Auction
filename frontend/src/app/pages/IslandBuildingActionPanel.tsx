@@ -11,10 +11,18 @@ interface Props {
   onUpgrade: () => void;
   onTrain: () => void;
   onHarvest: () => void;
+  onRush: () => void;
   onClose: () => void;
 }
 
 const MAX_BUILDING_LEVEL = 3;
+// 백엔드 BuildingPolicy.RUSH_AP_PER_MINUTE 와 일치.
+const RUSH_AP_PER_MINUTE = 10;
+
+function rushApCost(buildCompleteAt: string): number {
+  const remainingSec = Math.max(0, (new Date(buildCompleteAt).getTime() - Date.now()) / 1000);
+  return Math.ceil(remainingSec / 60) * RUSH_AP_PER_MINUTE;
+}
 
 function statLine(b: BuildingTypeInfo, level: number): string {
   const parts: string[] = [];
@@ -26,9 +34,10 @@ function statLine(b: BuildingTypeInfo, level: number): string {
 }
 
 export function IslandBuildingActionPanel({
-  selectedCell, cellData, info, onStartMove, onStoreBuilding, onUpgrade, onTrain, onHarvest, onClose,
+  selectedCell, cellData, info, onStartMove, onStoreBuilding, onUpgrade, onTrain, onHarvest, onRush, onClose,
 }: Props) {
   const color = buildingColors[cellData.type];
+  const isBuilding = !!cellData.buildCompleteAt && new Date(cellData.buildCompleteAt).getTime() > Date.now();
   const curLevel = cellData.level ?? 1;
   const isMaxLevel = curLevel >= MAX_BUILDING_LEVEL;
   const isCastle = cellData.type === 'castle';
@@ -71,6 +80,17 @@ export function IslandBuildingActionPanel({
           </div>
           {stats && <p className="text-muted text-[11px] mt-2">⚙ {stats}</p>}
         </div>
+
+        {isBuilding && (
+          <div className="px-4 pt-4">
+            <button
+              onClick={onRush}
+              className="w-full h-12 rounded-xl font-bold border-[1.5px] border-primary text-primary hover:bg-primary/10 transition-all text-[13px]"
+            >
+              ⚡ AP로 즉시 완료 ({rushApCost(cellData.buildCompleteAt!).toLocaleString()} AP)
+            </button>
+          </div>
+        )}
 
         {(isBarracks || isStorageBuilding) && (
           <div className="px-4 pt-4">
