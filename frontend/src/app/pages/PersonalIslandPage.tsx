@@ -29,7 +29,7 @@ const STORAGE_CAP_PER_LEVEL = 5000;
 
 export function PersonalIslandPage() {
   const navigate = useNavigate();
-  const { ap, gp, username, syncAP } = useApp();
+  const { ap, gp, username, syncAP, syncGP } = useApp();
   const { island, reload: reloadIsland } = useIsland();
   const { data: militaryData, isLoading: isMilitaryLoading, reload: reloadMilitary } = useMilitary();
   // 유닛·식량은 위치별로 그룹핑돼 내려온다 — 이 페이지는 섬 위치만 본다.
@@ -128,7 +128,8 @@ export function PersonalIslandPage() {
     setIsResearching(true);
     setResearchError(null);
     try {
-      await startResearch(unitTypeId);
+      const res = await startResearch(unitTypeId);
+      syncGP(res.vaultGpRemaining); // 연구비는 금고에서 차감 — 헤더 금고 GP 즉시 반영
       reloadResearch();
       showToast('연구를 시작했습니다', false);
     } catch (e) {
