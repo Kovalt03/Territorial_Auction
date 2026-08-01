@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router';
 
 import { declareSiege } from '../api/siege';
 import { fetchTerritoryDetail } from '../api/map';
@@ -71,13 +72,13 @@ export function SiegePage() {
 
   const targetId = parseInt(targetInput, 10);
 
-  const handleSearchTarget = async () => {
-    if (!targetId) return;
+  const searchTargetById = useCallback(async (id: number) => {
+    if (!id) return;
     setIsSearching(true);
     setTargetError(null);
     setTargetTerritory(null);
     try {
-      const detail = await fetchTerritoryDetail(targetId);
+      const detail = await fetchTerritoryDetail(id);
       if (!detail.owner) {
         setTargetError('점령자가 없는 영토는 공격할 수 없습니다.');
       } else {
@@ -88,7 +89,20 @@ export function SiegePage() {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
+
+  const handleSearchTarget = () => void searchTargetById(targetId);
+
+  // 맵에서 '공성전 선언'으로 넘어오면 ?target=<영토ID> 를 받아 자동으로 대상을 선택한다.
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const t = searchParams.get('target');
+    const id = t ? parseInt(t, 10) : 0;
+    if (id) {
+      setTargetInput(t!);
+      void searchTargetById(id);
+    }
+  }, [searchParams, searchTargetById]);
 
   const zone = zones.find(z => z.id === selectedZone)!;
 
