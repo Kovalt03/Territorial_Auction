@@ -9,9 +9,9 @@ import type { SiegeAlert } from '../api/siege';
 
 const navItems = [
   { icon: '🏝', label: '나의섬', path: '/app/my-island' },
-  { icon: '⚔', label: '공성', path: '/app/sieges' },
+  { icon: '🏰', label: '공성', path: '/app/sieges' },
   { icon: '🏦', label: '금고', path: '/app/vault' },
-  { icon: '⚔️', label: '길드', path: '/app/guild' },
+  { icon: '🛡', label: '길드', path: '/app/guild' },
   { icon: '🛍', label: '아이템샵', path: '/app/item-shop' },
   { icon: '⭐', label: '시즌패스', path: '/app/season-pass' },
   { icon: '🏆', label: '랭킹', path: '/app/ranking' },
