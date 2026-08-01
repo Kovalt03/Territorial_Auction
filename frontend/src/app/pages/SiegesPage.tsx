@@ -59,21 +59,33 @@ export function SiegesPage() {
           {active.map(s => {
             const isDefender = s.defender.userId === userId;
             return (
-              <button
+              <div
                 key={s.siegeId}
-                onClick={() => navigate(`/app/territory/${s.targetTerritory.id}`)}
-                className={`w-full text-left rounded-xl p-3 border transition-colors ${isDefender ? 'border-danger/60 bg-danger/5 hover:bg-danger/10' : 'border-gp/50 bg-gp/5 hover:bg-gp/10'}`}
+                className={`flex items-center gap-2 rounded-xl p-3 border ${isDefender ? 'border-danger/60 bg-danger/5' : 'border-gp/50 bg-gp/5'}`}
               >
-                <div className="flex items-center justify-between">
-                  <span className={`text-[11px] font-bold ${isDefender ? 'text-danger' : 'text-gp'}`}>
-                    {isDefender ? '🛡 방어' : '⚔ 공격'} · ({s.targetTerritory.coordX}, {s.targetTerritory.coordY})
-                  </span>
-                  <span className="text-gold text-[11px] font-bold">{remaining(s.resolveAt)} 후 정산</span>
-                </div>
-                <p className="text-muted text-[10px] mt-0.5">
-                  {isDefender ? `공격자: ${s.attacker.nickname}` : `방어자: ${s.defender.nickname}`}
-                </p>
-              </button>
+                <button
+                  onClick={() => navigate(`/app/territory/${s.targetTerritory.id}`)}
+                  className="flex-1 text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[11px] font-bold ${isDefender ? 'text-danger' : 'text-gp'}`}>
+                      {isDefender ? '🛡 방어' : '⚔ 공격'} · ({s.targetTerritory.coordX}, {s.targetTerritory.coordY})
+                    </span>
+                    <span className="text-gold text-[11px] font-bold">{remaining(s.resolveAt)} 후 정산</span>
+                  </div>
+                  <p className="text-muted text-[10px] mt-0.5">
+                    {isDefender ? `공격자: ${s.attacker.nickname}` : `방어자: ${s.defender.nickname}`}
+                  </p>
+                </button>
+                {!isDefender && (
+                  <button
+                    onClick={() => navigate(`/app/siege?target=${s.targetTerritory.id}`)}
+                    className="flex-shrink-0 text-[11px] font-semibold text-gp border border-gp/50 rounded-lg px-2.5 py-1.5 hover:bg-gp/10 transition-colors"
+                  >
+                    🏰 공성 가기
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
@@ -94,13 +106,21 @@ export function SiegesPage() {
           {history?.history.map(h => {
             const win = h.result === 'WIN';
             return (
-              <div key={h.siegeId} className="flex items-center justify-between bg-panel-deep rounded-lg px-3 py-2">
-                <span className="text-[11px] text-muted">
+              <div key={h.siegeId} className="flex items-center gap-2 bg-panel-deep rounded-lg px-3 py-2">
+                <span className="text-[11px] text-muted flex-1">
                   {h.role === 'ATTACKER' ? '⚔ 공격' : '🛡 방어'} · {h.territoryGrade}급 영토 #{h.territoryId}
                 </span>
                 <span className={`text-[11px] font-bold ${win ? 'text-gp' : 'text-danger'}`}>
                   {win ? '승리' : '패배'}
                 </span>
+                {h.role === 'ATTACKER' && (
+                  <button
+                    onClick={() => navigate(`/app/siege?target=${h.territoryId}`)}
+                    className="flex-shrink-0 text-[10px] font-semibold text-gp border border-gp/40 rounded-md px-2 py-1 hover:bg-gp/10 transition-colors"
+                  >
+                    🏰 재공성
+                  </button>
+                )}
               </div>
             );
           })}

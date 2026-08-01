@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router';
+import { useSearchParams, useNavigate } from 'react-router';
 
 import { declareSiege } from '../api/siege';
 import { fetchTerritoryDetail } from '../api/map';
+import { fetchAttackTokens } from '../api/military';
 import { useMilitary } from '../hooks/useMilitary';
+import { useFetch } from '../hooks/useFetch';
 import { ApiError } from '../api/client';
 
 import { GNB } from '../components/GNB';
@@ -32,10 +34,11 @@ function buildStagingStructures(t: TerritoryDetailResponse, count: number): Stru
   }));
 }
 
+// effect: 해당 Zone 공략 성공 시 실제 효과 (백엔드 LOOT/DEBUFF/인계와 대응)
 const zones = [
-  { id: 1, name: 'Zone 1 — 핵심 (성)', hp: 420, maxHp: 600, color: '#ff3333' },
-  { id: 2, name: 'Zone 2 — 내부 (병영)', hp: 280, maxHp: 400, color: '#ffd700' },
-  { id: 3, name: 'Zone 3 — 외부 (방벽)', hp: 180, maxHp: 300, color: '#00f5ff' },
+  { id: 1, name: 'Zone 1 — 핵심 (성)', effect: '성 HP 파괴 → 영토 즉시 점령', hp: 420, maxHp: 600, color: '#ff3333' },
+  { id: 2, name: 'Zone 2 — 내부 (병영·생산소)', effect: '생산 건물 파괴 → 12h 생산 마비', hp: 280, maxHp: 400, color: '#ffd700' },
+  { id: 3, name: 'Zone 3 — 외곽 (저장소·방벽)', effect: '저장소 GP 50% 약탈 → 내 금고', hp: 180, maxHp: 300, color: '#00f5ff' },
 ];
 
 function Countdown({ seconds }: { seconds: number }) {
@@ -56,7 +59,9 @@ function Countdown({ seconds }: { seconds: number }) {
 }
 
 export function SiegePage() {
+  const navigate = useNavigate();
   const { data: militaryData } = useMilitary();
+  const { data: tokens } = useFetch(fetchAttackTokens, '공격권 정보를 불러올 수 없습니다.');
   const [selectedZone, setSelectedZone] = useState(3);
   // unitTypeId → 커밋 수량
   const [forces, setForces] = useState<Record<number, number>>({});
@@ -123,6 +128,9 @@ export function SiegePage() {
   const capacity = stagingCount * STAGING_CAP_PER;
   const overCapacity = totalUnits > capacity;
   const structureCost = stagingCount * STAGING_COST_GP;
+  // 현재 UI는 Zone(일반) 공격만 지원 → 일반 공격권을 소모한다.
+  const normalTokens = tokens?.normalCount ?? 0;
+  const hasNoToken = tokens != null && normalTokens <= 0;
 
   const handleStart = async () => {
     if (!targetTerritory) { setSiegeError('대상 영토를 먼저 검색해주세요.'); return; }
@@ -215,13 +223,17 @@ export function SiegePage() {
                   <div className="h-full rounded-full transition-all" style={{ width: `${(z.hp / z.maxHp) * 100}%`, background: z.color }} />
                 </div>
                 <p className="mt-1 text-[10px]" style={{ color: z.color }}>{z.hp} / {z.maxHp} HP</p>
+                <p className="mt-0.5 text-[10px] text-muted">▸ {z.effect}</p>
               </button>
             ))}
           </div>
 
           {/* 공성 건물 — 주둔지 (공격 병력 상한 제공, 금고 GP 결제) */}
           <div className="p-4 border-b border-outline">
-            <p className="text-muted font-semibold mb-2 text-xs">주둔지 (공격 병력 상한)</p>
+            <p className="text-muted font-semibold mb-1 text-xs">주둔지 수 (공격 병력 상한)</p>
+            <p className="text-muted text-[10px] mb-2">
+              주둔지 1개 = 병력 +{STAGING_CAP_PER}기 · 개당 {STAGING_COST_GP} GP(금고). 몇 개를 지을지 고릅니다.
+            </p>
             <div className="flex items-center gap-2">
               {[1, 2, 3].map(n => (
                 <button
@@ -234,12 +246,13 @@ export function SiegePage() {
                     color: stagingCount === n ? '#ff3333' : '#8892b0',
                   }}
                 >
-                  <span className="text-[13px] font-bold">×{n}</span>
+                  <span className="text-[13px] font-bold block">주둔지 ×{n}</span>
+                  <span className="text-[10px] block opacity-80">병력 {n * STAGING_CAP_PER}기</span>
                 </button>
               ))}
             </div>
             <p className="text-muted text-[10px] mt-2">
-              수용량 {capacity}기 · 금고 {structureCost.toLocaleString()} GP · 대상 인접 타일 자동 배치
+              선택: 수용량 {capacity}기 · 금고 {structureCost.toLocaleString()} GP · 대상 인접 타일 자동 배치
             </p>
           </div>
 
@@ -288,6 +301,21 @@ export function SiegePage() {
           </div>
 
           <div className="p-4 space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-muted">공격권 보유</span>
+              <span className="text-foreground">
+                일반 <span className={`font-bold ${normalTokens > 0 ? 'text-gold' : 'text-danger'}`}>{normalTokens}</span>
+                {tokens != null && <span className="text-muted"> · 정밀 {tokens.precisionCount}</span>}
+              </span>
+            </div>
+            {hasNoToken && (
+              <button
+                onClick={() => navigate('/app/item-shop')}
+                className="w-full text-[11px] font-semibold text-primary border border-primary/50 rounded-lg py-2 hover:bg-primary/10 transition-colors"
+              >
+                공격권이 없습니다 — 상점에서 구매하기 →
+              </button>
+            )}
             {siegeError && (
               <p className="text-danger text-xs text-center">⚠ {siegeError}</p>
             )}
@@ -296,9 +324,9 @@ export function SiegePage() {
               size="lg"
               fullWidth
               onClick={() => setShowConfirm(true)}
-              disabled={totalUnits === 0 || !targetTerritory}
+              disabled={totalUnits === 0 || !targetTerritory || hasNoToken}
             >
-              {!targetTerritory ? '대상 영토를 선택하세요' : '⚔ 공성전 시작'}
+              {!targetTerritory ? '대상 영토를 선택하세요' : hasNoToken ? '공격권 필요' : '⚔ 공성전 시작'}
             </Button>
           </div>
         </div>
