@@ -45,3 +45,57 @@ export interface SiegeResult {
 export function fetchSiegeResult(siegeId: number): Promise<SiegeResult> {
   return apiClient.get<SiegeResult>(`/military/siege/${siegeId}/result`);
 }
+
+// ── 공성 현황/이력/실시간 경보 ─────────────────────────────────────
+
+export interface SiegeUser { userId: number; nickname: string; }
+export interface SiegeEventItem {
+  siegeId: number;
+  status: 'PENDING' | 'RESOLVED';
+  attacker: SiegeUser;
+  defender: SiegeUser;
+  targetTerritory: { id: number; coordX: number; coordY: number };
+  siegeStartAt: string;
+  resolveAt: string;
+}
+export interface SiegeEventList { totalCount: number; sieges: SiegeEventItem[]; }
+
+// 진행 상태별 공성 목록(전체). 화면에서 내가 공격자/방어자인 것만 필터링해 쓴다.
+export function fetchSiegeEvents(status: 'PENDING' | 'RESOLVED' = 'PENDING'): Promise<SiegeEventList> {
+  return apiClient.get<SiegeEventList>(`/siege/events?status=${status}&size=100`);
+}
+
+export interface MySiegeHistoryItem {
+  siegeId: number;
+  territoryId: number;
+  territoryGrade: string;
+  role: 'ATTACKER' | 'DEFENDER';
+  result: 'WIN' | 'LOSE';
+  occurredAt: string;
+}
+export interface MySiegeHistory {
+  totalCount: number;
+  wins: number;
+  losses: number;
+  history: MySiegeHistoryItem[];
+}
+export function fetchMySiegeHistory(): Promise<MySiegeHistory> {
+  return apiClient.get<MySiegeHistory>('/siege/my-history');
+}
+
+// STOMP /sub/user/{userId}/siege-alert 페이로드 (방어자 채널)
+export interface SiegeAlert {
+  siegeId: number;
+  alertType: 'DECLARED' | 'RESOLVED';
+  territoryId: number;
+  coordX: number;
+  coordY: number;
+  attackZone: number;
+  attackerId: number;
+  attackerNickname: string;
+  defenderId: number;
+  defenderNickname: string;
+  resolveAt: string;
+  isAttackerWin: boolean | null;
+  resultType: string | null;
+}

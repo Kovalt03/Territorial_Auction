@@ -6,6 +6,7 @@ import { placeBidApi, fetchTerritoryAuctionHistory } from '../api/auction';
 import { fetchMyWallet } from '../api/user';
 import { fetchChatHistory } from '../api/chat';
 import { fetchTerritoryDetail } from '../api/map';
+import { fetchSiegeEvents, type SiegeEventItem } from '../api/siege';
 import type { TerritoryDetailResponse } from '../types/territory';
 import { useTerritoryDetail } from '../hooks/useTerritoryDetail';
 import { useMyBids } from '../hooks/useMyBids';
@@ -154,6 +155,15 @@ export function TerritoryDetailPage() {
     fetchTerritoryAuctionHistory(territoryId)
       .then(res => setAuctionHistory(res.histories.map(h => ({ price: h.finalPrice, wonAt: h.wonAt }))))
       .catch(() => setAuctionHistory([]));
+  }, [territoryId]);
+
+  // 이 영토가 공성 대상(진행 중)인지 — 상세 상단 '공성 중' 배지에 쓴다.
+  const [activeSiege, setActiveSiege] = useState<SiegeEventItem | null>(null);
+  useEffect(() => {
+    if (!territoryId) return;
+    fetchSiegeEvents('PENDING')
+      .then(r => setActiveSiege(r.sieges.find(s => s.targetTerritory.id === territoryId) ?? null))
+      .catch(e => console.warn('[TerritoryDetail] siege lookup failed', e));
   }, [territoryId]);
 
   const chartData = useMemo(() => {
@@ -430,6 +440,11 @@ export function TerritoryDetailPage() {
                       <span className="px-2 py-0.5 rounded font-bold text-[11px]" style={{ color: gradeColor, background: gradeColor + '20', border: `1px solid ${gradeColor}50` }}>
                         {territory.grade}급
                       </span>
+                      {activeSiege && (
+                        <span className="px-2 py-0.5 rounded-lg font-bold text-[11px] animate-pulse" style={{ color: '#ff3333', background: '#ff222215', border: '1px solid #ff444440' }}>
+                          🔴 공성 중 — {activeSiege.attacker.nickname} 공격
+                        </span>
+                      )}
                       {isOutbid && (
                         <span className="px-2 py-0.5 rounded-lg font-bold text-[11px] animate-pulse" style={{ color: '#ff5555', background: '#ff222215', border: '1px solid #ff444440' }}>
                           🔺 상회 입찰됨

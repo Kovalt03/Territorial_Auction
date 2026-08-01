@@ -17,6 +17,7 @@ const RankingPage = lazyPage(() => import('./pages/RankingPage'), 'RankingPage')
 const ChargePage = lazyPage(() => import('./pages/ChargePage'), 'ChargePage');
 const TerritoryGridPage = lazyPage(() => import('./pages/TerritoryGridPage'), 'TerritoryGridPage');
 const SiegePage = lazyPage(() => import('./pages/SiegePage'), 'SiegePage');
+const SiegesPage = lazyPage(() => import('./pages/SiegesPage'), 'SiegesPage');
 const ItemShopPage = lazyPage(() => import('./pages/ItemShopPage'), 'ItemShopPage');
 const SeasonPassPage = lazyPage(() => import('./pages/SeasonPassPage'), 'SeasonPassPage');
 const VaultPage = lazyPage(() => import('./pages/VaultPage'), 'VaultPage');
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
   { path: '/app/charge', element: <PrivateRoute><ChargePage /></PrivateRoute> },
   { path: '/app/territory-grid/:id', element: <PrivateRoute><TerritoryGridPage /></PrivateRoute> },
   { path: '/app/siege', element: <PrivateRoute><SiegePage /></PrivateRoute> },
+  { path: '/app/sieges', element: <PrivateRoute><SiegesPage /></PrivateRoute> },
   { path: '/app/item-shop', element: <PrivateRoute><ItemShopPage /></PrivateRoute> },
   { path: '/app/season-pass', element: <PrivateRoute><SeasonPassPage /></PrivateRoute> },
   { path: '/app/vault', element: <PrivateRoute><VaultPage /></PrivateRoute> },
