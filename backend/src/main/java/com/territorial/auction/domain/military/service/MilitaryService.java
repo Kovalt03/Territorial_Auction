@@ -18,6 +18,8 @@ import com.territorial.auction.domain.military.entity.*;
 import com.territorial.auction.domain.military.event.GarrisonBuildingDestroyedEvent;
 import com.territorial.auction.domain.military.event.TerritoryLostEvent;
 import com.territorial.auction.domain.military.repository.*;
+import com.territorial.auction.domain.notification.entity.NotificationLog;
+import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.global.config.BalanceConfig;
@@ -61,6 +63,7 @@ public class MilitaryService {
     private final TerritoryRepository territoryRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
     private final BuildingLevelSpecRepository buildingLevelSpecRepository;
+    private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
     private final BalanceConfig balanceConfig;
     private final SiegeStructureRepository siegeStructureRepository;
@@ -299,6 +302,19 @@ public class MilitaryService {
         commitAttackerForces(siege, userId, request.forces());
         chargeVaultForStructures(userId, request.structures());
         saveSiegeStructures(siege, request.structures());
+
+        // 방어자 알림 목록에 피습 기록(배지는 /sub/user/{id}/notification 로 동시 갱신).
+        notificationService.sendNotification(
+                target.getOwner().getId(),
+                NotificationLog.NotificationType.SIEGE_ALERT,
+                attacker.getNickname()
+                        + "님이 ("
+                        + target.getCoordX()
+                        + ", "
+                        + target.getCoordY()
+                        + ") 영토를 공격했습니다. (Zone "
+                        + request.attackZone()
+                        + ")");
 
         int remaining = targetBuilding == null ? token.getNormalCount() : token.getPrecisionCount();
 

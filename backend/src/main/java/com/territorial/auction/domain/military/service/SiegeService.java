@@ -28,6 +28,8 @@ import com.territorial.auction.domain.military.repository.SiegeResultRepository;
 import com.territorial.auction.domain.military.repository.SiegeStructureRepository;
 import com.territorial.auction.domain.military.repository.UnitInstanceRepository;
 import com.territorial.auction.domain.military.repository.UnitTypeLevelSpecRepository;
+import com.territorial.auction.domain.notification.entity.NotificationLog;
+import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.season.entity.Season;
 import com.territorial.auction.domain.season.repository.SeasonRepository;
 import com.territorial.auction.domain.user.entity.User;
@@ -62,6 +64,7 @@ public class SiegeService {
             buildingLevelSpecRepository;
     private final GlobalVaultRepository globalVaultRepository;
     private final SeasonRepository seasonRepository;
+    private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -129,6 +132,17 @@ public class SiegeService {
                 lootedGp,
                 resultType,
                 appliedCooldownHours);
+
+        // 양측 알림 목록에 정산 결과 기록(배지는 /sub/user/{id}/notification 로 동시 갱신).
+        String coord = "(" + coordX + ", " + coordY + ")";
+        notificationService.sendNotification(
+                defenderId,
+                NotificationLog.NotificationType.SIEGE_RESULT,
+                coord + " 영토 공성 정산 — 방어 " + (isAttackerWin ? "실패" : "성공") + ".");
+        notificationService.sendNotification(
+                attackerId,
+                NotificationLog.NotificationType.SIEGE_RESULT,
+                coord + " 영토 공성 정산 — " + (isAttackerWin ? "승리" : "패배") + ".");
 
         SiegeAlert alert =
                 new SiegeAlert(
