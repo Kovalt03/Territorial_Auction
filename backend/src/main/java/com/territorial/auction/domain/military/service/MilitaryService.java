@@ -1223,6 +1223,14 @@ public class MilitaryService {
     }
 
     private SiegeEventListResponse.SiegeDto toSiegeDto(SiegeEvent siege) {
+        BuildingInstance target = siege.getTargetBuilding();
+        SiegeEventListResponse.TargetBuildingDto targetBuildingDto =
+                target == null
+                        ? null
+                        : new SiegeEventListResponse.TargetBuildingDto(
+                                target.getId(),
+                                target.getBuildingType().getName(),
+                                target.getBuildingType().getDisplayName());
         return new SiegeEventListResponse.SiegeDto(
                 siege.getId(),
                 siege.getStatus().name(),
@@ -1234,6 +1242,8 @@ public class MilitaryService {
                         siege.getTargetTerritory().getId(),
                         siege.getTargetTerritory().getCoordX(),
                         siege.getTargetTerritory().getCoordY()),
+                siege.getAttackZone(),
+                targetBuildingDto,
                 siege.getSiegeStartAt(),
                 siege.getResolveAt());
     }
