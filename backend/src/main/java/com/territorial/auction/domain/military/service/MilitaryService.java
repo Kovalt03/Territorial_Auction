@@ -108,6 +108,10 @@ public class MilitaryService {
                 b.getZone(),
                 b.getHp(),
                 resolver.maxHp(b),
+                b.getPosX(),
+                b.getPosY(),
+                b.getBuildingType().getWidth(),
+                b.getBuildingType().getHeight(),
                 b.isUnderConstruction(now));
     }
 

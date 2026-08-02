@@ -16,7 +16,7 @@ public record SiegeTargetResponse(
     /** 존별 방어 건물 HP 합계 — Zone 클리어 진행도 표시용. */
     public record ZoneHp(int zone, int currentHp, int maxHp, int buildingCount) {}
 
-    /** 정밀 공격 대상이 될 수 있는 건물. 주둔 병력은 포함하지 않는다. */
+    /** 정밀 공격 대상이 될 수 있는 건물. 주둔 병력은 포함하지 않는다. posX/posY/width/height는 영토 내부 그리드 표시용. */
     public record TargetBuilding(
             Long buildingId,
             String name,
@@ -24,5 +24,9 @@ public record SiegeTargetResponse(
             int zone,
             int currentHp,
             int maxHp,
+            int posX,
+            int posY,
+            int width,
+            int height,
             boolean isUnderConstruction) {}
 }
