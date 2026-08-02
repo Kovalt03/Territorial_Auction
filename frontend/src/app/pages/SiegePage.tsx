@@ -178,6 +178,8 @@ export function SiegePage() {
   const targetBuildingName = zoneBuildings.find(b => b.buildingId === targetBuildingId);
 
   // 영토 10×10 그리드의 각 칸이 어떤 건물에 속하는지 매핑(width/height 반영).
+  // 건물이 겹칠 때(테스트 데이터 등) 각 건물의 좌상단(아이콘) 칸이 다른 건물 몸통에 덮이지
+  // 않도록, 좌상단 칸은 몸통 칸보다 우선 소유하게 한다.
   const buildingCellMap = (() => {
     const map = new Map<string, SiegeTargetBuilding>();
     intel?.buildings.forEach(b => {
@@ -185,7 +187,15 @@ export function SiegePage() {
         for (let dy = 0; dy < b.height; dy++) {
           const cx = b.posX + dx;
           const cy = b.posY + dy;
-          if (cx >= 0 && cx < 10 && cy >= 0 && cy < 10) map.set(`${cx},${cy}`, b);
+          if (cx < 0 || cx >= 10 || cy < 0 || cy >= 10) continue;
+          const key = `${cx},${cy}`;
+          const existing = map.get(key);
+          const isThisTopLeft = cx === b.posX && cy === b.posY;
+          const existingIsTopLeft =
+            existing != null && cx === existing.posX && cy === existing.posY;
+          if (existing == null || (isThisTopLeft && !existingIsTopLeft)) {
+            map.set(key, b);
+          }
         }
       }
     });
