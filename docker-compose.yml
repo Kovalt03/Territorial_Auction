@@ -43,6 +43,9 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      # 서버는 단일 타임존(KST) 운영 — 앱이 LocalDateTime을 KST로 가정(+09:00 직렬화)하므로
+      # 컨테이너 시각도 KST로 맞춘다. 미설정 시 컨테이너 기본 UTC로 9시간 어긋남.
+      TZ: Asia/Seoul
       SPRING_PROFILES_ACTIVE: local
       DB_HOST: postgres
       DB_PORT: 5432
