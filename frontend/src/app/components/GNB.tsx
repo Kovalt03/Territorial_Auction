@@ -36,11 +36,11 @@ export function GNB() {
       a.alertType === 'DECLARED'
         ? `⚠ ${a.attackerNickname}님이 ${at} 영토를 공격했습니다 — Zone ${a.attackZone}`
         : `공성 정산: ${at} ${a.isAttackerWin ? '방어 실패' : '방어 성공'}`;
+    // 배지·알림 목록은 백엔드가 보내는 /sub/user/{id}/notification 로 갱신되므로 여기선 토스트만.
     setSiegeAlert({ text, win: a.alertType === 'RESOLVED' && a.isAttackerWin === false });
-    incrementNotification();
     if (alertTimer.current) clearTimeout(alertTimer.current);
     alertTimer.current = setTimeout(() => setSiegeAlert(null), 8000);
-  }, [incrementNotification]);
+  }, []);
   useStompSubscribe<SiegeAlert>(userId ? `/sub/user/${userId}/siege-alert` : null, handleSiegeAlert);
 
   const passDays = passEndDate
