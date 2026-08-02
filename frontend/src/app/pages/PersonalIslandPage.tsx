@@ -478,7 +478,8 @@ export function PersonalIslandPage() {
     1: '#ffd700', 2: '#ff3333', 3: '#00f5ff',
   };
 
-  const countBuildings = (type: BuildingType) => grid.flat().filter(c => c.type === type).length;
+  // 실제 건물 개수 = 앵커 칸(!isBody)만 센다. 2x2 건물이 칸 수(4)로 부풀지 않도록.
+  const countBuildings = (type: BuildingType) => grid.flat().filter(c => c.type === type && !c.isBody).length;
 
   // 건물/장식 탭이 공유하는 목록 카드.
   const buildingCard = (c: BuildingTypeInfo) => {

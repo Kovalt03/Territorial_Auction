@@ -347,7 +347,8 @@ export function TerritoryGridPage() {
     }
   };
 
-  const countBuildings = (type: BuildingType) => grid.flat().filter(c => c.type === type).length;
+  // 실제 건물 개수 = 앵커 칸(!isBody)만 센다. 2x2 건물이 칸 수(4)로 부풀지 않도록.
+  const countBuildings = (type: BuildingType) => grid.flat().filter(c => c.type === type && !c.isBody).length;
   const statDesc = (c: BuildingTypeInfo) => {
     const parts: string[] = [];
     if (c.gpProductionRate) parts.push(`GP +${c.gpProductionRate}/시간`);
@@ -385,9 +386,13 @@ export function TerritoryGridPage() {
   };
   const functionalCatalog = catalog.filter(c => c.category !== 'DECORATIVE');
   const decorativeCatalog = catalog.filter(c => c.category === 'DECORATIVE');
-  const totalDefense = grid.flat()
+  // 총 방어력 = 배치 건물 방어력(방벽·타워) + 주둔 유닛 방어력(배치 수 × 방어력).
+  const buildingDefense = grid.flat()
     .filter(c => c.type !== 'empty' && !c.isBody)
     .reduce((sum, c) => sum + (catalogByType.get(c.type)?.defensePower ?? 0), 0);
+  const garrisonDefense = (militaryData?.locations.find(l => l.locationType === 'TERRITORY' && l.locationId === territoryId)?.units ?? [])
+    .reduce((sum, u) => sum + u.defensePower * u.deployedCount, 0);
+  const totalDefense = buildingDefense + garrisonDefense;
   const zoneBg = (zone: 1 | 2 | 3) => (showZones ? zoneColor[zone] : 'var(--color-surface)');
 
   if (!territoryId) return <div className="page-root"><GNB /><p className="text-danger p-6">잘못된 영토입니다.</p></div>;
@@ -422,9 +427,12 @@ export function TerritoryGridPage() {
             <p className="text-muted text-[10px]">금고 GP</p>
             <p className="text-gp font-bold text-base">💎 {gp.toLocaleString()}</p>
           </div>
-          <div className="text-right" title="이 영토 저장소의 GP. 건물 건설·유닛 생산에 차감되는 값.">
-            <p className="text-muted text-[10px]">영토 저장 GP</p>
-            <p className="text-gold font-bold text-base">🏰 {(detail?.storedGp ?? 0).toLocaleString()}</p>
+          <div className="text-right" title="이 영토 저장소의 GP. 건물 건설·유닛 생산에 차감되는 값. 최대치는 저장소 레벨이 관리.">
+            <p className="text-muted text-[10px]">영토 저장 GP <span className="text-[9px]">(📦 저장소 관리)</span></p>
+            <p className="font-bold text-base">
+              <span className="text-gold">🏰 {(detail?.storedGp ?? 0).toLocaleString()}</span>
+              <span className="text-muted text-[11px]"> / {(detail?.storageCapacity ?? 0).toLocaleString()}</span>
+            </p>
           </div>
           <div className="text-right">
             <p className="text-muted text-[10px]">총 방어력</p>
@@ -580,7 +588,7 @@ export function TerritoryGridPage() {
             {activeTab === 'resources' && (
               <div className="p-3 space-y-3">
                 <div className="bg-panel-deep rounded-xl p-3"><div className="flex justify-between"><span className="text-gold font-semibold text-xs">⚡ AP</span><span className="text-gold font-bold text-sm">{ap.toLocaleString()}</span></div></div>
-                <div className="bg-panel-deep rounded-xl p-3"><div className="flex justify-between"><span className="text-gp font-semibold text-xs">🏰 영토 저장 GP</span><span className="text-gp font-bold text-sm">{(detail?.storedGp ?? 0).toLocaleString()}</span></div></div>
+                <div className="bg-panel-deep rounded-xl p-3"><div className="flex justify-between"><span className="text-gp font-semibold text-xs">🏰 영토 저장 GP</span><span className="text-gp font-bold text-sm">{(detail?.storedGp ?? 0).toLocaleString()} / {(detail?.storageCapacity ?? 0).toLocaleString()}</span></div></div>
                 <IslandResearchPanel research={research} isBusy={isResearching} error={researchError} onResearch={handleResearch} />
               </div>
             )}
