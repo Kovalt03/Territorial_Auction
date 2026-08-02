@@ -360,6 +360,12 @@ export function TerritoryGridPage() {
         <span className="text-muted text-sm">
           {detail?.owner ? `소유자: ${detail.owner.nickname}` : '미점령'}
         </span>
+        <button
+          onClick={() => navigate(`/app/territory/${territoryId}`)}
+          className="h-8 px-3 rounded-lg border border-primary/50 text-primary text-[12px] hover:bg-primary/10 transition-colors"
+        >
+          영토 상세 →
+        </button>
         <button onClick={() => navigate('/app/map')} className="text-muted hover:text-foreground text-xl">✕</button>
       </div>
 

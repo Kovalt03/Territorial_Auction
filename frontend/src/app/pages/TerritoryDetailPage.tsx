@@ -481,6 +481,14 @@ export function TerritoryDetailPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {isMyTerritory && (
+                      <button
+                        onClick={() => navigate(`/app/territory-grid/${territory.territoryId}`)}
+                        className="h-9 px-4 rounded-xl border border-primary/50 text-primary text-[13px] hover:bg-primary/10 transition-colors"
+                      >
+                        🏗 건물 관리
+                      </button>
+                    )}
                     <button
                       onClick={() => toggleWishlist(territory.territoryId)}
                       className="h-9 px-4 rounded-xl border text-[13px] transition-colors"
