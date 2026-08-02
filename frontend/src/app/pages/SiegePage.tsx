@@ -13,7 +13,7 @@ import { Button } from '../components/Button';
 import { UNIT_LABELS } from './islandGrid';
 
 import type { TerritoryDetailResponse } from '../types/territory';
-import type { StructureEntry, SiegeTargetIntel } from '../api/siege';
+import type { StructureEntry, SiegeTargetIntel, SiegeTargetBuilding } from '../api/siege';
 
 const SIEGE_TIME_LIMIT_SEC = 7200;
 const STAGING_CAP_PER = 10; // 주둔지 1개당 공격 병력 상한
@@ -40,6 +40,13 @@ const zones = [
   { id: 2, name: 'Zone 2 — 내부 (병영·생산소)', effect: '생산 건물 파괴 → 12h 생산 마비', color: '#ffd700' },
   { id: 3, name: 'Zone 3 — 외곽 (저장소·방벽)', effect: '저장소 GP 50% 약탈 → 내 금고', color: '#00f5ff' },
 ];
+
+const ZONE_COLOR: Record<number, string> = { 1: '#ff3333', 2: '#ffd700', 3: '#00f5ff' };
+
+const BUILDING_ICON: Record<string, string> = {
+  CASTLE: '🏯', STORAGE: '📦', WORKSHOP: '🏭', BARRACKS: '⚔️',
+  RESIDENCE: '🏠', FARMLAND: '🌾', WALL: '🧱', TOWER: '🗼', RESEARCH_LAB: '🔬',
+};
 
 function Countdown({ seconds }: { seconds: number }) {
   const [left, setLeft] = useState(seconds);
@@ -109,10 +116,23 @@ export function SiegePage() {
     }
   }, []);
 
-  // 공격 구역·방식이 바뀌면 정밀 대상 선택을 초기화한다(다른 존 건물이 남지 않도록).
-  useEffect(() => {
+  // 공격 구역·방식이 바뀌면 정밀 대상 선택을 초기화(다른 존 건물이 남지 않도록). 건물 클릭 시엔
+  // 구역·방식·대상을 한 번에 지정하므로, 초기화를 effect가 아니라 각 핸들러에서 명시적으로 처리한다.
+  const handleSelectZone = (zoneId: number) => {
+    setSelectedZone(zoneId);
     setTargetBuildingId(null);
-  }, [selectedZone, attackMode]);
+  };
+  const handleSelectMode = (mode: 'normal' | 'precision') => {
+    setAttackMode(mode);
+    setTargetBuildingId(null);
+  };
+  // 영토 그리드에서 건물을 클릭 → 그 건물의 구역으로 전환 + 정밀 모드 + 대상 지정.
+  const handlePickBuilding = (b: SiegeTargetBuilding) => {
+    if (b.isUnderConstruction) return;
+    setSelectedZone(b.zone);
+    setAttackMode('precision');
+    setTargetBuildingId(b.buildingId);
+  };
 
   const handleSearchTarget = () => void searchTargetById(targetId);
 
@@ -156,6 +176,21 @@ export function SiegePage() {
     intel?.buildings.filter(b => b.zone === selectedZone && !b.isUnderConstruction) ?? [];
   const needsBuilding = isPrecision && targetBuildingId == null;
   const targetBuildingName = zoneBuildings.find(b => b.buildingId === targetBuildingId);
+
+  // 영토 10×10 그리드의 각 칸이 어떤 건물에 속하는지 매핑(width/height 반영).
+  const buildingCellMap = (() => {
+    const map = new Map<string, SiegeTargetBuilding>();
+    intel?.buildings.forEach(b => {
+      for (let dx = 0; dx < b.width; dx++) {
+        for (let dy = 0; dy < b.height; dy++) {
+          const cx = b.posX + dx;
+          const cy = b.posY + dy;
+          if (cx >= 0 && cx < 10 && cy >= 0 && cy < 10) map.set(`${cx},${cy}`, b);
+        }
+      }
+    });
+    return map;
+  })();
 
   const handleStart = async () => {
     if (!targetTerritory) { setSiegeError('대상 영토를 먼저 검색해주세요.'); return; }
@@ -241,7 +276,7 @@ export function SiegePage() {
               return (
                 <button
                   key={z.id}
-                  onClick={() => setSelectedZone(z.id)}
+                  onClick={() => handleSelectZone(z.id)}
                   className="w-full mb-2 rounded-xl p-3 text-left transition-all"
                   style={{
                     background: selectedZone === z.id ? z.color + '20' : 'var(--color-panel-deep)',
@@ -269,7 +304,7 @@ export function SiegePage() {
               {([['normal', '일반', '존 전체 분산'], ['precision', '정밀', '건물 1개 집중']] as const).map(([mode, label, sub]) => (
                 <button
                   key={mode}
-                  onClick={() => setAttackMode(mode)}
+                  onClick={() => handleSelectMode(mode)}
                   className="flex-1 rounded-xl py-2 text-center transition-all"
                   style={{
                     background: attackMode === mode ? '#8b50ff20' : 'var(--color-panel-deep)',
@@ -480,15 +515,46 @@ export function SiegePage() {
               })}
             </div>
 
-            {/* Siege preview grid (10x10) */}
+            {/* Siege preview grid (10x10) — 실제 건물을 배치, 클릭 시 정밀 공격 대상 지정 */}
             <div className="bg-surface border border-outline rounded-xl p-4 flex-1">
-              <p className="text-muted mb-3 text-xs">영토 내부 구조</p>
+              <p className="text-muted mb-1 text-xs">영토 내부 구조</p>
+              <p className="text-muted mb-3 text-[10px]">
+                {intel
+                  ? '건물을 클릭하면 그 구역으로 전환되며 정밀 공격 대상으로 지정됩니다.'
+                  : '대상 영토를 검색하면 건물이 표시됩니다.'}
+              </p>
               <div
-                className="grid gap-1 max-w-[340px] mx-auto"
+                className="grid gap-1 max-w-[360px] mx-auto"
                 style={{ gridTemplateColumns: 'repeat(10, 1fr)' }}
               >
                 {Array.from({ length: 100 }, (_, i) => {
                   const x = i % 10, y = Math.floor(i / 10);
+                  const b = buildingCellMap.get(`${x},${y}`);
+                  if (b) {
+                    const isTopLeft = x === b.posX && y === b.posY;
+                    const isSelected = targetBuildingId === b.buildingId && isPrecision;
+                    const col = ZONE_COLOR[b.zone] ?? '#8892b0';
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handlePickBuilding(b)}
+                        title={`${b.displayName ?? b.name} · Zone ${b.zone} · ${b.currentHp}/${b.maxHp} HP${b.isUnderConstruction ? ' · 건설 중' : ''}`}
+                        className="aspect-square rounded-sm flex items-center justify-center transition-all"
+                        style={{
+                          background: col + (isSelected ? '55' : '33'),
+                          border: `1px solid ${isSelected ? '#8b50ff' : col}`,
+                          boxShadow: isSelected ? '0 0 0 1px #8b50ff inset' : undefined,
+                          opacity: b.isUnderConstruction ? 0.5 : 1,
+                        }}
+                      >
+                        {isTopLeft && (
+                          <span className="text-[11px] leading-none">
+                            {BUILDING_ICON[b.name] ?? '▪'}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  }
                   const isCore = x >= 3 && x <= 6 && y >= 3 && y <= 6;
                   const isInner = x >= 2 && x <= 7 && y >= 2 && y <= 7;
                   const bg = isCore ? '#ff333330' : isInner ? '#ffd70015' : '#00f5ff08';
@@ -502,7 +568,7 @@ export function SiegePage() {
                   );
                 })}
               </div>
-              <div className="flex gap-4 mt-3 justify-center">
+              <div className="flex gap-4 mt-3 justify-center flex-wrap">
                 {zones.map(z => (
                   <div key={z.id} className="flex items-center gap-1">
                     <div className="w-3 h-3 rounded-sm border" style={{ background: z.color + '30', borderColor: z.color + '60' }} />

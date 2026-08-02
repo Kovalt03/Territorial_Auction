@@ -47,6 +47,10 @@ export interface SiegeTargetBuilding {
   zone: number;
   currentHp: number;
   maxHp: number;
+  posX: number;
+  posY: number;
+  width: number;
+  height: number;
   isUnderConstruction: boolean;
 }
 
