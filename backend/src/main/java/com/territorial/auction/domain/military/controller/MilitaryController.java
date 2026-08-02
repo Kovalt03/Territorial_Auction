@@ -58,6 +58,12 @@ public class MilitaryController {
         return ResponseEntity.ok(ApiResponse.ok(militaryService.moveUnit(userId, request)));
     }
 
+    @GetMapping("/siege/target/{territoryId}")
+    public ResponseEntity<ApiResponse<SiegeTargetResponse>> getSiegeTarget(
+            @PathVariable Long territoryId) {
+        return ResponseEntity.ok(ApiResponse.ok(militaryService.getSiegeTarget(territoryId)));
+    }
+
     @PostMapping("/siege")
     public ResponseEntity<ApiResponse<DeclareSiegeResponse>> declareSiege(
             @AuthenticationPrincipal Long userId, @RequestBody @Valid DeclareSiegeRequest request) {
