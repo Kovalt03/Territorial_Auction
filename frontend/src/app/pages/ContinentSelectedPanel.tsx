@@ -308,7 +308,7 @@ export function ContinentSelectedPanel({
         </button>
         {selected.status === 'occupied' && (
           <button
-            onClick={() => navigate('/app/siege')}
+            onClick={() => navigate(`/app/siege?target=${selected.id}`)}
             className="w-full h-8 bg-danger/15 border border-danger rounded-xl text-danger font-bold text-[11px]"
           >
             ⚔ 공성전 선언

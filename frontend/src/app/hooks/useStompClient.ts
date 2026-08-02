@@ -10,6 +10,13 @@ function getOrCreateClient(): Client {
   sharedClient = new Client({
     webSocketFactory: () => new SockJS('/ws') as WebSocket,
     reconnectDelay: 3000,
+    // 매 (재)연결 직전 localStorage에서 최신 토큰을 다시 읽는다.
+    // REST(apiClient)가 401 시 refresh로 localStorage 토큰을 갱신하므로,
+    // 이 훅으로 재연결 때 갱신분을 반영하지 않으면 만료된 토큰으로 영구 거절된다.
+    beforeConnect: () => {
+      const token = localStorage.getItem('accessToken');
+      sharedClient!.connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+    },
   });
   return sharedClient;
 }
@@ -20,8 +27,6 @@ function ensureConnected(): Promise<void> {
   if (connectPromise) return connectPromise;
 
   connectPromise = new Promise<void>((resolve, reject) => {
-    const token = localStorage.getItem('accessToken');
-    client.connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
     client.onConnect = () => { connectPromise = null; resolve(); };
     client.onDisconnect = () => { connectPromise = null; };
     client.onStompError = (frame) => { connectPromise = null; reject(new Error(frame.headers['message'] ?? 'STOMP error')); };

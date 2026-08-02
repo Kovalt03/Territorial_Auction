@@ -1,14 +1,17 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useApp } from '../context/AppContext';
 import { useStompSubscribe } from '../hooks/useStompClient';
 import { NotificationBell } from './NotificationBell';
 import { AnnouncementBanner } from './AnnouncementBanner';
 
+import type { SiegeAlert } from '../api/siege';
+
 const navItems = [
   { icon: '🏝', label: '나의섬', path: '/app/my-island' },
+  { icon: '🏰', label: '공성', path: '/app/sieges' },
   { icon: '🏦', label: '금고', path: '/app/vault' },
-  { icon: '⚔️', label: '길드', path: '/app/guild' },
+  { icon: '🛡', label: '길드', path: '/app/guild' },
   { icon: '🛍', label: '아이템샵', path: '/app/item-shop' },
   { icon: '⭐', label: '시즌패스', path: '/app/season-pass' },
   { icon: '🏆', label: '랭킹', path: '/app/ranking' },
@@ -24,6 +27,22 @@ export function GNB() {
   }, [incrementNotification]);
   useStompSubscribe(userId ? `/sub/user/${userId}/notification` : null, handleWsNotification);
 
+  // 실시간 공성 경보 — 내 영토가 피습되면(DECLARED)·정산되면(RESOLVED) 즉시 토스트로 알린다.
+  const [siegeAlert, setSiegeAlert] = useState<{ text: string; win: boolean } | null>(null);
+  const alertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSiegeAlert = useCallback((a: SiegeAlert) => {
+    const at = `(${a.coordX}, ${a.coordY})`;
+    const text =
+      a.alertType === 'DECLARED'
+        ? `⚠ ${a.attackerNickname}님이 ${at} 영토를 공격했습니다 — Zone ${a.attackZone}`
+        : `공성 정산: ${at} ${a.isAttackerWin ? '방어 실패' : '방어 성공'}`;
+    // 배지·알림 목록은 백엔드가 보내는 /sub/user/{id}/notification 로 갱신되므로 여기선 토스트만.
+    setSiegeAlert({ text, win: a.alertType === 'RESOLVED' && a.isAttackerWin === false });
+    if (alertTimer.current) clearTimeout(alertTimer.current);
+    alertTimer.current = setTimeout(() => setSiegeAlert(null), 8000);
+  }, []);
+  useStompSubscribe<SiegeAlert>(userId ? `/sub/user/${userId}/siege-alert` : null, handleSiegeAlert);
+
   const passDays = passEndDate
     ? Math.max(0, Math.ceil((passEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
@@ -31,6 +50,14 @@ export function GNB() {
   return (
     <>
     <AnnouncementBanner />
+    {siegeAlert && (
+      <button
+        onClick={() => { navigate('/app/sieges'); setSiegeAlert(null); }}
+        className={`fixed top-3 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-xl border text-[12px] font-semibold shadow-lg ${siegeAlert.win ? 'bg-gp/20 border-gp text-gp' : 'bg-danger/20 border-danger text-danger'}`}
+      >
+        {siegeAlert.text}
+      </button>
+    )}
     <header className="flex items-center px-4 gap-3 flex-shrink-0 z-40 h-[76px] bg-surface border-b border-outline">
       {/* Logo */}
       <button

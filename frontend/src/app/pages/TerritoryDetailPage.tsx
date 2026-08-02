@@ -6,12 +6,14 @@ import { placeBidApi, fetchTerritoryAuctionHistory } from '../api/auction';
 import { fetchMyWallet } from '../api/user';
 import { fetchChatHistory } from '../api/chat';
 import { fetchTerritoryDetail } from '../api/map';
+import { fetchSiegeEvents, fetchSiegeTarget, type SiegeEventItem, type SiegeTargetIntel } from '../api/siege';
 import type { TerritoryDetailResponse } from '../types/territory';
 import { useTerritoryDetail } from '../hooks/useTerritoryDetail';
 import { useMyBids } from '../hooks/useMyBids';
 import { useWishlist } from '../hooks/useWishlist';
 import { useStompSubscribe, useStompPublish } from '../hooks/useStompClient';
 import { GNB } from '../components/GNB';
+import { SiegeBuildingGrid } from '../components/SiegeBuildingGrid';
 import { LineChart } from '../components/LineChart';
 import { LoadingState } from '../components/LoadingState';
 import type { MyBidEntry } from '../types/auction';
@@ -155,6 +157,34 @@ export function TerritoryDetailPage() {
       .then(res => setAuctionHistory(res.histories.map(h => ({ price: h.finalPrice, wonAt: h.wonAt }))))
       .catch(() => setAuctionHistory([]));
   }, [territoryId]);
+
+  // 이 영토가 공성 대상(진행 중)인지 — 상세 상단 '공성 중' 배지 + 공성 상세 패널에 쓴다.
+  const [activeSiege, setActiveSiege] = useState<SiegeEventItem | null>(null);
+  useEffect(() => {
+    if (!territoryId) return;
+    fetchSiegeEvents('PENDING')
+      .then(r => setActiveSiege(r.sieges.find(s => s.targetTerritory.id === territoryId) ?? null))
+      .catch(e => console.warn('[TerritoryDetail] siege lookup failed', e));
+  }, [territoryId]);
+
+  // 영토의 실제 건물 배치(intel). 점령 영토만 응답 — 미점령/비로그인은 조용히 무시하고 장식 격자로 폴백.
+  const [siegeIntel, setSiegeIntel] = useState<SiegeTargetIntel | null>(null);
+  useEffect(() => {
+    if (!territoryId) return;
+    fetchSiegeTarget(territoryId)
+      .then(setSiegeIntel)
+      .catch(() => setSiegeIntel(null));
+  }, [territoryId]);
+
+  const zoneEffect = (zone: number) =>
+    zone === 1 ? '성 점령' : zone === 2 ? '생산 마비' : zone === 3 ? '저장소 약탈' : '';
+  const remainingText = (iso: string) => {
+    const secs = Math.max(0, Math.floor((new Date(iso).getTime() - now) / 1000));
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return h > 0 ? `${h}시간 ${m}분` : m > 0 ? `${m}분 ${s}초` : `${s}초`;
+  };
 
   const chartData = useMemo(() => {
     const cutoff = Date.now() - RANGE_MS[chartRange];
@@ -430,6 +460,11 @@ export function TerritoryDetailPage() {
                       <span className="px-2 py-0.5 rounded font-bold text-[11px]" style={{ color: gradeColor, background: gradeColor + '20', border: `1px solid ${gradeColor}50` }}>
                         {territory.grade}급
                       </span>
+                      {activeSiege && (
+                        <span className="px-2 py-0.5 rounded-lg font-bold text-[11px] animate-pulse" style={{ color: '#ff3333', background: '#ff222215', border: '1px solid #ff444440' }}>
+                          🔴 공성 중 — {activeSiege.attacker.nickname} 공격
+                        </span>
+                      )}
                       {isOutbid && (
                         <span className="px-2 py-0.5 rounded-lg font-bold text-[11px] animate-pulse" style={{ color: '#ff5555', background: '#ff222215', border: '1px solid #ff444440' }}>
                           🔺 상회 입찰됨
@@ -446,6 +481,14 @@ export function TerritoryDetailPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {isMyTerritory && (
+                      <button
+                        onClick={() => navigate(`/app/territory-grid/${territory.territoryId}`)}
+                        className="h-9 px-4 rounded-xl border border-primary/50 text-primary text-[13px] hover:bg-primary/10 transition-colors"
+                      >
+                        🏗 건물 관리
+                      </button>
+                    )}
                     <button
                       onClick={() => toggleWishlist(territory.territoryId)}
                       className="h-9 px-4 rounded-xl border text-[13px] transition-colors"
@@ -462,24 +505,59 @@ export function TerritoryDetailPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
-                  {/* Left column — mini-map */}
-                  <div>
+                  {/* Left column — 공성 상세 + 건물 배치 */}
+                  <div className="overflow-y-auto pr-1">
+                    {activeSiege && (
+                      <div className="card p-4 mb-4" style={{ border: '1px solid #ff333360' }}>
+                        <p className="text-danger font-bold text-xs mb-2">⚔ 공성 상세 — 지금 공격받는 위치</p>
+                        <div className="space-y-1.5 text-[12px]">
+                          <div className="flex justify-between"><span className="text-muted">공격자</span><span className="text-foreground">{activeSiege.attacker.nickname}</span></div>
+                          <div className="flex justify-between"><span className="text-muted">공격 구역</span><span className="text-foreground">Zone {activeSiege.attackZone} — {zoneEffect(activeSiege.attackZone)}</span></div>
+                          <div className="flex justify-between"><span className="text-muted">공격 방식</span><span className="text-foreground">{activeSiege.targetBuilding ? `정밀 — ${activeSiege.targetBuilding.displayName ?? activeSiege.targetBuilding.name}` : '일반 (구역 전체 분산)'}</span></div>
+                          <div className="flex justify-between"><span className="text-muted">정산까지</span><span className="text-gold font-bold">{remainingText(activeSiege.resolveAt)}</span></div>
+                        </div>
+                        <p className="text-muted text-[10px] mt-2">아래 그리드에서 빨간 테두리·강조된 칸이 공격받는 건물/구역입니다.</p>
+                      </div>
+                    )}
                     <div className="card p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <p className="text-muted text-xs">영토 미리보기</p>
+                        <p className="text-muted text-xs">
+                          {siegeIntel && siegeIntel.buildings.length > 0 ? '영토 건물 배치' : '영토 미리보기'}
+                        </p>
                         <span className="font-bold text-[11px]" style={{ color: gradeColor }}>{gridSize}×{gridSize} ({territory.grade}급)</span>
                       </div>
-                      <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}>
-                        {Array.from({ length: gridSize * gridSize }, (_, i) => {
-                          const x = i % gridSize, y = Math.floor(i / gridSize);
-                          const half = gridSize / 2;
-                          const isCore = x >= half - 1 && x < half + 1 && y >= half - 1 && y < half + 1;
-                          const q = gridSize / 4;
-                          const isInner = x >= q && x < gridSize - q && y >= q && y < gridSize - q && !isCore;
-                          const bg = isCore ? gradeColor + '35' : isInner ? '#8b50ff20' : '#00f5ff10';
-                          const border = isCore ? gradeColor + '70' : isInner ? '#8b50ff40' : '#00f5ff20';
-                          return <div key={i} className="aspect-square rounded-sm" style={{ background: bg, border: `1px solid ${border}` }} />;
-                        })}
+                      <div className="max-w-[300px] mx-auto">
+                        {siegeIntel && siegeIntel.buildings.length > 0 ? (
+                          <>
+                            <SiegeBuildingGrid
+                              buildings={siegeIntel.buildings}
+                              gridSize={gridSize}
+                              highlightZone={activeSiege?.attackZone ?? null}
+                              targetBuildingId={activeSiege?.targetBuilding?.buildingId ?? null}
+                            />
+                            <div className="flex gap-3 mt-2 justify-center flex-wrap">
+                              {[1, 2, 3].map(z => (
+                                <div key={z} className="flex items-center gap-1">
+                                  <div className="w-2.5 h-2.5 rounded-sm" style={{ background: (z === 1 ? '#ff3333' : z === 2 ? '#ffd700' : '#00f5ff') + '55' }} />
+                                  <span className="text-muted text-[9px]">Zone {z}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}>
+                            {Array.from({ length: gridSize * gridSize }, (_, i) => {
+                              const x = i % gridSize, y = Math.floor(i / gridSize);
+                              const half = gridSize / 2;
+                              const isCore = x >= half - 1 && x < half + 1 && y >= half - 1 && y < half + 1;
+                              const q = gridSize / 4;
+                              const isInner = x >= q && x < gridSize - q && y >= q && y < gridSize - q && !isCore;
+                              const bg = isCore ? gradeColor + '35' : isInner ? '#8b50ff20' : '#00f5ff10';
+                              const border = isCore ? gradeColor + '70' : isInner ? '#8b50ff40' : '#00f5ff20';
+                              return <div key={i} className="aspect-square rounded-sm" style={{ background: bg, border: `1px solid ${border}` }} />;
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
