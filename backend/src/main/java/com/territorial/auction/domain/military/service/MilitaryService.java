@@ -1,10 +1,12 @@
 package com.territorial.auction.domain.military.service;
 
+import com.territorial.auction.domain.building.BuildingLevelSpecResolver;
 import com.territorial.auction.domain.building.StoragePolicy;
 import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository;
 import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
@@ -58,6 +60,7 @@ public class MilitaryService {
     private final UserRepository userRepository;
     private final TerritoryRepository territoryRepository;
     private final BuildingInstanceRepository buildingInstanceRepository;
+    private final BuildingLevelSpecRepository buildingLevelSpecRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final BalanceConfig balanceConfig;
     private final SiegeStructureRepository siegeStructureRepository;
@@ -70,6 +73,56 @@ public class MilitaryService {
                 .findByUserId(userId)
                 .map(AttackTokenResponse::from)
                 .orElse(AttackTokenResponse.empty());
+    }
+
+    /** 공성 대상 정찰 — 대상 영토의 존별 실제 HP와 정밀 공격 대상 건물 목록을 반환한다. 방어 병력 구성은 정보 비대칭(공성 설계 §7-①)상 포함하지 않는다. */
+    public SiegeTargetResponse getSiegeTarget(Long territoryId) {
+        Territory target = findTerritoryOrThrow(territoryId);
+        validateTerritoryOccupied(target);
+
+        List<BuildingInstance> buildings =
+                buildingInstanceRepository.findByTerritoryId(territoryId).stream()
+                        .filter(b -> !b.isDestroyed())
+                        .filter(b -> b.getZone() != null && b.getZone() >= 1 && b.getZone() <= 3)
+                        .toList();
+        BuildingLevelSpecResolver resolver =
+                BuildingLevelSpecResolver.of(buildings, buildingLevelSpecRepository);
+        LocalDateTime now = LocalDateTime.now();
+
+        List<SiegeTargetResponse.TargetBuilding> targetBuildings =
+                buildings.stream().map(b -> toTargetBuilding(b, resolver, now)).toList();
+        return new SiegeTargetResponse(
+                target.getId(),
+                target.getCoordX(),
+                target.getCoordY(),
+                buildZoneHps(buildings, resolver),
+                targetBuildings);
+    }
+
+    private SiegeTargetResponse.TargetBuilding toTargetBuilding(
+            BuildingInstance b, BuildingLevelSpecResolver resolver, LocalDateTime now) {
+        return new SiegeTargetResponse.TargetBuilding(
+                b.getId(),
+                b.getBuildingType().getName(),
+                b.getBuildingType().getDisplayName(),
+                b.getZone(),
+                b.getHp(),
+                resolver.maxHp(b),
+                b.isUnderConstruction(now));
+    }
+
+    private List<SiegeTargetResponse.ZoneHp> buildZoneHps(
+            List<BuildingInstance> buildings, BuildingLevelSpecResolver resolver) {
+        List<SiegeTargetResponse.ZoneHp> zones = new ArrayList<>();
+        for (int zone = 1; zone <= 3; zone++) {
+            final int currentZone = zone;
+            List<BuildingInstance> inZone =
+                    buildings.stream().filter(b -> b.getZone() == currentZone).toList();
+            int currentHp = inZone.stream().mapToInt(BuildingInstance::getHp).sum();
+            int maxHp = inZone.stream().mapToInt(resolver::maxHp).sum();
+            zones.add(new SiegeTargetResponse.ZoneHp(currentZone, currentHp, maxHp, inZone.size()));
+        }
+        return zones;
     }
 
     @Transactional
@@ -233,6 +286,7 @@ public class MilitaryService {
 
         AttackToken token = findAttackTokenOrThrow(userId);
         BuildingInstance targetBuilding = resolveTargetBuilding(request.targetBuildingId());
+        validateTargetBuilding(target, request.attackZone(), targetBuilding);
         consumeAttackToken(token, targetBuilding);
 
         User attacker = findUserOrThrow(userId);
@@ -991,6 +1045,21 @@ public class MilitaryService {
         return buildingInstanceRepository
                 .findById(targetBuildingId)
                 .orElseThrow(() -> new CustomException(ErrorCode.BUILDING_NOT_FOUND));
+    }
+
+    // 정밀 공격 대상 건물은 대상 영토의, 공격 구역(존)에 속한, 파괴되지 않은 건물이어야 한다.
+    private void validateTargetBuilding(
+            Territory target, Integer attackZone, BuildingInstance building) {
+        if (building == null) {
+            return;
+        }
+        boolean isSameTerritory =
+                building.getTerritory() != null
+                        && building.getTerritory().getId().equals(target.getId());
+        boolean isSameZone = attackZone.equals(building.getZone());
+        if (!isSameTerritory || !isSameZone || building.isDestroyed()) {
+            throw new CustomException(ErrorCode.SIEGE_TARGET_BUILDING_INVALID);
+        }
     }
 
     private void consumeAttackToken(AttackToken token, BuildingInstance targetBuilding) {

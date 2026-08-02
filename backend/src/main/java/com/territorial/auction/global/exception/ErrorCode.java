@@ -143,6 +143,8 @@ public enum ErrorCode {
     SIEGE_STRUCTURE_PLACEMENT_INVALID(HttpStatus.BAD_REQUEST, "공성 건물은 대상 영토 인접 타일에만 배치할 수 있습니다."),
     SIEGE_STRUCTURE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "공성 건물 개수 상한을 초과했습니다."),
     SIEGE_FORCE_EXCEEDS_CAPACITY(HttpStatus.BAD_REQUEST, "공격 병력이 주둔지 수용량을 초과합니다."),
+    SIEGE_TARGET_BUILDING_INVALID(
+            HttpStatus.BAD_REQUEST, "정밀 공격 대상 건물이 대상 영토·공격 구역에 없거나 이미 파괴되었습니다."),
     RESEARCH_LAB_LEVEL_INSUFFICIENT(HttpStatus.BAD_REQUEST, "연구소 레벨이 부족합니다."),
     RESEARCH_IN_PROGRESS(HttpStatus.CONFLICT, "이미 연구가 진행 중입니다."),
     RESEARCH_MAX_REACHED(HttpStatus.BAD_REQUEST, "더 연구할 레벨이 없습니다."),

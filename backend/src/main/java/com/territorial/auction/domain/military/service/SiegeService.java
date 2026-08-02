@@ -354,12 +354,7 @@ public class SiegeService {
     }
 
     private int applyLoot(SiegeEvent event) {
-        List<BuildingInstance> storages =
-                buildingInstanceRepository
-                        .findActiveByTerritoryIdAndZone(event.getTargetTerritory().getId(), 3)
-                        .stream()
-                        .filter(b -> "STORAGE".equals(b.getBuildingType().getName()))
-                        .toList();
+        List<BuildingInstance> storages = resolveLootStorages(event);
 
         int totalLooted = 0;
         for (BuildingInstance storage : storages) {
@@ -371,6 +366,19 @@ public class SiegeService {
             creditAttackerVault(event.getAttacker(), totalLooted);
         }
         return totalLooted;
+    }
+
+    // 정밀 공격이 특정 저장소를 지정하면 그 저장소만, 아니면 Zone 3 전 저장소를 약탈한다.
+    private List<BuildingInstance> resolveLootStorages(SiegeEvent event) {
+        BuildingInstance target = event.getTargetBuilding();
+        if (target != null && "STORAGE".equals(target.getBuildingType().getName())) {
+            return List.of(target);
+        }
+        return buildingInstanceRepository
+                .findActiveByTerritoryIdAndZone(event.getTargetTerritory().getId(), 3)
+                .stream()
+                .filter(b -> "STORAGE".equals(b.getBuildingType().getName()))
+                .toList();
     }
 
     // 약탈 GP 는 공격자 금고로 들어간다 — 위치별 GP 원칙상 지갑이 아니라 금고가 유일한 위치 간 이동 수단.
@@ -386,9 +394,13 @@ public class SiegeService {
     }
 
     private void applyDebuff(SiegeEvent event) {
+        // 정밀 공격이 특정 건물을 지정하면 그 건물만, 아니면 Zone 2 전 건물을 타격한다.
+        BuildingInstance target = event.getTargetBuilding();
         List<BuildingInstance> buildings =
-                buildingInstanceRepository.findActiveByTerritoryIdAndZone(
-                        event.getTargetTerritory().getId(), 2);
+                target != null
+                        ? List.of(target)
+                        : buildingInstanceRepository.findActiveByTerritoryIdAndZone(
+                                event.getTargetTerritory().getId(), 2);
         LocalDateTime debuffUntil =
                 LocalDateTime.now().plusHours(MilitaryPolicy.WORKSHOP_DEBUFF_HOURS);
         buildings.forEach(
