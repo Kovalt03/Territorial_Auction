@@ -70,6 +70,11 @@ class SiegeServiceTest {
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
     @Mock private GlobalVaultRepository globalVaultRepository;
     @Mock private SeasonRepository seasonRepository;
+
+    @Mock
+    private com.territorial.auction.domain.notification.service.NotificationService
+            notificationService;
+
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private SimpMessagingTemplate messagingTemplate;
 

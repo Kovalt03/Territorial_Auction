@@ -76,6 +76,11 @@ class MilitaryServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private TerritoryRepository territoryRepository;
     @Mock private BuildingInstanceRepository buildingInstanceRepository;
+
+    @Mock
+    private com.territorial.auction.domain.notification.service.NotificationService
+            notificationService;
+
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private com.territorial.auction.global.config.BalanceConfig balanceConfig;
 
