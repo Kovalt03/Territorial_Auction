@@ -32,6 +32,36 @@ export function declareSiege(req: DeclareSiegeRequest): Promise<DeclareSiegeResp
   return apiClient.post<DeclareSiegeResponse>('/military/siege', req);
 }
 
+// 공성 대상 정찰 — 존별 실제 HP + 정밀 공격 대상 건물. 방어 병력 구성은 미노출(정보 비대칭).
+export interface SiegeTargetZone {
+  zone: number;
+  currentHp: number;
+  maxHp: number;
+  buildingCount: number;
+}
+
+export interface SiegeTargetBuilding {
+  buildingId: number;
+  name: string;
+  displayName: string | null;
+  zone: number;
+  currentHp: number;
+  maxHp: number;
+  isUnderConstruction: boolean;
+}
+
+export interface SiegeTargetIntel {
+  territoryId: number;
+  coordX: number;
+  coordY: number;
+  zones: SiegeTargetZone[];
+  buildings: SiegeTargetBuilding[];
+}
+
+export function fetchSiegeTarget(territoryId: number): Promise<SiegeTargetIntel> {
+  return apiClient.get<SiegeTargetIntel>(`/military/siege/target/${territoryId}`);
+}
+
 export interface SiegeResult {
   siegeId: number;
   isAttackerWin: boolean;
