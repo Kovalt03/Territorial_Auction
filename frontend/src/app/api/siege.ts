@@ -83,12 +83,15 @@ export function fetchSiegeResult(siegeId: number): Promise<SiegeResult> {
 // ── 공성 현황/이력/실시간 경보 ─────────────────────────────────────
 
 export interface SiegeUser { userId: number; nickname: string; }
+export interface SiegeTargetBuildingRef { buildingId: number; name: string; displayName: string | null; }
 export interface SiegeEventItem {
   siegeId: number;
   status: 'PENDING' | 'RESOLVED';
   attacker: SiegeUser;
   defender: SiegeUser;
   targetTerritory: { id: number; coordX: number; coordY: number };
+  attackZone: number;
+  targetBuilding: SiegeTargetBuildingRef | null;
   siegeStartAt: string;
   resolveAt: string;
 }

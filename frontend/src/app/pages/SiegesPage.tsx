@@ -8,6 +8,10 @@ import { GNB } from '../components/GNB';
 
 import type { SiegeEventItem, MySiegeHistory } from '../api/siege';
 
+function zoneEffect(zone: number): string {
+  return zone === 1 ? '성 점령' : zone === 2 ? '생산 마비' : zone === 3 ? '저장소 약탈' : '';
+}
+
 function remaining(iso: string): string {
   const secs = Math.max(0, Math.floor((new Date(iso).getTime() - Date.now()) / 1000));
   const h = Math.floor(secs / 3600);
@@ -75,6 +79,8 @@ export function SiegesPage() {
                   </div>
                   <p className="text-muted text-[10px] mt-0.5">
                     {isDefender ? `공격자: ${s.attacker.nickname}` : `방어자: ${s.defender.nickname}`}
+                    {' · '}Zone {s.attackZone} ({zoneEffect(s.attackZone)})
+                    {s.targetBuilding && ` · 정밀: ${s.targetBuilding.displayName ?? s.targetBuilding.name}`}
                   </p>
                 </button>
                 {!isDefender && (
