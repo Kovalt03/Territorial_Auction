@@ -671,6 +671,52 @@ class MilitaryServiceTest {
         }
 
         @Test
+        @DisplayName("정밀 대상 건물이 공격 구역과 다른 존 → SIEGE_TARGET_BUILDING_INVALID")
+        void precisionTargetWrongZone() {
+            Territory target = targetTerritory();
+            given(territoryRepository.findById(20L)).willReturn(Optional.of(target));
+            given(siegeEventRepository.findRecentByTerritoryAndAttacker(eq(20L), eq(1L), any()))
+                    .willReturn(List.of());
+            given(unitInstanceRepository.sumReadyIdleQuantity(1L, 1L, 1)).willReturn(10);
+            given(attackTokenRepository.findByUserIdWithLock(1L))
+                    .willReturn(Optional.of(attackToken));
+
+            // Zone 3 공격인데 대상 건물은 Zone 1 → 무효
+            BuildingInstance wrongZoneBuilding =
+                    BuildingInstance.builder()
+                            .territory(target)
+                            .buildingType(
+                                    BuildingType.builder()
+                                            .name("CASTLE")
+                                            .width(1)
+                                            .height(1)
+                                            .maxHp(200)
+                                            .baseCostGp(100)
+                                            .build())
+                            .posX(0)
+                            .posY(0)
+                            .hp(200)
+                            .zone(1)
+                            .build();
+            ReflectionTestUtils.setField(wrongZoneBuilding, "id", 77L);
+            given(buildingInstanceRepository.findById(77L))
+                    .willReturn(Optional.of(wrongZoneBuilding));
+
+            DeclareSiegeRequest precisionReq =
+                    new DeclareSiegeRequest(
+                            20L,
+                            77L,
+                            3,
+                            List.of(new DeclareSiegeRequest.ForceEntry(1L, 3, 1)),
+                            structures());
+
+            assertThatThrownBy(() -> militaryService.declareSiege(1L, precisionReq))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.SIEGE_TARGET_BUILDING_INVALID);
+        }
+
+        @Test
         @DisplayName("Zone 1 공격은 바깥 Zone 2 클리어 전제 → 미클리어 시 ZONE_NOT_CLEARED")
         void zone1RequiresOuterCleared() {
             Territory target = targetTerritory();

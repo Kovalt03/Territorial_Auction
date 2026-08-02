@@ -463,6 +463,41 @@ class SiegeServiceTest {
         }
 
         @Test
+        @DisplayName("Zone 3 정밀 공격 → 지정 저장소만 약탈, 나머지 저장소는 무피해")
+        void resolveOneSiege_zone3_precisionAttack_lootsOnlyTargetStorage() {
+            // given — Zone 3에 저장소 2개(A=지정, B=비지정)
+            BuildingInstance targetStorage = makeBuilding("STORAGE", 200, 200, null, 1000, 3);
+            BuildingInstance otherStorage = makeBuilding("STORAGE", 200, 200, null, 2000, 3);
+
+            given(event.getAttackZone()).willReturn(3);
+            given(event.getTargetBuilding()).willReturn(targetStorage);
+
+            SiegeForce attackerForce = makeForce(100, 0, 10); // ATK = 1000, DEF = 0 → 승
+            given(siegeForceRepository.findBySiegeId(100L)).willReturn(List.of(attackerForce));
+            given(unitInstanceRepository.findDefendersInZone(eq(2L), eq(10L), anyInt()))
+                    .willReturn(List.of());
+            // calculateDef가 Zone 3 건물을 조회(저장소는 defensePower null → DEF 0)
+            given(buildingInstanceRepository.findActiveByTerritoryIdAndZone(10L, 3))
+                    .willReturn(List.of(targetStorage, otherStorage));
+
+            GlobalVault vault = mock(GlobalVault.class);
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault));
+
+            // when
+            siegeService.resolveOneSiege(event);
+
+            // then — 지정 저장소만 50% 약탈, 나머지는 그대로
+            assertThat(targetStorage.getStoredGp()).isEqualTo(500);
+            assertThat(otherStorage.getStoredGp()).isEqualTo(2000);
+            then(vault).should().receiveGp(500);
+
+            ArgumentCaptor<SiegeResult> captor = ArgumentCaptor.forClass(SiegeResult.class);
+            then(siegeResultRepository).should().save(captor.capture());
+            assertThat(captor.getValue().getResultType()).isEqualTo(SiegeResult.ResultType.LOOT);
+            assertThat(captor.getValue().getLootedGp()).isEqualTo(500);
+        }
+
+        @Test
         @DisplayName("ATK <= DEF → 공격자 패배, 결과 효과 없음, 이벤트 미발행")
         void resolveOneSiege_defenderWins_noResultEffect() {
             // given
