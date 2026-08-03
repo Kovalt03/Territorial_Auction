@@ -537,14 +537,13 @@ class BuildingServiceTest {
         }
 
         @Test
-        @DisplayName("파괴된 건물 수리 성공")
+        @DisplayName("손상 건물 수리 시작 → GP 선차감 + 수리 타이머 설정(즉시 풀피 아님)")
         void success() {
             User user = sampleUser(1L);
             Territory territory = territoryOwnedBy(user, gradeA());
-            BuildingType bt = storage();
+            BuildingType bt = storage(); // maxHp=60
             BuildingInstance bi = placedInstance(bt, territory, 0, 0);
-            ReflectionTestUtils.setField(bi, "isDestroyed", true);
-            ReflectionTestUtils.setField(bi, "hp", 0);
+            ReflectionTestUtils.setField(bi, "hp", 0); // 손상 60
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
             given(buildingInstanceRepository.findStorageBuildingsByTerritoryIdWithLock(10L))
@@ -552,13 +551,16 @@ class BuildingServiceTest {
 
             RepairBuildingResponse response = buildingService.repair(1L, 100L);
 
-            // maxHp=60 → 손상 60 × 2 GP/HP = 120 GP 차감, 풀피 복구
-            assertThat(response.hp()).isEqualTo(bt.getMaxHp());
+            // 손상 60 × 2 GP/HP = 120 차감. HP는 아직 안 오르고(완료 시), 수리 타이머·플래그 설정.
+            assertThat(response.hp()).isEqualTo(0);
             assertThat(response.gpRemaining()).isEqualTo(2000 - 120);
+            assertThat(response.buildCompleteAt()).isNotNull();
+            assertThat(bi.isRepairing()).isTrue();
+            assertThat(bi.isUnderConstruction(java.time.LocalDateTime.now())).isTrue();
         }
 
         @Test
-        @DisplayName("파괴되지 않은 손상 건물도 수리 → HP당 GP 차감 후 풀피")
+        @DisplayName("파괴되지 않은 손상 건물도 수리 시작 → 손상분 GP 차감")
         void damaged_notDestroyed() {
             User user = sampleUser(1L);
             Territory territory = territoryOwnedBy(user, gradeA());
@@ -572,19 +574,18 @@ class BuildingServiceTest {
 
             RepairBuildingResponse response = buildingService.repair(1L, 100L);
 
-            assertThat(response.hp()).isEqualTo(60);
             assertThat(response.gpRemaining()).isEqualTo(1000 - 40); // (60-40) × 2
+            assertThat(bi.isRepairing()).isTrue();
         }
 
         @Test
-        @DisplayName("레벨2 건물 수리 성공 → hp = baseMaxHp × 2")
+        @DisplayName("레벨2 건물 수리 시작 → 손상 = baseMaxHp×2 기준 GP 차감")
         void success_level2() {
             User user = sampleUser(1L);
             Territory territory = territoryOwnedBy(user, gradeA());
             BuildingType bt = storage(); // maxHp=60
             BuildingInstance bi = placedInstance(bt, territory, 0, 0);
             ReflectionTestUtils.setField(bi, "level", 2);
-            ReflectionTestUtils.setField(bi, "isDestroyed", true);
             ReflectionTestUtils.setField(bi, "hp", 0);
 
             given(buildingInstanceRepository.findById(100L)).willReturn(Optional.of(bi));
@@ -594,12 +595,12 @@ class BuildingServiceTest {
             RepairBuildingResponse response = buildingService.repair(1L, 100L);
 
             // fullHp = 60 × 2 = 120 → 손상 120 × 2 GP = 240 차감
-            assertThat(response.hp()).isEqualTo(bt.getMaxHp() * 2);
             assertThat(response.gpRemaining()).isEqualTo(2000 - 240);
+            assertThat(bi.isRepairing()).isTrue();
         }
 
         @Test
-        @DisplayName("풀피 건물 수리 시도 → INVALID_INPUT")
+        @DisplayName("풀피 건물 수리 시도 → BUILDING_ALREADY_FULL_HP")
         void full_hp() {
             User user = sampleUser(1L);
             Territory territory = territoryOwnedBy(user, gradeA());
@@ -612,7 +613,23 @@ class BuildingServiceTest {
             assertThatThrownBy(() -> buildingService.repair(1L, 100L))
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
-                    .isEqualTo(ErrorCode.INVALID_INPUT);
+                    .isEqualTo(ErrorCode.BUILDING_ALREADY_FULL_HP);
+        }
+
+        @Test
+        @DisplayName("수리 완료(finishConstruction) → 파괴·수리 플래그 해제")
+        void finishRepair_clearsDestroyedAndRepairing() {
+            BuildingInstance bi =
+                    placedInstance(storage(), territoryOwnedBy(sampleUser(1L), gradeA()), 0, 0);
+            ReflectionTestUtils.setField(bi, "isDestroyed", true);
+            ReflectionTestUtils.setField(bi, "hp", 0);
+            bi.startRepair(java.time.LocalDateTime.now().minusSeconds(1)); // 이미 완료 시각
+
+            bi.finishConstruction();
+
+            assertThat(bi.isDestroyed()).isFalse();
+            assertThat(bi.isRepairing()).isFalse();
+            assertThat(bi.isUnderConstruction(java.time.LocalDateTime.now())).isFalse();
         }
     }
 

@@ -15,6 +15,7 @@ interface Props {
   onVaultTransfer: () => void;
   onGarrison: () => void;
   onTrain: () => void;
+  onRepair: () => void;
   onClose: () => void;
 }
 
@@ -22,7 +23,7 @@ const GARRISONABLE = new Set(['castle', 'residence', 'tower', 'wall']);
 
 export function TerritoryGridBuildingActionPanel({
   selectedCell, cellData, isUnderConstruction, color, name, busy,
-  onStartMove, onStoreBuilding, onUpgrade, onVaultTransfer, onGarrison, onTrain, onClose,
+  onStartMove, onStoreBuilding, onUpgrade, onVaultTransfer, onGarrison, onTrain, onRepair, onClose,
 }: Props) {
   const isCastle = cellData.type === 'castle';
   const isStorageBuilding = isCastle || cellData.type === 'storage';
@@ -53,7 +54,20 @@ export function TerritoryGridBuildingActionPanel({
         </div>
 
         {isUnderConstruction && (
-          <p className="text-center text-gold pt-3 text-[11px]">🔨 건설 중에는 이동·보관·업그레이드를 할 수 없습니다</p>
+          <p className="text-center text-gold pt-3 text-[11px]">🔨 건설·수리 중에는 다른 작업을 할 수 없습니다 (완료까지 비활성)</p>
+        )}
+
+        {(cellData.hp ?? 0) < (cellData.maxHp ?? 0) && (
+          <div className="px-4 pt-4">
+            <button
+              onClick={onRepair}
+              disabled={!canAct}
+              className="w-full h-12 rounded-xl font-bold border-[1.5px] border-gp text-gp hover:bg-gp/10 transition-all text-[13px] disabled:opacity-40 disabled:cursor-not-allowed"
+              title={!canAct ? '건설·수리 중에는 수리할 수 없습니다' : '시간제 수리 — 손상 HP당 GP 차감, 수리 중 건물 비활성, 완료 시 HP 풀피'}
+            >
+              🔧 수리 (시간 소요 · 수리 중 비활성)
+            </button>
+          </div>
         )}
 
         {(isStorageBuilding || isGarrisonable || isBarracks) && (

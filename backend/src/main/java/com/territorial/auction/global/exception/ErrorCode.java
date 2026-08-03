@@ -77,6 +77,8 @@ public enum ErrorCode {
     // Building
     BUILDING_NOT_FOUND(HttpStatus.NOT_FOUND, "건물을 찾을 수 없습니다."),
     BUILDING_NOT_UNDER_CONSTRUCTION(HttpStatus.BAD_REQUEST, "건설/업그레이드 중인 건물이 아닙니다."),
+    BUILDING_BUSY(HttpStatus.BAD_REQUEST, "건설·업그레이드·수리 중인 건물은 다시 작업할 수 없습니다."),
+    BUILDING_ALREADY_FULL_HP(HttpStatus.BAD_REQUEST, "이미 HP가 가득 찬 건물입니다."),
     PRODUCTION_BOOST_ALREADY_ACTIVE(HttpStatus.CONFLICT, "이미 생산 부스터가 적용 중입니다."),
     STORAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "저장 공간이 없습니다."),
     BUILDING_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "건물 타입을 찾을 수 없습니다."),

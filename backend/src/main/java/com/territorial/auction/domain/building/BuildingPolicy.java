@@ -12,6 +12,9 @@ public final class BuildingPolicy {
     /** 건물 HP 1 회복당 GP 비용 — 위치 저장소에서 차감. 공성 중 방어 유지 비용. */
     public static final int REPAIR_GP_PER_HP = 2;
 
+    /** 건물 HP 1 회복당 수리 소요 시간(초) — 수리는 즉시 완료가 없고 시간이 걸린다. */
+    public static final int REPAIR_SECONDS_PER_HP = 3;
+
     /** AP 즉시 완료 단가 — 남은 시간 1분당 AP. 비용 = 올림(남은초÷60) × 단가. */
     public static final int RUSH_AP_PER_MINUTE = 10;
 

@@ -6,6 +6,7 @@ import { fetchTerritoryDetail } from '../api/map';
 import {
   fetchTerritoryBuildings, placeTerritoryBuilding,
   placeFromInventoryOnTerritory, upgradeTerritoryBuilding,
+  repairBuilding, repairAllBuildings,
 } from '../api/territoryBuilding';
 import {
   fetchBuildingTypes, fetchBuildingInventory,
@@ -301,6 +302,35 @@ export function TerritoryGridPage() {
       reloadInventory();
       showToast('보관함에 넣었습니다', false);
     }, '보관에 실패했습니다');
+  };
+
+  const handleRepair = () => {
+    const buildingId = selectedCellData?.buildingId;
+    if (!buildingId) return;
+    void run(async () => {
+      const res = await repairBuilding(buildingId);
+      setShowBuildingAction(false);
+      reloadBuildings();
+      reloadDetail();
+      showToast(
+        `수리 시작 — ${remainingLabel(res.buildCompleteAt, Date.now())} 후 완료 (수리 중 비활성)`,
+        false,
+      );
+    }, '수리에 실패했습니다');
+  };
+
+  const handleRepairAll = () => {
+    void run(async () => {
+      const res = await repairAllBuildings('TERRITORY', territoryId);
+      reloadBuildings();
+      reloadDetail();
+      showToast(
+        res.repairedCount > 0
+          ? `${res.repairedCount}개 건물 수리 시작 (금고… ${res.totalCost.toLocaleString()} GP 소모)`
+          : '수리할 손상 건물이 없거나 저장소 GP가 부족합니다',
+        res.repairedCount === 0,
+      );
+    }, '전체 수리에 실패했습니다');
   };
 
   const handleUpgradeBuilding = () => {
@@ -633,6 +663,14 @@ export function TerritoryGridPage() {
                 📦 보관함
                 {inventory.length > 0 && (<span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-secondary text-white text-[10px] flex items-center justify-center">{inventory.length}</span>)}
               </button>
+              <button
+                onClick={handleRepairAll}
+                disabled={busy}
+                className="w-full h-9 border border-gp text-gp rounded-xl text-xs transition-colors hover:bg-gp/10 disabled:opacity-40"
+                title="손상된 모든 건물을 시간제 수리(저장소 GP 차감). 수리 중 건물은 비활성."
+              >
+                🔧 전체 수리
+              </button>
               <button onClick={() => navigate('/app/map')} className="w-full h-9 bg-elevated border border-outline rounded-xl text-muted text-xs">🗺 월드맵으로</button>
             </div>
           )}
@@ -667,6 +705,7 @@ export function TerritoryGridPage() {
           onVaultTransfer={() => navigate('/app/vault')}
           onGarrison={handleOpenGarrison}
           onTrain={handleOpenTrain}
+          onRepair={handleRepair}
           onClose={() => setShowBuildingAction(false)}
         />
       )}

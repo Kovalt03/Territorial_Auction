@@ -69,6 +69,10 @@ public class BuildingInstance {
     // 업그레이드 대기 중일 때 도달할 레벨. null이면 신축 대기이거나 대기 없음.
     @Column private Integer upgradeToLevel;
 
+    // 수리 진행 중 여부. buildCompleteAt(=수리 완료 시각) 동안 true — 수리 중에는 생산·방어 비활성.
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean isRepairing = false;
+
     @Builder
     public BuildingInstance(
             Territory territory,
@@ -164,6 +168,12 @@ public class BuildingInstance {
         this.buildCompleteAt = completeAt;
     }
 
+    // 수리 시작 — 완료 시각까지 buildCompleteAt으로 잠긴다(그 동안 비활성). 완료 시 HP 풀피(호출자 반영).
+    public void startRepair(LocalDateTime completeAt) {
+        this.isRepairing = true;
+        this.buildCompleteAt = completeAt;
+    }
+
     public boolean isUnderConstruction(LocalDateTime now) {
         return buildCompleteAt != null && buildCompleteAt.isAfter(now);
     }
@@ -173,12 +183,16 @@ public class BuildingInstance {
         return buildCompleteAt != null && !buildCompleteAt.isAfter(now);
     }
 
-    // 대기 종료 — 업그레이드였다면 레벨을 올린다. HP는 호출자가 레벨 스펙을 반영해 맞춘다.
+    // 대기 종료 — 업그레이드였다면 레벨을 올린다. HP는 호출자가 레벨 스펙을 반영해 맞춘다(수리·업글 시 풀피).
     public void finishConstruction() {
         if (upgradeToLevel != null) {
             this.level = upgradeToLevel;
             this.upgradeToLevel = null;
         }
+        if (isRepairing) {
+            this.isDestroyed = false; // 수리 완료 → 파괴 상태 해제(풀피는 호출자가 반영)
+        }
+        this.isRepairing = false;
         this.buildCompleteAt = null;
     }
 
