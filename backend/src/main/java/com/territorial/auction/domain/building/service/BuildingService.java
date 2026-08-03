@@ -16,6 +16,7 @@ import com.territorial.auction.domain.building.dto.PlaceFromInventoryRequest;
 import com.territorial.auction.domain.building.dto.PlaceFromInventoryResponse;
 import com.territorial.auction.domain.building.dto.PlaceOnIslandFromInventoryRequest;
 import com.territorial.auction.domain.building.dto.ProductionBoostResponse;
+import com.territorial.auction.domain.building.dto.RepairAllResponse;
 import com.territorial.auction.domain.building.dto.RepairBuildingResponse;
 import com.territorial.auction.domain.building.dto.RushConstructionResponse;
 import com.territorial.auction.domain.building.dto.StoreBuildingResponse;
@@ -190,11 +191,15 @@ public class BuildingService {
     // 대기가 끝난 건물을 정리한다 — 업그레이드였다면 레벨·HP를 올리고, 성이면 섬을 확장한다.
     private void finishConstruction(BuildingInstance building) {
         boolean wasUpgrade = building.getUpgradeToLevel() != null;
+        boolean wasRepair = building.isRepairing();
         building.finishConstruction();
-        if (!wasUpgrade) return;
-
-        applyLevelMaxHp(building);
-        expandIslandIfCastle(building);
+        // 업그레이드·수리는 완료 시 레벨 기준 최대 HP로(수리=풀피). 신축 완료는 HP 변화 없음.
+        if (wasUpgrade || wasRepair) {
+            applyLevelMaxHp(building);
+        }
+        if (wasUpgrade) {
+            expandIslandIfCastle(building);
+        }
     }
 
     private void settleIfFinished(BuildingInstance building) {
@@ -313,28 +318,76 @@ public class BuildingService {
                                         building.getLevel()));
     }
 
+    // 수리는 즉시 완료가 없다 — HP당 GP를 위치 저장소에서 선차감하고 시간이 지나야 풀피가 된다.
+    // 수리 중(buildCompleteAt 미래)에는 생산·방어가 비활성. 수리하지 않은 손상 건물은 파괴 전까지 정상 작동.
     @Transactional
     public RepairBuildingResponse repair(Long userId, Long buildingId) {
         BuildingInstance building = findBuildingOrThrow(buildingId);
         validateBuildingOwner(building, userId);
+        LocalDateTime now = LocalDateTime.now();
+        settleIfFinished(building);
+        int gpRemaining = startTimedRepair(building, now);
+        return new RepairBuildingResponse(
+                building.getId(), building.getHp(), building.getBuildCompleteAt(), gpRemaining);
+    }
 
-        // 손상된 만큼 HP당 GP를 위치 저장소에서 즉시 차감해 풀피로 회복. 이미 풀피면 거부.
+    /** 전체 수리 — 위치의 손상 건물을 일괄 시간제 수리. 저장소 GP가 부족한 건물은 건너뛴다. */
+    @Transactional
+    public RepairAllResponse repairAll(Long userId, String locationType, Long locationId) {
+        List<BuildingInstance> buildings =
+                "TERRITORY".equals(locationType)
+                        ? buildingInstanceRepository.findByTerritoryId(locationId)
+                        : buildingInstanceRepository.findByIslandId(locationId);
+        LocalDateTime now = LocalDateTime.now();
+        int repairedCount = 0;
+        int totalCost = 0;
+        int gpRemaining = -1;
+        for (BuildingInstance building : buildings) {
+            Long ownerId = building.ownerId();
+            if (ownerId == null || !ownerId.equals(userId)) continue;
+            if (building.isDestroyed() || building.isUnderConstruction(now)) continue;
+            int missingHp = missingHp(building);
+            if (missingHp <= 0) continue;
+            int cost = missingHp * repairGpPerHp();
+            try {
+                gpRemaining = chargeBuildingLocationGp(building, cost);
+            } catch (CustomException e) {
+                if (e.getErrorCode() == ErrorCode.INSUFFICIENT_GP) continue;
+                throw e;
+            }
+            building.startRepair(
+                    now.plusSeconds(Math.max(1, missingHp * BuildingPolicy.REPAIR_SECONDS_PER_HP)));
+            repairedCount++;
+            totalCost += cost;
+        }
+        return new RepairAllResponse(repairedCount, totalCost, gpRemaining);
+    }
+
+    // 손상 건물을 시간제 수리로 전환. 반환 = 위치 저장소 잔여 GP.
+    private int startTimedRepair(BuildingInstance building, LocalDateTime now) {
+        if (building.isUnderConstruction(now)) {
+            throw new CustomException(ErrorCode.BUILDING_BUSY);
+        }
+        int missingHp = missingHp(building);
+        if (missingHp <= 0) {
+            throw new CustomException(ErrorCode.BUILDING_ALREADY_FULL_HP);
+        }
+        int gpRemaining = chargeBuildingLocationGp(building, missingHp * repairGpPerHp());
+        building.startRepair(
+                now.plusSeconds(Math.max(1, missingHp * BuildingPolicy.REPAIR_SECONDS_PER_HP)));
+        return gpRemaining;
+    }
+
+    private int missingHp(BuildingInstance building) {
         int fullHp =
                 BuildingPolicy.scaledMaxHp(
                         building.getBuildingType().getMaxHp(), building.getLevel());
-        int missingHp = fullHp - building.getHp();
-        if (missingHp <= 0) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
+        return fullHp - building.getHp();
+    }
 
-        int repairGpPerHp =
-                balanceConfig.getInt(
-                        BalanceConfig.KEY_REPAIR_GP_PER_HP, BuildingPolicy.REPAIR_GP_PER_HP);
-        int repairCost = missingHp * repairGpPerHp;
-        int gpRemaining = chargeBuildingLocationGp(building, repairCost);
-        building.repair();
-
-        return new RepairBuildingResponse(building.getId(), building.getHp(), gpRemaining);
+    private int repairGpPerHp() {
+        return balanceConfig.getInt(
+                BalanceConfig.KEY_REPAIR_GP_PER_HP, BuildingPolicy.REPAIR_GP_PER_HP);
     }
 
     // 완료된 건설/업그레이드를 여기서 정리하므로 쓰기 트랜잭션이다.
