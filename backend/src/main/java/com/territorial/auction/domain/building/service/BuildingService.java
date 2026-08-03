@@ -77,16 +77,18 @@ public class BuildingService {
         return BuildingTypeCatalogResponse.of(buildingTypeRepository.findAll());
     }
 
+    // 조회 시 완료된 건설/업그레이드/수리를 정리한다(getIsland와 동일). 수리 완료 시 HP 풀피 반영. 쓰기 트랜잭션.
+    @Transactional
     public TerritoryBuildingResponse findTerritoryBuildings(Long territoryId) {
         territoryRepository
                 .findById(territoryId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TERRITORY_NOT_FOUND));
 
-        List<BuildingInfo> buildings =
-                buildingInstanceRepository.findByTerritoryId(territoryId).stream()
-                        .map(BuildingInfo::from)
-                        .toList();
+        List<BuildingInstance> instances =
+                buildingInstanceRepository.findByTerritoryId(territoryId);
+        instances.forEach(this::settleIfFinished);
 
+        List<BuildingInfo> buildings = instances.stream().map(BuildingInfo::from).toList();
         return new TerritoryBuildingResponse(buildings);
     }
 
