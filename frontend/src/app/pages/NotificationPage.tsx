@@ -19,6 +19,10 @@ const TYPE_ICON: Record<string, string> = {
   SIEGE_RESULT: '🛡️',
   TAX_CHARGED: '💰',
   INCOME: '💎',
+  SEASON_PASS_EXPIRING: '⏳',
+  TAX_FAIL_WARNING: '⚠️',
+  TAX_EVICTION: '🚨',
+  ISLAND_EXPANDED: '🏝️',
   ADMIN_NOTICE: '📢',
 };
 
@@ -30,6 +34,10 @@ const TYPE_COLOR: Record<string, string> = {
   SIEGE_RESULT: '#8b50ff',
   TAX_CHARGED: '#ff8c00',
   INCOME: '#00ff88',
+  SEASON_PASS_EXPIRING: '#ffd700',
+  TAX_FAIL_WARNING: '#ff8c00',
+  TAX_EVICTION: '#ff3333',
+  ISLAND_EXPANDED: '#00f5ff',
   ADMIN_NOTICE: '#00f5ff',
 };
 
