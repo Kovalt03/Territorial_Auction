@@ -1,6 +1,6 @@
 # WebSocket — Notification
 
-> 구현 상태: ⬜ 미구현
+> 구현 상태: ✅ 구현 완료
 
 ---
 
@@ -29,17 +29,22 @@
 }
 ```
 
+모든 개인 알림(`NotificationType` 12종)은 `NotificationService.sendNotification()`이 이 채널로 발행한다. 전체 타입·설명은 [Notification API](../notification.md#알림-타입) 참조.
+
 | `type` | 설명 | 발행 위치 |
 |---|---|---|
 | `OUTBID` | 내 입찰이 상회 입찰로 넘겨짐 | `AuctionService.placeBid()` |
-| `AUCTION_WIN` | 경매 낙찰 성공 | `AuctionLifecycleService.settleAuction()` |
-| `AUCTION_LOSE` | 경매 낙찰 실패 | `AuctionLifecycleService.settleAuction()` |
-| `SIEGE_ALERT` | 공성전 공격 선언 수신 | 공성전 선언 시 |
-| `SIEGE_RESULT` | 공성전 결과 | 공성전 종료 시 |
-| `TAX_CHARGED` | 토지세 차감 | 토지세 정산 시 |
-| `INCOME` | 영토 생산 정산 | 정산 주기마다 |
-| `GUILD_JOIN_REQUEST` | 길드 가입 신청 (길드장 수신) | 가입 신청 시 |
-| `GUILD_JOIN_APPROVED` | 길드 가입 승인 (신청자 수신) | 승인 시 |
+| `AUCTION_WIN` | 경매 낙찰 성공 (낙찰자) | `AuctionLifecycleService.settleAuction()` |
+| `AUCTION_LOSE` | 경매 낙찰 실패 (차순위 입찰자 전원) | `AuctionLifecycleService.settleAuction()` |
+| `SIEGE_ALERT` | 공성전 공격 선언 수신 (방어자) | `MilitaryService` |
+| `SIEGE_RESULT` | 공성전 결과 (공격·방어 양측) | `SiegeService` |
+| `TAX_CHARGED` | 토지세 정상 납부 | `LandTaxService` |
+| `INCOME` | 수입 적립으로 영토 저장소가 가득 참 | `TerritoryIncomeService` |
+| `SEASON_PASS_EXPIRING` | 시즌 패스 만료 임박 (D-3 / D-day) | `SeasonPassScheduler` |
+| `TAX_FAIL_WARNING` | 토지세 납부 실패 경고 (유예 진입) | `LandTaxService` |
+| `TAX_EVICTION` | 토지세 미납 강제 경매 전환 | `LandTaxService` |
+| `ISLAND_EXPANDED` | 섬 확장으로 건물 보관함 이동 | `BuildingService` |
+| `ADMIN_NOTICE` | 관리자 공지 | `AdminUserActivityService` |
 
 ---
 

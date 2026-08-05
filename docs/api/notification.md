@@ -1,6 +1,6 @@
 # Notification API
 
-> 구현 상태: 🔲 미구현
+> 구현 상태: ✅ 구현 완료
 
 ---
 
@@ -33,22 +33,25 @@
 
 ### 알림 타입
 
-| type | 설명 |
-|---|---|
-| `OUTBID` | 상회 입찰 — 내 입찰이 넘겨졌을 때 |
-| `AUCTION_WIN` | 경매 낙찰 성공 |
-| `AUCTION_LOSE` | 경매 낙찰 실패 |
-| `SIEGE_ALERT` | 공성전 공격 선언 수신 |
-| `SIEGE_RESULT` | 공성전 결과 |
-| `TAX_CHARGED` | 토지세 차감 |
-| `INCOME` | 영토 생산 정산 |
+`NotificationLog.NotificationType` — 전체 12종. 발송은 `NotificationService.sendNotification()`이 담당하며 `notification_logs`에 이력을 남기고 `/sub/user/{userId}/notification`으로 배지를 실시간 갱신한다.
+
+| type | 설명 | 발송 시점 |
+|---|---|---|
+| `OUTBID` | 상회 입찰 — 내 입찰이 넘겨졌을 때 | 입찰 시 이전 최고 입찰자에게 (`AuctionService.placeBid`) |
+| `AUCTION_WIN` | 경매 낙찰 성공 | 경매 정산 시 낙찰자에게 (`AuctionLifecycleService.settleAuction`) |
+| `AUCTION_LOSE` | 경매 낙찰 실패 | 경매 정산 시 차순위 입찰자 전원에게 (`AuctionLifecycleService.settleAuction`) |
+| `SIEGE_ALERT` | 공성전 공격 선언 수신 | 공성 선언 시 방어자에게 (`MilitaryService`) |
+| `SIEGE_RESULT` | 공성전 결과 | 공성 정산 시 공격·방어 양측에게 (`SiegeService`) |
+| `TAX_CHARGED` | 토지세 정상 납부 | 토지세 정산 성공 시 (`LandTaxService`) |
+| `INCOME` | 영토 저장소 가득 참 | 수입 적립으로 저장소가 막 가득 찬 순간 (`TerritoryIncomeService`) |
+| `SEASON_PASS_EXPIRING` | 시즌 패스 만료 임박 | 만료 D-3 / D-day 스케줄러 (`SeasonPassScheduler`) |
+| `TAX_FAIL_WARNING` | 토지세 납부 실패 경고 | 납부 실패로 유예기간 진입 시 (`LandTaxService`) |
+| `TAX_EVICTION` | 토지세 미납 강제 경매 전환 | 유예 만료 후 압류 시 (`LandTaxService`) |
+| `ISLAND_EXPANDED` | 섬 확장으로 건물 보관함 이동 | 섬 확장 시 (`BuildingService`) |
+| `ADMIN_NOTICE` | 관리자 공지 | 관리자 개별/일괄 발송 (`AdminUserActivityService`) |
 
 출처: `notification_logs`  
 `unreadCount`: Redis `notification:unread:{userId}`
-
-### 남은작업
-- 서비스 구현
-- Redis unread 카운터 연동
 
 ---
 
@@ -76,11 +79,7 @@ Redis `notification:unread:{userId}` DECR
 | HTTP | 에러 코드 | 설명 |
 |---|---|---|
 | 404 | NOTIFICATION_NOT_FOUND | 알림 없음 |
-| 403 | FORBIDDEN | 본인 알림 아님 |
-
-### 남은작업
-- 서비스 구현
-- Redis DECR 연동
+| 403 | NOTIFICATION_FORBIDDEN | 본인 알림 아님 |
 
 ---
 
@@ -102,7 +101,3 @@ Redis `notification:unread:{userId}` → 0으로 SET
   "data": null
 }
 ```
-
-### 남은작업
-- 서비스 구현
-- Redis SET 0 연동
