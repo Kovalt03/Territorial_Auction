@@ -12,6 +12,8 @@ import com.territorial.auction.domain.map.entity.TerritoryProductionLog.Producti
 import com.territorial.auction.domain.map.repository.BonusTileRepository;
 import com.territorial.auction.domain.map.repository.TerritoryProductionLogRepository;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.notification.entity.NotificationLog.NotificationType;
+import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.repository.UserRepository;
 import com.territorial.auction.global.exception.CustomException;
@@ -35,6 +37,7 @@ public class TerritoryIncomeService {
     private final BonusTileRepository bonusTileRepository;
     private final TerritoryProductionLogRepository productionLogRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     private record RateBreakdown(int baseRate, int bonusTileRate, int adjacentRate) {
         int total() {
@@ -83,6 +86,7 @@ public class TerritoryIncomeService {
             StoragePolicy.fillGp(storages, gp.credited());
             User ownerRef = userRepository.getReferenceById(territory.getOwner().getId());
             saveProductionLogs(territory, ownerRef, gp);
+            notifyStorageFull(territory, storages);
             log.info(
                     "영토 수입 정산. territoryId={}, ownerId={}, creditedGp={}, elapsedMinutes={}",
                     territory.getId(),
@@ -142,6 +146,19 @@ public class TerritoryIncomeService {
             saveLog(territory, ownerRef, gp.bonusTileGp(), ProductionReason.BONUS_TILE);
         if (gp.adjacentGp() > 0)
             saveLog(territory, ownerRef, gp.adjacentGp(), ProductionReason.ADJACENT_BONUS);
+    }
+
+    // 수입 적립으로 저장 공간이 막 가득 찼을 때만 알린다. 이미 가득 찬 상태면 적립분이 0이라 재발송되지 않는다.
+    private void notifyStorageFull(Territory territory, List<BuildingInstance> storages) {
+        if (StoragePolicy.roomGp(storages) > 0) return;
+        notificationService.sendNotification(
+                territory.getOwner().getId(),
+                NotificationType.INCOME,
+                "("
+                        + territory.getCoordX()
+                        + ", "
+                        + territory.getCoordY()
+                        + ") 영토 저장소가 가득 찼습니다. GP를 수거하지 않으면 추가 수입이 소멸됩니다.");
     }
 
     private void saveLog(Territory territory, User ownerRef, int amount, ProductionReason reason) {

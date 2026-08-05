@@ -69,6 +69,11 @@ class AuctionLifecycleServiceTest {
     @Mock private AdminSettingRepository adminSettingRepository;
     @Mock private com.territorial.auction.domain.admin.service.AdminAuditLogger adminAuditLogger;
     @Mock private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private com.territorial.auction.domain.notification.service.NotificationService
+            notificationService;
+
     @Mock private SimpMessagingTemplate messagingTemplate;
 
     @Captor private ArgumentCaptor<Auction> auctionCaptor;

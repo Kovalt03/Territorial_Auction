@@ -18,6 +18,8 @@ import com.territorial.auction.domain.auction.repository.AuctionHistoryRepositor
 import com.territorial.auction.domain.auction.repository.AuctionRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.notification.entity.NotificationLog.NotificationType;
+import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
@@ -49,6 +51,7 @@ public class AuctionService {
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
     private final TerritoryRepository territoryRepository;
+    private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
 
     public Auction findById(Long auctionId) {
@@ -150,6 +153,7 @@ public class AuctionService {
             throw new CustomException(ErrorCode.INSUFFICIENT_AP);
         }
 
+        User previousBidder = auction.getCurrentBidder();
         refundPreviousBidder(auction, auctionId);
         bidderWallet.lockAp(request.bidAmount());
         auction.updateBid(bidder, request.bidAmount());
@@ -162,6 +166,7 @@ public class AuctionService {
                         .build());
 
         applyAntiSniping(auction, now);
+        notifyOutbid(previousBidder, auction, request.bidAmount());
 
         LocalDateTime finalEndAt = auction.getEndAt();
         AuctionBidBroadcast broadcast =
@@ -260,6 +265,22 @@ public class AuctionService {
         if (bidAmount < Math.max(minByPercent, minByFlat)) {
             throw new CustomException(ErrorCode.BID_AMOUNT_TOO_LOW);
         }
+    }
+
+    // 이전 최고 입찰자에게만 입찰 밀림을 알린다. 시작가 레코드(bidder=null)엔 알림 대상이 없다.
+    private void notifyOutbid(User previousBidder, Auction auction, int newBidAmount) {
+        if (previousBidder == null) return;
+        Territory territory = auction.getTerritory();
+        notificationService.sendNotification(
+                previousBidder.getId(),
+                NotificationType.OUTBID,
+                "("
+                        + territory.getCoordX()
+                        + ", "
+                        + territory.getCoordY()
+                        + ") 영토 경매에서 입찰이 밀렸습니다. 현재가 "
+                        + newBidAmount
+                        + " AP.");
     }
 
     private void refundPreviousBidder(Auction auction, Long auctionId) {

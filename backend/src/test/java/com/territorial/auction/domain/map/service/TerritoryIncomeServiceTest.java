@@ -48,6 +48,10 @@ class TerritoryIncomeServiceTest {
     @Mock private TerritoryProductionLogRepository productionLogRepository;
     @Mock private UserRepository userRepository;
 
+    @Mock
+    private com.territorial.auction.domain.notification.service.NotificationService
+            notificationService;
+
     private Territory territory;
     private User owner;
 

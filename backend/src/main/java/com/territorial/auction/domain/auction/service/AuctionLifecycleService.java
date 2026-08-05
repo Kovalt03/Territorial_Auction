@@ -21,6 +21,8 @@ import com.territorial.auction.domain.map.dto.MapUpdateBroadcast;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
 import com.territorial.auction.domain.military.event.TerritoryLostEvent;
+import com.territorial.auction.domain.notification.entity.NotificationLog.NotificationType;
+import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.ranking.event.AuctionSettledEvent;
 import com.territorial.auction.domain.ranking.event.TerritoryHoldClosedEvent;
 import com.territorial.auction.domain.ranking.event.TerritoryHoldStartedEvent;
@@ -62,6 +64,7 @@ public class AuctionLifecycleService {
     private final AdminSettingRepository adminSettingRepository;
     private final AdminAuditLogger adminAuditLogger;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
 
     // ── 관리자 강제 종료 ─────────────────────────────────────────────────────────
@@ -307,6 +310,9 @@ public class AuctionLifecycleService {
                             auction.getId(), winner.getId());
             final List<Long> finalRunnerUpIds = List.copyOf(runnerUpIds);
 
+            notifyAuctionResult(
+                    winner.getId(), finalRunnerUpIds, finalCoordX, finalCoordY, finalPrice);
+
             TransactionSynchronizationManager.registerSynchronization(
                     new TransactionSynchronization() {
                         @Override
@@ -361,6 +367,20 @@ public class AuctionLifecycleService {
         }
 
         auction.settle();
+    }
+
+    // 낙찰자엔 WIN, 차순위 입찰자 전원엔 LOSE 알림을 알림함에 남긴다(실시간 토스트와 별개로 이력 보존).
+    private void notifyAuctionResult(
+            Long winnerId, List<Long> runnerUpIds, int coordX, int coordY, int finalPrice) {
+        String coord = "(" + coordX + ", " + coordY + ")";
+        notificationService.sendNotification(
+                winnerId,
+                NotificationType.AUCTION_WIN,
+                coord + " 영토를 낙찰받았습니다! 낙찰가 " + finalPrice + " AP.");
+        for (Long runnerUpId : runnerUpIds) {
+            notificationService.sendNotification(
+                    runnerUpId, NotificationType.AUCTION_LOSE, coord + " 영토 경매에서 낙찰에 실패했습니다.");
+        }
     }
 
     private void publishSettlementEvents(

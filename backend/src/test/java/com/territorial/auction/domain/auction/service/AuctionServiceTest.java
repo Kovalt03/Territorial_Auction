@@ -29,6 +29,7 @@ import com.territorial.auction.domain.map.entity.Continent;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.entity.TerritoryGrade;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
+import com.territorial.auction.domain.notification.service.NotificationService;
 import com.territorial.auction.domain.user.entity.User;
 import com.territorial.auction.domain.user.entity.Wallet;
 import com.territorial.auction.domain.user.repository.UserRepository;
@@ -66,6 +67,7 @@ class AuctionServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private WalletRepository walletRepository;
     @Mock private TerritoryRepository territoryRepository;
+    @Mock private NotificationService notificationService;
     @Mock private SimpMessagingTemplate messagingTemplate;
 
     @BeforeEach

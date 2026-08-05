@@ -177,6 +177,8 @@ public class LandTaxService {
             chargeTax(userId, taxAmount, storages);
             saveLog(userId, territoryCount, taxAmount, TaxStatus.PAID);
             clearGraceKey(userId);
+            notificationService.sendNotification(
+                    userId, NotificationType.TAX_CHARGED, "토지세 " + taxAmount + " GP가 정상 납부되었습니다.");
             log.info(
                     "토지세 납부 완료. userId={}, taxAmount={}, territoryCount={}",
                     userId,
