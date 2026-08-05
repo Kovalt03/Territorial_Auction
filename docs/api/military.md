@@ -437,6 +437,8 @@
         "attacker": { "userId": 3, "nickname": "공격자" },
         "defender": { "userId": 8, "nickname": "방어자" },
         "targetTerritory": { "id": 12, "coordX": 4, "coordY": 6 },
+        "attackZone": 3,
+        "targetBuilding": { "buildingId": 122, "name": "STORAGE", "displayName": "저장소" },
         "siegeStartAt": "2026-04-27T14:00:00Z",
         "resolveAt": "2026-04-27T14:30:00Z"
       }
@@ -446,6 +448,8 @@
 ```
 
 출처: `siege_events` (PENDING 상태는 Redis `siege:active:{siegeId}` 우선 조회)
+
+- `attackZone`: 공격 구역(1/2/3). `targetBuilding`: 정밀 공격 대상 건물(일반 공격이면 `null`) — 방어자가 어느 존/건물이 공격받는지 파악하는 데 사용.
 
 ### 에러
 
@@ -516,6 +520,46 @@
 
 ### 남은작업
 - 서비스 구현
+
+---
+
+## 공성 대상 정찰 (건물 배치·존 HP)
+
+**GET** `/api/v1/military/siege/target/{territoryId}`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+공성 대상 영토의 **존별 실제 HP 합계**와 **정밀 공격 대상 건물 목록**(좌표·HP)을 반환한다. 방어 유닛 구성은 정보 비대칭(siege-system §7-①)상 **포함하지 않는다**. 공성 준비 화면의 존 HP 바·건물 그리드·정밀 대상 선택에 사용.
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": {
+    "territoryId": 11,
+    "coordX": 1,
+    "coordY": 11,
+    "zones": [
+      { "zone": 1, "currentHp": 200, "maxHp": 200, "buildingCount": 1 },
+      { "zone": 2, "currentHp": 0, "maxHp": 0, "buildingCount": 0 },
+      { "zone": 3, "currentHp": 60, "maxHp": 100, "buildingCount": 1 }
+    ],
+    "buildings": [
+      { "buildingId": 61, "name": "CASTLE", "displayName": "성", "zone": 1, "currentHp": 200, "maxHp": 200, "posX": 3, "posY": 3, "width": 2, "height": 2, "isUnderConstruction": false },
+      { "buildingId": 122, "name": "STORAGE", "displayName": "저장소", "zone": 3, "currentHp": 60, "maxHp": 100, "posX": 2, "posY": 2, "width": 2, "height": 2, "isUnderConstruction": false }
+    ]
+  }
+}
+```
+
+### 에러
+
+| HTTP | 에러 코드 | 설명 |
+|---|---|---|
+| 404 | `TERRITORY_NOT_FOUND` | 존재하지 않는 영토 |
+| 400 | `TERRITORY_NOT_OCCUPIED` | 미점유 영토 |
 
 ---
 

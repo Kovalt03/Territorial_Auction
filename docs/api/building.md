@@ -12,7 +12,8 @@
 | GET | `/api/v1/map/territories/{territoryId}/buildings` | [영토 건물 목록 조회](#영토-건물-목록-조회) | ✅ | - |
 | POST | `/api/v1/map/territories/{territoryId}/buildings` | [영토 건물 배치](#영토-건물-배치) | ✅ | - |
 | POST | `/api/v1/buildings/{buildingId}/upgrade` | [건물 업그레이드](#건물-업그레이드) | ✅ | - |
-| POST | `/api/v1/buildings/{buildingId}/repair` | [건물 수리](#건물-수리) | ✅ | - |
+| POST | `/api/v1/buildings/{buildingId}/repair` | [건물 수리 (시간제)](#건물-수리-시간제) | ✅ | 시간제·완료 시 풀피 |
+| POST | `/api/v1/buildings/repair-all` | [전체 수리](#전체-수리) | ✅ | 위치의 손상 건물 일괄 |
 | GET | `/api/v1/island` | [섬 정보 조회](#섬-정보-조회) | ✅ | - |
 | GET | `/api/v1/island/buildings` | [섬 건물 목록 조회](#섬-건물-목록-조회) | ✅ | - |
 | POST | `/api/v1/island/buildings` | [섬 건물 배치](#섬-건물-배치) | ✅ | 일꾼 슬롯 소모 미구현 |
@@ -161,13 +162,13 @@
 
 ---
 
-## 건물 수리
+## 건물 수리 (시간제)
 
 **POST** `/api/v1/buildings/{buildingId}/repair`
 
 **Authorization**: Bearer `{{accessToken}}` (필수)
 
-파괴된 건물을 GP를 소비하여 재건. 수리 후 HP 완전 복원.
+손상된 건물을 위치 저장소 GP로 수리한다. **즉시 완료가 없다** — 손상 HP당 GP를 선차감하고, 손상 HP × `REPAIR_SECONDS_PER_HP`(기본 3초)만큼 시간이 지나야 완료된다. 수리 중(`buildCompleteAt` 미래)에는 그 건물이 **비활성**(생산·방어 미기여)이며, 완료 시에만 HP 풀피 + 파괴 상태 해제. 비용 기본 **2 GP / 1 HP**(`REPAIR_GP_PER_HP`, 관리자 조정).
 
 ### Response (200 OK)
 
@@ -177,11 +178,14 @@
   "message": "OK",
   "data": {
     "buildingId": 1,
-    "hp": 100,
+    "hp": 60,
+    "buildCompleteAt": "2026-08-03T12:21:01+09:00",
     "gpRemaining": 8000
   }
 }
 ```
+
+> `hp`는 아직 오르지 않은 현재 HP(수리 완료 시 풀피). `buildCompleteAt`까지 비활성.
 
 ### 에러
 
@@ -189,7 +193,40 @@
 |---|---|---|
 | 404 | BUILDING_NOT_FOUND | 존재하지 않는 건물 |
 | 403 | NOT_TERRITORY_OWNER | 점유자 아님 |
-| 400 | INSUFFICIENT_GP | GP 부족 |
+| 400 | BUILDING_ALREADY_FULL_HP | 이미 HP 가득 |
+| 400 | BUILDING_BUSY | 건설·업그레이드·수리 중 |
+| 400 | INSUFFICIENT_GP | 저장소 GP 부족 |
+
+---
+
+## 전체 수리
+
+**POST** `/api/v1/buildings/repair-all`
+
+**Authorization**: Bearer `{{accessToken}}` (필수)
+
+한 위치(영토/섬)의 손상된 모든 건물을 일괄 시간제 수리한다. 풀피·작업 중 건물은 스킵하고, 저장소 GP가 부족한 건물은 건너뛴다.
+
+### Request
+
+```json
+{ "locationType": "TERRITORY", "locationId": 11 }
+```
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `locationType` | String | `"TERRITORY"` \| `"ISLAND"` |
+| `locationId` | Long | 영토 ID 또는 섬 ID |
+
+### Response (200 OK)
+
+```json
+{
+  "status": 200,
+  "message": "OK",
+  "data": { "repairedCount": 2, "totalCost": 280, "gpRemaining": 6720 }
+}
+```
 
 ---
 

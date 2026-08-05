@@ -174,11 +174,11 @@
 | ✅ | 공격권 조회 | `GET /military/attack-tokens` | |
 | ✅ | 공성 건물(`SiegeStructure`) | — | 주둔지(공격 병력 상한)·공성타워(공격력 버프)·보급소(쿨다운 완화), 인접 타일·금고 결제·판정 후 삭제 |
 | ✅ | 성 HP 누적·다회 공성 / 성벽 돌파(buildingDamage) | — | 교전(ATK/DEF)과 건물 피해 분리, 성 함락 시 영토 인계 |
-| ✅ | 건물 GP 즉시 수리 | `PATCH .../repair` | HP 기반, 위치 저장소 GP |
+| ✅ | 건물 수리(시간제) | `POST .../repair` · `POST /buildings/repair-all` | 손상 HP당 2 GP·3초 소요, 즉시완료 없음, 수리 중 비활성, 완료 시 풀피·파괴 해제. 전체 수리 지원 |
 | ✅ | 판정 스케줄러 | — | 1분 주기 `SiegeScheduler` → `resolveOneSiege`(실행 검증 완료) |
 | ✅ | 공성 알림 WebSocket | — | `/sub/user/{userId}/siege-alert` (선언·결과 양측) |
 | ✅ | 공성 선언 UI(프론트) | `SiegePage` | `forces`+`structures` 계약 정합, 보유 대기 유닛 선택·주둔지 배치 |
-| ⬜ | 정밀 공격(건물 지정) UI | `SiegePage` | 백엔드는 `targetBuildingId` 지원, 프론트 건물 선택 UI 후속 |
+| ✅ | 정밀 공격(건물 지정) | `SiegePage`·`GET /military/siege/target/{id}` | 일반/정밀 토글 + 정찰(존별 실HP·건물 목록) + 영토 그리드 건물 클릭 선택. Zone1/2/3 지정 건물에 피해·효과 집중 |
 
 ---
 
@@ -338,7 +338,7 @@
 | Redis 캐시·Pub-Sub (성능) | ⬜ 선택 | 단일 인스턴스라 현재 불필요, 스케일아웃 시 |
 | 일 정산 배치 | ⬜ 선택 | Lazy 정산으로 대체 가능, 구현 여부 미확정 |
 
-공성 후속 개선(선택): 정밀 공격 UI · 관리자 밸런스 나머지 상수 배선 · 공성 현황 패널 실데이터 · 저장소 꽉참 UI 경고.
+공성 후속 개선(선택): 정밀 시 방어 교전을 지정 건물 주둔 병력으로 한정(§4.5) · 관리자 밸런스 나머지 상수 배선 · 방어자 역공(sortie). (정밀 공격 UI·공성 현황 실데이터·방어자 공성 UI·건물 수리 시간제는 반영 완료)
 
 ---
 

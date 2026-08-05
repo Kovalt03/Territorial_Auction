@@ -229,8 +229,8 @@
 ### 파괴 & 수리
 
 - HP 0 → `is_destroyed = true` → 효과 즉시 정지
-- 수리: GP 소비 → `is_destroyed = false`, HP 최대치 복원
-- 파괴된 건물은 방어력 계산에서 제외됨
+- **수리(시간제)**: 손상 HP당 GP 선차감(`REPAIR_GP_PER_HP` 2 GP/HP) + 손상 HP × `REPAIR_SECONDS_PER_HP`(3초) 소요. **즉시 완료 없음.** 수리 중(`buildCompleteAt` 미래)에는 건물 **비활성**(생산·방어 미기여), 완료 시에만 HP 최대치 복원 + `is_destroyed = false`. 손상만 되고 수리하지 않은 건물은 완전 파괴 전까지 정상 작동. 전체 수리: `POST /buildings/repair-all`.
+- 파괴된 건물은 방어력 계산에서 제외됨 (수리 중 건물도 `is_under_construction`로 제외)
 
 ### Zone 클리어 조건
 
