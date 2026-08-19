@@ -12,6 +12,7 @@ import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.BuildingType;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository.MilitaryLocationSummary;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
 import com.territorial.auction.domain.map.entity.Territory;
 import com.territorial.auction.domain.map.repository.TerritoryRepository;
@@ -197,16 +198,32 @@ class MilitaryServiceTest {
     // 영토 위치를 소유자로 확인하고 병영·성·주거지·저장소를 성공 경로로 스텁한다.
     private void stubTerritoryLocation(Territory territory, int gp, int food, int currentUnits) {
         given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
-        given(buildingInstanceRepository.existsActiveBarracksByTerritoryId(TERR_ID))
-                .willReturn(true);
-        given(buildingInstanceRepository.findMaxBarracksLevelByTerritoryId(TERR_ID))
-                .willReturn(Optional.of(1));
-        given(buildingInstanceRepository.findCastleLevelByTerritoryId(TERR_ID))
-                .willReturn(Optional.of(1));
-        given(buildingInstanceRepository.sumResidenceCapacityByTerritoryId(eq(TERR_ID), any()))
-                .willReturn(0);
+        given(
+                        buildingInstanceRepository.findMilitaryLocationSummaryByTerritoryId(
+                                eq(TERR_ID), any()))
+                .willReturn(militaryLocationSummary(1, 1, 0));
         given(unitInstanceRepository.sumQuantityByHomeTerritoryId(TERR_ID))
                 .willReturn(currentUnits);
+    }
+
+    private MilitaryLocationSummary militaryLocationSummary(
+            int barracksLevel, int castleLevel, int residenceCapacity) {
+        return new MilitaryLocationSummary() {
+            @Override
+            public Integer getMaxBarracksLevel() {
+                return barracksLevel;
+            }
+
+            @Override
+            public Integer getCastleLevel() {
+                return castleLevel;
+            }
+
+            @Override
+            public Integer getResidenceCapacity() {
+                return residenceCapacity;
+            }
+        };
     }
 
     // ==========================================================
@@ -294,8 +311,10 @@ class MilitaryServiceTest {
             Territory territory = ownedTerritory();
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
             given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.existsActiveBarracksByTerritoryId(TERR_ID))
-                    .willReturn(false);
+            given(
+                            buildingInstanceRepository.findMilitaryLocationSummaryByTerritoryId(
+                                    eq(TERR_ID), any()))
+                    .willReturn(militaryLocationSummary(0, 1, 0));
 
             assertThatThrownBy(() -> militaryService.produceUnit(1L, req(1)))
                     .isInstanceOf(CustomException.class)
@@ -310,10 +329,10 @@ class MilitaryServiceTest {
             ReflectionTestUtils.setField(unitType, "level", 3);
             given(unitTypeRepository.findById(1L)).willReturn(Optional.of(unitType));
             given(territoryRepository.findById(TERR_ID)).willReturn(Optional.of(territory));
-            given(buildingInstanceRepository.existsActiveBarracksByTerritoryId(TERR_ID))
-                    .willReturn(true);
-            given(buildingInstanceRepository.findMaxBarracksLevelByTerritoryId(TERR_ID))
-                    .willReturn(Optional.of(1));
+            given(
+                            buildingInstanceRepository.findMilitaryLocationSummaryByTerritoryId(
+                                    eq(TERR_ID), any()))
+                    .willReturn(militaryLocationSummary(1, 1, 0));
 
             assertThatThrownBy(() -> militaryService.produceUnit(1L, req(1)))
                     .isInstanceOf(CustomException.class)

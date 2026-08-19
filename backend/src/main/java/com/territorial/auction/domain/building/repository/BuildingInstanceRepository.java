@@ -12,6 +12,14 @@ import org.springframework.data.repository.query.Param;
 
 public interface BuildingInstanceRepository extends JpaRepository<BuildingInstance, Long> {
 
+    interface MilitaryLocationSummary {
+        Integer getMaxBarracksLevel();
+
+        Integer getCastleLevel();
+
+        Integer getResidenceCapacity();
+    }
+
     long countByBuildingType_Id(Long buildingTypeId);
 
     /**
@@ -157,6 +165,32 @@ public interface BuildingInstanceRepository extends JpaRepository<BuildingInstan
                     + " WHERE b.island.id = :islandId AND b.isDestroyed = false"
                     + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)")
     Integer sumResidenceCapacityByIslandId(
+            @Param("islandId") Long islandId, @Param("now") LocalDateTime now);
+
+    @Query(
+            "SELECT"
+                    + " COALESCE(MAX(CASE WHEN b.buildingType.name = 'BARRACKS' AND b.isDestroyed = false THEN b.level ELSE 0 END), 0) AS maxBarracksLevel,"
+                    + " COALESCE(MAX(CASE WHEN b.buildingType.name = 'CASTLE' AND b.isDestroyed = false THEN b.level ELSE 0 END), 0) AS castleLevel,"
+                    + " COALESCE(SUM(CASE WHEN b.buildingType.name = 'RESIDENCE' AND b.isDestroyed = false"
+                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)"
+                    + " THEN COALESCE(s.unitCapacityPerLevel, b.level * b.buildingType.unitCapacityPerLevel) ELSE 0 END), 0) AS residenceCapacity"
+                    + " FROM BuildingInstance b"
+                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
+                    + " WHERE b.territory.id = :territoryId")
+    MilitaryLocationSummary findMilitaryLocationSummaryByTerritoryId(
+            @Param("territoryId") Long territoryId, @Param("now") LocalDateTime now);
+
+    @Query(
+            "SELECT"
+                    + " COALESCE(MAX(CASE WHEN b.buildingType.name = 'BARRACKS' AND b.isDestroyed = false THEN b.level ELSE 0 END), 0) AS maxBarracksLevel,"
+                    + " COALESCE(MAX(CASE WHEN b.buildingType.name = 'CASTLE' AND b.isDestroyed = false THEN b.level ELSE 0 END), 0) AS castleLevel,"
+                    + " COALESCE(SUM(CASE WHEN b.buildingType.name = 'RESIDENCE' AND b.isDestroyed = false"
+                    + " AND (b.buildCompleteAt IS NULL OR b.buildCompleteAt <= :now)"
+                    + " THEN COALESCE(s.unitCapacityPerLevel, b.level * b.buildingType.unitCapacityPerLevel) ELSE 0 END), 0) AS residenceCapacity"
+                    + " FROM BuildingInstance b"
+                    + " LEFT JOIN BuildingLevelSpec s ON s.buildingType = b.buildingType AND s.level = b.level"
+                    + " WHERE b.island.id = :islandId")
+    MilitaryLocationSummary findMilitaryLocationSummaryByIslandId(
             @Param("islandId") Long islandId, @Param("now") LocalDateTime now);
 
     // ─── 위치별 농지 식량 생산 합산 — FarmlandScheduler 위치 적립용 ─────────────────
