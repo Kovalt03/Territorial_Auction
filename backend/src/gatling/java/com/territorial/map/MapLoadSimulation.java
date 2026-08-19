@@ -28,7 +28,7 @@ public class MapLoadSimulation extends Simulation {
                                             .get("/api/v1/map/grid")
                                             .check(status().is(200))
                                             .check(
-                                                    jsonPath("$.data.territories[2499].id")
+                                                    jsonPath("$.data.territories[2499].territoryId")
                                                             .exists()))
                                     .exec(
                                             session ->
