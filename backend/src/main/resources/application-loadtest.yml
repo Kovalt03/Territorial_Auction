@@ -25,7 +25,10 @@ spring:
 
 logging:
   level:
-    org.hibernate.stat: DEBUG
+    # 요청별 HQL·세션 통계 로그는 부하 생성량만큼 콘솔 I/O를 만들어 측정을 왜곡한다.
+    # 통계 수집과 100ms 초과 쿼리 로깅은 위 hibernate 설정으로 계속 유지한다.
+    org.hibernate.stat: WARN
+    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: WARN
 
 # Actuator — 단발성 측정은 /actuator/metrics 폴링 + /actuator/prometheus 로 충분
 management:
@@ -37,3 +40,6 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true   # 엔드포인트별 p95/p99 히스토그램
+
+loadtest:
+  token-output: ${LOADTEST_TOKEN_OUTPUT:src/gatling/resources/tokens.csv}

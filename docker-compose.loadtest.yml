@@ -56,6 +56,9 @@ services:
       REDIS_HOST: redis-loadtest
       REDIS_PORT: 6379
       ADMIN_IP_ALLOWLIST: ""
+      LOADTEST_TOKEN_OUTPUT: /app/loadtest-output/tokens.csv
+    volumes:
+      - ./backend/src/gatling/resources:/app/loadtest-output
     depends_on:
       postgres-loadtest:
         condition: service_healthy
