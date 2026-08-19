@@ -61,6 +61,7 @@ public class SecurityConfig {
                                 auth.requestMatchers("/api/v1/auth/logout").authenticated()
                                     .requestMatchers("/api/v1/auth/**", "/oauth2/**", "/login/**").permitAll()
                                     .requestMatchers("/ws/**").permitAll()
+                                    .requestMatchers("/actuator/**").permitAll()
                                     .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
                                     .requestMatchers(HttpMethod.GET, "/api/v1/announcement").permitAll()
                                     .requestMatchers(HttpMethod.GET, "/api/v1/map/**").permitAll()
