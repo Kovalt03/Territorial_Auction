@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 
 import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -97,6 +99,9 @@ class ResearchServiceTest {
         assertThat(res.pendingLevel()).isEqualTo(2);
         assertThat(res.vaultGpRemaining()).isEqualTo(5000 - 2000 * 2); // cost = 2000 × 2
         assertThat(res.researchCompleteAt()).isNotNull();
+        InOrder lockOrder = inOrder(globalVaultRepository, unitResearchRepository);
+        lockOrder.verify(globalVaultRepository).findByIdWithLock(1L);
+        lockOrder.verify(unitResearchRepository).findByUserId(1L);
     }
 
     @Test
@@ -105,6 +110,7 @@ class ResearchServiceTest {
         given(unitTypeRepository.findById(2L)).willReturn(Optional.of(unitType));
         UnitResearch other = research(1);
         other.startResearch(2, java.time.LocalDateTime.now().plusHours(1)); // 진행 중
+        given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(5000)));
         given(unitResearchRepository.findByUserId(1L)).willReturn(java.util.List.of(other));
 
         assertThatThrownBy(() -> researchService.startResearch(1L, 2L))
@@ -117,6 +123,7 @@ class ResearchServiceTest {
     @DisplayName("연구소 레벨 부족 → RESEARCH_LAB_LEVEL_INSUFFICIENT")
     void startResearch_labInsufficient() {
         given(unitTypeRepository.findById(2L)).willReturn(Optional.of(unitType));
+        given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(5000)));
         given(unitResearchRepository.findByUserIdAndUnitTypeId(1L, 2L))
                 .willReturn(Optional.of(research(1)));
         given(unitTypeLevelSpecRepository.findByUnitType_IdAndLevel(2L, 2))
@@ -134,6 +141,7 @@ class ResearchServiceTest {
     @DisplayName("이미 최대 레벨 → RESEARCH_MAX_REACHED")
     void startResearch_maxReached() {
         given(unitTypeRepository.findById(2L)).willReturn(Optional.of(unitType));
+        given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(5000)));
         given(unitResearchRepository.findByUserIdAndUnitTypeId(1L, 2L))
                 .willReturn(Optional.of(research(3))); // MAX_LEVEL=3 → target 4 초과
 
