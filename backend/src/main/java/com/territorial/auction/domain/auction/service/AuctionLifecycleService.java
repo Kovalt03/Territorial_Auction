@@ -106,7 +106,7 @@ public class AuctionLifecycleService {
         User bidder = auction.getCurrentBidder();
         if (bidder != null) {
             walletRepository
-                    .findById(bidder.getId())
+                    .findByIdWithLock(bidder.getId())
                     .ifPresent(w -> w.refundLockedAp(auction.getCurrentPrice()));
         }
         territory.release(now.plusHours(AuctionPolicy.IDLE_REAUCTION_DELAY_HOURS));
@@ -280,7 +280,7 @@ public class AuctionLifecycleService {
 
             // 낙찰자 lockedAp 소비
             walletRepository
-                    .findById(winner.getId())
+                    .findByIdWithLock(winner.getId())
                     .ifPresent(wallet -> wallet.consumeLockedAp(auction.getCurrentPrice()));
 
             Optional<Season> seasonOpt = seasonRepository.findActiveSeason(now);

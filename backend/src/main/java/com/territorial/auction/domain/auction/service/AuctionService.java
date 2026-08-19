@@ -144,17 +144,16 @@ public class AuctionService {
                 userRepository
                         .findById(userId)
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        Wallet bidderWallet =
-                walletRepository
-                        .findById(userId)
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User previousBidder = auction.getCurrentBidder();
+        LockedWallets wallets =
+                lockWallets(userId, previousBidder != null ? previousBidder.getId() : null);
+        Wallet bidderWallet = wallets.bidder();
 
         if (bidderWallet.getAvailableAp() < request.bidAmount()) {
             throw new CustomException(ErrorCode.INSUFFICIENT_AP);
         }
 
-        User previousBidder = auction.getCurrentBidder();
-        refundPreviousBidder(auction, auctionId);
+        refundPreviousBidder(auction, auctionId, wallets.previousBidder());
         bidderWallet.lockAp(request.bidAmount());
         auction.updateBid(bidder, request.bidAmount());
 
@@ -283,23 +282,34 @@ public class AuctionService {
                         + " AP.");
     }
 
-    private void refundPreviousBidder(Auction auction, Long auctionId) {
+    private LockedWallets lockWallets(Long bidderId, Long previousBidderId) {
+        if (previousBidderId == null) {
+            return new LockedWallets(findWalletWithLock(bidderId), null);
+        }
+        if (previousBidderId < bidderId) {
+            Wallet previousWallet = findWalletWithLock(previousBidderId);
+            return new LockedWallets(findWalletWithLock(bidderId), previousWallet);
+        }
+        Wallet bidderWallet = findWalletWithLock(bidderId);
+        return new LockedWallets(bidderWallet, findWalletWithLock(previousBidderId));
+    }
+
+    private Wallet findWalletWithLock(Long userId) {
+        return walletRepository
+                .findByIdWithLock(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private void refundPreviousBidder(
+            Auction auction, Long auctionId, Wallet previousBidderWallet) {
         User prevBidder = auction.getCurrentBidder();
         if (prevBidder == null) return;
         auctionBidRepository
                 .findTopByAuctionIdAndBidderIdOrderByPriceDesc(auctionId, prevBidder.getId())
-                .ifPresent(
-                        prevBid -> {
-                            Wallet prevWallet =
-                                    walletRepository
-                                            .findById(prevBidder.getId())
-                                            .orElseThrow(
-                                                    () ->
-                                                            new CustomException(
-                                                                    ErrorCode.USER_NOT_FOUND));
-                            prevWallet.refundLockedAp(prevBid.getPrice());
-                        });
+                .ifPresent(prevBid -> previousBidderWallet.refundLockedAp(prevBid.getPrice()));
     }
+
+    private record LockedWallets(Wallet bidder, Wallet previousBidder) {}
 
     private void applyAntiSniping(Auction auction, LocalDateTime now) {
         LocalDateTime endAt = auction.getEndAt();
