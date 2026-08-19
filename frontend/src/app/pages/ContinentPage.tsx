@@ -69,10 +69,10 @@ function buildDisplayGrid(
       grid[gy][gx] = {
         x: gx, y: gy, coordX: t.coordX, coordY: t.coordY,
         status, owner: t.ownerNickname,
-        color: status === 'idle' ? 'var(--color-outline-soft)' : ownerColor(t.ownerId, t.color),
+        color: status === 'idle' ? 'var(--color-outline-soft)' : ownerColor(t.ownerId, t.currentColor),
         grade,
         currentBid: 0, gpPerMin: 0, defense: 0,
-        id: t.id,
+        id: t.territoryId,
       };
     }
   }

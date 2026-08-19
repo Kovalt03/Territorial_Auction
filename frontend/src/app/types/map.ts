@@ -18,20 +18,20 @@ export interface ContinentListResponse {
 }
 
 export interface GridTerritoryDto {
-  id: number;
+  territoryId: number;
   coordX: number;
   coordY: number;
   ownerId: number | null;
   ownerNickname: string | null;
-  color: string | null;
+  currentColor: string | null;
   grade: string;
   status: string;
-  isAuctioning: boolean;
+  hasActiveAuction: boolean;
   continentId: number;
   gridSize: number;
 }
 
 export interface GridMapResponse {
-  gridSize: number;
+  mapSize: number;
   territories: GridTerritoryDto[];
 }
