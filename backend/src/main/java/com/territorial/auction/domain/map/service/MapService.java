@@ -35,7 +35,7 @@ public class MapService {
     private final ColorHistoryRepository colorHistoryRepository;
     private final TerritoryIncomeService territoryIncomeService;
 
-    @Cacheable(value = "territory-grid", key = "#continentId ?: 'all'")
+    @Cacheable(value = "territory-grid", key = "#continentId ?: 'all'", sync = true)
     public GridMapResponse getGridMap(Long continentId) {
         List<Territory> territories =
                 (continentId == null)
