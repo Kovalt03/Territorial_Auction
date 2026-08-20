@@ -1,6 +1,6 @@
 # WebSocket — Map
 
-> 구현 상태: ⬜ 미구현
+> 구현 상태: ✅ 구현됨
 
 ---
 
@@ -16,27 +16,30 @@
 
 **Destination**: `/sub/map/update`
 
-경매 낙찰 또는 공성전 종료로 영토 점유자가 변경될 때 전송.
+경매 낙찰·취소·점유 만료 또는 공성전 승리로 영토 상태가 변경된 뒤 전송한다.
 
 ```json
 {
-  "eventType": "TERRITORY_OCCUPIED",
   "territoryId": 10,
-  "newOwnerId": 5,
-  "newOwnerNickname": "픽셀전사",
-  "colorHex": "#FF5733",
-  "updatedAt": "2026-05-08T15:30:00"
+  "coordX": 12,
+  "coordY": 7,
+  "ownerId": 5,
+  "ownerNickname": "픽셀전사",
+  "status": "OCCUPIED"
 }
 ```
 
-| `eventType` | 설명 |
+| 필드 | 타입 | 설명 |
 |---|---|
-| `TERRITORY_OCCUPIED` | 영토 점유자 변경 (낙찰 / 공성 승리) |
-| `TERRITORY_RELEASED` | 영토 반환 (무낙찰로 경매 재전환) |
-| `TERRITORY_INVINCIBLE` | 무적 상태 전환 |
+| `territoryId` | number | 변경된 영토 ID |
+| `coordX`, `coordY` | number | 50×50 맵 좌표 |
+| `ownerId` | number \| null | 점유자 ID. `IDLE`일 때 `null` |
+| `ownerNickname` | string \| null | 점유자 닉네임. `IDLE`일 때 `null` |
+| `status` | `OCCUPIED` \| `IDLE` | 변경 후 영토 상태 |
 
 ---
 
 ## 발행 위치
 
-`AuctionLifecycleService.settleAuction()` — 낙찰/무낙찰 처리 직후 `SimpMessagingTemplate.convertAndSend()` 호출.
+- `AuctionLifecycleService` — 낙찰, 관리자 강제 취소, 점유 만료 처리 후 `afterCommit`에서 발행
+- `SiegeService` — 공성 승리로 영토 인계 후 `afterCommit`에서 발행
