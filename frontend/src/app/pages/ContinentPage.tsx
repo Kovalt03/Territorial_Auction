@@ -179,6 +179,30 @@ export function ContinentPage() {
   }, [id]);
 
   useEffect(() => {
+    if (!selected) return;
+    const territory = territories.find(item => item.territoryId === selected.id);
+    if (!territory) return;
+
+    const status = mapStatus(territory, userId);
+    const color = status === 'idle'
+      ? 'var(--color-outline-soft)'
+      : ownerColor(territory.ownerId, territory.currentColor);
+    if (selected.status === status && selected.owner === territory.ownerNickname && selected.color === color) return;
+
+    setSelected(current => current == null || current.id !== territory.territoryId
+      ? current
+      : { ...current, status, owner: territory.ownerNickname, color });
+    if (status !== 'auction') {
+      setSelectedAuctionId(null);
+      setAuctionCurrentPrice(0);
+      setAuctionEndAt(null);
+      setBidHistory([]);
+      setIsAuctionLoading(false);
+      setAuctionError(null);
+    }
+  }, [territories, selected, userId]);
+
+  useEffect(() => {
     if (!auctionEndAt) { setTimeLeft(''); return; }
     const tick = () => {
       const diff = new Date(auctionEndAt).getTime() - Date.now();

@@ -35,3 +35,12 @@ export interface GridMapResponse {
   mapSize: number;
   territories: GridTerritoryDto[];
 }
+
+export interface MapUpdateBroadcast {
+  territoryId: number;
+  coordX: number;
+  coordY: number;
+  ownerId: number | null;
+  ownerNickname: string | null;
+  status: 'OCCUPIED' | 'IDLE';
+}
