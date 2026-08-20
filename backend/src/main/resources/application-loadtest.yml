@@ -30,6 +30,10 @@ logging:
     org.hibernate.stat: WARN
     org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: WARN
 
+# 1시간 Soak 중 feeder JWT가 만료되지 않도록 부하 전용으로만 연장한다.
+jwt:
+  access-token-expiry: 7200000
+
 # Actuator — 단발성 측정은 /actuator/metrics 폴링 + /actuator/prometheus 로 충분
 management:
   endpoints:
