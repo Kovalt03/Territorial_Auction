@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +52,9 @@ public class AdminContinentService {
     }
 
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public ContinentComposition applyGradeDistribution(
             Long adminUserId, Long continentId, AdminGradeDistributionRequest request) {
         Continent continent =
@@ -82,6 +86,9 @@ public class AdminContinentService {
 
     // 대륙(행성) 전체 영토의 경매 활성/비활성을 한 번에 변경한다.
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public AdminBulkResultResponse changeContinentAuction(
             Long adminUserId, Long continentId, AdminToggleAuctionRequest request) {
         if (!continentRepository.existsById(continentId)) {

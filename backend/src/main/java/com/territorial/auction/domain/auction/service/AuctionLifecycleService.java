@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -80,6 +81,9 @@ public class AuctionLifecycleService {
 
     /** 강제 낙찰: 현재 최고 입찰자에게 즉시 낙찰(기존 정산 로직 재사용). 입찰자 없으면 거부. */
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public void forceSettle(Long adminUserId, Long auctionId) {
         Auction auction = findUnsettledOrThrow(auctionId);
         if (auction.getCurrentBidder() == null) {
@@ -99,6 +103,9 @@ public class AuctionLifecycleService {
 
     /** 강제 취소: 현재 입찰자 AP 잠금 해제 + 영토 IDLE 복귀(표준 재경매 지연) + 경매 종료. */
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public void forceCancel(Long adminUserId, Long auctionId) {
         Auction auction = findUnsettledOrThrow(auctionId);
         LocalDateTime now = LocalDateTime.now();
@@ -156,6 +163,9 @@ public class AuctionLifecycleService {
 
     /** 종료된 미정산 경매를 일괄 정산 */
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public void settlePendingAuctions() {
         LocalDateTime now = LocalDateTime.now();
         List<Auction> expired = auctionRepository.findAllExpiredUnsettled(now);
@@ -170,6 +180,9 @@ public class AuctionLifecycleService {
 
     /** 점유 기간이 만료된 영토를 IDLE로 전환 */
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public void releaseExpiredTerritories() {
         LocalDateTime now = LocalDateTime.now();
         List<Territory> expired =
@@ -218,6 +231,9 @@ public class AuctionLifecycleService {
 
     /** nextAuctionAt이 도달한 IDLE 영토에 신규 경매 생성 */
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public void createPendingAuctions() {
         if (!isGlobalAuctionEnabled()) {
             return;

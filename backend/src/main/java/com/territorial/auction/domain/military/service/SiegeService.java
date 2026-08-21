@@ -39,6 +39,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -69,6 +70,9 @@ public class SiegeService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public void resolveOneSiege(SiegeEvent pending) {
         // 스케줄러가 넘긴 event는 트랜잭션 밖에서 로드돼 연관(attacker/defender/territory)이 지연 프록시다.
         // 이 트랜잭션에서 다시 로드해 관리 상태로 만들어야 지연 로딩이 동작한다.

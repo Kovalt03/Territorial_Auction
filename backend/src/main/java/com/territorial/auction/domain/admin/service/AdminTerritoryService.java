@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +51,9 @@ public class AdminTerritoryService {
     }
 
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public AdminTerritoryResponse changeGrade(
             Long adminUserId, Long territoryId, AdminChangeGradeRequest request) {
         Territory territory =
@@ -82,6 +86,9 @@ public class AdminTerritoryService {
     }
 
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public AdminTerritoryResponse changeAuctionEnabled(
             Long adminUserId, Long territoryId, AdminToggleAuctionRequest request) {
         Territory territory =
@@ -106,6 +113,9 @@ public class AdminTerritoryService {
 
     // IDLE 영토의 재경매 대기(nextAuctionAt)를 건너뛰고 즉시 경매를 시작한다.
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public AdminTerritoryResponse forceStartAuction(Long adminUserId, Long territoryId) {
         Territory territory =
                 territoryRepository
@@ -129,6 +139,9 @@ public class AdminTerritoryService {
 
     // 선택된 여러 영토의 등급을 일괄 변경. 점유 중인 영토는 보호 대상이라 건너뛰고, 실제 변경된 개수만 반환한다.
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public AdminBulkResultResponse bulkChangeGrade(
             Long adminUserId, AdminBulkGradeRequest request) {
         TerritoryGrade grade =
@@ -161,6 +174,9 @@ public class AdminTerritoryService {
 
     // 선택된 여러 영토의 경매 활성/비활성을 일괄 변경 (all-or-nothing).
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public AdminBulkResultResponse bulkChangeAuction(
             Long adminUserId, AdminBulkTerritoryAuctionRequest request) {
         List<Long> territoryIds = request.territoryIds().stream().distinct().toList();
@@ -183,6 +199,9 @@ public class AdminTerritoryService {
 
     // 선택된 여러 영토 중 IDLE인 것만 즉시 경매 시작 (best-effort, 시작 개수 반환).
     @Transactional
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public AdminBulkResultResponse bulkForceStart(
             Long adminUserId, AdminBulkForceStartRequest request) {
         LocalDateTime now = LocalDateTime.now();
