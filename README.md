@@ -111,3 +111,9 @@ docker compose -f docker-compose.production.yml up -d --build
 ```
 
 릴리스 기준과 현재 제한은 [v1.0.0-monolith 릴리스 기준점](docs/releases/v1.0.0-monolith.md)을 참조한다.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
