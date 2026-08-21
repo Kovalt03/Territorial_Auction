@@ -9,6 +9,9 @@ services:
     healthCheckPath: /actuator/health
     autoDeployTrigger: off
     envVars:
+      # Render Free 인스턴스의 기본 JVM 힙은 Spring Data 초기화에 부족하다.
+      - key: JAVA_TOOL_OPTIONS
+        value: -Xms128m -Xmx320m
       - key: SPRING_PROFILES_ACTIVE
         value: production
       - key: JWT_SECRET
