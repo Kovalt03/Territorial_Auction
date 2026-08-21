@@ -24,14 +24,21 @@ public class PrioritySoakSimulation extends Simulation {
 
     private final ScenarioBuilder mapScenario =
             scenario("soak-map")
+                    .exec(
+                            http("soak-initial-grid")
+                                    .get("/api/v1/map/grid")
+                                    .check(status().is(200))
+                                    .check(
+                                            jsonPath("$.data.territories[2499].territoryId")
+                                                    .exists())
+                                    .check(header("ETag").saveAs("gridEtag")))
                     .during(Duration.ofSeconds(durationSeconds))
                     .on(
                             exec(http("soak-full-grid")
                                             .get("/api/v1/map/grid")
-                                            .check(status().is(200))
-                                            .check(
-                                                    jsonPath("$.data.territories[2499].territoryId")
-                                                            .exists()))
+                                            .header("If-None-Match", "#{gridEtag}")
+                                            .check(status().in(200, 304))
+                                            .check(header("ETag").saveAs("gridEtag")))
                                     .exec(
                                             session ->
                                                     session.set(
