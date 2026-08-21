@@ -1,6 +1,8 @@
-# Render + Supabase 외부 검증 배포 가이드
+# Render + Supabase 외부 호환성 검증 가이드
 
-이 절차는 모놀리식 앱이 외부 HTTPS 환경에서도 동작하는지 확인하기 위한 일회성 검증이다. 주 운영 경로는 [로컬 운영 실행 가이드](./local-production.md)다.
+이 절차는 모놀리식 앱이 외부 HTTPS 환경에서도 동작하는지 확인하기 위한 일회성 호환성 검증이다. 상시 실행·운영 경로는 [로컬 운영 실행 가이드](./local-production.md)다.
+
+> 2026-08-22 검증에서 Render API health, Supabase/Flyway 연결, Upstash TLS 캐시 조회, CORS·SockJS, Static Site의 API·WebSocket 주소 반영을 확인했다. 다만 Render Free 인스턴스는 512MB 컨테이너 한도를 초과해 지속 실행할 수 없었다. 따라서 이 구성은 재현용 설정으로만 보관하며 자동 배포하지 않는다.
 
 ## 구성
 
@@ -11,13 +13,19 @@
 | PostgreSQL | Supabase | 영속 데이터 |
 | Redis | 외부 Redis 또는 Render Key Value | 캐시·토큰·분산 락 |
 
-`render.yaml`은 Render Blueprint로 API와 정적 프론트엔드 서비스를 만든다. 자동 배포는 꺼져 있으므로 검증할 커밋을 명시적으로 선택한다.
+`render.yaml`은 Render Blueprint 재현 설정이다. API와 정적 프론트엔드 서비스를 만들 수 있지만, `autoDeployTrigger: off`를 유지한다. 상시 서비스를 만들거나 실제 사용자 트래픽을 받는 용도로 사용하지 않는다.
+
+## 브랜치·실행 원칙
+
+- `dev`는 로컬 개발 통합 브랜치이며, 로컬 Docker Compose가 실제 실행 기준이다.
+- `main`은 `dev`에서 승격한 릴리스·배포 설정 기준 브랜치다. Render를 다시 검증할 때만 `main`의 특정 커밋을 수동 동기화한다.
+- `feature/* → dev → main` PR 흐름을 유지한다. Render의 자동 배포는 켜지 않는다.
 
 ## 배포 전 준비
 
 1. Supabase 프로젝트를 만들고 Database의 connection string을 확인한다. Render 환경에서는 IPv4를 지원하는 Session Pooler 연결을 우선 검토한다.
 2. Redis 서비스를 준비한다. 호스트, 포트, 비밀번호, TLS 사용 여부를 확보한다.
-3. Render에서 이 저장소의 `feature/all-external-deploy` 브랜치로 Blueprint를 생성한다.
+3. Render에서 이 저장소의 `main` 브랜치와 루트 `render.yaml`로 Blueprint를 생성한다.
 4. API의 `sync: false` 환경 변수를 Render 대시보드에서 입력한다. 비밀값은 Git이나 채팅에 저장하지 않는다.
 
 ## 필수 환경 변수
@@ -53,7 +61,7 @@ custom domain을 사용하면 위 API 도메인을 해당 도메인으로 대체
 3. 두 브라우저 세션으로 입찰과 STOMP 갱신을 확인한다.
 4. 관리자 로그인과 TOTP를 확인한다.
 5. OAuth는 테스트 계정으로 성공·실패 리디렉션을 각각 확인한다.
-6. 검증 후 시드 관리자 환경 변수와 테스트 계정을 제거하고, 필요 없으면 Render/Supabase/Redis 서비스를 중지·삭제한다.
+6. 검증 후 시드 관리자 환경 변수와 테스트 계정을 제거한다. 서비스를 유지할 필요가 없으면 사용자 확인 후 Render/Supabase/Redis 리소스를 중지·삭제한다.
 
 ## 참고
 

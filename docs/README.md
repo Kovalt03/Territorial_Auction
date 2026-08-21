@@ -87,7 +87,7 @@
 | 파일 | 내용 |
 |---|---|
 | [operations/local-production.md](./operations/local-production.md) | Docker 기반 로컬 운영 실행, 관리자 초기화, 백업·복구 |
-| [operations/external-render-supabase.md](./operations/external-render-supabase.md) | Render·Supabase 외부 동작 검증 배포 |
+| [operations/external-render-supabase.md](./operations/external-render-supabase.md) | Render·Supabase 외부 호환성 검증과 재현용 설정 |
 | [guides/user-guide.md](./guides/user-guide.md) | 일반 사용자 기능 안내 |
 | [guides/admin-guide.md](./guides/admin-guide.md) | 관리자 보안·운영 절차 |
 | [releases/v1.0.0-monolith.md](./releases/v1.0.0-monolith.md) | 모놀리식 릴리스 기준점 |

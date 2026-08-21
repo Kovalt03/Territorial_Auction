@@ -4,7 +4,7 @@
 
 운영과 유사한 로컬 Docker 실행, 관리자 초기화, 백업·복구는 [로컬 운영 실행 가이드](docs/operations/local-production.md)를 따른다. 사용자와 운영자 기능 안내는 각각 [사용자 가이드](docs/guides/user-guide.md), [관리자 운영 가이드](docs/guides/admin-guide.md)를 참조한다.
 
-Render·Supabase 외부 동작 검증은 [외부 배포 가이드](docs/operations/external-render-supabase.md)를 따른다.
+Render·Supabase 외부 호환성 검증 결과와 재현용 설정은 [외부 배포 가이드](docs/operations/external-render-supabase.md)에 남긴다. 실제 실행 기준은 로컬 Docker다.
 
 ---
 
@@ -31,9 +31,11 @@ main
       └── hotfix/*        # 긴급 수정
 ```
 
-- `main` : 프로덕션 배포 — `dev` 에서만 PR 허용
-- `dev` : 개발 통합 — feature PR을 통해서만 Merge
+- `main` : 릴리스·배포 기준 브랜치 — `dev` 에서만 PR 허용. 외부 배포 설정은 보관하지만 자동 배포하지 않는다.
+- `dev` : 로컬 개발 통합 브랜치 — feature PR을 통해서만 Merge
 - `feature/*` : `dev` 에서 분기, 완료 후 `dev` 로 PR
+
+현재 모놀리식의 상시 실행은 로컬 Docker Compose만 지원한다. `main`은 재현 가능한 릴리스·외부 호환성 설정의 기준점이며, Render Free 인스턴스는 512MB 메모리 한도로 지속 운영 대상이 아니다.
 
 ### 브랜치 명명
 
