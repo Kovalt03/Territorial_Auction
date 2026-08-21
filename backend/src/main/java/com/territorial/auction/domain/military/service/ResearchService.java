@@ -63,6 +63,9 @@ public class ResearchService {
         UnitType unitType = findUnitTypeOrThrow(unitTypeId);
         LocalDateTime now = LocalDateTime.now();
 
+        // 계정 단위 금고 락을 연구 상태 조회보다 먼저 잡아 동시 연구 시작을 직렬화한다.
+        GlobalVault vault = findVaultWithLock(userId);
+
         // 연구는 계정당 한 번에 하나만 — 다른 유닛이 연구 중이면 새 연구를 시작할 수 없다.
         validateNoResearchInProgress(userId, now);
 
@@ -76,7 +79,7 @@ public class ResearchService {
         validateTargetLevel(unitTypeId, targetLevel);
         validateLabLevel(userId, targetLevel);
 
-        GlobalVault vault = chargeVault(userId, ResearchPolicy.costGp(targetLevel));
+        chargeVault(vault, ResearchPolicy.costGp(targetLevel));
         research.startResearch(
                 targetLevel, now.plusMinutes(ResearchPolicy.durationMinutes(targetLevel)));
         log.info(
@@ -104,16 +107,17 @@ public class ResearchService {
         }
     }
 
-    private GlobalVault chargeVault(Long userId, int cost) {
-        GlobalVault vault =
-                globalVaultRepository
-                        .findByIdWithLock(userId)
-                        .orElseThrow(() -> new CustomException(ErrorCode.INSUFFICIENT_GP));
+    private GlobalVault findVaultWithLock(Long userId) {
+        return globalVaultRepository
+                .findByIdWithLock(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.INSUFFICIENT_GP));
+    }
+
+    private void chargeVault(GlobalVault vault, int cost) {
         if (vault.getStoredGp() < cost) {
             throw new CustomException(ErrorCode.INSUFFICIENT_GP);
         }
         vault.withdrawGp(cost);
-        return vault;
     }
 
     // 계정 전체에서 진행 중인 연구가 하나라도 있으면 거부한다(한 번에 하나).

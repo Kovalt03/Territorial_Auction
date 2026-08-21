@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -360,7 +361,7 @@ class AuctionServiceTest {
 
             given(auctionRepository.findById(10L)).willReturn(Optional.of(auction));
             given(userRepository.findById(1L)).willReturn(Optional.of(bidder));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(bidderWallet));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(bidderWallet));
             given(auctionBidRepository.save(any(AuctionBid.class)))
                     .willAnswer(inv -> inv.getArgument(0));
 
@@ -396,7 +397,7 @@ class AuctionServiceTest {
 
             given(auctionRepository.findById(10L)).willReturn(Optional.of(auction));
             given(userRepository.findById(1L)).willReturn(Optional.of(bidder));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(bidderWallet));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(bidderWallet));
             given(auctionBidRepository.save(any(AuctionBid.class)))
                     .willAnswer(inv -> inv.getArgument(0));
 
@@ -419,7 +420,7 @@ class AuctionServiceTest {
 
             given(auctionRepository.findById(10L)).willReturn(Optional.of(auction));
             given(userRepository.findById(1L)).willReturn(Optional.of(bidder));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(bidderWallet));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(bidderWallet));
             given(auctionBidRepository.save(any(AuctionBid.class)))
                     .willAnswer(inv -> inv.getArgument(0));
 
@@ -452,8 +453,8 @@ class AuctionServiceTest {
 
             given(auctionRepository.findById(10L)).willReturn(Optional.of(auction));
             given(userRepository.findById(1L)).willReturn(Optional.of(newBidder));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(newWallet));
-            given(walletRepository.findById(2L)).willReturn(Optional.of(prevWallet));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(newWallet));
+            given(walletRepository.findByIdWithLock(2L)).willReturn(Optional.of(prevWallet));
             given(auctionBidRepository.findTopByAuctionIdAndBidderIdOrderByPriceDesc(10L, 2L))
                     .willReturn(Optional.of(prevBid));
             given(auctionBidRepository.save(any(AuctionBid.class)))
@@ -464,6 +465,40 @@ class AuctionServiceTest {
             // 이전 입찰자 환불 검증
             assertThat(prevWallet.getLockedAp()).isEqualTo(0);
             assertThat(prevWallet.getAvailableAp()).isEqualTo(1000);
+            var lockOrder = inOrder(walletRepository);
+            lockOrder.verify(walletRepository).findByIdWithLock(1L);
+            lockOrder.verify(walletRepository).findByIdWithLock(2L);
+        }
+
+        @Test
+        @DisplayName("이전 입찰자 ID가 더 작아도 Wallet을 ID 오름차순으로 잠금")
+        void placeBid_locksWalletsInAscendingUserIdOrder() {
+            User prevBidder = sampleUser(1L, "전입찰자");
+            Wallet prevWallet = sampleWallet(prevBidder, 0);
+            ReflectionTestUtils.setField(prevWallet, "lockedAp", 1000);
+            User newBidder = sampleUser(2L, "새입찰자");
+            Wallet newWallet = sampleWallet(newBidder, 5000);
+            Auction auction =
+                    mockAuction(
+                            10L,
+                            1000,
+                            prevBidder,
+                            LocalDateTime.now().plusHours(1),
+                            LocalDateTime.now().plusHours(2));
+            AuctionBid prevBid = mock(AuctionBid.class);
+            given(prevBid.getPrice()).willReturn(1000);
+            given(auctionRepository.findById(10L)).willReturn(Optional.of(auction));
+            given(userRepository.findById(2L)).willReturn(Optional.of(newBidder));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(prevWallet));
+            given(walletRepository.findByIdWithLock(2L)).willReturn(Optional.of(newWallet));
+            given(auctionBidRepository.findTopByAuctionIdAndBidderIdOrderByPriceDesc(10L, 1L))
+                    .willReturn(Optional.of(prevBid));
+
+            auctionService.placeBid(2L, 10L, new PlaceBidRequest(1100));
+
+            var lockOrder = inOrder(walletRepository);
+            lockOrder.verify(walletRepository).findByIdWithLock(1L);
+            lockOrder.verify(walletRepository).findByIdWithLock(2L);
         }
 
         @Test
@@ -567,7 +602,7 @@ class AuctionServiceTest {
 
             given(auctionRepository.findById(10L)).willReturn(Optional.of(auction));
             given(userRepository.findById(1L)).willReturn(Optional.of(bidder));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(bidderWallet));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(bidderWallet));
 
             assertThatThrownBy(() -> auctionService.placeBid(1L, 10L, new PlaceBidRequest(1100)))
                     .isInstanceOf(CustomException.class)
@@ -590,7 +625,7 @@ class AuctionServiceTest {
 
             given(auctionRepository.findById(10L)).willReturn(Optional.of(auction));
             given(userRepository.findById(1L)).willReturn(Optional.of(bidder));
-            given(walletRepository.findById(1L)).willReturn(Optional.of(bidderWallet));
+            given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(bidderWallet));
 
             assertThatThrownBy(() -> auctionService.placeBid(1L, 10L, new PlaceBidRequest(1100)))
                     .isInstanceOf(CustomException.class);

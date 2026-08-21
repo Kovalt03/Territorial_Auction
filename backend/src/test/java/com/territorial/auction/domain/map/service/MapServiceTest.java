@@ -164,7 +164,7 @@ class MapServiceTest {
 
             GridMapResponse response = mapService.getGridMap(null);
 
-            assertThat(response.gridSize()).isEqualTo(50);
+            assertThat(response.mapSize()).isEqualTo(50);
             assertThat(response.territories()).hasSize(3);
         }
 
@@ -183,8 +183,8 @@ class MapServiceTest {
         }
 
         @Test
-        @DisplayName("경매 중인 영토 — isAuctioning true")
-        void getGridMap_isAuctioning_true() {
+        @DisplayName("경매 중인 영토 — hasActiveAuction true")
+        void getGridMap_hasActiveAuction_true() {
             Territory t = territory(1L, 0, 0);
             given(territoryRepository.findAllWithContinentAndGrade()).willReturn(List.of(t));
             given(auctionRepository.findActiveAuctionTerritoryIds(any(), any()))
@@ -192,7 +192,7 @@ class MapServiceTest {
 
             GridMapResponse response = mapService.getGridMap(null);
 
-            assertThat(response.territories().get(0).isAuctioning()).isTrue();
+            assertThat(response.territories().get(0).hasActiveAuction()).isTrue();
         }
 
         @Test

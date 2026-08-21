@@ -153,7 +153,7 @@ class AuctionLifecycleServiceTest {
             Auction auction = mockAuction(1L, 3000, winner, territory);
 
             given(auctionRepository.findAllExpiredUnsettled(any())).willReturn(List.of(auction));
-            given(walletRepository.findById(10L)).willReturn(Optional.of(wallet));
+            given(walletRepository.findByIdWithLock(10L)).willReturn(Optional.of(wallet));
             given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
 
             lifecycleService.settlePendingAuctions();
@@ -174,7 +174,7 @@ class AuctionLifecycleServiceTest {
             Auction auction = mockAuction(1L, 3000, winner, territory);
 
             given(auctionRepository.findAllExpiredUnsettled(any())).willReturn(List.of(auction));
-            given(walletRepository.findById(10L)).willReturn(Optional.empty());
+            given(walletRepository.findByIdWithLock(10L)).willReturn(Optional.empty());
             given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
 
             lifecycleService.settlePendingAuctions();
@@ -201,7 +201,7 @@ class AuctionLifecycleServiceTest {
             lenient().when(castleType.getMaxHp()).thenReturn(100);
 
             given(auctionRepository.findAllExpiredUnsettled(any())).willReturn(List.of(auction));
-            given(walletRepository.findById(10L)).willReturn(Optional.empty());
+            given(walletRepository.findByIdWithLock(10L)).willReturn(Optional.empty());
             given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
             given(buildingInstanceRepository.existsCastleOnTerritory(5L)).willReturn(false);
             given(buildingTypeRepository.findByName("CASTLE")).willReturn(Optional.of(castleType));
@@ -251,7 +251,7 @@ class AuctionLifecycleServiceTest {
 
             given(auctionRepository.findAllExpiredUnsettled(any()))
                     .willReturn(List.of(failingAuction, successAuction));
-            given(walletRepository.findById(20L)).willReturn(Optional.of(wallet));
+            given(walletRepository.findByIdWithLock(20L)).willReturn(Optional.of(wallet));
             given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
 
             lifecycleService.settlePendingAuctions(); // 예외 전파되지 않아야 함
@@ -430,7 +430,7 @@ class AuctionLifecycleServiceTest {
             Auction auction = mockAuction(1L, 3000, winner, territory);
             given(auction.isSettled()).willReturn(false);
             given(auctionRepository.findByIdWithDetails(1L)).willReturn(Optional.of(auction));
-            given(walletRepository.findById(10L)).willReturn(Optional.of(wallet));
+            given(walletRepository.findByIdWithLock(10L)).willReturn(Optional.of(wallet));
             given(seasonRepository.findActiveSeason(any())).willReturn(Optional.empty());
 
             lifecycleService.forceSettle(99L, 1L);
@@ -483,7 +483,7 @@ class AuctionLifecycleServiceTest {
             Auction auction = mockAuction(1L, 3000, bidder, territory);
             given(auction.isSettled()).willReturn(false);
             given(auctionRepository.findByIdWithDetails(1L)).willReturn(Optional.of(auction));
-            given(walletRepository.findById(10L)).willReturn(Optional.of(wallet));
+            given(walletRepository.findByIdWithLock(10L)).willReturn(Optional.of(wallet));
 
             lifecycleService.forceCancel(99L, 1L);
 

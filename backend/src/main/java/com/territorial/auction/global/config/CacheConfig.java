@@ -52,6 +52,7 @@ public class CacheConfig {
         cacheConfigs.put("ranking", defaultConfig.entryTtl(Duration.ofHours(1)));
         cacheConfigs.put("continent-list", defaultConfig.entryTtl(Duration.ofHours(1)));
         cacheConfigs.put("territory-grid", defaultConfig.entryTtl(Duration.ofMinutes(1)));
+        cacheConfigs.put("territory-grid-etag", defaultConfig.entryTtl(Duration.ofDays(1)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig.entryTtl(Duration.ofMinutes(5)))

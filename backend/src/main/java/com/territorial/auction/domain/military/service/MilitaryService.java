@@ -6,6 +6,7 @@ import com.territorial.auction.domain.building.entity.BuildingInstance;
 import com.territorial.auction.domain.building.entity.GlobalVault;
 import com.territorial.auction.domain.building.entity.HomeIsland;
 import com.territorial.auction.domain.building.repository.BuildingInstanceRepository;
+import com.territorial.auction.domain.building.repository.BuildingInstanceRepository.MilitaryLocationSummary;
 import com.territorial.auction.domain.building.repository.BuildingLevelSpecRepository;
 import com.territorial.auction.domain.building.repository.GlobalVaultRepository;
 import com.territorial.auction.domain.building.repository.HomeIslandRepository;
@@ -142,9 +143,10 @@ public class MilitaryService {
                 resolveOwnedLocation(userId, request.locationId(), request.locationType());
         // 레벨 2+는 레벨 스펙의 요구 병영 레벨·훈련 식량을 따른다. 레벨 1은 UnitType 기본값.
         UnitTypeLevelSpec spec = level > 1 ? findLevelSpecOrThrow(unitType.getId(), level) : null;
-        validateBarracksAtLocation(
-                loc, spec != null ? spec.getRequiredBarracksLevel() : unitType.getLevel());
-        validateUnitCapacityAtLocation(loc, request.quantity());
+        validateProductionLocation(
+                loc,
+                spec != null ? spec.getRequiredBarracksLevel() : unitType.getLevel(),
+                request.quantity());
 
         int gpCost = unitType.getCostGp() * request.quantity();
         int foodPerUnit = spec != null ? spec.getTrainCostFood() : unitType.getFoodCost();
@@ -591,6 +593,35 @@ public class MilitaryService {
                         .orElse(0);
         if (maxLevel < requiredLevel) {
             throw new CustomException(ErrorCode.BARRACKS_LEVEL_INSUFFICIENT);
+        }
+    }
+
+    private void validateProductionLocation(LocationRef loc, int requiredLevel, int quantity) {
+        LocalDateTime now = LocalDateTime.now();
+        MilitaryLocationSummary summary =
+                loc.type() == LocationType.TERRITORY
+                        ? buildingInstanceRepository.findMilitaryLocationSummaryByTerritoryId(
+                                loc.id(), now)
+                        : buildingInstanceRepository.findMilitaryLocationSummaryByIslandId(
+                                loc.id(), now);
+        int barracksLevel = nullSafe(summary.getMaxBarracksLevel());
+        if (barracksLevel == 0) {
+            throw new CustomException(ErrorCode.NO_BARRACKS);
+        }
+        if (barracksLevel < requiredLevel) {
+            throw new CustomException(ErrorCode.BARRACKS_LEVEL_INSUFFICIENT);
+        }
+
+        int current =
+                nullSafe(
+                        loc.type() == LocationType.TERRITORY
+                                ? unitInstanceRepository.sumQuantityByHomeTerritoryId(loc.id())
+                                : unitInstanceRepository.sumQuantityByHomeIslandId(loc.id()));
+        int capacity =
+                MilitaryPolicy.castleUnitSlots(nullSafe(summary.getCastleLevel()))
+                        + nullSafe(summary.getResidenceCapacity());
+        if (current + quantity > capacity) {
+            throw new CustomException(ErrorCode.UNIT_CAPACITY_EXCEEDED);
         }
     }
 

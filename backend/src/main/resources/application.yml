@@ -59,3 +59,7 @@ admin:
 
 server:
   port: 8080
+  compression:
+    enabled: true
+    mime-types: application/json
+    min-response-size: 2KB

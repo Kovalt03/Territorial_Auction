@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
+import { useStompSubscribe } from './useStompClient';
 import { fetchGridMap } from '../api/map';
-import type { GridTerritoryDto } from '../types/map';
+import type { GridTerritoryDto, MapUpdateBroadcast } from '../types/map';
 
 export interface GridMapResult {
   territories: GridTerritoryDto[];
@@ -17,13 +18,38 @@ export function useGridMap(continentId?: number): GridMapResult {
   const [territories, setTerritories] = useState<GridTerritoryDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const latestUpdatesRef = useRef(new Map<number, MapUpdateBroadcast>());
+
+  useStompSubscribe<MapUpdateBroadcast>('/sub/map/update', (update) => {
+    latestUpdatesRef.current.set(update.territoryId, update);
+    setTerritories(current => current.map(territory => {
+      if (territory.territoryId !== update.territoryId) return territory;
+      return {
+        ...territory,
+        ownerId: update.ownerId,
+        ownerNickname: update.ownerNickname,
+        status: update.status,
+        hasActiveAuction: false,
+      };
+    }));
+  });
 
   useEffect(() => {
     setIsLoading(true);
     setError(null);
     setTerritories([]);
     fetchGridMap(continentId)
-      .then(res => setTerritories(res.territories))
+      .then(res => setTerritories(res.territories.map(territory => {
+        const update = latestUpdatesRef.current.get(territory.territoryId);
+        if (!update) return territory;
+        return {
+          ...territory,
+          ownerId: update.ownerId,
+          ownerNickname: update.ownerNickname,
+          status: update.status,
+          hasActiveAuction: false,
+        };
+      })))
       .catch(() => setError('지도 데이터를 불러올 수 없습니다.'))
       .finally(() => setIsLoading(false));
   }, [continentId]);

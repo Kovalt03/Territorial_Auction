@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -134,6 +135,9 @@ public class LandTaxService {
 
     // 개별 processUserTax가 독립 트랜잭션으로 실행되도록 트랜잭션 없이 루프 실행
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @CacheEvict(
+            value = {"territory-grid", "territory-grid-etag"},
+            allEntries = true)
     public void processAllUsersTax() {
         List<Long> ownerIds =
                 territoryRepository.findAllDistinctOwnerIds(Territory.TerritoryStatus.OCCUPIED);

@@ -69,10 +69,10 @@ function buildDisplayGrid(
       grid[gy][gx] = {
         x: gx, y: gy, coordX: t.coordX, coordY: t.coordY,
         status, owner: t.ownerNickname,
-        color: status === 'idle' ? 'var(--color-outline-soft)' : ownerColor(t.ownerId, t.color),
+        color: status === 'idle' ? 'var(--color-outline-soft)' : ownerColor(t.ownerId, t.currentColor),
         grade,
         currentBid: 0, gpPerMin: 0, defense: 0,
-        id: t.id,
+        id: t.territoryId,
       };
     }
   }
@@ -177,6 +177,30 @@ export function ContinentPage() {
     setAuctionEndAt(null); setTimeLeft(''); setBidHistory([]);
     setIsAuctionLoading(false); setAuctionError(null);
   }, [id]);
+
+  useEffect(() => {
+    if (!selected) return;
+    const territory = territories.find(item => item.territoryId === selected.id);
+    if (!territory) return;
+
+    const status = mapStatus(territory, userId);
+    const color = status === 'idle'
+      ? 'var(--color-outline-soft)'
+      : ownerColor(territory.ownerId, territory.currentColor);
+    if (selected.status === status && selected.owner === territory.ownerNickname && selected.color === color) return;
+
+    setSelected(current => current == null || current.id !== territory.territoryId
+      ? current
+      : { ...current, status, owner: territory.ownerNickname, color });
+    if (status !== 'auction') {
+      setSelectedAuctionId(null);
+      setAuctionCurrentPrice(0);
+      setAuctionEndAt(null);
+      setBidHistory([]);
+      setIsAuctionLoading(false);
+      setAuctionError(null);
+    }
+  }, [territories, selected, userId]);
 
   useEffect(() => {
     if (!auctionEndAt) { setTimeLeft(''); return; }

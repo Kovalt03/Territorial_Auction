@@ -34,6 +34,7 @@ logs/
 !.env.example
 src/main/resources/application-local.yml
 src/main/resources/application-secret.yml
+src/gatling/resources/tokens.csv
 
 # ===========================
 # IDE
