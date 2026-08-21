@@ -4,6 +4,8 @@
 
 운영과 유사한 로컬 Docker 실행, 관리자 초기화, 백업·복구는 [로컬 운영 실행 가이드](docs/operations/local-production.md)를 따른다. 사용자와 운영자 기능 안내는 각각 [사용자 가이드](docs/guides/user-guide.md), [관리자 운영 가이드](docs/guides/admin-guide.md)를 참조한다.
 
+Render·Supabase 외부 동작 검증은 [외부 배포 가이드](docs/operations/external-render-supabase.md)를 따른다.
+
 ---
 
 ## 프로젝트 구조
