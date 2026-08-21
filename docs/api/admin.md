@@ -1,6 +1,6 @@
 # Admin API (관리자 페이지)
 
-> 구현 상태: ⬜ 미구현
+> 구현 상태: ✅ 관리자 화면과 API는 구현되어 있다. 이 문서는 초기 설계 계약을 포함하므로, 세부 엔드포인트의 최종 사실은 Controller와 [체크리스트](../checklist.md)를 함께 확인한다.
 > 설계 문서: [admin-dashboard](../design/admin-dashboard.md)
 
 ---

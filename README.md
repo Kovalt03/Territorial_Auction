@@ -1,6 +1,8 @@
 # 픽셀 경매 - 사이버 영토 전쟁
 
-50×50 고정 그리드 맵에서 10×10 픽셀 단위의 영토를 경매로 점유하는 실시간 전략 웹 애플리케이션.
+50×50 월드맵에서 영토를 경매로 점유하고 건설·자원·병력·공성전을 운영하는 실시간 전략 웹 애플리케이션.
+
+운영과 유사한 로컬 Docker 실행, 관리자 초기화, 백업·복구는 [로컬 운영 실행 가이드](docs/operations/local-production.md)를 따른다. 사용자와 운영자 기능 안내는 각각 [사용자 가이드](docs/guides/user-guide.md), [관리자 운영 가이드](docs/guides/admin-guide.md)를 참조한다.
 
 ---
 
@@ -75,7 +77,7 @@ Closes #이슈번호 (선택)
 ### PR 규칙
 
 - **제목 형식** : `[PREFIX] 작업 내용 요약`
-- **Merge 전략** : `feature → dev` 는 Squash and Merge
+- **Merge 전략** : PR 생성 시 사용자와 합의한 방식으로 진행
 - **main 보호** : `dev` 브랜치에서만 PR 허용
 
 ---
@@ -98,3 +100,20 @@ cd backend
 ./gradlew bootRun
 # http://localhost:8080
 ```
+
+### 운영과 유사한 로컬 Docker 실행
+
+```bash
+cp backend/.env.production.example backend/.env.production
+# JWT_SECRET과 DB 비밀번호를 강한 값으로 변경
+docker compose -f docker-compose.production.yml up -d --build
+# http://localhost:3000
+```
+
+릴리스 기준과 현재 제한은 [v1.0.0-monolith 릴리스 기준점](docs/releases/v1.0.0-monolith.md)을 참조한다.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).

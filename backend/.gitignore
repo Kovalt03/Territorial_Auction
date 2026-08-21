@@ -32,6 +32,7 @@ logs/
 .env
 .env.*
 !.env.example
+!.env.production.example
 src/main/resources/application-local.yml
 src/main/resources/application-secret.yml
 src/gatling/resources/tokens.csv

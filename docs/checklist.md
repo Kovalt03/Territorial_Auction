@@ -1,6 +1,6 @@
 # 구현 체크리스트
 
-> 마지막 갱신: 2026-07-24 (자원 스코프 개편 + 공성전 시스템 전면 구현·실행 검증 반영)  
+> 마지막 갱신: 2026-08-21 (우선순위 혼합 Soak 검증·로컬 운영 준비 반영)
 > 기준 브랜치: `dev`
 
 범례: ✅ 완료 · 🔄 일부 완료 · ⬜ 미구현
@@ -9,6 +9,7 @@
 > - **자원 스코프 개편**: GP·식량이 **위치(영토/섬) 저장소**로 이동. `wallets.available_gp/food` DROP, 계정 단위는 **금고(GlobalVault)** 만. GP 보유 상한 = 저장소 용량(성·저장소 레벨당 5,000).
 > - **공성전 시스템 전면 구현**: 보호/점유 분리, Zone 외곽→중심, 공격 병력 커밋(`SiegeForce`), 유닛 건물 주둔, 성 HP 누적·다회 공성, 정찰(SCOUT)·정보 비대칭, **공성 건물(`SiegeStructure`: 주둔지·타워·보급소)**, 관리자 밸런스(`BalanceConfig`), 판정 스케줄러까지 **선언→판정→약탈 실행 검증 완료**.
 > - **관리자 페이지·랭킹**: 실제 구현됨(아래 섹션 갱신).
+> - **성능·운영 기준**: 50 VU 1시간 우선순위 혼합 Soak에서 71,665 요청·실패 0건을 확인했다. production profile은 Flyway 스키마 마이그레이션과 Hibernate 검증을 사용하며, 로컬 Docker 운영 절차는 [운영 가이드](./operations/local-production.md)에 정리했다.
 
 ---
 
@@ -462,17 +463,6 @@
 
 ---
 
-## 진행 순서 (권장)
+## 다음 단계
 
-```
-완료 브랜치: feature/be-15-chat ✅
-  - WebSocketConfig (/pub, /sub prefix, SockJS)
-  - StompChannelInterceptor JWT 검증
-  - 채팅 구현 (ChatRoom 타입, ChatController, ChatService)
-  - 길드 생성 시 GUILD 채팅방 자동 생성
-
-다음 예상 브랜치:
-  feature/be-16-notification
-  feature/be-17-ranking   (새 랭킹 스펙: territory-hold + auction-spend)
-  feature/be-18-military
-```
+모놀리식 기능 구현과 우선순위 성능 검증은 완료 기준에 도달했다. 남은 제품 제한은 실제 PG 결제 연동, 개인섬 연구·확장이다. 외부 배포 검증과 MSA 전환은 별도 브랜치·저장소에서 진행한다.
