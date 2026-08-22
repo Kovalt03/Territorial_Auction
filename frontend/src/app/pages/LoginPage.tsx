@@ -1,96 +1,121 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { GridBackground } from '../components/GridBackground';
+
 import { useApp } from '../context/AppContext';
+import { loginApi } from '../api/auth';
+import { fetchMyProfile, fetchMyWallet } from '../api/user';
+
+import { GridBackground } from '../components/GridBackground';
+import { Button } from '../components/Button';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useApp();
-  const [id, setId] = useState('');
+  const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = () => {
-    if (!id || !pw) { setError('아이디와 비밀번호를 입력해주세요.'); return; }
-    login(id);
-    navigate('/app/map');
+  const handleLogin = async () => {
+    if (!email || !pw) { setError('이메일과 비밀번호를 입력해주세요.'); return; }
+    setIsSubmitting(true);
+    setError('');
+    try {
+      const { accessToken } = await loginApi(email, pw);
+      localStorage.setItem('accessToken', accessToken);
+      const [profile, wallet] = await Promise.all([
+        fetchMyProfile().catch(() => null),
+        fetchMyWallet().catch(() => null),
+      ]);
+      login(profile?.nickname ?? '', {
+        token: accessToken,
+        userId: profile?.userId,
+        ap: wallet?.availableAP ?? 0,
+        gp: wallet?.availableGP ?? 0,
+      });
+      navigate('/app/map');
+    } catch {
+      localStorage.removeItem('accessToken');
+      setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleGuest = () => {
-    login('게스트');
     navigate('/app/map');
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] relative flex items-center justify-center overflow-hidden">
+    <div className="min-h-screen bg-surface relative flex items-center justify-center overflow-hidden">
       <GridBackground />
 
-      <div className="absolute w-[500px] h-[600px] bg-[#00f5ff] opacity-[0.04] rounded-full blur-3xl" />
+      <div className="absolute w-[500px] h-[600px] bg-primary opacity-[0.04] rounded-full blur-3xl" />
 
-      <div className="relative bg-[#1a1f35] border-[1.5px] border-[#00f5ff] rounded-2xl w-[380px] overflow-hidden shadow-2xl" style={{ boxShadow: '0 0 40px #00f5ff15' }}>
-        {/* Logo */}
+      <div className="relative bg-panel border-[1.5px] border-primary rounded-2xl w-full max-w-[380px] mx-4 overflow-hidden shadow-[0_0_40px_#00f5ff15]">
         <div className="pt-8 pb-4 flex flex-col items-center">
-          <div className="w-16 h-16 bg-[#00f5ff15] border-2 border-[#00f5ff] rounded-2xl flex items-center justify-center mb-3">
-            <span style={{ fontSize: 32 }}>⬡</span>
+          <div className="w-16 h-16 bg-[#00f5ff15] border-2 border-primary rounded-2xl flex items-center justify-center mb-3">
+            <span className="text-[32px]">⬡</span>
           </div>
-          <h1 className="text-[#00f5ff] font-bold" style={{ fontSize: 22 }}>픽셀 경매</h1>
-          <p className="text-[#7788a5]" style={{ fontSize: 12 }}>PIXEL AUCTION · 사이버 영토 전쟁</p>
+          <h1 className="text-primary font-bold text-[22px]">픽셀 경매</h1>
+          <p className="text-muted text-xs">PIXEL AUCTION · 사이버 영토 전쟁</p>
         </div>
 
         <div className="px-8 pb-8">
-          {/* Welcome bonus banner */}
           <div className="bg-[#2a1500] border border-[#ffd70060] rounded-xl px-4 py-2.5 mb-5 flex items-center gap-2">
-            <span style={{ fontSize: 16 }}>🎁</span>
-            <span className="text-[#ffd700]" style={{ fontSize: 12 }}>신규 가입 시 1,000 AP 즉시 지급!</span>
+            <span className="text-base">🎁</span>
+            <span className="text-gold text-xs">신규 가입 시 1,000 AP 즉시 지급!</span>
           </div>
 
           {error && (
-            <div className="bg-[#ff333320] border border-[#ff3333] rounded-lg px-3 py-2 mb-3">
-              <span className="text-[#ff3333]" style={{ fontSize: 12 }}>{error}</span>
+            <div className="bg-danger/10 border border-danger rounded-lg px-3 py-2 mb-3">
+              <span className="text-danger text-xs">{error}</span>
             </div>
           )}
 
-          <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>아이디</label>
+          <label className="form-label">이메일</label>
           <input
-            value={id}
-            onChange={e => setId(e.target.value)}
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            placeholder="아이디를 입력하세요"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-lg px-4 h-11 text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-4"
-            style={{ fontSize: 14 }}
+            placeholder="이메일을 입력하세요"
+            className="w-full bg-elevated border border-outline rounded-lg px-4 h-11 text-foreground outline-none focus:border-primary transition-colors mb-4 text-sm"
           />
 
-          <label className="block text-[#8892b0] mb-1.5" style={{ fontSize: 11, fontWeight: 500 }}>비밀번호</label>
+          <label className="form-label">비밀번호</label>
           <input
             type="password"
             value={pw}
             onChange={e => setPw(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
             placeholder="비밀번호를 입력하세요"
-            className="w-full bg-[#2a3050] border border-[#354064] rounded-lg px-4 h-11 text-[#e0e8ff] outline-none focus:border-[#00f5ff] transition-colors mb-5"
-            style={{ fontSize: 14 }}
+            className="w-full bg-elevated border border-outline rounded-lg px-4 h-11 text-foreground outline-none focus:border-primary transition-colors mb-5 text-sm"
           />
 
-          <button
+          <Button
             onClick={handleLogin}
-            className="w-full h-12 bg-[#00f5ff] rounded-xl text-[#0a0e1a] font-bold hover:brightness-110 transition-all active:scale-[0.98] mb-3"
-            style={{ fontSize: 16 }}
+            disabled={isSubmitting}
+            size="lg"
+            fullWidth
+            className="mb-3"
           >
-            로그인
-          </button>
+            {isSubmitting ? '로그인 중...' : '로그인'}
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
             onClick={() => navigate('/register')}
-            className="w-full h-11 bg-[#2a3050] border border-[#354064] rounded-xl text-[#e0e8ff] hover:bg-[#354064] transition-colors mb-3"
-            style={{ fontSize: 14 }}
+            size="md"
+            fullWidth
+            className="mb-3"
           >
             회원가입
-          </button>
+          </Button>
 
           <button
             onClick={handleGuest}
-            className="w-full text-center text-[#7788a5] hover:text-[#e0e8ff] transition-colors"
-            style={{ fontSize: 12 }}
+            className="w-full text-center text-muted hover:text-foreground transition-colors text-xs"
           >
             게스트로 둘러보기 →
           </button>

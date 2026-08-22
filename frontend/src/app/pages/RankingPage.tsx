@@ -1,163 +1,218 @@
 import { useState } from 'react';
+
+import { useTerritoryHoldRanking, useAuctionSpendRanking, useTrophyRanking } from '../hooks/useRanking';
 import { GNB } from '../components/GNB';
+import type { TerritoryHoldRankEntry, AuctionSpendRankEntry, TrophyRankEntry } from '../types/ranking';
 
-type Period = 'realtime' | 'weekly' | 'monthly' | 'all';
-type Category = 'territory' | 'assets' | 'trophy' | 'continent' | 'production';
+type Category = 'territory' | 'assets' | 'trophy';
 
-const rankData = [
-  { rank: 1, name: '강남부자', initial: '강', color: '#f06070', territories: 15, assets: 14900, trophy: 4820, continent: '북부 지배', production: '96 GP/분' },
-  { rank: 2, name: '픽셀왕', initial: '픽', color: '#8b50ff', territories: 12, assets: 9800, trophy: 3420, continent: '남부 지배', production: '78 GP/분' },
-  { rank: 3, name: '영토수집가', initial: '영', color: '#00f5ff', territories: 9, assets: 8500, trophy: 2650, continent: '동부 지배', production: '62 GP/분' },
-  { rank: 4, name: '사이버해커', initial: '사', color: '#7788a5', territories: 8, assets: 7200, trophy: 3210, continent: '서부 지배', production: '55 GP/분' },
-  { rank: 5, name: '글리치마스터', initial: '글', color: '#7788a5', territories: 7, assets: 6500, trophy: 2980, continent: '', production: '48 GP/분' },
-  { rank: 6, name: '레이더', initial: '레', color: '#7788a5', territories: 7, assets: 5900, trophy: 2750, continent: '', production: '45 GP/분' },
-  { rank: 7, name: '빌더킹', initial: '빌', color: '#7788a5', territories: 6, assets: 5100, trophy: 2440, continent: '', production: '38 GP/분' },
-  { rank: 8, name: '뉴비123', initial: '뉴', color: '#7788a5', territories: 4, assets: 3200, trophy: 1800, continent: '', production: '22 GP/분' },
-  { rank: 9, name: '크롬헌터', initial: '크', color: '#7788a5', territories: 3, assets: 2600, trophy: 1200, continent: '', production: '18 GP/분' },
-];
-
-const periodLabel: Record<Period, string> = {
-  realtime: '실시간', weekly: '주간', monthly: '월간', all: '전체 기간',
+const categoryLabel: Record<Category, { label: string; icon: string }> = {
+  territory: { label: '영토 왕', icon: '🏰' },
+  assets: { label: '경매 지출왕', icon: '💸' },
+  trophy: { label: '트로피 랭킹', icon: '🏆' },
 };
 
-const categoryLabel: Record<Category, { label: string; icon: string; key: keyof typeof rankData[0] }> = {
-  territory: { label: '영토 왕', icon: '🏰', key: 'territories' },
-  assets: { label: '자산가', icon: '💰', key: 'assets' },
-  trophy: { label: '트로피 랭킹', icon: '🏆', key: 'trophy' },
-  continent: { label: '대륙 지배자', icon: '👑', key: 'continent' },
-  production: { label: '생산 효율왕', icon: '⚙️', key: 'production' },
-};
+const RANK_COLORS = ['#ffd700', '#8892b0', '#ff8c00'];
+
+interface NormalizedEntry {
+  rank: number;
+  nickname: string;
+  valueLabel: string;
+}
+
+function normalizeTerritoryHold(entries: TerritoryHoldRankEntry[]): NormalizedEntry[] {
+  return entries.map(e => ({
+    rank: e.rank,
+    nickname: e.nickname,
+    valueLabel: `${e.score.toLocaleString()} 점`,
+  }));
+}
+
+function normalizeAuctionSpend(entries: AuctionSpendRankEntry[]): NormalizedEntry[] {
+  return entries.map(e => ({
+    rank: e.rank,
+    nickname: e.nickname,
+    valueLabel: `${e.totalSpentAP.toLocaleString()} AP`,
+  }));
+}
+
+function normalizeTrophy(entries: TrophyRankEntry[]): NormalizedEntry[] {
+  return entries.map(e => ({
+    rank: e.rank,
+    nickname: e.nickname,
+    valueLabel: `${e.score.toLocaleString()} 점`,
+  }));
+}
+
+function initial(nickname: string) {
+  return nickname.charAt(0) || '?';
+}
+
+function rankColor(rank: number): string {
+  return RANK_COLORS[rank - 1] ?? '#7788a5';
+}
+
+function PodiumCard({ entry, height, medal }: { entry: NormalizedEntry; height: number; medal: string }) {
+  const color = rankColor(entry.rank);
+  return (
+    <div className="flex flex-col items-center">
+      <div className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-2xl mb-2"
+        style={{ background: color + '4d', border: `2px solid ${color}`, color }}>
+        {initial(entry.nickname)}
+      </div>
+      <span className="text-[30px]">{medal}</span>
+      <div className="w-40 rounded-xl flex flex-col items-center py-4 mb-2"
+        style={{ height, background: color + '18', border: `${entry.rank === 1 ? 2 : 1}px solid ${color}` }}>
+        <p className="font-bold text-sm" style={{ color }}>{entry.rank}위</p>
+      </div>
+      <p className="font-bold text-[13px]" style={{ color }}>{entry.nickname}</p>
+      <p className="text-foreground font-semibold text-lg">{entry.valueLabel}</p>
+    </div>
+  );
+}
+
+function LoadingRows() {
+  return (
+    <>
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className="grid px-4 py-3 border-b border-outline items-center animate-pulse"
+          style={{ gridTemplateColumns: '80px 1fr 1fr 1fr 1fr' }}>
+          <div className="h-4 bg-elevated rounded w-12" />
+          <div className="h-4 bg-elevated rounded w-24" />
+          <div className="h-4 bg-elevated rounded w-16" />
+          <div className="h-4 bg-elevated rounded w-20" />
+          <div className="h-4 bg-elevated rounded w-16" />
+        </div>
+      ))}
+    </>
+  );
+}
 
 export function RankingPage() {
-  const [period, setPeriod] = useState<Period>('realtime');
   const [category, setCategory] = useState<Category>('territory');
 
-  const cat = categoryLabel[category];
-  const top3 = rankData.slice(0, 3);
-  const rest = rankData.slice(3);
+  const { data: holdData, isLoading: holdLoading } = useTerritoryHoldRanking();
+  const { data: spendData, isLoading: spendLoading } = useAuctionSpendRanking();
+  const { data: trophyData, isLoading: trophyLoading } = useTrophyRanking();
 
-  const getValue = (r: typeof rankData[0]): string => {
-    const v = r[cat.key];
-    if (cat.key === 'territories') return `${v}개`;
-    if (cat.key === 'assets') return `${Number(v).toLocaleString()} AP`;
-    if (cat.key === 'trophy') return `🏆 ${Number(v).toLocaleString()}`;
-    return String(v);
-  };
+  const isLoading =
+    category === 'territory' ? holdLoading
+    : category === 'assets' ? spendLoading
+    : trophyLoading;
+
+  const entries: NormalizedEntry[] = (() => {
+    if (category === 'territory' && holdData) return normalizeTerritoryHold(holdData.rankings);
+    if (category === 'assets' && spendData) return normalizeAuctionSpend(spendData.rankings);
+    if (category === 'trophy' && trophyData) return normalizeTrophy(trophyData.rankings);
+    return [];
+  })();
+
+  const top3 = entries.slice(0, 3);
+  const rest = entries.slice(3);
+
+  const podiumOrder = top3.length >= 2
+    ? [top3[1], top3[0], top3[2]].filter(Boolean)
+    : top3;
+  const podiumHeights = [130, 160, 110];
+  const podiumMedals = ['🥈', '🥇', '🥉'];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
-      <div className="flex-1 overflow-y-auto p-5">
-        <h1 className="text-[#e0e8ff] font-bold mb-4" style={{ fontSize: 26 }}>🏆  랭킹 리더보드</h1>
+      <div className="page-body">
+        <h1 className="text-foreground font-bold mb-4 text-[26px]">🏆  랭킹 리더보드</h1>
 
-        <div className="bg-[#2a3050] border border-[#354064] rounded-xl p-1 flex gap-1 mb-4 w-fit">
-          {(Object.keys(periodLabel) as Period[]).map(p => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-5 py-2 rounded-lg transition-all font-semibold ${
-                period === p ? 'bg-[#00f5ff] text-[#0a0e1a]' : 'text-[#7788a5] hover:text-[#e0e8ff]'
-              }`}
-              style={{ fontSize: 13 }}
-            >
-              {periodLabel[p]}
-            </button>
-          ))}
-        </div>
-
-        <div className="bg-[#1a1f35] border border-[#354064] flex mb-5">
+        <div className="bg-panel border border-outline flex mb-5">
           {(Object.keys(categoryLabel) as Category[]).map(c => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={`flex-1 py-3 font-semibold transition-colors relative ${
-                category === c ? 'text-[#00f5ff] bg-[#2a3050]' : 'text-[#7788a5] hover:text-[#e0e8ff]'
-              }`}
-              style={{ fontSize: 13 }}
-            >
+            <button key={c} onClick={() => setCategory(c)}
+              className={`flex-1 py-3 font-semibold transition-colors relative text-[13px] ${category === c ? 'text-primary bg-elevated' : 'text-muted hover:text-foreground'}`}>
               {categoryLabel[c].icon} {categoryLabel[c].label}
-              {category === c && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00f5ff]" />}
+              {category === c && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
             </button>
           ))}
         </div>
 
-        <div className="flex items-end justify-center gap-4 mb-6 relative" style={{ height: 280 }}>
-          <div className="flex flex-col items-center">
-            <div className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-white text-2xl mb-2"
-              style={{ background: top3[1]?.color + '4d', border: `2px solid ${top3[1]?.color}`, opacity: 0.8, color: top3[1]?.color }}>
-              {top3[1]?.initial}
-            </div>
-            <span style={{ fontSize: 30 }}>🥈</span>
-            <div className="w-40 border border-[#bfbfbf] rounded-xl flex flex-col items-center py-4 mb-2"
-              style={{ height: 130, background: '#bfbfbf18' }}>
-              <p className="text-[#bfbfbf] font-bold" style={{ fontSize: 14 }}>2위</p>
-            </div>
-            <p className="text-[#bfbfbf] font-bold" style={{ fontSize: 13 }}>{top3[1]?.name}</p>
-            <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 18 }}>{top3[1] && getValue(top3[1])}</p>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-white text-2xl mb-2"
-              style={{ background: top3[0]?.color + '4d', border: `2px solid ${top3[0]?.color}`, color: top3[0]?.color }}>
-              {top3[0]?.initial}
-            </div>
-            <span style={{ fontSize: 30 }}>🥇</span>
-            <div className="w-44 border-2 border-[#ffd700] rounded-xl flex flex-col items-center py-4 mb-2"
-              style={{ height: 160, background: '#ffd70018' }}>
-              <p className="text-[#ffd700] font-bold" style={{ fontSize: 14 }}>1위</p>
-            </div>
-            <p className="text-[#ffd700] font-bold" style={{ fontSize: 13 }}>{top3[0]?.name}</p>
-            <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 18 }}>{top3[0] && getValue(top3[0])}</p>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <div className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-white text-2xl mb-2"
-              style={{ background: top3[2]?.color + '4d', border: `2px solid #cc8033`, opacity: 0.8, color: '#cc8033' }}>
-              {top3[2]?.initial}
-            </div>
-            <span style={{ fontSize: 30 }}>🥉</span>
-            <div className="w-40 border border-[#cc8033] rounded-xl flex flex-col items-center py-4 mb-2"
-              style={{ height: 110, background: '#cc803318' }}>
-              <p className="text-[#cc8033] font-bold" style={{ fontSize: 14 }}>3위</p>
-            </div>
-            <p className="text-[#cc8033] font-bold" style={{ fontSize: 13 }}>{top3[2]?.name}</p>
-            <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 18 }}>{top3[2] && getValue(top3[2])}</p>
-          </div>
-        </div>
-
-        <div className="bg-[#1a1f35] border border-[#354064] rounded-xl overflow-hidden">
-          <div className="bg-[#2a3050] px-4 py-2.5 border-b-2 border-[#00f5ff] flex items-center justify-between">
-            <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>4위 이하 순위</span>
-          </div>
-          <div className="grid text-[#7788a5] px-4 py-2.5 border-b border-[#354064]"
-            style={{ gridTemplateColumns: '80px 1fr 1fr 1fr 1fr', fontSize: 11 }}>
-            <span>순위</span>
-            <span>플레이어</span>
-            <span>점유 영토</span>
-            <span>총 자산</span>
-            <span>트로피</span>
-          </div>
-          {rest.map((r, i) => (
-            <div
-              key={r.rank}
-              className={`grid px-4 py-3 border-b border-[#1e2a3d] items-center hover:bg-[#12192c] transition-colors ${i % 2 === 0 ? 'bg-[#12192c] bg-opacity-30' : ''}`}
-              style={{ gridTemplateColumns: '80px 1fr 1fr 1fr 1fr' }}
-            >
-              <span className="text-[#e0e8ff] font-bold" style={{ fontSize: 14 }}>{r.rank}위</span>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white"
-                  style={{ background: '#8892b04d', fontSize: 14 }}>
-                  {r.initial}
-                </div>
-                <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>{r.name}</span>
+        <>
+            {isLoading ? (
+              <div className="flex items-end justify-center gap-4 mb-6">
+                {[130, 160, 110].map((h, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2 animate-pulse">
+                    <div className="w-14 h-14 rounded-full bg-elevated" />
+                    <div className="w-40 rounded-xl bg-elevated" style={{ height: h }} />
+                  </div>
+                ))}
               </div>
-              <span className="text-[#e0e8ff]" style={{ fontSize: 13 }}>{r.territories}개</span>
-              <span className="text-[#ffd700] font-medium" style={{ fontSize: 13 }}>{r.assets.toLocaleString()} AP</span>
-              <span className="text-[#e0e8ff]" style={{ fontSize: 13 }}>🏆 {r.trophy.toLocaleString()}</span>
+            ) : top3.length === 0 ? (
+              <div className="flex items-center justify-center h-48 card mb-6">
+                <p className="text-muted text-sm">랭킹 데이터가 없습니다</p>
+              </div>
+            ) : (
+              <div className="flex items-end justify-center gap-4 mb-6 relative">
+                {podiumOrder.map((entry, i) => (
+                  <PodiumCard
+                    key={entry.rank}
+                    entry={entry}
+                    height={podiumHeights[i]}
+                    medal={podiumMedals[i]}
+                  />
+                ))}
+              </div>
+            )}
+
+            <div className="card overflow-hidden">
+              <div className="bg-elevated px-4 py-2.5 border-b-2 border-primary flex items-center justify-between">
+                <span className="text-foreground font-semibold text-[13px]">4위 이하 순위</span>
+              </div>
+              <div className="grid text-muted px-4 py-2.5 border-b border-outline text-[11px]"
+                style={{ gridTemplateColumns: '80px 1fr 1fr' }}>
+                <span>순위</span>
+                <span>플레이어</span>
+                <span>{category === 'territory' ? '영토 점수' : category === 'trophy' ? '트로피 점수' : '총 지출'}</span>
+              </div>
+              {isLoading ? (
+                <LoadingRows />
+              ) : rest.length === 0 ? (
+                <div className="px-4 py-6 text-center text-muted text-xs">데이터가 없습니다</div>
+              ) : (
+                rest.map((r, i) => (
+                  <div key={r.rank}
+                    className={`grid px-4 py-3 border-b border-outline items-center hover:bg-panel-deep transition-colors ${i % 2 === 0 ? 'bg-panel-deep bg-opacity-30' : ''}`}
+                    style={{ gridTemplateColumns: '80px 1fr 1fr' }}>
+                    <span className="text-foreground font-bold text-sm">{r.rank}위</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-sm bg-[#8892b04d]">
+                        {initial(r.nickname)}
+                      </div>
+                      <span className="text-foreground font-semibold text-[13px]">{r.nickname}</span>
+                    </div>
+                    <span className="text-gold font-medium text-[13px]">{r.valueLabel}</span>
+                  </div>
+                ))
+              )}
             </div>
-          ))}
-        </div>
+
+            {(() => {
+              const myData = category === 'territory' ? holdData : category === 'trophy' ? trophyData : spendData;
+              const myRank = myData?.myRank;
+              const myScore = myData?.myScore;
+              if (!myRank) return null;
+              const myValueLabel = category === 'territory'
+                ? `${(myScore ?? 0).toLocaleString()} 점`
+                : category === 'trophy'
+                ? `${(myScore ?? 0).toLocaleString()} 점`
+                : `${(myScore ?? 0).toLocaleString()} AP`;
+              return (
+                <div className="mt-3 card px-4 py-3 flex items-center justify-between border-primary">
+                  <div className="flex items-center gap-3">
+                    <span className="text-primary font-bold text-sm">내 순위</span>
+                    <span className="text-foreground font-bold text-lg">{myRank}위</span>
+                  </div>
+                  <span className="text-gold font-semibold text-sm">{myValueLabel}</span>
+                </div>
+              );
+            })()}
+        </>
       </div>
     </div>
   );

@@ -13,6 +13,31 @@ jobs:
       run:
         working-directory: backend
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: territorial_auction_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +51,12 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
+      - name: Check code format
+        run: ./gradlew spotlessCheck
+
       - name: Build & Test
         run: ./gradlew build
         env:
           SPRING_PROFILES_ACTIVE: test
+          DB_USERNAME: test
+          DB_PASSWORD: test

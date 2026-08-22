@@ -1,12 +1,39 @@
-.claude
-/CLAUDE.md
-frontend/node_modules
-frontend/dist
-frontend/.env*.local
-frontend/.vite
-frontend/tsconfig.tsbuildinfo
-frontend/.gitkeep
-backend/build
-backend/.gradle
-backend/*.jar
-*.env
+# ===========================
+# Claude Code
+# ===========================
+.claude/
+
+# ===========================
+# Environment
+# ===========================
+.env
+.env.*
+!.env.example
+
+# ===========================
+# OS
+# ===========================
+.DS_Store
+Thumbs.db
+
+# ===========================
+# Editor
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===========================
+# Claude Code
+# ===========================
+CLAUDE.md
+
+# ===========================
+# Personal Notes
+# ===========================
+TODO.md
+REPORT-*.md
+report/
+backups/
+blog/

@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { GNB } from '../components/GNB';
-import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router';
+
+import { useApp } from '../context/AppContext';
+import { chargeAp } from '../api/user';
+
+import { GNB } from '../components/GNB';
+import { Button } from '../components/Button';
 
 const packages = [
   { id: 0, ap: 5000, price: 5000, discount: 0, color: '#e0e8ff', borderColor: '#e0e8ff' },
@@ -19,39 +23,53 @@ const payMethods = [
 
 export function ChargePage() {
   const navigate = useNavigate();
-  const { addAP, ap } = useApp();
+  const { syncAP } = useApp();
   const [selectedPkg, setSelectedPkg] = useState(2);
   const [selectedPay, setSelectedPay] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [newAP, setNewAP] = useState(0);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [chargeResult, setChargeResult] = useState<{ availableAP: number; chargedAmount: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const pkg = packages[selectedPkg];
 
-  const handlePay = () => {
+  const handlePay = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
-      addAP(pkg.ap);
-      setNewAP(ap + pkg.ap);
+    setError(null);
+    const orderId = `order-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const paymentKey = `mock-${selectedPay}-${orderId}`;
+    try {
+      const result = await chargeAp(pkg.ap, paymentKey, orderId);
+      syncAP(result.availableAP);
+      setChargeResult({ availableAP: result.availableAP, chargedAmount: result.chargedAmount });
+      setIsSuccess(true);
+    } catch {
+      setError('결제에 실패했습니다. 다시 시도해주세요.');
+    } finally {
       setIsProcessing(false);
-      setSuccess(true);
-    }, 1500);
+    }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0e1a] overflow-hidden">
+    <div className="page-root">
       <GNB />
 
-      <div className="flex-1 overflow-y-auto p-5">
-        <h1 className="text-[#e0e8ff] font-bold mb-1" style={{ fontSize: 24 }}>💎  AP (Auction Point) 충전</h1>
-        <p className="text-[#7788a5] mb-6" style={{ fontSize: 14 }}>경매 입찰, 아이템 구매에 사용하는 프리미엄 포인트</p>
+      <div className="page-body">
+        <h1 className="text-foreground font-bold mb-1 text-2xl">💎  AP (Auction Point) 충전</h1>
+        <p className="text-muted mb-6 text-sm">경매 입찰, 아이템 구매에 사용하는 프리미엄 포인트</p>
 
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        {error && (
+          <div className="bg-danger/10 border border-danger/25 rounded-xl px-4 py-2.5 mb-4">
+            <span className="text-danger text-[13px]">⚠ {error}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {packages.map((p) => (
             <button
               key={p.id}
               onClick={() => setSelectedPkg(p.id)}
-              className="relative bg-[#1a1f35] rounded-2xl p-4 text-left transition-all hover:scale-105"
+              className="relative bg-panel rounded-2xl p-4 text-left transition-all hover:scale-105"
               style={{
                 border: `${p.best ? 2 : 1}px solid ${selectedPkg === p.id ? p.borderColor : '#354064'}`,
                 boxShadow: selectedPkg === p.id ? `0 0 20px ${p.color}30` : undefined,
@@ -59,22 +77,21 @@ export function ChargePage() {
             >
               {p.label && (
                 <div className="mb-3 h-6 rounded-xl px-3 flex items-center w-fit" style={{ background: p.color }}>
-                  <span className="text-[#0a0e1a] font-bold" style={{ fontSize: 12 }}>{p.label}</span>
+                  <span className="text-surface font-bold text-xs">{p.label}</span>
                 </div>
               )}
               {!p.label && <div className="h-6 mb-3" />}
-              <p className="font-bold" style={{ fontSize: 26, color: p.color }}>{p.ap.toLocaleString()} AP</p>
+              <p className="font-bold text-[26px]" style={{ color: p.color }}>{p.ap.toLocaleString()} AP</p>
               {p.originalPrice && (
-                <p className="text-[#7788a5] line-through" style={{ fontSize: 13 }}>₩{p.originalPrice.toLocaleString()}</p>
+                <p className="text-muted line-through text-[13px]">₩{p.originalPrice.toLocaleString()}</p>
               )}
-              <p className="text-[#e0e8ff] font-semibold" style={{ fontSize: 20 }}>₩{p.price.toLocaleString()}</p>
+              <p className="text-foreground font-semibold text-xl">₩{p.price.toLocaleString()}</p>
               <div
-                className="mt-4 h-11 rounded-xl flex items-center justify-center font-semibold"
+                className="mt-4 h-11 rounded-xl flex items-center justify-center font-semibold text-sm"
                 style={{
                   background: selectedPkg === p.id ? p.color : '#2a3050',
                   border: `1px solid ${selectedPkg === p.id ? p.color : '#354064'}`,
                   color: selectedPkg === p.id ? '#0a0e1a' : p.color,
-                  fontSize: 14,
                 }}
               >
                 {selectedPkg === p.id ? '✓ 선택됨' : '선택하기'}
@@ -84,26 +101,22 @@ export function ChargePage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-[#1a1f35] border border-[#354064] rounded-xl overflow-hidden">
-            <div className="bg-[#2a3050] px-4 py-2.5 border-b-2 border-[#00f5ff]">
-              <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>결제 수단 선택</span>
+          <div className="card overflow-hidden">
+            <div className="bg-elevated px-4 py-2.5 border-b-2 border-primary">
+              <span className="text-foreground font-semibold text-[13px]">결제 수단 선택</span>
             </div>
             <div className="p-4 space-y-3">
               {payMethods.map(pm => (
                 <button
                   key={pm.id}
                   onClick={() => setSelectedPay(pm.id)}
-                  className="w-full h-12 rounded-xl flex items-center px-4 gap-3 transition-all"
-                  style={{
-                    background: '#2a3050',
-                    border: `1px solid ${selectedPay === pm.id ? '#00f5ff' : '#354064'}`,
-                  }}
+                  className={`w-full h-12 rounded-xl flex items-center px-4 gap-3 transition-all bg-elevated border ${selectedPay === pm.id ? 'border-primary' : 'border-outline'}`}
                 >
-                  <span style={{ fontSize: 18 }}>{pm.icon}</span>
-                  <span className="text-[#e0e8ff]" style={{ fontSize: 14 }}>{pm.label}</span>
+                  <span className="text-lg">{pm.icon}</span>
+                  <span className="text-foreground text-sm">{pm.label}</span>
                   {selectedPay === pm.id && (
-                    <div className="ml-auto w-6 h-6 bg-[#00f5ff] rounded-xl flex items-center justify-center">
-                      <span className="text-[#0a0e1a] font-bold" style={{ fontSize: 12 }}>✓</span>
+                    <div className="ml-auto w-6 h-6 bg-primary rounded-xl flex items-center justify-center">
+                      <span className="text-surface font-bold text-xs">✓</span>
                     </div>
                   )}
                 </button>
@@ -111,70 +124,70 @@ export function ChargePage() {
             </div>
           </div>
 
-          <div className="bg-[#1a1f35] border border-[#354064] rounded-xl overflow-hidden">
-            <div className="bg-[#2a3050] px-4 py-2.5 border-b-2 border-[#00f5ff]">
-              <span className="text-[#e0e8ff] font-semibold" style={{ fontSize: 13 }}>결제 요약</span>
+          <div className="card overflow-hidden">
+            <div className="bg-elevated px-4 py-2.5 border-b-2 border-primary">
+              <span className="text-foreground font-semibold text-[13px]">결제 요약</span>
             </div>
             <div className="p-5">
-              <p className="text-[#7788a5] mb-1" style={{ fontSize: 12 }}>선택한 상품</p>
-              <p className="text-[#e0e8ff] font-bold mb-4" style={{ fontSize: 18 }}>{pkg.ap.toLocaleString()} AP 패키지</p>
-              <div className="h-px bg-[#354064] mb-4" />
+              <p className="text-muted mb-1 text-xs">선택한 상품</p>
+              <p className="text-foreground font-bold mb-4 text-lg">{pkg.ap.toLocaleString()} AP 패키지</p>
+              <div className="h-px bg-outline mb-4" />
               <div className="space-y-3 mb-4">
                 {pkg.originalPrice && (
                   <div className="flex justify-between">
-                    <span className="text-[#7788a5]" style={{ fontSize: 13 }}>정가</span>
-                    <span className="text-[#e0e8ff]" style={{ fontSize: 13 }}>₩{pkg.originalPrice.toLocaleString()}</span>
+                    <span className="text-muted text-[13px]">정가</span>
+                    <span className="text-foreground text-[13px]">₩{pkg.originalPrice.toLocaleString()}</span>
                   </div>
                 )}
                 {pkg.discount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-[#7788a5]" style={{ fontSize: 13 }}>할인</span>
-                    <span className="text-[#e0e8ff]" style={{ fontSize: 13 }}>−₩{(pkg.originalPrice! - pkg.price).toLocaleString()} ({pkg.discount}%)</span>
+                    <span className="text-muted text-[13px]">할인</span>
+                    <span className="text-foreground text-[13px]">−₩{(pkg.originalPrice! - pkg.price).toLocaleString()} ({pkg.discount}%)</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-[#7788a5]" style={{ fontSize: 13 }}>최종 결제액</span>
-                  <span className="text-[#ffd700] font-bold" style={{ fontSize: 13 }}>₩{pkg.price.toLocaleString()}</span>
+                  <span className="text-muted text-[13px]">최종 결제액</span>
+                  <span className="text-gold font-bold text-[13px]">₩{pkg.price.toLocaleString()}</span>
                 </div>
               </div>
-              <div className="h-px bg-[#354064] mb-4" />
+              <div className="h-px bg-outline mb-4" />
               <div className="flex justify-between items-center mb-5">
-                <span className="text-[#7788a5]" style={{ fontSize: 11 }}>받게 될 AP</span>
-                <span className="text-[#00f5ff] font-bold" style={{ fontSize: 22 }}>{pkg.ap.toLocaleString()} AP</span>
+                <span className="text-muted text-[11px]">받게 될 AP</span>
+                <span className="text-primary font-bold text-[22px]">{pkg.ap.toLocaleString()} AP</span>
               </div>
-              <button
+              <Button
                 onClick={handlePay}
                 disabled={isProcessing}
-                className="w-full h-14 bg-[#00f5ff] rounded-xl text-[#0a0e1a] font-bold hover:brightness-110 transition-all disabled:opacity-70"
-                style={{ fontSize: 17 }}
+                size="xl"
+                fullWidth
               >
                 {isProcessing ? '처리 중...' : `₩${pkg.price.toLocaleString()} 결제하기`}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {success && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
-          <div className="bg-[#1a1f35] border-2 border-[#00f5ff] rounded-2xl p-8 text-center max-w-sm mx-4">
+      {isSuccess && chargeResult && (
+        <div className="modal-overlay">
+          <div className="bg-panel border-2 border-primary rounded-2xl p-8 text-center max-w-sm mx-4">
             <div className="text-5xl mb-4">💎</div>
-            <h3 className="text-[#00f5ff] font-bold text-xl mb-2">충전 완료!</h3>
-            <div className="bg-[#2a3050] rounded-xl py-4 px-6 mb-3">
-              <p className="text-[#7788a5]" style={{ fontSize: 12 }}>충전 완료</p>
-              <p className="text-[#00f5ff] font-bold" style={{ fontSize: 28 }}>+{pkg.ap.toLocaleString()} AP</p>
+            <h3 className="text-primary font-bold text-xl mb-2">충전 완료!</h3>
+            <div className="bg-elevated rounded-xl py-4 px-6 mb-3">
+              <p className="text-muted text-xs">충전 완료</p>
+              <p className="text-primary font-bold text-[28px]">+{chargeResult.chargedAmount.toLocaleString()} AP</p>
             </div>
-            <div className="bg-[#2a3050] rounded-xl py-3 px-6 mb-6">
-              <p className="text-[#7788a5]" style={{ fontSize: 12 }}>현재 보유 AP</p>
-              <p className="text-[#ffd700] font-bold" style={{ fontSize: 22 }}>{newAP.toLocaleString()} AP</p>
+            <div className="bg-elevated rounded-xl py-3 px-6 mb-6">
+              <p className="text-muted text-xs">현재 보유 AP</p>
+              <p className="text-gold font-bold text-[22px]">{chargeResult.availableAP.toLocaleString()} AP</p>
             </div>
-            <button
-              onClick={() => { setSuccess(false); navigate('/app/map'); }}
-              className="w-full h-12 bg-[#00f5ff] rounded-xl text-[#0a0e1a] font-bold"
-              style={{ fontSize: 15 }}
+            <Button
+              onClick={() => { setIsSuccess(false); navigate('/app/map'); }}
+              size="lg"
+              fullWidth
             >
               확인
-            </button>
+            </Button>
           </div>
         </div>
       )}
