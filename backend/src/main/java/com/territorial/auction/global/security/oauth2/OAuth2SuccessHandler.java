@@ -1,5 +1,6 @@
 package com.territorial.auction.global.security.oauth2;
 
+import com.territorial.auction.global.config.FrontendProperties;
 import com.territorial.auction.global.security.jwt.JwtTokenProvider;
 import com.territorial.auction.global.security.jwt.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,9 +17,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
-
-    // TODO: 프론트엔드 redirect URI로 변경
-    private static final String REDIRECT_URI = "http://localhost:5173/oauth2/callback";
+    private final FrontendProperties frontendProperties;
 
     @Override
     public void onAuthenticationSuccess(
@@ -31,7 +30,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         refreshTokenService.save(oAuth2User.getUserId(), refreshToken);
 
         String redirectUrl =
-                REDIRECT_URI + "?accessToken=" + accessToken + "&refreshToken=" + refreshToken;
+                frontendProperties.callbackUrl()
+                        + "?accessToken="
+                        + accessToken
+                        + "&refreshToken="
+                        + refreshToken;
 
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }

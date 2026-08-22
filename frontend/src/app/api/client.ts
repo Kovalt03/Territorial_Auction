@@ -5,7 +5,7 @@ export class ApiError extends Error {
   }
 }
 
-const BASE = '/api/v1';
+const BASE = (import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/$/, '');
 
 let isRefreshing = false;
 let pendingQueue: Array<(token: string | null) => void> = [];

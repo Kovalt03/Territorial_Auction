@@ -4,11 +4,12 @@ import SockJS from 'sockjs-client';
 
 let sharedClient: Client | null = null;
 let connectPromise: Promise<void> | null = null;
+const SOCKET_URL = import.meta.env.VITE_WS_URL ?? '/ws';
 
 function getOrCreateClient(): Client {
   if (sharedClient) return sharedClient;
   sharedClient = new Client({
-    webSocketFactory: () => new SockJS('/ws') as WebSocket,
+    webSocketFactory: () => new SockJS(SOCKET_URL) as WebSocket,
     reconnectDelay: 3000,
     // 매 (재)연결 직전 localStorage에서 최신 토큰을 다시 읽는다.
     // REST(apiClient)가 401 시 refresh로 localStorage 토큰을 갱신하므로,
