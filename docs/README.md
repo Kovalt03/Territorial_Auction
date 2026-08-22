@@ -24,12 +24,14 @@
 | 파일 | 내용 |
 |---|---|
 | [domain-design.md](./design/domain-design.md) | 10개 Bounded Context, 핵심 엔티티·VO, 도메인 간 협력 로직 |
+| [architecture.md](./design/architecture.md) | 계층형 런타임 구조, 패키지 경계, 실시간 통신, MSA 전환 기준 |
 | [db-schema.md](./design/db-schema.md) | PostgreSQL 전체 테이블 정의 + Redis 키 구조 |
 | [access-control-matrix.md](./design/access-control-matrix.md) | 기능별 접근 제어 매트릭스 (F-코드 × 유저 역할) |
 | [building-specs.md](./design/building-specs.md) | 건물 타입별 세부 스펙, Zone 배치 규칙, 파괴 효과 |
 | [military-specs.md](./design/military-specs.md) | 유닛 타입별 세부 스펙, 전투 공식, 트로피 증감표 |
 | [chat-architecture.md](./design/chat-architecture.md) | 채팅 STOMP 구조, 채팅방 타입, 접근 제어, 구현 순서 |
 | [performance-testing.md](./design/performance-testing.md) | 성능·부하 테스트 진행 가이드 (계측 → 베이스라인 → 부하 → 최적화) |
+| [testing.md](./design/testing.md) | Backend·Frontend·부하 테스트의 공개 전략과 실행 방법 |
 | [chat-broker-strategy.md](./design/chat-broker-strategy.md) | SimpleBroker · Redis Pub-Sub · Kafka · RabbitMQ 비교 및 단계별 전략 |
 | [siege-system.md](./design/siege-system.md) | 공성전 상세 — Zone 공략, 공성 건물, 보호/점유 분리, 정산 규칙 |
 | [admin-dashboard.md](./design/admin-dashboard.md) | 관리자 페이지 기능 명세, 감사 로그, 권한 |
@@ -93,6 +95,8 @@
 | [operations/external-render-supabase.md](./operations/external-render-supabase.md) | Render·Supabase 외부 호환성 검증과 재현용 설정 |
 | [guides/user-guide.md](./guides/user-guide.md) | 일반 사용자 기능 안내 |
 | [guides/admin-guide.md](./guides/admin-guide.md) | 관리자 보안·운영 절차 |
+| [guides/development-workflow.md](./guides/development-workflow.md) | 브랜치, 검증, Pull Request 흐름 |
+| [testing/README.md](./testing/README.md) | API 계약, 단위·통합 테스트, 부하 테스트 결과 인덱스 |
 | [releases/v1.0.0-monolith.md](./releases/v1.0.0-monolith.md) | 모놀리식 릴리스 기준점 |
 
 ---

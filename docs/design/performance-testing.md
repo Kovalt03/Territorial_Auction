@@ -142,8 +142,7 @@ plugins {
 }
 ```
 
-> ⚠️ `.claude/commands/load-test.md` 는 현재 **Scala** 경로(`src/gatling/scala/...`)로 작성돼 있다.
-> Java DSL 채택 시 해당 커맨드 정의도 함께 수정해야 한다.
+구현된 시나리오는 Java DSL이며 `backend/src/gatling/java/`에서 관리한다.
 
 배치 위치: `backend/src/gatling/java/com/territorial/{domain}/{Domain}Simulation.java`
 
@@ -392,7 +391,6 @@ report/perf/YYYY-MM-DD-{scope}-{slug}.md
 
 ## 관련 문서
 
-- 단위 테스트 전략 → `backend/.claude/design/testing.md`
-- 프론트 테스트 전략 → `frontend/.claude/design/testing.md`
+- 단위·프론트 테스트 전략 → [테스트 전략](./testing.md)
 - 브로커 전환 전략 → [chat-broker-strategy.md](./chat-broker-strategy.md)
-- 아키텍처·MSA 계획 → `backend/.claude/design/architecture.md`
+- 아키텍처·MSA 계획 → [시스템 아키텍처](./architecture.md)

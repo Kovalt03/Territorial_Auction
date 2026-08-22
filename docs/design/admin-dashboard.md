@@ -254,7 +254,7 @@ PrivateRoute (로그인 확인)
 ### 9.1 MSA 전환 대비
 - 관리자 API는 **서비스 경계(users / auctions / seasons / items / map)에 맞춰 URL 그룹화**한다. 현재는 모놀리식이라 `AdminService`가 각 도메인 Repository를 직접 주입하지만, MSA 전환 시 그룹 단위로 각 서비스의 관리자 엔드포인트로 분산하거나 **admin-gateway(BFF)** 가 각 서비스 API를 호출하는 형태로 이행한다.
 - 원칙: 관리자도 **직접 DB 조작이 아닌 도메인 API/도메인 메서드 경유**. → MSA에서 서비스 간 경계가 깨지지 않는다.
-- `domain-design.md`의 Bounded Context와 정합. 관리자는 횡단 관심사이므로 독립 `admin-service` 후보([backend architecture](../../backend/.claude/design/architecture.md)의 ranking-service처럼).
+- `domain-design.md`의 Bounded Context와 정합. 관리자는 횡단 관심사이므로 독립 `admin-service` 후보([시스템 아키텍처](./architecture.md)의 분리 후보처럼).
 
 ### 9.2 성능 평가 하네스 구조
 목적: 경매·랭킹·맵 등 핵심 경로의 **정량 지표(TPS, p95 지연, 정산 지연)** 를 부하 조건별로 측정·평가.

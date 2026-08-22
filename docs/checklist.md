@@ -179,7 +179,7 @@
 | ✅ | 판정 스케줄러 | — | 1분 주기 `SiegeScheduler` → `resolveOneSiege`(실행 검증 완료) |
 | ✅ | 공성 알림 WebSocket | — | `/sub/user/{userId}/siege-alert` (선언·결과 양측) |
 | ✅ | 공성 선언 UI(프론트) | `SiegePage` | `forces`+`structures` 계약 정합, 보유 대기 유닛 선택·주둔지 배치 |
-| ⬜ | 정밀 공격(건물 지정) UI | `SiegePage` | 백엔드는 `targetBuildingId` 지원, 프론트 건물 선택 UI 후속 |
+| ✅ | 정밀 공격(건물 지정) UI | `SiegePage` | 일반/정밀 모드 전환, 정찰 건물 목록·그리드 클릭으로 `targetBuildingId` 지정, 공격권 검증까지 연동 |
 
 ---
 
@@ -213,6 +213,7 @@
 | ✅ | 보관함 → 섬 배치 | `POST /api/v1/inventory/{inventoryId}/place-on-island` |
 | ✅ | island_grades DB 테이블 (zone1Radius, zone2Radius) | `IslandGrade` 엔티티 + `IslandGradeSeeder` |
 | 🔄 | IslandGrade FK로 HomeIsland 리팩터링 | `island_grade_id` FK 적용됨. `grid_size` 컬럼 제거는 미완(현재 병존) |
+| ✅ | 계정 단위 유닛 연구 API | `GET/POST /api/v1/military/research` | 연구소 레벨 검증·금고 GP 차감·완료 시점 반영 구현 |
 
 ---
 
@@ -253,7 +254,7 @@
 | ✅ | 유닛·건물 스탯 편집 | `/admin/units`, `/admin/buildings` | AdminUnitController / AdminBuildingController |
 | ✅ | 밸런스 설정(공성 등) | `GET/PATCH /admin/settings/balance` | AdminSettingController + BalanceConfig |
 | ✅ | 공지·설정 | `/admin/announcements`, `/admin/settings` | AdminAnnouncementController / AdminSettingController |
-| 🔄 | 나머지 밸런스 상수 배선 | — | 수리·주둔 수용량만 BalanceConfig 연동, 그 외 Policy 상수는 후속 |
+| ✅ | 관리자 공개 밸런스 값 배선 | — | 수리 GP와 성·숙소·타워·방벽 주둔 수용량을 `BalanceConfig`로 연동. 그 외 Policy 상수는 관리자 조정 범위에서 제외 |
 
 ---
 
@@ -333,13 +334,13 @@
 
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| **AP 충전 실 결제(PG) 연동** | 🔄 더미 유지 | **외부 결제대행사(토스·포트원 등) API·가맹점 계약·키·웹훅 필요**. 개인 프로젝트라 더미 유지로 확정 |
-| 섬 확장 FE 탭 | ⬜ 안내 문구만 | BE는 구현 완료 — 성 레벨업 시 `IslandGrade` 자동 승격 + 그리드 확장·재배치. FE `expand` 탭이 "추후 업데이트 예정" 문구로 남아 실제 동작을 안내하지 못함 |
+| **AP 충전 실 결제(PG) 연동** | — 범위 제외 | **외부 결제대행사(토스·포트원 등) API·가맹점 계약·키·웹훅 필요**. 개인 프로젝트에서는 mock 결제를 유지 |
+| 섬 확장 FE 탭 | ⬜ 안내 문구만 | BE는 구현 완료 — 성 레벨업 시 `IslandGrade` 자동 승격 + 그리드 확장·재배치. FE `expand` 탭은 아직 안내 문구만 표시 |
 | 생산 랭킹 | ⬜ | 트로피·영토보유·경매지출·대륙·내 순위는 구현 완료 |
 | Redis 캐시·Pub-Sub (성능) | ⬜ 선택 | 단일 인스턴스라 현재 불필요, 스케일아웃 시 |
 | 일 정산 배치 | ⬜ 선택 | Lazy 정산으로 대체 가능, 구현 여부 미확정 |
 
-공성 후속 개선(선택): 정밀 공격 UI · 관리자 밸런스 나머지 상수 배선 · 공성 현황 패널 실데이터 · 저장소 꽉참 UI 경고.
+공성 후속 개선(선택): 공성 현황 패널 실데이터 · 저장소 꽉참 UI 경고.
 
 ---
 
@@ -396,7 +397,7 @@
 | 상태 | 항목 | 페이지 | 비고 |
 |---|---|---|---|
 | ✅ | 개인섬 건물 배치·유닛 훈련·보관함 | `PersonalIslandPage` 외 모달 | GP 생산·식량·주둔 유닛 표시 |
-| ⬜ | 연구 현황 | `PersonalIslandPage:574` | "준비 중" — 백엔드 연구 시스템 미구현 |
+| 🔄 | 연구 현황 | `PersonalIslandPage` | 백엔드 연구 API·도메인은 구현됨. 개인섬 화면의 연구 현황·시작 UI는 아직 미연동 |
 | ⬜ | 섬 확장 탭 | `PersonalIslandPage:625` | "준비 중" — island_grades 리팩터링 연동(BE 보류) |
 
 ### 공성전 / 아이템 / 시즌패스 / 금고
@@ -465,4 +466,4 @@
 
 ## 다음 단계
 
-모놀리식 기능 구현과 우선순위 성능 검증은 완료 기준에 도달했다. 외부 Render·Supabase·Upstash 호환성 스모크도 완료했으며, Render Free의 512MB 한도로 상시 운영은 지원하지 않는다. 실제 실행 기준은 로컬 Docker Compose다. 남은 제품 제한은 실제 PG 결제 연동, 개인섬 연구·확장이며 MSA 전환은 별도 저장소에서 진행한다.
+모놀리식 기능 구현과 우선순위 성능 검증은 완료 기준에 도달했다. 외부 Render·Supabase·Upstash 호환성 스모크도 완료했으며, Render Free의 512MB 한도로 상시 운영은 지원하지 않는다. 실제 실행 기준은 로컬 Docker Compose다. 남은 선택 작업은 개인섬 연구 현황 UI·확장 탭 안내 개선, 생산 랭킹, 단일 인스턴스 이후의 Redis Pub/Sub·경매 상세 캐시다. 실제 PG 결제 연동과 MSA 전환은 이 모놀리식 릴리스 범위에서 제외한다.
