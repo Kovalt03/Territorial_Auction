@@ -1,6 +1,9 @@
 # Territorial Auction — 문서 인덱스
 
 > 전체 구현 현황 → **[checklist.md](./checklist.md)**
+>
+> 프로젝트 소개·로컬 실행 → **[루트 README](../README.md)**
+> 화면별 플레이 방법 → **[인터랙티브 사용자 가이드](https://claude.ai/code/artifact/366effa3-8970-4353-a97c-aa4a4fabe49f?via=auto_preview)**
 
 픽셀 경매 · 사이버 영토 전쟁 프로젝트 전체 문서 목록입니다.
 

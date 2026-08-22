@@ -1,122 +1,105 @@
-# 픽셀 경매 - 사이버 영토 전쟁
+# 픽셀 경매 · 사이버 영토 전쟁
 
-50×50 월드맵에서 영토를 경매로 점유하고 건설·자원·병력·공성전을 운영하는 실시간 전략 웹 애플리케이션.
+> **내 땅을 건설하고, 키우고, 지키거나 — 빼앗아라.**
+> 50×50 월드맵에서 영토를 경매로 획득하고, 건설·자원 생산·공성전으로 성장하는 실시간 전략 웹 게임입니다.
 
-운영과 유사한 로컬 Docker 실행, 관리자 초기화, 백업·복구는 [로컬 운영 실행 가이드](docs/operations/local-production.md)를 따른다. 사용자와 운영자 기능 안내는 각각 [사용자 가이드](docs/guides/user-guide.md), [관리자 운영 가이드](docs/guides/admin-guide.md)를 참조한다.
+## 프로젝트 개요
 
-Render·Supabase 외부 호환성 검증 결과와 재현용 설정은 [외부 배포 가이드](docs/operations/external-render-supabase.md)에 남긴다. 실제 실행 기준은 로컬 Docker다.
-
----
-
-## 프로젝트 구조
-
-```
-Territorial_Auction/
-├── frontend/   # React + TypeScript + Vite
-└── backend/    # Spring Boot 3 + Java 17
-```
-
----
-
-## Git 관리 규칙
-
-### 브랜치 전략
-
-```
-main
- └── dev
-      ├── feature/fe-*    # 프론트엔드 기능
-      ├── feature/be-*    # 백엔드 기능
-      ├── feature/all-*   # 공통 작업
-      └── hotfix/*        # 긴급 수정
-```
-
-- `main` : 릴리스·배포 기준 브랜치 — `dev` 에서만 PR 허용. 외부 배포 설정은 보관하지만 자동 배포하지 않는다.
-- `dev` : 로컬 개발 통합 브랜치 — feature PR을 통해서만 Merge
-- `feature/*` : `dev` 에서 분기, 완료 후 `dev` 로 PR
-
-현재 모놀리식의 상시 실행은 로컬 Docker Compose만 지원한다. `main`은 재현 가능한 릴리스·외부 호환성 설정의 기준점이며, Render Free 인스턴스는 512MB 메모리 한도로 지속 운영 대상이 아니다.
-
-### 브랜치 명명
-
-```
-feature/fe-worldmap-ui
-feature/be-auction-bid-api
-feature/all-github-actions-setup
-hotfix/be-login-500-error
-```
-
-> `fe-` / `be-` / `all-` 로 작업 영역을 구분합니다.
-
-### 커밋 메시지
-
-```
-[PREFIX] 제목
-
-본문 (선택)
-
-Closes #이슈번호 (선택)
-```
-
-| Prefix | 설명 |
+| 항목 | 내용 |
 |---|---|
-| `[FEAT]` | 새로운 기능 추가 |
-| `[FIX]` | 버그 수정 |
-| `[HOTFIX]` | 프로덕션 긴급 버그 수정 |
-| `[REFACTOR]` | 기능 변경 없는 코드 개선 |
-| `[TEST]` | 테스트 코드 추가/수정 |
-| `[CHORE]` | 빌드 설정, 의존성, 개발 환경 |
-| `[DOCS]` | 문서 작성/수정 |
-| `[STYLE]` | 포맷 등 로직 무관 스타일 |
-| `[PERF]` | 성능 개선 |
+| 개발 형태 | 개인 프로젝트 |
+| 개발 기간 | 2026.04 – 2026.08 (모놀리식 구현·검증 단계) |
+| 핵심 경험 | 실시간 영토 경매, 그리드 건설, 자원 경제, 공성전, 길드·알림 |
+| 현재 구조 | Spring Boot 모놀리식 + React SPA |
+| 실행 기준 | 로컬 Docker Compose |
 
-**이슈 연결**
+## 핵심 기능
 
-| 키워드 | 동작 |
+| 영역 | 기능 |
 |---|---|
-| `Closes #번호` | PR 머지 시 이슈 자동 Close |
-| `Related to #번호` | 이슈 연결만 (Close 안 함) |
-| `Ref #번호` / `#번호` | 단순 참고용 연결 |
+| 경매·영토 | 대륙별 영토 탐색, 실시간 입찰, Anti-Sniping, 낙찰·점유 처리 |
+| 성장 | 개인 섬·영토 그리드 건설, GP·식량 생산, 금고, 아이템, 시즌 패스 |
+| 전투 | Zone 기반 공성, 유닛 생산·주둔, 공격권, 전투 결과·보상 |
+| 사회 | 길드, 대륙 채팅, 실시간 알림, 랭킹 |
+| 운영 | 관리자 TOTP, 사용자·경매·밸런스 관리, 공지, 감사 로그 |
 
-### PR 규칙
+서비스 규칙과 경제 시스템의 상세는 [기획 개요](docs/planning/overview.md)와 [요구사항](docs/planning/requirements.md)을 참고하세요.
 
-- **제목 형식** : `[PREFIX] 작업 내용 요약`
-- **Merge 전략** : PR 생성 시 사용자와 합의한 방식으로 진행
-- **main 보호** : `dev` 브랜치에서만 PR 허용
+## 아키텍처
 
----
+```mermaid
+flowchart LR
+    U[Player / Administrator] --> F[React 18 + TypeScript + Vite]
+    F -->|REST API| B[Spring Boot Monolith]
+    F -->|STOMP over SockJS| B
 
-## 로컬 실행
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-# http://localhost:5173
+    B -->|JPA / Flyway| P[(PostgreSQL)]
+    B -->|Cache · Token · Lock| R[(Redis)]
+    B --> S[Scheduler\nAuction · Siege · Season · Tax]
 ```
 
-### Backend
+- 프론트엔드는 REST와 STOMP/SockJS로 백엔드와 통신합니다.
+- 백엔드는 도메인 경계를 패키지로 분리한 모놀리식이며, PostgreSQL·Redis를 사용합니다.
+- 향후 MSA 전환은 현재 도메인 경계를 기반으로 검토합니다.
 
-```bash
-cd backend
-./gradlew bootRun
-# http://localhost:8080
-```
+자세한 구조와 도메인 간 의존 규칙은 [아키텍처 설계](backend/.claude/design/architecture.md), [도메인 설계](docs/design/domain-design.md), [WebSocket 문서](docs/api/websocket/README.md)에 정리했습니다.
 
-### 운영과 유사한 로컬 Docker 실행
+## 기술 스택
+
+| 구분 | 기술 |
+|---|---|
+| Frontend | React 18, TypeScript, Vite 6, Tailwind CSS 4 |
+| Backend | Java 17, Spring Boot 3.4, Spring Data JPA, Spring Security |
+| Realtime | STOMP, SockJS, Spring WebSocket |
+| Data | PostgreSQL, Redis, Flyway |
+| Test | JUnit, Mockito, Vitest, React Testing Library, Gatling |
+| Local Infra | Docker Compose, Nginx |
+
+## 빠른 시작
+
+실제 실행 기준은 로컬 Docker Compose입니다.
 
 ```bash
 cp backend/.env.production.example backend/.env.production
-# JWT_SECRET과 DB 비밀번호를 강한 값으로 변경
+# .env.production의 JWT_SECRET과 DB 비밀번호를 안전한 값으로 변경
 docker compose -f docker-compose.production.yml up -d --build
-# http://localhost:3000
 ```
 
-릴리스 기준과 현재 제한은 [v1.0.0-monolith 릴리스 기준점](docs/releases/v1.0.0-monolith.md)을 참조한다.
+- 사용자 화면: `http://localhost:3000`
+- API health: `http://localhost:8080/actuator/health`
 
----
+개별 개발 서버를 실행하거나 관리자 초기화·백업·복구를 수행하려면 [로컬 운영 실행 가이드](docs/operations/local-production.md)를 따르세요.
+
+## 검증
+
+- Backend: `./gradlew spotlessCheck test gatlingClasses`
+- Frontend: `npm run test:run`, `npm run build`
+- 로컬 Docker 사용자·관리자 수동 흐름 확인
+- 우선순위 혼합 Soak: 50 VU, 1시간, 71,665 요청, 실패 0건
+- Render·Supabase·Upstash 외부 호환성 스모크 완료
+
+전체 기준과 알려진 제한은 [v1.0.0 모놀리식 릴리스 기준점](docs/releases/v1.0.0-monolith.md), 현재 구현 현황은 [체크리스트](docs/checklist.md)에서 확인할 수 있습니다.
+
+> Render Free는 512MB 메모리 한도로 현재 모놀리식의 지속 실행 환경에 적합하지 않습니다. 외부 설정은 호환성 재현용으로만 보관하며, 상시 실행은 로컬 Docker Compose를 사용합니다. 자세한 내용은 [외부 호환성 검증 가이드](docs/operations/external-render-supabase.md)를 참고하세요.
+
+## 가이드와 문서
+
+| 대상 | 문서 |
+|---|---|
+| 플레이어 | [인터랙티브 사용자 가이드](https://claude.ai/code/artifact/366effa3-8970-4353-a97c-aa4a4fabe49f?via=auto_preview) · [텍스트 사용자 가이드](docs/guides/user-guide.md) |
+| 관리자 | [관리자 운영 가이드](docs/guides/admin-guide.md) · [관리자 API](docs/api/admin.md) |
+| 개발자 | [문서 인덱스](docs/README.md) · [API 공통 규칙](docs/api/README.md) · [코드 컨벤션](docs/design/code-conventions.md) |
+| 운영 | [로컬 운영](docs/operations/local-production.md) · [외부 호환성 검증](docs/operations/external-render-supabase.md) |
+
+## 개발 흐름
+
+`feature/* → dev → main` 흐름을 사용합니다.
+
+- `dev`: 로컬 개발 통합 브랜치
+- `main`: 릴리스·외부 호환성 설정 기준 브랜치
+- `main`의 배포 설정은 자동 실행하지 않습니다.
+
+세부 Git 규칙은 [.claude/rules/git.md](.claude/rules/git.md)를 참고하세요.
 
 ## License
 
