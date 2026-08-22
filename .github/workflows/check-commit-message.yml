@@ -22,7 +22,7 @@ jobs:
 
           while IFS= read -r msg; do
             # Merge 커밋은 검사에서 제외
-            if echo "$msg" | grep -qP '^Merge (pull request|branch)'; then
+            if echo "$msg" | grep -qP '^Merge '; then
               continue
             fi
             if ! echo "$msg" | grep -qP "$PATTERN"; then
