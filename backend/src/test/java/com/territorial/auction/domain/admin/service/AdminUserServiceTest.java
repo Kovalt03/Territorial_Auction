@@ -116,7 +116,7 @@ class AdminUserServiceTest {
             User u = user(1L, UserStatus.ACTIVE, UserRole.USER);
             given(userRepository.findById(1L)).willReturn(Optional.of(u));
             given(walletRepository.findById(1L)).willReturn(Optional.of(wallet(u, 500, 0)));
-            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(u, 30)));
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(vault(u, 30)));
             given(territoryRepository.countByOwnerId(1L)).willReturn(3L);
 
             AdminUserDetailResponse res = adminUserService.getUser(1L);
@@ -206,9 +206,11 @@ class AdminUserServiceTest {
         void adjust_success() {
             User u = user(1L, UserStatus.ACTIVE, UserRole.USER);
             Wallet w = wallet(u, 1000, 0);
+            com.territorial.auction.domain.building.entity.GlobalVault v = vault(u, 50);
             given(userRepository.findById(1L)).willReturn(Optional.of(u));
             given(walletRepository.findByIdWithLock(1L)).willReturn(Optional.of(w));
-            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(vault(u, 50)));
+            given(globalVaultRepository.findByIdWithLock(1L)).willReturn(Optional.of(v));
+            given(globalVaultRepository.findById(1L)).willReturn(Optional.of(v));
             given(territoryRepository.countByOwnerId(1L)).willReturn(0L);
 
             AdminUserDetailResponse res =
