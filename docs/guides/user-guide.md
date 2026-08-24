@@ -1,6 +1,6 @@
 # 사용자 가이드
 
-> 화면 이미지와 단계별 안내는 [인터랙티브 사용자 가이드](https://claude.ai/code/artifact/366effa3-8970-4353-a97c-aa4a4fabe49f?via=auto_preview)에서 확인할 수 있다. 이 문서는 로컬 실행 환경에서 빠르게 기능을 찾기 위한 텍스트 기준이다.
+> 화면 이미지와 단계별 안내는 **[인터랙티브 사용자 가이드](https://kovalt03.github.io/my-blog/guides/user-guide.html)** 에서 확인할 수 있다(GitHub Pages 라이브 · 로컬에서는 [`docs/guides/user-guide.html`](./user-guide.html)). 이 문서는 로컬 실행 환경에서 빠르게 기능을 찾기 위한 텍스트 기준이다.
 
 ## 시작하기
 
