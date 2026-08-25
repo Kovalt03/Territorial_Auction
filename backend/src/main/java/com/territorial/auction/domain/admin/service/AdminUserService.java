@@ -197,7 +197,7 @@ public class AdminUserService {
                 wallet.getAvailableAp(),
                 wallet.getLockedAp(),
                 globalVaultRepository
-                        .findByIdWithLock(user.getId())
+                        .findById(user.getId())
                         .map(GlobalVault::getStoredGp)
                         .orElse(0),
                 buildingInstanceRepository.sumStoredFoodByOwnerId(user.getId()),
