@@ -1,5 +1,7 @@
 # 관리자 운영 가이드
 
+> 화면별 스크린샷과 감사/주의 배지가 포함된 **[인터랙티브 관리자 가이드](https://kovalt03.github.io/my-blog/guides/admin-guide.html)** 를 함께 제공한다(GitHub Pages 라이브 · 로컬에서는 [`docs/guides/admin-guide.html`](./admin-guide.html)). 이 문서는 운영 절차와 정책의 텍스트 기준이다.
+
 관리자 화면은 `/admin/login`에서 별도 로그인한다. 관리자 권한과 TOTP 인증이 필요하며, 실제 운영·리허설은 [로컬 Docker 실행 환경](../operations/local-production.md)을 기준으로 한다.
 
 ## 최초 보안 설정
