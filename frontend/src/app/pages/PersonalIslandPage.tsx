@@ -27,6 +27,17 @@ import { IslandDecorationShopModal } from './IslandDecorationShopModal';
 // 백엔드 StoragePolicy.*_CAPACITY_PER_LEVEL 과 일치 — 성·저장소 레벨당 GP·식량 저장 용량.
 const STORAGE_CAP_PER_LEVEL = 5000;
 
+// 섬 등급 사다리 — 백엔드 db/island-grades.yml 과 일치. 성(Castle) 레벨업 시 castleLevelRequired가 맞는 등급으로 자동 승격된다.
+// 성 최대 레벨은 현재 3(BuildingPolicy.MAX_LEVEL)이라 A·S 는 아직 도달 불가(미출시).
+const CASTLE_MAX_LEVEL = 3;
+const ISLAND_GRADES = [
+  { name: 'D', gridSize: 10, castleLevelRequired: 1 },
+  { name: 'C', gridSize: 12, castleLevelRequired: 2 },
+  { name: 'B', gridSize: 16, castleLevelRequired: 3 },
+  { name: 'A', gridSize: 18, castleLevelRequired: 5 },
+  { name: 'S', gridSize: 20, castleLevelRequired: 6 },
+] as const;
+
 export function PersonalIslandPage() {
   const navigate = useNavigate();
   const { ap, gp, username, syncAP, syncGP } = useApp();
@@ -54,6 +65,10 @@ export function PersonalIslandPage() {
   // 완공된 병영의 최고 레벨 — 훈련 모달에서 상위 유닛 잠금 판정에 쓴다.
   const islandBarracksLevel = (island?.buildings ?? [])
     .filter(b => b.type.toLowerCase() === 'barracks' && !b.isDestroyed && !isUnderConstruction(b.buildCompleteAt, now))
+    .reduce((max, b) => Math.max(max, b.level), 0);
+  // 성 레벨 — 섬 등급 승격 기준(성은 섬당 1개). 확장 탭에서 현재/다음 등급 판정에 쓴다.
+  const castleLevel = (island?.buildings ?? [])
+    .filter(b => b.type.toLowerCase() === 'castle' && !b.isDestroyed)
     .reduce((max, b) => Math.max(max, b.level), 0);
   const hasConstruction = buildersInUse > 0;
   // 건설 중이거나 생산 부스터가 남아있는 동안 매초 시간을 갱신한다(카운트다운·완료 반영).
@@ -823,10 +838,33 @@ export function PersonalIslandPage() {
               </div>
             )}
             {activeTab === 'expand' && (
-              <div className="p-3 flex flex-col items-center justify-center gap-3 py-12">
-                <span className="text-[40px]">🚧</span>
-                <p className="text-foreground font-semibold text-sm">준비 중</p>
-                <p className="text-muted text-[11px] text-center">섬 확장 기능은 추후 업데이트 예정입니다</p>
+              <div className="p-3 space-y-3">
+                <div className="bg-panel-deep rounded-xl p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-primary font-semibold text-xs">🏝 현재 섬</span>
+                    <span className="text-foreground font-bold text-sm">{island?.grade}급 · {gridSize}×{gridSize}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-y-1 text-[10px]">
+                    <span className="text-muted">성 레벨</span><span className="text-right text-foreground">Lv.{castleLevel} / {CASTLE_MAX_LEVEL}</span>
+                    <span className="text-muted">Zone 반경</span><span className="text-right text-foreground">{island?.zone1Radius ?? '-'} / {island?.zone2Radius ?? '-'}</span>
+                    <span className="text-muted">건축 장인</span><span className="text-right text-foreground">{builderCount}명</span>
+                  </div>
+                </div>
+                <p className="text-muted text-[11px] leading-relaxed">
+                  <span className="text-gold">성(🏰)</span>을 레벨업하면 섬 등급이 <span className="text-foreground font-semibold">자동 승격</span>되고 그리드가 확장·재배치됩니다. 별도 확장 버튼은 없습니다.
+                </p>
+                <div className="bg-panel-deep rounded-xl overflow-hidden">
+                  {ISLAND_GRADES.map(g => {
+                    const isCurrent = g.name === island?.grade;
+                    const locked = g.castleLevelRequired > CASTLE_MAX_LEVEL;
+                    return (
+                      <div key={g.name} className={`flex items-center justify-between px-3 py-2 text-[11px] border-b border-outline last:border-b-0 ${isCurrent ? 'bg-[#00f5ff10]' : ''}`}>
+                        <span className={isCurrent ? 'text-primary font-bold' : 'text-foreground'}>{g.name}급{isCurrent ? ' (현재)' : ''}</span>
+                        <span className="text-muted">{g.gridSize}×{g.gridSize} · 성 Lv.{g.castleLevelRequired} 필요{locked ? ' · 미출시' : ''}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
